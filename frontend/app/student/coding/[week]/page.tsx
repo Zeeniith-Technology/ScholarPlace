@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
@@ -57,7 +57,7 @@ const DAYS = [
   { id: 'day-5', label: 'Day 5', title: 'Advanced', description: 'Complex problems and optimization' },
 ]
 
-export default function CodingPage() {
+function CodingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const params = useParams()
@@ -399,5 +399,15 @@ export default function CodingPage() {
       </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </StudentLayout>
+  )
+}
+
+export default function CodingPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>}>
+      <CodingContent />
+    </Suspense>
   )
 }

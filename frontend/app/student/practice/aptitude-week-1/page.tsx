@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
@@ -49,7 +49,7 @@ interface AnswerState {
  * Aptitude Week 1 Practice Test Page
  * Route: /student/practice/aptitude-week-1?day=day-1|day-2|day-3|day-4|day-5
  */
-export default function AptitudeWeek1PracticePage() {
+function AptitudeWeek1PracticeContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [day, setDay] = useState<string>('day-1')
@@ -514,14 +514,14 @@ export default function AptitudeWeek1PracticePage() {
                                         key={idx}
                                         onClick={() => handleAnswerSelect(currentQuestion.question_id, option.key)}
                                         className={`w-full p-4 rounded-lg border-2 transition-all text-left ${isSelected
-                                                ? 'bg-accent/20 border-accent text-neutral'
-                                                : 'bg-background-elevated border-neutral-light/20 hover:border-accent/50 text-neutral-light'
+                                            ? 'bg-accent/20 border-accent text-neutral'
+                                            : 'bg-background-elevated border-neutral-light/20 hover:border-accent/50 text-neutral-light'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${isSelected
-                                                    ? 'bg-accent text-white'
-                                                    : 'bg-neutral-light/30 text-neutral-light'
+                                                ? 'bg-accent text-white'
+                                                : 'bg-neutral-light/30 text-neutral-light'
                                                 }`}>
                                                 {option.key}
                                             </div>
@@ -565,5 +565,15 @@ export default function AptitudeWeek1PracticePage() {
                 </div>
             </div>
         </StudentLayout>
+    )
+}
+
+export default function AptitudeWeek1PracticePage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>}>
+            <AptitudeWeek1PracticeContent />
+        </Suspense>
     )
 }

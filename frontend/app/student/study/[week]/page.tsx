@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
@@ -49,7 +49,7 @@ interface BookmarkItem {
  * Interactive learning experience similar to W3Schools
  * Route: /student/study/[week]?day=day-1|day-2|day-3|day-4|day-5
  */
-export default function WeekStudyPage() {
+function WeekStudyContent() {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
@@ -1158,8 +1158,8 @@ export default function WeekStudyPage() {
                   <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Capstone Project</h3>
                   <div
                     className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.coding_problems?.eligible
-                        ? 'bg-primary/10 border-2 border-primary/30 cursor-pointer hover:bg-primary/20'
-                        : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60'
+                      ? 'bg-primary/10 border-2 border-primary/30 cursor-pointer hover:bg-primary/20'
+                      : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1563,5 +1563,15 @@ function CodeBlock({ code, language, onCopy, isCopied }: { code: string; languag
         </code>
       </pre>
     </div>
+  )
+}
+
+export default function WeekStudyPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>}>
+      <WeekStudyContent />
+    </Suspense>
   )
 }

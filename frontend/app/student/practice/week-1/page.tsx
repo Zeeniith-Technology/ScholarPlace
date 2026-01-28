@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
@@ -60,7 +60,7 @@ interface AnswerState {
  * Week 1 Practice Test Page
  * Route: /student/practice/week-1?day=pre-week|day-1|day-2|day-3|day-4|day-5
  */
-export default function Week1PracticePage() {
+function Week1PracticeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [day, setDay] = useState<string>('pre-week')
@@ -1132,5 +1132,15 @@ export default function Week1PracticePage() {
         </div>
       </div>
     </StudentLayout>
+  )
+}
+
+export default function Week1PracticePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>}>
+      <Week1PracticeContent />
+    </Suspense>
   )
 }
