@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
@@ -17,7 +17,7 @@ import { Users, Search, Filter, RefreshCw, TrendingUp, Award, AlertCircle } from
  * Manage and view all students in the college
  * Route: /tpc/students
  */
-export default function TPCStudentsPage() {
+function TPCStudentsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast, showToast, hideToast } = useToast()
@@ -333,5 +333,15 @@ export default function TPCStudentsPage() {
         />
       )}
     </TPCLayout>
+  )
+}
+
+export default function TPCStudentsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>}>
+      <TPCStudentsContent />
+    </Suspense>
   )
 }
