@@ -19,8 +19,6 @@ import {
   BookOpen,
   AlertCircle,
   Play,
-  Brain,
-  AlertCircle,
   Target,
 } from 'lucide-react'
 import { CodeEditor } from '@/components/ui/CodeEditor'
@@ -168,12 +166,12 @@ export default function Week2PracticePage() {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
         console.error('[Practice] No auth token found')
         return
       }
-      
+
       const response = await fetch(`${apiBaseUrl}/student-progress/list`, {
         method: 'POST',
         credentials: 'include',
@@ -194,7 +192,7 @@ export default function Week2PracticePage() {
           const progress = result.data[0]
           const testScores = progress.practice_test_scores || []
           const dayTest = testScores.find((t: any) => t.day === dayParam)
-          
+
           if (dayTest) {
             setPreviousTestScore(dayTest.score)
             setTestAttempt(dayTest.attempt || 1)
@@ -240,7 +238,7 @@ export default function Week2PracticePage() {
           // Shuffle questions for variety
           const shuffled = [...data.data.questions].sort(() => Math.random() - 0.5)
           setQuestions(shuffled)
-          
+
           // Initialize answer state
           const initialAnswers: AnswerState = {}
           const initialCodeAnswers: { [key: string]: string } = {}
@@ -269,7 +267,7 @@ export default function Week2PracticePage() {
     setTestStarted(true)
     const now = Date.now()
     setStartTime(now)
-    
+
     // Initialize start time for first question
     if (questions.length > 0) {
       setQuestionStartTimes({
@@ -307,7 +305,7 @@ export default function Week2PracticePage() {
       const questionStartTime = questionStartTimes[questionId] || Date.now()
       const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000) // in seconds
       const previousTimeSpent = answers[questionId]?.timeSpent || 0
-      
+
       // Update time spent for current question before switching
       setAnswers(prev => ({
         ...prev,
@@ -317,11 +315,11 @@ export default function Week2PracticePage() {
         }
       }))
     }
-    
+
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1
       setCurrentQuestionIndex(nextIndex)
-      
+
       // Set start time for the next question
       const nextQuestion = questions[nextIndex]
       if (nextQuestion && testStarted) {
@@ -341,7 +339,7 @@ export default function Week2PracticePage() {
       const questionStartTime = questionStartTimes[questionId] || Date.now()
       const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000) // in seconds
       const previousTimeSpent = answers[questionId]?.timeSpent || 0
-      
+
       // Update time spent for current question before switching
       setAnswers(prev => ({
         ...prev,
@@ -351,11 +349,11 @@ export default function Week2PracticePage() {
         }
       }))
     }
-    
+
     if (currentQuestionIndex > 0) {
       const prevIndex = currentQuestionIndex - 1
       setCurrentQuestionIndex(prevIndex)
-      
+
       // Set start time for the previous question
       const prevQuestion = questions[prevIndex]
       if (prevQuestion && testStarted) {
@@ -375,7 +373,7 @@ export default function Week2PracticePage() {
       const questionStartTime = questionStartTimes[questionId] || Date.now()
       const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000) // in seconds
       const previousTimeSpent = answers[questionId]?.timeSpent || 0
-      
+
       // Update time spent for current question before switching
       setAnswers(prev => ({
         ...prev,
@@ -385,9 +383,9 @@ export default function Week2PracticePage() {
         }
       }))
     }
-    
+
     setCurrentQuestionIndex(index)
-    
+
     // Set start time for the target question
     const targetQuestion = questions[index]
     if (targetQuestion && testStarted) {
@@ -413,7 +411,7 @@ export default function Week2PracticePage() {
       const questionsAttempted = questions.map((q) => {
         const answerState = answers[q.question_id]
         const isCorrect = answerState?.isCorrect || false
-        
+
         return {
           question_id: q.question_id,
           question: q.question,
@@ -589,7 +587,7 @@ export default function Week2PracticePage() {
               <p className="text-lg text-neutral-light mb-6">
                 {days[day as keyof typeof days]?.title}
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
                 <div className="bg-background-surface rounded-lg p-4 border border-neutral-light/20">
                   <div className="text-3xl font-bold text-primary mb-1">{correct}/{total}</div>
@@ -634,7 +632,7 @@ export default function Week2PracticePage() {
                   </div>
                   <h2 className="text-xl font-semibold text-neutral">Personalized Guidance</h2>
                 </div>
-                
+
                 <div className="mb-4 p-4 rounded-xl bg-background-surface border border-primary/10">
                   <p className="text-neutral leading-relaxed">{testAnalysis.guidance}</p>
                 </div>
@@ -691,11 +689,11 @@ export default function Week2PracticePage() {
                 {testAnalysis.comparison && (
                   <div className="mt-4 pt-4 border-t border-neutral-light/20">
                     <p className="text-xs text-neutral-light">
-                      {testAnalysis.comparison.improvement > 0 
+                      {testAnalysis.comparison.improvement > 0
                         ? `📈 Improved by ${testAnalysis.comparison.improvement}% from your last attempt!`
                         : testAnalysis.comparison.improvement < 0
-                        ? `📉 Score decreased by ${Math.abs(testAnalysis.comparison.improvement)}% - review the material and try again.`
-                        : 'Score is similar to your last attempt. Keep practicing!'}
+                          ? `📉 Score decreased by ${Math.abs(testAnalysis.comparison.improvement)}% - review the material and try again.`
+                          : 'Score is similar to your last attempt. Keep practicing!'}
                     </p>
                   </div>
                 )}
@@ -712,19 +710,17 @@ export default function Week2PracticePage() {
               const selected = answerState?.selected
 
               return (
-                <Card key={question.question_id} className={`border-2 select-none ${
-                  isCorrect ? 'border-green-500/30 bg-green-500/5' : 
-                  isCorrect === false ? 'border-red-500/30 bg-red-500/5' : 
-                  'border-neutral-light/20'
-                }`}>
+                <Card key={question.question_id} className={`border-2 select-none ${isCorrect ? 'border-green-500/30 bg-green-500/5' :
+                  isCorrect === false ? 'border-red-500/30 bg-red-500/5' :
+                    'border-neutral-light/20'
+                  }`}>
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                          isCorrect ? 'bg-green-500 text-white' : 
-                          isCorrect === false ? 'bg-red-500 text-white' : 
-                          'bg-neutral-light/20 text-neutral-light'
-                        }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isCorrect ? 'bg-green-500 text-white' :
+                          isCorrect === false ? 'bg-red-500 text-white' :
+                            'bg-neutral-light/20 text-neutral-light'
+                          }`}>
                           {index + 1}
                         </div>
                         <Badge className={getDifficultyColor(question.question_type)}>
@@ -744,31 +740,29 @@ export default function Week2PracticePage() {
 
                     <div className="mb-4">
                       <p className="text-lg font-semibold text-neutral mb-4 select-none">{question.question}</p>
-                      
+
                       <div className="space-y-2">
                         {question.options.map((option, optIdx) => {
                           const isSelected = selected === option
                           const isCorrectAnswer = option === question.answer
-                          
+
                           return (
                             <div
                               key={optIdx}
-                              className={`p-3 rounded-lg border-2 transition-all ${
-                                isCorrectAnswer
-                                  ? 'bg-green-500/20 border-green-500/50'
-                                  : isSelected && !isCorrectAnswer
+                              className={`p-3 rounded-lg border-2 transition-all ${isCorrectAnswer
+                                ? 'bg-green-500/20 border-green-500/50'
+                                : isSelected && !isCorrectAnswer
                                   ? 'bg-red-500/20 border-red-500/50'
                                   : 'bg-background-elevated border-neutral-light/20'
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
-                                  isCorrectAnswer
-                                    ? 'bg-green-500 text-white'
-                                    : isSelected && !isCorrectAnswer
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${isCorrectAnswer
+                                  ? 'bg-green-500 text-white'
+                                  : isSelected && !isCorrectAnswer
                                     ? 'bg-red-500 text-white'
                                     : 'bg-neutral-light/30 text-neutral-light'
-                                }`}>
+                                  }`}>
                                   {String.fromCharCode(65 + optIdx)}
                                 </div>
                                 <span className="text-neutral select-none">{option}</span>
@@ -882,7 +876,7 @@ export default function Week2PracticePage() {
                 </button>
                 {showQuestionGenerator && (
                   <div className="mt-4">
-                    <QuestionGeneration 
+                    <QuestionGeneration
                       onClose={() => setShowQuestionGenerator(false)}
                       onQuestionsGenerated={(questions) => {
                         console.log('Generated questions:', questions)
@@ -1001,18 +995,17 @@ export default function Week2PracticePage() {
               const ans = answers[q.question_id]
               const isAnswered = ans?.selected !== ''
               const isCurrent = idx === currentQuestionIndex
-              
+
               return (
                 <button
                   key={q.question_id}
                   onClick={() => goToQuestion(idx)}
-                  className={`w-10 h-10 rounded-lg font-semibold text-sm transition-all ${
-                    isCurrent
-                      ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
-                      : isAnswered
+                  className={`w-10 h-10 rounded-lg font-semibold text-sm transition-all ${isCurrent
+                    ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
+                    : isAnswered
                       ? 'bg-green-500/20 text-green-600 border-2 border-green-500/30'
                       : 'bg-background-elevated text-neutral-light border border-neutral-light/20 hover:bg-primary/10'
-                  }`}
+                    }`}
                 >
                   {idx + 1}
                 </button>
@@ -1048,8 +1041,8 @@ export default function Week2PracticePage() {
                 <div className="mt-4">
                   <CodeEditor
                     language={currentQuestion.coding_language || 'javascript'}
-                    initialCode={codeAnswers[currentQuestion.question_id] || currentQuestion.code_template || ''}
-                    onCodeChange={(code) => {
+                    defaultValue={codeAnswers[currentQuestion.question_id] || currentQuestion.code_template || ''}
+                    onChange={(code: string) => {
                       setCodeAnswers(prev => ({
                         ...prev,
                         [currentQuestion.question_id]: code
@@ -1067,23 +1060,21 @@ export default function Week2PracticePage() {
                 <div className="space-y-3">
                   {currentQuestion.options.map((option, optIdx) => {
                     const isSelected = answerState?.selected === option
-                    
+
                     return (
                       <button
                         key={optIdx}
                         onClick={() => handleAnswerSelect(currentQuestion.question_id, option)}
-                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                          isSelected
-                            ? 'bg-primary/20 border-primary text-primary'
-                            : 'bg-background-elevated border-neutral-light/20 text-neutral hover:border-primary/50 hover:bg-primary/5'
-                        }`}
+                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${isSelected
+                          ? 'bg-primary/20 border-primary text-primary'
+                          : 'bg-background-elevated border-neutral-light/20 text-neutral hover:border-primary/50 hover:bg-primary/5'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                            isSelected
-                              ? 'bg-primary text-white'
-                              : 'bg-neutral-light/30 text-neutral-light'
-                          }`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${isSelected
+                            ? 'bg-primary text-white'
+                            : 'bg-neutral-light/30 text-neutral-light'
+                            }`}>
                             {String.fromCharCode(65 + optIdx)}
                           </div>
                           <span className="text-base select-none">{option}</span>
@@ -1105,11 +1096,10 @@ export default function Week2PracticePage() {
           <button
             onClick={goToPreviousQuestion}
             disabled={currentQuestionIndex === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all ${
-              currentQuestionIndex === 0
-                ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
-                : 'bg-background-elevated text-neutral hover:bg-primary/10'
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all ${currentQuestionIndex === 0
+              ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
+              : 'bg-background-elevated text-neutral hover:bg-primary/10'
+              }`}
           >
             <ChevronLeft className="w-5 h-5" />
             Previous
@@ -1130,11 +1120,10 @@ export default function Week2PracticePage() {
           <button
             onClick={goToNextQuestion}
             disabled={currentQuestionIndex === questions.length - 1}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all ${
-              currentQuestionIndex === questions.length - 1
-                ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-primary-dark'
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all ${currentQuestionIndex === questions.length - 1
+              ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-primary-dark'
+              }`}
           >
             Next
             <ChevronRight className="w-5 h-5" />

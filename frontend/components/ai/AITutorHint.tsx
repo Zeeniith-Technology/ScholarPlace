@@ -5,9 +5,9 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { AIService, HintRequest } from '@/lib/aiService'
-import { 
-  Lightbulb, 
-  Loader2, 
+import {
+  Lightbulb,
+  Loader2,
   AlertCircle,
   Sparkles,
   X
@@ -59,12 +59,12 @@ export function AITutorHint({
       }
 
       const response = await AIService.getHint(request)
-      
+
       if (response.success && response.data) {
         const hintData = response.data
         setCurrentHint(hintData)
         setHintsUsed(hintData.hint_number)
-        
+
         // Add to hints history
         setHints(prev => [...prev, {
           hint: hintData.hint,
@@ -171,9 +171,9 @@ export function AITutorHint({
                 )}
               </div>
               <div className="prose prose-sm max-w-none">
-                <div 
+                <div
                   className="text-sm text-neutral leading-relaxed whitespace-pre-wrap"
-                  dangerouslySetInnerHTML={{ 
+                  dangerouslySetInnerHTML={{
                     __html: currentHint.hint
                       .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
                         return `<pre class="bg-neutral-light/10 p-3 rounded-md overflow-x-auto my-3 border border-neutral-light/20"><code class="text-xs font-mono">${code.trim()}</code></pre>`
@@ -231,7 +231,7 @@ export function AITutorHint({
               {hintsUsed > 0 && (
                 <Button
                   onClick={resetHints}
-                  variant="default"
+                  variant="ghost"
                   className="text-sm"
                 >
                   Reset

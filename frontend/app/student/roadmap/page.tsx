@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -80,9 +81,8 @@ export default function StudentRoadmapPage() {
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {/* Header */}
         <div
-          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all duration-700 ${
-            isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-          }`}
+          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+            }`}
         >
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-neutral mb-2 leading-tight">
@@ -100,11 +100,10 @@ export default function StudentRoadmapPage() {
             <button
               key={semester.number}
               onClick={() => setSelectedSemester(semester.number)}
-              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                selectedSemester === semester.number
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all duration-300 transform hover:scale-105 active:scale-95 ${selectedSemester === semester.number
                   ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
                   : 'bg-background-surface text-neutral-light hover:bg-background-elevated hover:text-neutral border border-neutral-light/20 hover:border-primary/30 hover:shadow-md'
-              }`}
+                }`}
             >
               {semester.number}th Semester
             </button>
@@ -115,22 +114,20 @@ export default function StudentRoadmapPage() {
         <Card className="transition-all duration-700 hover:shadow-xl animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <div className="flex items-start gap-4 mb-6">
             <div
-              className={`p-4 rounded-lg ${
-                currentSemester.status === 'current'
+              className={`p-4 rounded-lg ${currentSemester.status === 'current'
                   ? 'bg-primary/20'
                   : currentSemester.status === 'completed'
-                  ? 'bg-secondary/20'
-                  : 'bg-neutral-light/20'
-              }`}
+                    ? 'bg-secondary/20'
+                    : 'bg-neutral-light/20'
+                }`}
             >
               <BookOpen
-                className={`w-6 h-6 sm:w-8 sm:h-8 ${
-                  currentSemester.status === 'current'
+                className={`w-6 h-6 sm:w-8 sm:h-8 ${currentSemester.status === 'current'
                     ? 'text-primary'
                     : currentSemester.status === 'completed'
-                    ? 'text-secondary'
-                    : 'text-neutral-light'
-                }`}
+                      ? 'text-secondary'
+                      : 'text-neutral-light'
+                  }`}
               />
             </div>
             <div className="flex-1">
@@ -193,13 +190,12 @@ export default function StudentRoadmapPage() {
                   {/* Timeline Dot */}
                   <div className="relative z-10 flex-shrink-0">
                     <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center border-4 border-background font-heading font-bold text-lg ${
-                        semester.status === 'completed'
+                      className={`w-16 h-16 rounded-full flex items-center justify-center border-4 border-background font-heading font-bold text-lg ${semester.status === 'completed'
                           ? 'bg-secondary text-white'
                           : semester.status === 'current'
-                          ? 'bg-primary text-white animate-pulse'
-                          : 'bg-neutral-light/20 text-neutral-light'
-                      }`}
+                            ? 'bg-primary text-white animate-pulse'
+                            : 'bg-neutral-light/20 text-neutral-light'
+                        }`}
                     >
                       {semester.status === 'completed' ? (
                         <CheckCircle2 className="w-8 h-8" />
@@ -211,13 +207,12 @@ export default function StudentRoadmapPage() {
 
                   {/* Content */}
                   <Card
-                    className={`flex-1 transition-all duration-300 hover:shadow-lg ${
-                      semester.status === 'current'
+                    className={`flex-1 transition-all duration-300 hover:shadow-lg ${semester.status === 'current'
                         ? 'border-primary/30 bg-primary/5'
                         : semester.status === 'completed'
-                        ? 'border-secondary/30 bg-secondary/5'
-                        : 'border-neutral-light/20'
-                    }`}
+                          ? 'border-secondary/30 bg-secondary/5'
+                          : 'border-neutral-light/20'
+                      }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex-1">

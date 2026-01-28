@@ -72,19 +72,19 @@ export default function PracticeTestHistoryPage() {
     const weekParam = searchParams.get('week')
     const dayParam = searchParams.get('day')
     const studentIdParam = searchParams.get('studentId')
-    
+
     if (weekParam) setFilterWeek(parseInt(weekParam))
     if (dayParam) setFilterDay(dayParam)
-    
+
     fetchPracticeTests(
-      weekParam ? parseInt(weekParam) : null, 
+      weekParam ? parseInt(weekParam) : null,
       dayParam || null,
       studentIdParam || null
     )
   }, [searchParams])
 
   const fetchPracticeTests = async (
-    week: number | null = null, 
+    week: number | null = null,
     day: string | null = null,
     studentId: string | null = null
   ) => {
@@ -106,10 +106,9 @@ export default function PracticeTestHistoryPage() {
 
       const response = await fetch(`${apiBaseUrl}/practice-test/list`, {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(getAuthHeader() ? { Authorization: getAuthHeader() } : {}),
+          ...(getAuthHeader() ? { Authorization: getAuthHeader() as string } : {}),
         },
         body: JSON.stringify({
           filter: filter,
@@ -272,7 +271,7 @@ export default function PracticeTestHistoryPage() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -323,11 +322,10 @@ export default function PracticeTestHistoryPage() {
                       {test.questions_attempted.map((q, idx) => (
                         <div
                           key={q.question_id}
-                          className={`p-4 rounded-lg border ${
-                            q.is_correct
-                              ? 'bg-green-50 border-green-200'
-                              : 'bg-red-50 border-red-200'
-                          }`}
+                          className={`p-4 rounded-lg border ${q.is_correct
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-red-50 border-red-200'
+                            }`}
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
@@ -346,20 +344,19 @@ export default function PracticeTestHistoryPage() {
                               {Math.floor(q.time_spent / 60)}m {q.time_spent % 60}s
                             </span>
                           </div>
-                          
+
                           <p className="text-sm text-neutral mb-3 font-medium">{q.question}</p>
-                          
+
                           <div className="space-y-2 mb-3">
                             {q.options.map((option, optIdx) => (
                               <div
                                 key={optIdx}
-                                className={`p-2 rounded text-sm ${
-                                  option === q.correct_answer
-                                    ? 'bg-green-100 text-green-800 font-semibold'
-                                    : option === q.selected_answer && !q.is_correct
+                                className={`p-2 rounded text-sm ${option === q.correct_answer
+                                  ? 'bg-green-100 text-green-800 font-semibold'
+                                  : option === q.selected_answer && !q.is_correct
                                     ? 'bg-red-100 text-red-800 font-semibold'
                                     : 'bg-neutral-light/10 text-neutral-light'
-                                }`}
+                                  }`}
                               >
                                 {option}
                                 {option === q.correct_answer && ' ✓'}

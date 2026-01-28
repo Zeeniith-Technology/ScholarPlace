@@ -38,7 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 io.use((socket, next) => {
     // Authenticate socket connection using JWT token
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
         return next(new Error('Authentication error: No token provided'));
     }
@@ -46,7 +46,7 @@ io.use((socket, next) => {
     try {
         const secret = process.env.JWT_SECRET || 'your-secret-key';
         const decoded = jwt.verify(token, secret);
-        
+
         socket.userId = decoded.id;
         socket.userRole = decoded.role;
         socket.user = decoded;
@@ -58,10 +58,10 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
     console.log(`✅ User connected: ${socket.userId} (${socket.userRole})`);
-    
+
     // Join user-specific room for progress updates
     socket.join(`user:${socket.userId}`);
-    
+
     // Join admin room if admin/superadmin
     if (socket.userRole === 'Admin' || socket.userRole === 'Superadmin') {
         socket.join('admin');
@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
     socket.on('track-progress', async (data) => {
         try {
             const { week, day, action, progressData } = data;
-            
+
             // Emit progress update to the user's room
             io.to(`user:${socket.userId}`).emit('progress-updated', {
                 week,
@@ -80,7 +80,7 @@ io.on('connection', (socket) => {
                 progressData,
                 timestamp: new Date()
             });
-            
+
             // If admin, also notify admin room
             io.to('admin').emit('student-progress-updated', {
                 userId: socket.userId,
@@ -101,14 +101,14 @@ io.on('connection', (socket) => {
         socket.currentWeek = week;
         socket.currentDay = day;
         socket.sessionStartTime = Date.now();
-        
+
         // Join week-specific room for broadcasting
         socket.join(`week:${week}`);
     });
 
     socket.on('study-session-update', async (data) => {
         const { week, day, timeSpent, progress } = data;
-        
+
         // Emit real-time progress to user
         io.to(`user:${socket.userId}`).emit('study-progress', {
             week,
@@ -142,6 +142,25 @@ connectDB()
         httpServer.listen(port, () => {
             console.log(`🚀 Server connected on port ${port}`);
             console.log(`📡 WebSocket server ready for real-time updates`);
+
+            // 🟢 Render Keep-Alive Logic
+            // Pings the server every 14 minutes (840,000 ms) to prevent sleep
+            if (process.env.NODE_ENV === 'production') {
+                const interval = 14 * 60 * 1000; // 14 minutes
+                const serverUrl = process.env.SERVER_URL ||
+                    (process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL : null);
+
+                if (serverUrl) {
+                    console.log(`⏰ Keep-Alive enabled for: ${serverUrl}`);
+                    setInterval(() => {
+                        fetch(`${serverUrl}/health`)
+                            .then(res => console.log(`🔄 Self-ping success: ${res.status}`))
+                            .catch(err => console.error(`❌ Self-ping failed:`, err.message));
+                    }, interval);
+                } else {
+                    console.log('⚠️ Keep-Alive skipped: SERVER_URL or RENDER_EXTERNAL_URL not set');
+                }
+            }
         });
     })
     .catch((error) => {

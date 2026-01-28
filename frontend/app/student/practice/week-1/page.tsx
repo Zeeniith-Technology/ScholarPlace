@@ -712,15 +712,15 @@ export default function Week1PracticePage() {
 
               return (
                 <Card key={question.question_id} className={`border-2 select-none ${isCorrect ? 'border-green-500/30 bg-green-500/5' :
-                    isCorrect === false ? 'border-red-500/30 bg-red-500/5' :
-                      'border-neutral-light/20'
+                  isCorrect === false ? 'border-red-500/30 bg-red-500/5' :
+                    'border-neutral-light/20'
                   }`}>
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isCorrect ? 'bg-green-500 text-white' :
-                            isCorrect === false ? 'bg-red-500 text-white' :
-                              'bg-neutral-light/20 text-neutral-light'
+                          isCorrect === false ? 'bg-red-500 text-white' :
+                            'bg-neutral-light/20 text-neutral-light'
                           }`}>
                           {index + 1}
                         </div>
@@ -751,18 +751,18 @@ export default function Week1PracticePage() {
                             <div
                               key={optIdx}
                               className={`p-3 rounded-lg border-2 transition-all ${isCorrectAnswer
-                                  ? 'bg-green-500/20 border-green-500/50'
-                                  : isSelected && !isCorrectAnswer
-                                    ? 'bg-red-500/20 border-red-500/50'
-                                    : 'bg-background-elevated border-neutral-light/20'
+                                ? 'bg-green-500/20 border-green-500/50'
+                                : isSelected && !isCorrectAnswer
+                                  ? 'bg-red-500/20 border-red-500/50'
+                                  : 'bg-background-elevated border-neutral-light/20'
                                 }`}
                             >
                               <div className="flex items-center gap-3">
                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${isCorrectAnswer
-                                    ? 'bg-green-500 text-white'
-                                    : isSelected && !isCorrectAnswer
-                                      ? 'bg-red-500 text-white'
-                                      : 'bg-neutral-light/30 text-neutral-light'
+                                  ? 'bg-green-500 text-white'
+                                  : isSelected && !isCorrectAnswer
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-neutral-light/30 text-neutral-light'
                                   }`}>
                                   {String.fromCharCode(65 + optIdx)}
                                 </div>
@@ -1002,10 +1002,10 @@ export default function Week1PracticePage() {
                   key={q.question_id}
                   onClick={() => goToQuestion(idx)}
                   className={`w-10 h-10 rounded-lg font-semibold text-sm transition-all ${isCurrent
-                      ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
-                      : isAnswered
-                        ? 'bg-green-500/20 text-green-600 border-2 border-green-500/30'
-                        : 'bg-background-elevated text-neutral-light border border-neutral-light/20 hover:bg-primary/10'
+                    ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
+                    : isAnswered
+                      ? 'bg-green-500/20 text-green-600 border-2 border-green-500/30'
+                      : 'bg-background-elevated text-neutral-light border border-neutral-light/20 hover:bg-primary/10'
                     }`}
                 >
                   {idx + 1}
@@ -1041,9 +1041,9 @@ export default function Week1PracticePage() {
               {currentQuestion.question_format === 'coding' ? (
                 <div className="mt-4">
                   <CodeEditor
-                    language={currentQuestion.coding_language || 'javascript'}
-                    initialCode={codeAnswers[currentQuestion.question_id] || currentQuestion.code_template || ''}
-                    onCodeChange={(code) => {
+                    language={(currentQuestion.coding_language as any) || 'javascript'}
+                    defaultValue={codeAnswers[currentQuestion.question_id] || currentQuestion.code_template || ''}
+                    onChange={(code: string) => {
                       setCodeAnswers(prev => ({
                         ...prev,
                         [currentQuestion.question_id]: code
@@ -1067,14 +1067,14 @@ export default function Week1PracticePage() {
                         key={optIdx}
                         onClick={() => handleAnswerSelect(currentQuestion.question_id, option)}
                         className={`w-full text-left p-4 rounded-lg border-2 transition-all ${isSelected
-                            ? 'bg-primary/20 border-primary text-primary'
-                            : 'bg-background-elevated border-neutral-light/20 text-neutral hover:border-primary/50 hover:bg-primary/5'
+                          ? 'bg-primary/20 border-primary text-primary'
+                          : 'bg-background-elevated border-neutral-light/20 text-neutral hover:border-primary/50 hover:bg-primary/5'
                           }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${isSelected
-                              ? 'bg-primary text-white'
-                              : 'bg-neutral-light/30 text-neutral-light'
+                            ? 'bg-primary text-white'
+                            : 'bg-neutral-light/30 text-neutral-light'
                             }`}>
                             {String.fromCharCode(65 + optIdx)}
                           </div>
@@ -1098,8 +1098,8 @@ export default function Week1PracticePage() {
             onClick={goToPreviousQuestion}
             disabled={currentQuestionIndex === 0}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all ${currentQuestionIndex === 0
-                ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
-                : 'bg-background-elevated text-neutral hover:bg-primary/10'
+              ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
+              : 'bg-background-elevated text-neutral hover:bg-primary/10'
               }`}
           >
             <ChevronLeft className="w-5 h-5" />
@@ -1122,8 +1122,8 @@ export default function Week1PracticePage() {
             onClick={goToNextQuestion}
             disabled={currentQuestionIndex === questions.length - 1}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all ${currentQuestionIndex === questions.length - 1
-                ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-primary-dark'
+              ? 'bg-neutral-light/10 text-neutral-light cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-primary-dark'
               }`}
           >
             Next

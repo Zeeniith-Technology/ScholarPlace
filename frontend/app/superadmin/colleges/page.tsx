@@ -129,7 +129,7 @@ export default function CollegesManagementPage() {
     try {
       setLoading(true)
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       const filter: any = { deleted: false }
       if (statusFilter !== 'all') {
         filter.collage_status = parseInt(statusFilter)
@@ -172,7 +172,7 @@ export default function CollegesManagementPage() {
   const fetchAllDepartments = async () => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       // Fetch departments
       const authHeader = getAuthHeader()
       if (!authHeader) {
@@ -215,7 +215,7 @@ export default function CollegesManagementPage() {
       // Merge DeptTPC data with departments
       departmentsList = departmentsList.map((dept: Department) => {
         // Find matching DeptTPC account by department_id
-        const matchingDeptTpc = deptTpcList.find((dtpc: any) => 
+        const matchingDeptTpc = deptTpcList.find((dtpc: any) =>
           dtpc.department_id === dept._id || dtpc.department_id?.toString() === dept._id?.toString()
         )
 
@@ -242,7 +242,7 @@ export default function CollegesManagementPage() {
     const verifyAuthAndFetchData = async () => {
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-        
+
         // Verify authentication by fetching profile (requires valid JWT token)
         const authHeader = getAuthHeader()
         if (!authHeader) {
@@ -257,7 +257,7 @@ export default function CollegesManagementPage() {
             'Authorization': authHeader,
           },
         })
-        
+
         // Only redirect on 401/403 (authentication errors)
         if (profileRes.status === 401 || profileRes.status === 403) {
           console.log('[Colleges Page] Authentication failed, clearing token and redirecting to login')
@@ -271,7 +271,7 @@ export default function CollegesManagementPage() {
           // Don't redirect on other errors
           return
         }
-        
+
         const profileResult = await profileRes.json()
         const userRole = profileResult.data?.role || profileResult.data?.person_role
         if (!profileResult.success || userRole !== 'superadmin') {
@@ -280,7 +280,7 @@ export default function CollegesManagementPage() {
           window.location.href = '/superadmin/login'
           return
         }
-        
+
         // Authentication verified via database, now fetch all data from database
         await Promise.all([
           fetchColleges(),
@@ -296,7 +296,7 @@ export default function CollegesManagementPage() {
         }
       }
     }
-    
+
     verifyAuthAndFetchData()
   }, [statusFilter])
 
@@ -386,8 +386,8 @@ export default function CollegesManagementPage() {
         }
 
         const res = await fetch(`${apiBase}/collage/update`, {
-        method: 'POST',
-        headers,
+          method: 'POST',
+          headers,
           body: JSON.stringify({
             filter: { _id: editingCollege._id },
             data: formData,
@@ -416,8 +416,8 @@ export default function CollegesManagementPage() {
         }
 
         const res = await fetch(`${apiBase}/collage/insert`, {
-        method: 'POST',
-        headers,
+          method: 'POST',
+          headers,
           body: JSON.stringify(collegeData),
         })
 
@@ -487,14 +487,14 @@ export default function CollegesManagementPage() {
         ? currentDepts.filter(id => id !== departmentId)
         : [...currentDepts, departmentId]
 
-        const headers = getAuthHeaders()
-        if (!headers) {
-          showToast('Authentication required. Please login again.', 'error')
-          router.push('/superadmin/login')
-          return
-        }
+      const headers = getAuthHeaders()
+      if (!headers) {
+        showToast('Authentication required. Please login again.', 'error')
+        router.push('/superadmin/login')
+        return
+      }
 
-        const res = await fetch(`${apiBase}/collage/update`, {
+      const res = await fetch(`${apiBase}/collage/update`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -533,7 +533,7 @@ export default function CollegesManagementPage() {
     setFormLoading(true)
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       // Validate required fields
       if (!collegeTpcData.name || !collegeTpcData.email || !collegeTpcData.password) {
         showToast('Please fill in all required fields (Name, Email, Password)', 'error')
@@ -588,7 +588,7 @@ export default function CollegesManagementPage() {
     setFormLoading(true)
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       // Validate required fields
       if (!collegeTpcData.name || !collegeTpcData.email || !collegeTpcData.password) {
         showToast('Please fill in all required fields (Name, Email, Password)', 'error')
@@ -643,7 +643,7 @@ export default function CollegesManagementPage() {
     setFormLoading(true)
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       const headers = getAuthHeaders()
       if (!headers) {
         showToast('Authentication required. Please login again.', 'error')
@@ -692,7 +692,7 @@ export default function CollegesManagementPage() {
     setFormLoading(true)
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       const headers = getAuthHeaders()
       if (!headers) {
         showToast('Authentication required. Please login again.', 'error')
@@ -736,14 +736,14 @@ export default function CollegesManagementPage() {
     setFormLoading(true)
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-      
+
       // If creating TPC account, include college ID from selected college
       const departmentData = {
         ...newDepartment,
         department_college_id: selectedCollegeForDept?._id || newDepartment.department_college_id,
         create_tpc_account: createTpcAccount,
       }
-      
+
       const headers = getAuthHeaders()
       if (!headers) {
         showToast('Authentication required. Please login again.', 'error')
@@ -795,14 +795,14 @@ export default function CollegesManagementPage() {
 
       const newStatus = college.collage_status === 1 ? 0 : 1
 
-        const headers = getAuthHeaders()
-        if (!headers) {
-          showToast('Authentication required. Please login again.', 'error')
-          router.push('/superadmin/login')
-          return
-        }
+      const headers = getAuthHeaders()
+      if (!headers) {
+        showToast('Authentication required. Please login again.', 'error')
+        router.push('/superadmin/login')
+        return
+      }
 
-        const res = await fetch(`${apiBase}/collage/update`, {
+      const res = await fetch(`${apiBase}/collage/update`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -869,11 +869,10 @@ export default function CollegesManagementPage() {
         {/* Toast Notification */}
         {toast && (
           <div
-            className={`rounded-md px-4 py-3 text-sm ${
-              toast.type === 'success'
+            className={`rounded-md px-4 py-3 text-sm ${toast.type === 'success'
                 ? 'bg-green-50 text-green-800 border border-green-200'
                 : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
+              }`}
           >
             {toast.message}
           </div>
@@ -1420,7 +1419,7 @@ export default function CollegesManagementPage() {
                             <Button
                               variant={isAssigned ? 'primary' : 'secondary'}
                               onClick={async () => {
-                                await toggleDepartmentAssignment(dept._id!, isAssigned)
+                                await toggleDepartmentAssignment(dept._id!, !!isAssigned)
                               }}
                               className="px-4 text-sm"
                               disabled={formLoading}
@@ -1549,14 +1548,14 @@ export default function CollegesManagementPage() {
                         Create Department TPC User Account
                       </label>
                     </div>
-                    
+
                     {createTpcAccount && (
                       <>
                         <h3 className="text-lg font-semibold text-neutral mb-2">Department TPC Details</h3>
                         <p className="text-sm text-neutral-dark mb-4">
                           Enter Department TPC details to create their user account. Department TPC can only manage their specific department.
                         </p>
-                        
+
                         <Input
                           label="TPC Full Name *"
                           value={newDepartment.department_tpc_name || ''}
@@ -1566,7 +1565,7 @@ export default function CollegesManagementPage() {
                           required={createTpcAccount}
                           placeholder="e.g., John Doe"
                         />
-                        
+
                         <Input
                           label="TPC Email *"
                           value={newDepartment.department_tpc_id || ''}
@@ -1577,7 +1576,7 @@ export default function CollegesManagementPage() {
                           type="email"
                           placeholder="tpc@department.example.com"
                         />
-                        
+
                         <Input
                           label="TPC Contact Number"
                           value={newDepartment.department_tpc_contact || ''}
@@ -1587,7 +1586,7 @@ export default function CollegesManagementPage() {
                           type="tel"
                           placeholder="+91 9876543210"
                         />
-                        
+
                         <div className="relative">
                           <Input
                             label="TPC Password *"
@@ -1617,7 +1616,7 @@ export default function CollegesManagementPage() {
 
                 </form>
               </div>
-              
+
               <div className="p-6 border-t border-neutral-light/20 flex gap-4 flex-shrink-0">
                 <Button
                   type="submit"
@@ -1634,25 +1633,25 @@ export default function CollegesManagementPage() {
                   variant="secondary"
                   onClick={() => {
                     setShowCreateDeptModal(false)
-                        setNewDepartment({
-                          department_name: '',
-                          department_code: '',
-                          department_description: '',
-                          department_status: 1,
-                          department_tpc_name: '',
-                          department_tpc_id: '',
-                          department_tpc_password: '',
-                          department_tpc_contact: '',
-                          department_college_id: '',
-                        })
-                        setShowPassword({})
-                        setCreateTpcAccount(true)
-                      }}
-                      className="px-6"
-                      disabled={formLoading}
-                    >
-                      Cancel
-                    </Button>
+                    setNewDepartment({
+                      department_name: '',
+                      department_code: '',
+                      department_description: '',
+                      department_status: 1,
+                      department_tpc_name: '',
+                      department_tpc_id: '',
+                      department_tpc_password: '',
+                      department_tpc_contact: '',
+                      department_college_id: '',
+                    })
+                    setShowPassword({})
+                    setCreateTpcAccount(true)
+                  }}
+                  className="px-6"
+                  disabled={formLoading}
+                >
+                  Cancel
+                </Button>
               </div>
             </Card>
           </div>
@@ -1702,7 +1701,7 @@ export default function CollegesManagementPage() {
                 >
                   <div>
                     <p className="text-sm text-neutral-dark mb-4">
-                      {tpcOperationMode === 'create' 
+                      {tpcOperationMode === 'create'
                         ? 'Create a new College TPC account. This TPC can manage all departments in this college.'
                         : 'Update the existing College TPC account details. This TPC can manage all departments in this college.'}
                     </p>

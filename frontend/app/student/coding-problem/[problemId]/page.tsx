@@ -69,10 +69,9 @@ export default function CodingProblemPage() {
 
             const response = await fetch(`${apiBaseUrl}/coding-problems/${problemId}`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': authHeader,
+                    'Authorization': authHeader || '',
                 },
             })
 
@@ -101,10 +100,9 @@ export default function CodingProblemPage() {
 
             const response = await fetch(`${apiBaseUrl}/coding-problems/submit`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': authHeader,
+                    'Authorization': authHeader || '',
                 },
                 body: JSON.stringify({
                     problemId: problemId,
@@ -283,7 +281,7 @@ export default function CodingProblemPage() {
                             <h3 className="text-md font-semibold text-neutral mb-2">Concepts Tested</h3>
                             <div className="flex flex-wrap gap-2">
                                 {problem.concepts_tested.map((concept, index) => (
-                                    <Badge key={index} variant="info">{concept}</Badge>
+                                    <Badge key={index} variant="secondary">{concept}</Badge>
                                 ))}
                             </div>
                         </Card>
@@ -307,8 +305,7 @@ export default function CodingProblemPage() {
                             <div className="mt-4 flex gap-3">
                                 <Button
                                     onClick={handleSubmit}
-                                    fullWidth
-                                    className="flex items-center justify-center gap-2"
+                                    className="flex items-center justify-center gap-2 w-full"
                                 >
                                     <CheckCircle2 className="w-4 h-4" />
                                     Submit Solution

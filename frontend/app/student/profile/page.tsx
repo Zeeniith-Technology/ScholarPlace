@@ -62,7 +62,7 @@ export default function StudentProfilePage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
-  
+
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
   const [stats, setStats] = useState<ProfileStats>({
     testsCompleted: 0,
@@ -70,7 +70,7 @@ export default function StudentProfilePage() {
     dayStreak: 7,
     currentRank: 0,
   })
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -92,7 +92,7 @@ export default function StudentProfilePage() {
     // Debug: Log current user from token
     const currentUser = getCurrentUserFromToken()
     console.log('[Profile] Current user from token:', currentUser)
-    
+
     fetchProfile()
     fetchStats()
   }, [])
@@ -103,14 +103,14 @@ export default function StudentProfilePage() {
       setError(null)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
         console.error('[Profile] No auth token found')
         setError('Authentication required. Please login again.')
         setIsLoading(false)
         return
       }
-      
+
       const response = await fetch(`${apiBaseUrl}/profile/get`, {
         method: 'POST',
         credentials: 'include',
@@ -154,12 +154,12 @@ export default function StudentProfilePage() {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
         console.error('[Profile] No auth token found')
         return
       }
-      
+
       // Fetch progress summary for statistics
       const progressResponse = await fetch(`${apiBaseUrl}/student-progress/summary`, {
         method: 'POST',
@@ -177,8 +177,8 @@ export default function StudentProfilePage() {
           const progress = progressData.data
           setStats({
             testsCompleted: progress.totalPracticeTests || 0,
-            overallProgress: progress.totalWeeks > 0 
-              ? Math.round((progress.weeksCompleted / progress.totalWeeks) * 100) 
+            overallProgress: progress.totalWeeks > 0
+              ? Math.round((progress.weeksCompleted / progress.totalWeeks) * 100)
               : 0,
             dayStreak: 7, // TODO: Calculate from last accessed dates
             currentRank: 0, // TODO: Calculate from all students
@@ -207,12 +207,12 @@ export default function StudentProfilePage() {
       }
 
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
-        showToast('Authentication required. Please login again.', 'error')
+        setError('Authentication required. Please login again.')
         return
       }
-      
+
       const response = await fetch(`${apiBaseUrl}/profile/update`, {
         method: 'POST',
         credentials: 'include',
@@ -281,12 +281,12 @@ export default function StudentProfilePage() {
 
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
-        showToast('Authentication required. Please login again.', 'error')
+        setError('Authentication required. Please login again.')
         return
       }
-      
+
       const response = await fetch(`${apiBaseUrl}/profile/change-password`, {
         method: 'POST',
         credentials: 'include',
@@ -498,8 +498,8 @@ export default function StudentProfilePage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     onClick={handlePasswordChange}
                     disabled={isChangingPassword}
                   >
