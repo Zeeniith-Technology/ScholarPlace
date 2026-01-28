@@ -1,0 +1,830 @@
+[
+    {
+        "problem_id": "Q001",
+        "metadata": {
+            "week": 1,
+            "day": 1,
+            "topic": "Input/Output",
+            "title": "Welcome to Coding",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "TCS",
+                "Infosys"
+            ],
+            "learning_outcomes": [
+                "Basic Syntax",
+                "Output Formatting"
+            ]
+        },
+        "problem_statement": {
+            "description": "Write a program that prints 'Welcome to the World of Coding' to the standard output.",
+            "constraints": [
+                "None"
+            ],
+            "input_format": "No input is required.",
+            "output_format": "Print the exact string: Welcome to the World of Coding",
+            "example": {
+                "input": "",
+                "output": "Welcome to the World of Coding",
+                "explanation": "The program simply prints the welcome message."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "",
+                "expected_output": "Welcome to the World of Coding",
+                "explanation": "Standard output check.",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "Any Input",
+                "expected_output": "Welcome to the World of Coding",
+                "explanation": "Ignores input.",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use the print function of your language.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Ensure exact spelling and capitalization.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "No newline is strictly required unless specified, but standard print adds one.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "This is the simplest program possible.",
+                "hint_type": "conceptual"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Direct print statement."
+        }
+    },
+    {
+        "problem_id": "Q002",
+        "metadata": {
+            "week": 1,
+            "day": 1,
+            "topic": "Variables",
+            "title": "Sum of Two Integers",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Wipro",
+                "HCL"
+            ],
+            "learning_outcomes": [
+                "Input Parsing",
+                "Arithmetic Operations"
+            ]
+        },
+        "problem_statement": {
+            "description": "Write a program that takes two integers as input and prints their sum.",
+            "constraints": [
+                "-10^9 <= A, B <= 10^9"
+            ],
+            "input_format": "Two space-separated integers A and B.",
+            "output_format": "Print the sum of A and B.",
+            "example": {
+                "input": "10 20",
+                "output": "30",
+                "explanation": "10 + 20 = 30"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 7",
+                "expected_output": "12",
+                "explanation": "5 + 7 = 12",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "-5 -10",
+                "expected_output": "-15",
+                "explanation": "Negative numbers",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1000000000 1000000000",
+                "expected_output": "2000000000",
+                "explanation": "Large numbers within int range",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Read the two integers from input.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use the + operator.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Ensure you handle negative numbers correctly.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Check if your language uses 32-bit or 64-bit integers implicitly.",
+                "hint_type": "interview"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Direct addition."
+        }
+    },
+    {
+        "problem_id": "Q003",
+        "metadata": {
+            "week": 1,
+            "day": 1,
+            "topic": "Variables",
+            "title": "Swap Two Numbers",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Accenture"
+            ],
+            "learning_outcomes": [
+                "Variable Assignment",
+                "Logic Building"
+            ]
+        },
+        "problem_statement": {
+            "description": "Write a program to swap two numbers provided as input.",
+            "constraints": [
+                "-1000 <= A, B <= 1000"
+            ],
+            "input_format": "Two space-separated integers A and B.",
+            "output_format": "Print the swapped values separated by a space.",
+            "example": {
+                "input": "2 3",
+                "output": "3 2",
+                "explanation": "A becomes 3, B becomes 2."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 10",
+                "expected_output": "10 5",
+                "explanation": "Normal swap",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "-1 1",
+                "expected_output": "1 -1",
+                "explanation": "Swap with negative",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0 0",
+                "expected_output": "0 0",
+                "explanation": "Same numbers",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "You can use a temporary variable.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "temp = a; a = b; b = temp;",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Can you do it without a temporary variable? (XOR or Addition)",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Be careful with overflow if using Addition method.",
+                "hint_type": "trade_off"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Using temp variable is standard, XOR is a trick."
+        }
+    },
+    {
+        "problem_id": "Q004",
+        "metadata": {
+            "week": 1,
+            "day": 1,
+            "topic": "Operators",
+            "title": "Area of Rectangle",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Arithmetic",
+                "Formula Implementation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Calculate the area of a rectangle given its length and width.",
+            "constraints": [
+                "1 <= L, W <= 1000"
+            ],
+            "input_format": "Two positive integers L and W.",
+            "output_format": "Print the area.",
+            "example": {
+                "input": "5 4",
+                "output": "20",
+                "explanation": "5 * 4 = 20"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "10 5",
+                "expected_output": "50",
+                "explanation": "10 * 5 = 50",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 1",
+                "expected_output": "1",
+                "explanation": "Smallest inputs",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1000 1000",
+                "expected_output": "1000000",
+                "explanation": "Largest inputs",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Area = Length * Width",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Ensure you output just the number.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Inputs are guaranteed positive.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Check variable type size for result (int is sufficient here).",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Multiply and print."
+        }
+    },
+    {
+        "problem_id": "Q005",
+        "metadata": {
+            "week": 1,
+            "day": 1,
+            "topic": "Data Types",
+            "title": "Float Precision",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Cognizant"
+            ],
+            "learning_outcomes": [
+                "Floating Point",
+                "Formatting"
+            ]
+        },
+        "problem_statement": {
+            "description": "Write a program that takes two floating point numbers, divides the first by the second, and prints the result rounded to 2 decimal places.",
+            "constraints": [
+                "-1000.0 <= A, B <= 1000.0",
+                "B != 0"
+            ],
+            "input_format": "Two numbers A and B.",
+            "output_format": "Result formatted to 2 decimal places.",
+            "example": {
+                "input": "5.0 2.0",
+                "output": "2.50",
+                "explanation": "5/2 = 2.5, formatted to 2.50"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "10.0 3.0",
+                "expected_output": "3.33",
+                "explanation": "Repeating decimal",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "4.0 2.0",
+                "expected_output": "2.00",
+                "explanation": "Exact division",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1.0 0.005",
+                "expected_output": "200.00",
+                "explanation": "Division by small number",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use float or double types.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Look for formatted print functions like printf or format().",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "B will not be zero per constraints.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Standard rounding rules apply.",
+                "hint_type": "conceptual"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Division and formatting."
+        }
+    },
+    {
+        "problem_id": "Q006",
+        "metadata": {
+            "week": 1,
+            "day": 2,
+            "topic": "Conditionals",
+            "title": "Even or Odd",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Modulus Operator",
+                "If-Else"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a given integer is even or odd.",
+            "constraints": [
+                "-10^9 <= N <= 10^9"
+            ],
+            "input_format": "An integer N.",
+            "output_format": "Print 'Even' if even, 'Odd' if odd.",
+            "example": {
+                "input": "5",
+                "output": "Odd",
+                "explanation": "5 is not divisible by 2."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2",
+                "expected_output": "Even",
+                "explanation": "2 divisible by 2",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "Even",
+                "explanation": "0 is even",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "-3",
+                "expected_output": "Odd",
+                "explanation": "Negative odd number",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use the modulus operator %.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "N % 2 == 0 means even.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Be careful, negative numbers % 2 might return -1 in some languages.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Bitwise AND (N & 1) is an optimization.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "N % 2 or N & 1."
+        }
+    },
+    {
+        "problem_id": "Q007",
+        "metadata": {
+            "week": 1,
+            "day": 2,
+            "topic": "Conditionals",
+            "title": "Largest of Three Numbers",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Capgemini"
+            ],
+            "learning_outcomes": [
+                "Logical Operators",
+                "Comparison"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the largest among three distinct numbers entered by the user.",
+            "constraints": [
+                "-1000 <= A, B, C <= 1000"
+            ],
+            "input_format": "Three space-separated integers.",
+            "output_format": "Print the largest number.",
+            "example": {
+                "input": "1 5 3",
+                "output": "5",
+                "explanation": "5 is greater than 1 and 3."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "10 20 30",
+                "expected_output": "30",
+                "explanation": "C is largest",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "50 20 10",
+                "expected_output": "50",
+                "explanation": "A is largest",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "-10 -20 -5",
+                "expected_output": "-5",
+                "explanation": "Negative numbers",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Compare A vs B first, then the winner vs C.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use logical AND (&&) to combine conditions.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If A > B and A > C, then A is largest.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Consider if numbers can be equal (input says distinct, but good to handle).",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Comparison logic."
+        }
+    },
+    {
+        "problem_id": "Q008",
+        "metadata": {
+            "week": 1,
+            "day": 2,
+            "topic": "Conditionals",
+            "title": "Grade Calculator",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Infosys"
+            ],
+            "learning_outcomes": [
+                "Else-If Ladder",
+                "Ranges"
+            ]
+        },
+        "problem_statement": {
+            "description": "Write a program to assign grades based on marks. 90-100: A, 80-89: B, 70-79: C, 60-69: D, <60: F.",
+            "constraints": [
+                "0 <= Marks <= 100"
+            ],
+            "input_format": "An integer representing Marks.",
+            "output_format": "Print the Grade Character.",
+            "example": {
+                "input": "85",
+                "output": "B",
+                "explanation": "85 is in 80-89 range."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "95",
+                "expected_output": "A",
+                "explanation": ">= 90",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "59",
+                "expected_output": "F",
+                "explanation": "< 60",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "70",
+                "expected_output": "C",
+                "explanation": "Boundary checking",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Check ranges from top to bottom.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use if-else if structure.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Ensure you handle boundary values (e.g., exactly 90) correctly.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Marks will always be between 0 and 100.",
+                "hint_type": "conceptual"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Ladder if-else."
+        }
+    },
+    {
+        "problem_id": "Q009",
+        "metadata": {
+            "week": 1,
+            "day": 2,
+            "topic": "Conditionals",
+            "title": "Leap Year",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "TCS",
+                "Accenture"
+            ],
+            "learning_outcomes": [
+                "Complex Logic",
+                "Modulo"
+            ]
+        },
+        "problem_statement": {
+            "description": "Determine whether a given year is a leap year. A year is leap if divisible by 4, unless divisible by 100 but not 400.",
+            "constraints": [
+                "1000 <= Year <= 9999"
+            ],
+            "input_format": "An integer Year.",
+            "output_format": "Print 'Yes' if leap, 'No' otherwise.",
+            "example": {
+                "input": "2000",
+                "output": "Yes",
+                "explanation": "Divisible by 400."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2024",
+                "expected_output": "Yes",
+                "explanation": "Divisible by 4, not 100",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2100",
+                "expected_output": "No",
+                "explanation": "Divisible by 100, not 400",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2000",
+                "expected_output": "Yes",
+                "explanation": "Divisible by 400",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Leap year logic: divisible by 4 AND (not divisible by 100 OR divisible by 400).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Order of checks matters.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Year % 4 == 0 is the primary condition.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Pay attention to centuries (1900, 2100 are not leap years, 2000 is).",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "One combined boolean expression."
+        }
+    },
+    {
+        "problem_id": "Q010",
+        "metadata": {
+            "week": 1,
+            "day": 2,
+            "topic": "Switch Case",
+            "title": "Simple Calculator",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Switch Case",
+                "Input Handling"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement a simple calculator that performs +, -, *, or / based on operator input.",
+            "constraints": [
+                "-1000 <= A, B <= 1000",
+                "Operator in {+, -, *, /}"
+            ],
+            "input_format": "Space separated: A Operator B",
+            "output_format": "Result of the operation.",
+            "example": {
+                "input": "10 + 5",
+                "output": "15",
+                "explanation": "Addition performed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "10 * 5",
+                "expected_output": "50",
+                "explanation": "Multiplication",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "10 / 2",
+                "expected_output": "5",
+                "explanation": "Division",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5 - 10",
+                "expected_output": "-5",
+                "explanation": "Subtraction",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use a switch-case or if-else ladder on the operator character.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "For division, assume integer division unless floating point is specified (here standard example implies integer).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Watch out for division by zero logic, though constraints say A,B are integers, usually assume valid input unless specified.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Parse the operator carefully as a character or string.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Switch statement."
+        }
+    }
+]

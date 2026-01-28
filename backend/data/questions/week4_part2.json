@@ -1,0 +1,828 @@
+[
+    {
+        "problem_id": "Q101",
+        "metadata": {
+            "week": 4,
+            "day": 4,
+            "topic": "Tree",
+            "title": "Path Sum",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Recursion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given a binary tree and a target sum, determine if the tree has a root-to-leaf path sum equal to target.",
+            "constraints": [
+                "Nodes <= 5000"
+            ],
+            "input_format": "Root, TargetSum.",
+            "output_format": "True or False.",
+            "example": {
+                "input": "5 4 8 11 null 13 4 7 2 null null null 1, 22",
+                "output": "True",
+                "explanation": "5+4+11+2 = 22."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2 3, 5",
+                "expected_output": "False",
+                "explanation": "Paths 3 (1+2), 4 (1+3)",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 2, 0",
+                "expected_output": "False",
+                "explanation": "Min sum 3",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2, 3",
+                "expected_output": "True",
+                "explanation": "1+2=3",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Subtract generic node value from target as you go down.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Base case: if Leaf, check if target == val.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Recursive step: pathSum(left, target-val) OR pathSum(right, target-val).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If node is null return false.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "DFS."
+        }
+    },
+    {
+        "problem_id": "Q102",
+        "metadata": {
+            "week": 4,
+            "day": 4,
+            "topic": "Tree",
+            "title": "Path Sum II",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Bloomberg"
+            ],
+            "learning_outcomes": [
+                "Backtracking on Tree"
+            ]
+        },
+        "problem_statement": {
+            "description": "Return all root-to-leaf paths where sum equals target.",
+            "constraints": [
+                "Nodes <= 5000"
+            ],
+            "input_format": "Root, TargetSum.",
+            "output_format": "List of paths.",
+            "example": {
+                "input": "5 4 8... (Same as Q101), 22",
+                "output": "[5,4,11,2], [5,8,4,5]",
+                "explanation": "All valid paths."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2 3, 5",
+                "expected_output": "[]",
+                "explanation": "No paths",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1, 1",
+                "expected_output": "[1]",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5 4 8 11 null 13 4 7 2 5 1, 22",
+                "expected_output": "[5,4,11,2], [5,8,4,5]",
+                "explanation": "Multiple paths",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Keep current path list.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Push node to path list.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Recurse left and right.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Backtrack: Remove node from path list before returning.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "DFS + Backtracking."
+        }
+    },
+    {
+        "problem_id": "Q103",
+        "metadata": {
+            "week": 4,
+            "day": 4,
+            "topic": "Tree",
+            "title": "Diameter of Binary Tree",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Height Calculation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Length of longest path between any two nodes. Path may not pass through root.",
+            "constraints": [
+                "Nodes <= 10000"
+            ],
+            "input_format": "Root.",
+            "output_format": "Integer Diameter.",
+            "example": {
+                "input": "1 2 3 4 5",
+                "output": "3",
+                "explanation": "Path 4-2-1-3 or 5-2-1-3."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2",
+                "expected_output": "1",
+                "explanation": "Path 2-1",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "0",
+                "explanation": "No edge",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 3 4 5 null null 6 null 7",
+                "expected_output": "4",
+                "explanation": "6-4-2-5-7",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "For each node, diameter through it is height(left) + height(right).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Calculate height of each node.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Update global max diameter during height calculation.",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return height (max(L,R)+1) to parent.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Post-order traversal."
+        }
+    },
+    {
+        "problem_id": "Q104",
+        "metadata": {
+            "week": 4,
+            "day": 4,
+            "topic": "Tree",
+            "title": "Balanced Binary Tree",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Tree Height"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a binary tree is height-balanced (depth of subtrees differ by at most 1).",
+            "constraints": [
+                "Nodes <= 5000"
+            ],
+            "input_format": "Root.",
+            "output_format": "True or False.",
+            "example": {
+                "input": "3 9 20 null null 15 7",
+                "output": "True",
+                "explanation": "Balanced."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2 2 3 3 null null 4 4",
+                "expected_output": "False",
+                "explanation": "Unbalanced",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "True",
+                "explanation": "Empty is balanced",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2",
+                "expected_output": "True",
+                "explanation": "Leaning but balanced",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Calculate height of left and right subtrees.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If |L - R| > 1, return false.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Also recursively check if left and right are balanced.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Can optimize by returning -1 for unbalanced in height function.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Bottom-up Recursion."
+        }
+    },
+    {
+        "problem_id": "Q105",
+        "metadata": {
+            "week": 4,
+            "day": 5,
+            "topic": "Tree",
+            "title": "Serialize and Deserialize Binary Tree",
+            "difficulty_level": "HARD",
+            "difficulty_stars": 4,
+            "estimated_time_minutes": 30,
+            "category": "DSA",
+            "company_tags": [
+                "Uber",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "String Formatting",
+                "Tree Construction"
+            ]
+        },
+        "problem_statement": {
+            "description": "Design an algorithm to serialize a tree to a string and deserialize it back.",
+            "constraints": [
+                "Nodes <= 10000"
+            ],
+            "input_format": "Root (for serialize) / String (for deserialize).",
+            "output_format": "String / Root.",
+            "example": {
+                "input": "1 2 3 null null 4 5",
+                "output": "1,2,X,X,3,4,X,X,5,X,X",
+                "explanation": "Preorder with X for null."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1",
+                "expected_output": "1,X,X",
+                "explanation": "Single",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "X",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2",
+                "expected_output": "1,2,X,X,X",
+                "explanation": "Preorder",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use Preorder traversal.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Include nulls as special character 'X' or 'null'.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "For deserialize, split string by comma.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use a queue or index pointer to reconstruct recursively.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Preorder with Null markers."
+        }
+    },
+    {
+        "problem_id": "Q106",
+        "metadata": {
+            "week": 4,
+            "day": 5,
+            "topic": "Graph",
+            "title": "Find Center of Star Graph",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Graph Properties"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the center node of a star graph (center connects to all other nodes).",
+            "constraints": [
+                "3 <= N <= 10^5"
+            ],
+            "input_format": "Edges list.",
+            "output_format": "Center node.",
+            "example": {
+                "input": "[[1,2], [2,3], [4,2]]",
+                "output": "2",
+                "explanation": "2 intersects all."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "[[1,2],[5,1],[1,3],[1,4]]",
+                "expected_output": "1",
+                "explanation": "1 is common",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "[[1,2], [2,3]]",
+                "expected_output": "2",
+                "explanation": "Only need first two edges",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "[[1,3],[2,3]]",
+                "expected_output": "3",
+                "explanation": "3 is answer",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Center node must appear in every edge.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Check only the first two edges.",
+                "hint_type": "opitmization"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If u1 == u2 OR u1 == v2, then u1 is center.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Otherwise v1 must be center.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Compare first two edges."
+        }
+    },
+    {
+        "problem_id": "Q107",
+        "metadata": {
+            "week": 4,
+            "day": 5,
+            "topic": "Graph",
+            "title": "BFS of Graph",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "BFS"
+            ]
+        },
+        "problem_statement": {
+            "description": "Perform BFS traversal of a graph starting from node 0.",
+            "constraints": [
+                "N nodes"
+            ],
+            "input_format": "Adj List.",
+            "output_format": "Array of nodes.",
+            "example": {
+                "input": "0: [1,2], 1:[2], 2:[0,3], 3:[]",
+                "output": "0 1 2 3",
+                "explanation": "Level order."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0:[1,2],1:[2],2:[]",
+                "expected_output": "0 1 2",
+                "explanation": "Simple",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0:[]",
+                "expected_output": "0",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0:[1],1:[2],2:[3],3:[]",
+                "expected_output": "0 1 2 3",
+                "explanation": "Line",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use Queue for BFS.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Keep Visited array.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Mark start node visited and enqueue.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "While queue not empty, dequeue u, visit neighbors v. If v not visited, mark and enqueue.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(V+E)",
+            "space_complexity": "O(V)",
+            "optimal_approach": "BFS."
+        }
+    },
+    {
+        "problem_id": "Q108",
+        "metadata": {
+            "week": 4,
+            "day": 5,
+            "topic": "Graph",
+            "title": "DFS of Graph",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "DFS"
+            ]
+        },
+        "problem_statement": {
+            "description": "Perform DFS traversal starting from node 0 (assume connected or visit components).",
+            "constraints": [
+                "N nodes"
+            ],
+            "input_format": "Adj List.",
+            "output_format": "Array of nodes.",
+            "example": {
+                "input": "0: [1,2], 1:[2], 2:[3]",
+                "output": "0 1 2 3",
+                "explanation": "DFS order."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0:[1,2], 1:[2], 2:[]",
+                "expected_output": "0 1 2",
+                "explanation": "Depth first",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0:[]",
+                "expected_output": "0",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0:[1],1:[0]",
+                "expected_output": "0 1",
+                "explanation": "Cycle handled by visited",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use recursion or Stack.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Maintain Visited array to avoid cycles.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Visit u, mark visited, then recursively visit all unvisited neighbors.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Print node when visiting.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(V+E)",
+            "space_complexity": "O(V)",
+            "optimal_approach": "DFS."
+        }
+    },
+    {
+        "problem_id": "Q109",
+        "metadata": {
+            "week": 4,
+            "day": 6,
+            "topic": "Graph",
+            "title": "Number of Islands",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Connected Components"
+            ]
+        },
+        "problem_statement": {
+            "description": "Count number of islands in a binary grid (1 is land, 0 is water).",
+            "constraints": [
+                "Grid size <= 300x300"
+            ],
+            "input_format": "2D Grid.",
+            "output_format": "Integer count.",
+            "example": {
+                "input": "11000\n11000\n00100\n00011",
+                "output": "3",
+                "explanation": "Islands."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "111\n010\n111",
+                "expected_output": "1",
+                "explanation": "All connected",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "000\n000",
+                "expected_output": "0",
+                "explanation": "No land",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "101\n010\n101",
+                "expected_output": "5",
+                "explanation": "Diagonal not connected",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Iterate through each cell.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If cell is '1' and not visited, increment count and trigger traversal.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Traversal (DFS/BFS) marks all connected '1's as visited.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "You can modify grid to '0' to mark visited without extra space.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(M*N)",
+            "space_complexity": "O(M*N) or O(min(M,N)) stack",
+            "optimal_approach": "DFS/BFS."
+        }
+    },
+    {
+        "problem_id": "Q110",
+        "metadata": {
+            "week": 4,
+            "day": 6,
+            "topic": "Graph",
+            "title": "Flood Fill",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Classic"
+            ],
+            "learning_outcomes": [
+                "Matrix Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Perform flood fill on an image (start node, new color). Replaces connected pixels of same color.",
+            "constraints": [
+                "Grid <= 50x50"
+            ],
+            "input_format": "Image, sr, sc, newColor.",
+            "output_format": "Modified Image.",
+            "example": {
+                "input": "1 1 1\n1 1 0\n1 0 1, sr=1, sc=1, new=2",
+                "output": "2 2 2\n2 2 0\n2 0 1",
+                "explanation": "Filled."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0 0 0, 0, 0, 1",
+                "expected_output": "1 1 1",
+                "explanation": "All connected",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 1 1, 1, 1, 1",
+                "expected_output": "1 1 1",
+                "explanation": "Same color",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 0 1, 0, 0, 2",
+                "expected_output": "2 0 1",
+                "explanation": "Disconnected",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Get start color.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If start color == new color, return immediately.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "DFS/BFS from (sr, sc).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If neighbor has start color, change to new color and recurse.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(M*N)",
+            "space_complexity": "O(M*N)",
+            "optimal_approach": "DFS."
+        }
+    }
+]

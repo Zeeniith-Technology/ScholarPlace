@@ -1,0 +1,834 @@
+[
+    {
+        "problem_id": "Q131",
+        "metadata": {
+            "week": 5,
+            "day": 4,
+            "topic": "Dynamic Programming",
+            "title": "Maximum Product Subarray",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google",
+                "LinkedIn"
+            ],
+            "learning_outcomes": [
+                "Traverse both ends",
+                "DP with Min/Max"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find contiguous subarray with largest product.",
+            "constraints": [
+                "N <= 20000",
+                "Integers"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Max Product.",
+            "example": {
+                "input": "2 3 -2 4",
+                "output": "6",
+                "explanation": "2*3."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "-2 0 -1",
+                "expected_output": "0",
+                "explanation": "Max is 0",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "-2",
+                "expected_output": "-2",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "-2 3 -4",
+                "expected_output": "24",
+                "explanation": "-2*3*-4",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Product can become positive if two negatives multiplied.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Maintain curMax and curMin used to handle negatives.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If num < 0, swap curMax and curMin.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "curMax = max(num, curMax*num).",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Track Min/Max."
+        }
+    },
+    {
+        "problem_id": "Q132",
+        "metadata": {
+            "week": 5,
+            "day": 4,
+            "topic": "Greedy",
+            "title": "Jump Game",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Apple"
+            ],
+            "learning_outcomes": [
+                "Greedy"
+            ]
+        },
+        "problem_statement": {
+            "description": "Determine if you can reach the last index from the first.",
+            "constraints": [
+                "N <= 10^4"
+            ],
+            "input_format": "Array nums (max jump length).",
+            "output_format": "True or False.",
+            "example": {
+                "input": "2 3 1 1 4",
+                "output": "True",
+                "explanation": "Reach 1 from 0, then 4."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 2 1 0 4",
+                "expected_output": "False",
+                "explanation": "Stuck at 0",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "True",
+                "explanation": "Already at last",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2 0 0",
+                "expected_output": "True",
+                "explanation": "Jump over 0s",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Greedy: Maintain 'furthest' reachable index.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterate i. If i > furthest, return False.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Update furthest = max(furthest, i + nums[i]).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If furthest >= N-1, return True.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Greedy."
+        }
+    },
+    {
+        "problem_id": "Q133",
+        "metadata": {
+            "week": 5,
+            "day": 4,
+            "topic": "Greedy",
+            "title": "Jump Game II",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "BFS via Greedy"
+            ]
+        },
+        "problem_statement": {
+            "description": "Min jumps to reach the last index. Assume you can always reach it.",
+            "constraints": [
+                "N <= 10^4"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Min Jumps.",
+            "example": {
+                "input": "2 3 1 1 4",
+                "output": "2",
+                "explanation": "0 -> 1 -> 4."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 3 0 1 4",
+                "expected_output": "2",
+                "explanation": "Optimal",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 1",
+                "expected_output": "1",
+                "explanation": "One jump",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0",
+                "expected_output": "0",
+                "explanation": "Start",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "BFS-like, but optimized.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Track current_end of jump and furthest reachable.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Iterate. Update furthest.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "When i reaches current_end, increment jumps, set current_end = furthest.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Greedy."
+        }
+    },
+    {
+        "problem_id": "Q134",
+        "metadata": {
+            "week": 5,
+            "day": 4,
+            "topic": "Greedy",
+            "title": "Gas Station",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Diff Accumulation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find start index to travel around circular route once. Return -1 if impossible.",
+            "constraints": [
+                "N <= 10^5"
+            ],
+            "input_format": "Gas array, Cost array.",
+            "output_format": "Start Index.",
+            "example": {
+                "input": "1 2 3 4 5, 3 4 5 1 2",
+                "output": "3",
+                "explanation": "Start at index 3 (val 4)."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 3 4, 3 4 3",
+                "expected_output": "-1",
+                "explanation": "Total gas < cost",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "5, 4",
+                "expected_output": "0",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3 1 1, 1 2 2",
+                "expected_output": "0",
+                "explanation": "Just enough",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "If total gas < total cost, return -1.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If meaningful start exists, it is unique.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Iterate, add gas[i]-cost[i] to current_tank.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If current_tank < 0, reset start to i+1 and tank to 0.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Single Pass."
+        }
+    },
+    {
+        "problem_id": "Q135",
+        "metadata": {
+            "week": 5,
+            "day": 5,
+            "topic": "Bit Manipulation",
+            "title": "Counting Bits",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Bitwise DP"
+            ]
+        },
+        "problem_statement": {
+            "description": "Return array of number of 1s in binary representation for 0 to n.",
+            "constraints": [
+                "N <= 10^5"
+            ],
+            "input_format": "Integer n.",
+            "output_format": "Array.",
+            "example": {
+                "input": "2",
+                "output": "0 1 1",
+                "explanation": "0(0), 1(1), 2(10)."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5",
+                "expected_output": "0 1 1 2 1 2",
+                "explanation": "Standard",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "0",
+                "explanation": "Zero",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1",
+                "expected_output": "0 1",
+                "explanation": "One",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "O(N log N) is trivial (popcount each).",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "DP: count[i] = count[i >> 1] + (i & 1).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "i & 1 checks if odd.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "i >> 1 is i/2.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "DP Bitwise."
+        }
+    },
+    {
+        "problem_id": "Q136",
+        "metadata": {
+            "week": 5,
+            "day": 5,
+            "topic": "Bit Manipulation",
+            "title": "Single Number",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google",
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "XOR Property"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the element that appears once (others appear twice).",
+            "constraints": [
+                "O(N) Time, O(1) Space"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Value.",
+            "example": {
+                "input": "2 2 1",
+                "output": "1",
+                "explanation": "1 is unique."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "4 1 2 1 2",
+                "expected_output": "4",
+                "explanation": "Pairs cancel",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "-1 -1 -2",
+                "expected_output": "-2",
+                "explanation": "Negative",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "XOR of same numbers is 0.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "XOR of x and 0 is x.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "XOR all elements.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Result is the single number.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "XOR."
+        }
+    },
+    {
+        "problem_id": "Q137",
+        "metadata": {
+            "week": 5,
+            "day": 5,
+            "topic": "Bit Manipulation",
+            "title": "Missing Number",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Sum Formula vs XOR"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find missing number in range [0, n].",
+            "constraints": [
+                "N distinct numbers"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Missing int.",
+            "example": {
+                "input": "3 0 1",
+                "output": "2",
+                "explanation": "2 missing from 0..3."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0 1",
+                "expected_output": "2",
+                "explanation": "Range 0..2",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "9 6 4 2 3 5 7 0 1",
+                "expected_output": "8",
+                "explanation": "8 missing",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0",
+                "expected_output": "1",
+                "explanation": "1 missing",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Sum formula: N*(N+1)/2 - sum(nums).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "XOR approach: XOR all indices and values.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "XOR avoid overflow risks (though not issue with JS Number).",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Both are O(N).",
+                "hint_type": "complexity"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "XOR or Sum."
+        }
+    },
+    {
+        "problem_id": "Q138",
+        "metadata": {
+            "week": 5,
+            "day": 5,
+            "topic": "Bit Manipulation",
+            "title": "Reverse Bits",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Apple"
+            ],
+            "learning_outcomes": [
+                "Bit Shifting"
+            ]
+        },
+        "problem_statement": {
+            "description": "Reverse bits of a 32-bit unsigned integer.",
+            "constraints": [
+                "32 bit"
+            ],
+            "input_format": "Integer n.",
+            "output_format": "Reversed Integer.",
+            "example": {
+                "input": "000...011 (3)",
+                "output": "110...000 (3221225472)",
+                "explanation": "Reversed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0",
+                "expected_output": "0",
+                "explanation": "Zero",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "4294967295",
+                "expected_output": "4294967295",
+                "explanation": "All 1s",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "43261596",
+                "expected_output": "964176192",
+                "explanation": "Random",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Loop 32 times.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Extract last bit: n & 1.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Shift result left, add extracted bit.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Shift n right.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1) (32 iterations)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Bitwise Shift."
+        }
+    },
+    {
+        "problem_id": "Q139",
+        "metadata": {
+            "week": 5,
+            "day": 5,
+            "topic": "Trie",
+            "title": "Implement Trie (Prefix Tree)",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Microsoft",
+                "Uber"
+            ],
+            "learning_outcomes": [
+                "Trie Structure"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Trie with insert, search, and startsWith.",
+            "constraints": [
+                "Lowercase english letters"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Results.",
+            "example": {
+                "input": "insert apple, search apple, search app, startWith app",
+                "output": "True, False, True",
+                "explanation": "Results."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "insert a, search a",
+                "expected_output": "True",
+                "explanation": "Single",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "insert app, search apple",
+                "expected_output": "False",
+                "explanation": "Prefix only",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "insert apple, startsWith z",
+                "expected_output": "False",
+                "explanation": "None",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Tree where each node has 26 children array.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Each node needs 'isEnd' boolean.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Insert: traverse/create nodes, mark end.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Search vs StartsWith: Search checks isEnd, StartsWith just checks existence.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(Length)",
+            "space_complexity": "O(N * Length)",
+            "optimal_approach": "Trie."
+        }
+    },
+    {
+        "problem_id": "Q140",
+        "metadata": {
+            "week": 5,
+            "day": 5,
+            "topic": "Trie",
+            "title": "Longest Word in Dictionary",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Goldman Sachs"
+            ],
+            "learning_outcomes": [
+                "Trie Application"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find longest word that can be built one character at a time (all prefixes must exist).",
+            "constraints": [
+                "Words <= 1000"
+            ],
+            "input_format": "Words array.",
+            "output_format": "String.",
+            "example": {
+                "input": "w wo wor worl world",
+                "output": "world",
+                "explanation": "Sequence."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "a banana app appl ap apply apple",
+                "expected_output": "apple",
+                "explanation": "a->ap->app->appl->apple",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "abc",
+                "expected_output": "",
+                "explanation": "Prefixes missing",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "mo moa moab",
+                "expected_output": "moab",
+                "explanation": "Full chain",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Insert all into Trie.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "DFS on Trie.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Only traverse nodes where isEnd is true.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return deepest string (lexicographically smallest on tie).",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(Sum of Lengths)",
+            "space_complexity": "O(Sum of Lengths)",
+            "optimal_approach": "Trie or Set."
+        }
+    }
+]

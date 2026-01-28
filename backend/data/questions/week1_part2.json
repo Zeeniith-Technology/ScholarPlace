@@ -1,0 +1,833 @@
+[
+    {
+        "problem_id": "Q011",
+        "metadata": {
+            "week": 1,
+            "day": 3,
+            "topic": "Loops",
+            "title": "Print 1 to N",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Looping",
+                "Counters"
+            ]
+        },
+        "problem_statement": {
+            "description": "Write a program that prints numbers from 1 to N, each on a new line.",
+            "constraints": [
+                "1 <= N <= 1000"
+            ],
+            "input_format": "A single integer N.",
+            "output_format": "Integers from 1 to N on separate lines.",
+            "example": {
+                "input": "5",
+                "output": "1\n2\n3\n4\n5",
+                "explanation": "Numbers 1 to 5 printed sequentially."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3",
+                "expected_output": "1\n2\n3",
+                "explanation": "Basic loop",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single iteration",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "10",
+                "expected_output": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
+                "explanation": "Loop to 10",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use a for loop or while loop.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Start index from 1, condition <= N.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Don't forget to increment your counter.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Ensure newlines are printed correctly.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Single loop traversal."
+        }
+    },
+    {
+        "problem_id": "Q012",
+        "metadata": {
+            "week": 1,
+            "day": 3,
+            "topic": "Loops",
+            "title": "Sum of First N Natural Numbers",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "TCS"
+            ],
+            "learning_outcomes": [
+                "Accumulator",
+                "Loop vs Formula"
+            ]
+        },
+        "problem_statement": {
+            "description": "Calculate the sum of the first N natural numbers (1 + 2 + ... + N).",
+            "constraints": [
+                "1 <= N <= 10000"
+            ],
+            "input_format": "An integer N.",
+            "output_format": "Print the sum.",
+            "example": {
+                "input": "5",
+                "output": "15",
+                "explanation": "1+2+3+4+5 = 15"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "10",
+                "expected_output": "55",
+                "explanation": "Sum of 1-10",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Smallest N",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "100",
+                "expected_output": "5050",
+                "explanation": "Larger N",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Initialize a sum variable to 0.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Loop from 1 to N adding to sum.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Can you do it without a loop? Formula N*(N+1)/2.",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Formula is O(1) time complexity.",
+                "hint_type": "trade_off"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N) with loop, O(1) with formula",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Mathematical formula N*(N+1)/2"
+        }
+    },
+    {
+        "problem_id": "Q013",
+        "metadata": {
+            "week": 1,
+            "day": 3,
+            "topic": "Loops",
+            "title": "Factorial of N",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Wipro",
+                "Infosys"
+            ],
+            "learning_outcomes": [
+                "Loops",
+                "Multiplication Logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Calculate the factorial of a given number N. Factorial of N (N!) is the product of all positive integers less than or equal to N. 0! = 1.",
+            "constraints": [
+                "0 <= N <= 20",
+                "Use appropriate data type for result."
+            ],
+            "input_format": "An integer N.",
+            "output_format": "Print the factorial.",
+            "example": {
+                "input": "5",
+                "output": "120",
+                "explanation": "5*4*3*2*1 = 120"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3",
+                "expected_output": "6",
+                "explanation": "3*2*1=6",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "1",
+                "explanation": "0! is 1",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "20",
+                "expected_output": "2432902008176640000",
+                "explanation": "Large factorial requires Long",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Initialize result to 1, not 0.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Loop from 1 to N multiplying result.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Handle N=0 case explicitly or standard loop logic covers it (1 to 0 never runs, result stays 1).",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "N=20 exceeds standard 32-bit integer range. Use Long.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Iterative approach."
+        }
+    },
+    {
+        "problem_id": "Q014",
+        "metadata": {
+            "week": 1,
+            "day": 3,
+            "topic": "Loops",
+            "title": "Fibonacci Series",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "TCS",
+                "Accenture"
+            ],
+            "learning_outcomes": [
+                "Series Generation",
+                "Swapping logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Print the first N terms of the Fibonacci series. 0, 1, 1, 2, 3, 5...",
+            "constraints": [
+                "1 <= N <= 30"
+            ],
+            "input_format": "An integer N.",
+            "output_format": "Space separated integers.",
+            "example": {
+                "input": "5",
+                "output": "0 1 1 2 3",
+                "explanation": "First 5 terms."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2",
+                "expected_output": "0 1",
+                "explanation": "Basic case",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "0",
+                "explanation": "Edge case",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "7",
+                "expected_output": "0 1 1 2 3 5 8",
+                "explanation": "Series logic",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "First term 0, second term 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Next term = prev + current.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Use two variables to track previous terms.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Print as you generate.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Iterative generation."
+        }
+    },
+    {
+        "problem_id": "Q015",
+        "metadata": {
+            "week": 1,
+            "day": 3,
+            "topic": "Patterns",
+            "title": "Right Triangle Star Pattern",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Nested Loops"
+            ]
+        },
+        "problem_statement": {
+            "description": "Print a right-angled triangle pattern of stars of height N.",
+            "constraints": [
+                "1 <= N <= 20"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Pattern output.",
+            "example": {
+                "input": "3",
+                "output": "*\n**\n***",
+                "explanation": "Row 1: 1 star, Row 2: 2 stars, Row 3: 3 stars."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2",
+                "expected_output": "*\n**",
+                "explanation": "Height 2",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "*",
+                "explanation": "Height 1",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4",
+                "expected_output": "*\n**\n***\n****",
+                "explanation": "Height 4",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use nested loops.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Outer loop controls rows (i from 1 to N).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Inner loop controls stars (j from 1 to i).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Print newline after inner loop.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Nested loops."
+        }
+    },
+    {
+        "problem_id": "Q016",
+        "metadata": {
+            "week": 1,
+            "day": 4,
+            "topic": "Arrays",
+            "title": "Sum of Array Elements",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Array Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Calculate the sum of all elements in an integer array.",
+            "constraints": [
+                "1 <= Size <= 1000",
+                "-1000 <= Elements <= 1000"
+            ],
+            "input_format": "First line: N (size). Second line: N space-separated integers.",
+            "output_format": "Print the sum.",
+            "example": {
+                "input": "5\n1 2 3 4 5",
+                "output": "15",
+                "explanation": "Sum is 15."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n10 20 30",
+                "expected_output": "60",
+                "explanation": "Sum is 60",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n5",
+                "expected_output": "5",
+                "explanation": "Single element",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3\n-1 -2 -3",
+                "expected_output": "-6",
+                "explanation": "Negative numbers",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Initialize sum to 0.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterate through the array.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Add each element to sum.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use long long if sum can exceed integer limit (here constraints allow int).",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Linear traversal."
+        }
+    },
+    {
+        "problem_id": "Q017",
+        "metadata": {
+            "week": 1,
+            "day": 4,
+            "topic": "Arrays",
+            "title": "Find Maximum Element",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "TCS"
+            ],
+            "learning_outcomes": [
+                "Min/Max Algorithm"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the maximum element in an array.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "-10^6 <= Elements <= 10^6"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "The maximum integer.",
+            "example": {
+                "input": "5\n1 5 3 9 2",
+                "output": "9",
+                "explanation": "9 is the largest."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n1 2 3",
+                "expected_output": "3",
+                "explanation": "Sorted order",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3\n-1 -5 -2",
+                "expected_output": "-1",
+                "explanation": "Negatives",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4\n10 10 10 10",
+                "expected_output": "10",
+                "explanation": "All equal",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Assume first element is max initially.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Compare each subsequent element with current max.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Update max if current element is larger.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Do not initialize max to 0 if inputs can be negative.",
+                "hint_type": "common_mistake"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Linear scan."
+        }
+    },
+    {
+        "problem_id": "Q018",
+        "metadata": {
+            "week": 1,
+            "day": 4,
+            "topic": "Arrays",
+            "title": "Count Occurrences",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Linear Search"
+            ]
+        },
+        "problem_statement": {
+            "description": "Count how many times a target number K appears in an array.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "Elements and K in integer range"
+            ],
+            "input_format": "N, K, then N integers.",
+            "output_format": "The count of K.",
+            "example": {
+                "input": "5 2\n1 2 3 2 4",
+                "output": "2",
+                "explanation": "2 appears twice."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "4 1\n1 1 1 1",
+                "expected_output": "4",
+                "explanation": "All match",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3 5\n1 2 3",
+                "expected_output": "0",
+                "explanation": "No match",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 10\n10",
+                "expected_output": "1",
+                "explanation": "Single match",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Initialize count to 0.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Traverse the array.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If element == K, increment count.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return final count.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Linear search."
+        }
+    },
+    {
+        "problem_id": "Q019",
+        "metadata": {
+            "week": 1,
+            "day": 4,
+            "topic": "Arrays",
+            "title": "Check if Array is Sorted",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Accenture"
+            ],
+            "learning_outcomes": [
+                "Array Properties",
+                "Logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if an array is sorted in non-decreasing order.",
+            "constraints": [
+                "1 <= N <= 1000"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Print 'Yes' or 'No'.",
+            "example": {
+                "input": "4\n1 2 3 4",
+                "output": "Yes",
+                "explanation": "Strictly increasing."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n1 3 2",
+                "expected_output": "No",
+                "explanation": "3 > 2, unsorted",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n5",
+                "expected_output": "Yes",
+                "explanation": "Single element is always sorted",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4\n1 1 2 2",
+                "expected_output": "Yes",
+                "explanation": "Non-decreasing includes equals",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "You need to compare adjacent elements.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If you find any pair where arr[i] > arr[i+1], it's not sorted.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Loop from 0 to N-2.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If loop finishes without finding such pair, it is sorted.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "One pass."
+        }
+    },
+    {
+        "problem_id": "Q020",
+        "metadata": {
+            "week": 1,
+            "day": 4,
+            "topic": "Arrays",
+            "title": "Reverse an Array",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "GlobalLogic"
+            ],
+            "learning_outcomes": [
+                "Two Pointer"
+            ]
+        },
+        "problem_statement": {
+            "description": "Reverse an array in-place (or print it in reverse order).",
+            "constraints": [
+                "1 <= N <= 1000"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Space separated reversed array.",
+            "example": {
+                "input": "3\n1 2 3",
+                "output": "3 2 1",
+                "explanation": "Reversed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "4\n10 20 5 8",
+                "expected_output": "8 5 20 10",
+                "explanation": "Reversed",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n5",
+                "expected_output": "5",
+                "explanation": "Single element",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2\n1 2",
+                "expected_output": "2 1",
+                "explanation": "Two elements",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "You can print from last index to first.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Or swap first and last, second and second-last.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Use two pointers, start=0, end=N-1.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "While start < end, swap and move pointers inward.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1) auxiliary",
+            "optimal_approach": "Two pointer swap."
+        }
+    }
+]

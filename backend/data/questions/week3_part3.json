@@ -1,0 +1,835 @@
+[
+    {
+        "problem_id": "Q081",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Backtracking",
+            "title": "Generate Parentheses",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Backtracking",
+                "Recursion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Generate all combinations of well-formed parentheses for N pairs.",
+            "constraints": [
+                "1 <= N <= 8"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "List of strings.",
+            "example": {
+                "input": "3",
+                "output": "((())), (()()), (())(), ()(()), ()()()",
+                "explanation": "All valid."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1",
+                "expected_output": "()",
+                "explanation": "Basic",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2",
+                "expected_output": "(()), ()()",
+                "explanation": "Two pairs",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0",
+                "expected_output": "",
+                "explanation": "Empty",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Keep track of open and close counts.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Recursive function(current_string, open, close).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If open < N, add '('.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If close < open, add ')'. Base case: len == 2*N.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(4^N / sqrt(N))",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Backtracking."
+        }
+    },
+    {
+        "problem_id": "Q082",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Backtracking",
+            "title": "Letter Combinations of a Phone Number",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "Mapping",
+                "Recursion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given a digit string, return all possible letter combinations (like old mobile keypad).",
+            "constraints": [
+                "0 <= Length <= 4",
+                "Digits 2-9"
+            ],
+            "input_format": "String digits.",
+            "output_format": "List of strings.",
+            "example": {
+                "input": "23",
+                "output": "ad ae af bd be bf cd ce cf",
+                "explanation": "2->abc, 3->def."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2",
+                "expected_output": "a b c",
+                "explanation": "Single",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "",
+                "explanation": "Empty input",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "9",
+                "expected_output": "w x y z",
+                "explanation": "4 chars",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Map '2' to 'abc', '3' to 'def', etc.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterate through the string.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "For each digit, loop through its mapped letters and append to combinations of previous digits.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Depth First Search (Backtracking) is natural here.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(4^N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Backtracking."
+        }
+    },
+    {
+        "problem_id": "Q083",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Backtracking",
+            "title": "Permutations",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "LinkedIn",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Permutations"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given an array of distinct integers, return all possible permutations.",
+            "constraints": [
+                "1 <= N <= 6"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "List of lists.",
+            "example": {
+                "input": "1 2 3",
+                "output": "[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]",
+                "explanation": "6 perms."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2",
+                "expected_output": "1 2, 2 1",
+                "explanation": "2 perms",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0 1",
+                "expected_output": "0 1, 1 0",
+                "explanation": "With zero",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use backtracking.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Keep track of visited elements or valid choices.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Swap element at current index with every subsequent index.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Recurse and then backtrack (swap back).",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N!)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Backtracking."
+        }
+    },
+    {
+        "problem_id": "Q084",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Backtracking",
+            "title": "Subsets",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Power Set"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given an integer array of unique elements, return all possible subsets (the power set).",
+            "constraints": [
+                "1 <= N <= 10"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "List of lists.",
+            "example": {
+                "input": "1 2 3",
+                "output": "[], [1], [2], [1,2], [3], [1,3], [2,3], [1,2,3]",
+                "explanation": "All subsets."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0",
+                "expected_output": "[], [0]",
+                "explanation": "Subsets",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 2",
+                "expected_output": "[], [1], [2], [1,2]",
+                "explanation": "Subsets",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "",
+                "expected_output": "[]",
+                "explanation": "Empty set",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Backtracking: Include element or Exclude element.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterative: Start with [[]]. For each num, add it to all existing subsets.",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Bit manipulation: Iterate 0 to 2^N - 1. Use bits to select elements.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Total 2^N subsets.",
+                "hint_type": "complexity"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(2^N * N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Cascading."
+        }
+    },
+    {
+        "problem_id": "Q085",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Backtracking",
+            "title": "Combination Sum",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Airbnb",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Recursion Tree"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find all unique combinations in candidates where sum equals target. Repeated use allowed.",
+            "constraints": [
+                "2 <= target <= 40"
+            ],
+            "input_format": "Array candidates, Target.",
+            "output_format": "List of lists.",
+            "example": {
+                "input": "2 3 6 7, 7",
+                "output": "[7], [2,2,3]",
+                "explanation": "Valid sums."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 3 5, 8",
+                "expected_output": "[2,2,2,2], [2,3,3], [3,5]",
+                "explanation": "Combinations",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2, 1",
+                "expected_output": "",
+                "explanation": "None",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1, 1",
+                "expected_output": "[1]",
+                "explanation": "Single",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Sort candidates first to optimize.",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "DFS(index, current_sum, current_list).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If sum == target, add list to result.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If sum > target, return. Else iterate from 'index' (re-use allowed).",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(2^Target)",
+            "space_complexity": "O(Target)",
+            "optimal_approach": "Backtracking."
+        }
+    },
+    {
+        "problem_id": "Q086",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Linked List",
+            "title": "Add Two Numbers",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Digit Math",
+                "LL Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "You are given two non-empty linked lists representing two non-negative integers (digits in reverse order). Add them and return as LL.",
+            "constraints": [
+                "0 <= Size <= 100",
+                "0 <= NodeVal <= 9"
+            ],
+            "input_format": "L1, L2.",
+            "output_format": "Sum LL.",
+            "example": {
+                "input": "2-4-3 (342), 5-6-4 (465)",
+                "output": "7-0-8 (807)",
+                "explanation": "342 + 465 = 807."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0, 0",
+                "expected_output": "0",
+                "explanation": "Zero sum",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "9-9, 1",
+                "expected_output": "0-0-1",
+                "explanation": "Carry over",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2, 3",
+                "expected_output": "5",
+                "explanation": "Simple",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Initialize carry = 0.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Traverse both lists.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Sum = v1 + v2 + carry. New val = Sum % 10. Carry = Sum / 10.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Don't forget carry after last node.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(max(N,M))",
+            "space_complexity": "O(max(N,M))",
+            "optimal_approach": "One Pass."
+        }
+    },
+    {
+        "problem_id": "Q087",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Linked List",
+            "title": "Swap Nodes in Pairs",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Pointer Swapping"
+            ]
+        },
+        "problem_statement": {
+            "description": "Swap every two adjacent nodes in a linked list.",
+            "constraints": [
+                "0 <= N <= 100"
+            ],
+            "input_format": "List.",
+            "output_format": "Modified List.",
+            "example": {
+                "input": "1 2 3 4",
+                "output": "2 1 4 3",
+                "explanation": "Pairs swapped."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "No pair",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 2 3",
+                "expected_output": "2 1 3",
+                "explanation": "Third left alone",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "",
+                "expected_output": "",
+                "explanation": "Empty",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Recursive approach is cleaner: head.next = swapPairs(head.next.next).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterative: Use dummy node.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Need to track prev, first, second pointers.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Perform 3 pointer updates.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1) iterative",
+            "optimal_approach": "Recursive or Iterative."
+        }
+    },
+    {
+        "problem_id": "Q088",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Stack",
+            "title": "Daily Temperatures",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Self-Driving Car",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Monotonic Stack"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given temperatures, return array showing number of days to wait for a warmer temperature.",
+            "constraints": [
+                "1 <= N <= 10^5"
+            ],
+            "input_format": "Temps array.",
+            "output_format": "Wait days array.",
+            "example": {
+                "input": "73 74 75 71 69 72 76 73",
+                "output": "1 1 4 2 1 1 0 0",
+                "explanation": "Days to wait."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "30 40 50 60",
+                "expected_output": "1 1 1 0",
+                "explanation": "Increasing",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "30 60 90",
+                "expected_output": "1 1 0",
+                "explanation": "Increasing",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "30 20 10",
+                "expected_output": "0 0 0",
+                "explanation": "Decreasing",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Similar to Next Greater Element.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Store indices in stack.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If curr > temp[stack.top()], pop and calculate diff = currIndex - stackIndex.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Process elements until stack is monotonic decreasing.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Monotonic Stack."
+        }
+    },
+    {
+        "problem_id": "Q089",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Backtracking",
+            "title": "Remove Invalid Parentheses",
+            "difficulty_level": "HARD",
+            "difficulty_stars": 4,
+            "estimated_time_minutes": 35,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "BFS for Shortest Path"
+            ]
+        },
+        "problem_statement": {
+            "description": "Remove minimum number of invalid parentheses to make valid. Return all possible results.",
+            "constraints": [
+                "1 <= Length <= 25"
+            ],
+            "input_format": "String S.",
+            "output_format": "List of strings.",
+            "example": {
+                "input": "()())()",
+                "output": "()()(), (())()",
+                "explanation": "Remove one )."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "(a)())()",
+                "expected_output": "(a)()(), (a())()",
+                "explanation": "Chars included",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": ")(",
+                "expected_output": "",
+                "explanation": "Empty string is valid",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "(()",
+                "expected_output": "()",
+                "explanation": "Remove one",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "BFS ensures minimum removals (shortest path).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Valid paren check helper function.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Queue storing strings. Start with input.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Generate adjacent states by removing 1 char. Avoid duplicates (Set).",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(2^N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "BFS."
+        }
+    },
+    {
+        "problem_id": "Q090",
+        "metadata": {
+            "week": 3,
+            "day": 6,
+            "topic": "Queue",
+            "title": "Sliding Window Maximum",
+            "difficulty_level": "HARD",
+            "difficulty_stars": 4,
+            "estimated_time_minutes": 30,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Deque"
+            ]
+        },
+        "problem_statement": {
+            "description": "Return max element in each sliding window of size k.",
+            "constraints": [
+                "1 <= k <= N <= 10^5"
+            ],
+            "input_format": "N, Array, K.",
+            "output_format": "Max array.",
+            "example": {
+                "input": "8\n1 3 -1 -3 5 3 6 7\n3",
+                "output": "3 3 5 5 6 7",
+                "explanation": "Max in each window."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1\n1\n1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3\n1 -1 1\n1",
+                "expected_output": "1 -1 1",
+                "explanation": "K=1",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3\n4 2 1\n3",
+                "expected_output": "4",
+                "explanation": "Decreasing",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use Deque (Doubly Ended Queue).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Store indices of useful elements.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Maintain strictly decreasing order in deque.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Remove indices out of window from front. Max is always at front.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(k)",
+            "optimal_approach": "Monotonic Deque."
+        }
+    }
+]

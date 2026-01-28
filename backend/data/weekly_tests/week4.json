@@ -1,0 +1,845 @@
+[
+    {
+        "test_id": "WT004",
+        "week": 4,
+        "name": "Week 4 Aptitude Test",
+        "duration_minutes": 60,
+        "total_questions": 50,
+        "difficulty_distribution": {
+            "easy": 10,
+            "medium": 28,
+            "hard": 12
+        },
+        "composition": {
+            "current_week": "70%",
+            "previous_weeks": "30%"
+        },
+        "questions": [
+            {
+                "q_id": "WT004Q001",
+                "question_number": 1,
+                "question": "A train running at 60 km/hr crosses a pole in 9 seconds. Length of train?",
+                "options": [
+                    "120 m",
+                    "150 m",
+                    "180 m",
+                    "324 m"
+                ],
+                "answer": "150 m",
+                "explanation": "Speed = 60 * 5/18 = 50/3 m/s. Length = Speed * Time = (50/3) * 9 = 150 m.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q002",
+                "question_number": 2,
+                "question": "A train 125 m long passes a man running at 5 km/hr in same direction in 10 seconds. Speed of train?",
+                "options": [
+                    "45 km/hr",
+                    "50 km/hr",
+                    "54 km/hr",
+                    "55 km/hr"
+                ],
+                "answer": "50 km/hr",
+                "explanation": "Rel Speed = (125/10) * 18/5 = 12.5 * 3.6 = 45 km/hr. Rel Speed = S - 5. 45 = S - 5. S = 50.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q003",
+                "question_number": 3,
+                "question": "Two trains 140 m and 160 m long run at 60 km/hr and 40 km/hr in opposite directions on parallel tracks. Time to cross?",
+                "options": [
+                    "9 sec",
+                    "10 sec",
+                    "10.8 sec",
+                    "12 sec"
+                ],
+                "answer": "10.8 sec",
+                "explanation": "Rel Speed = 60+40 = 100 km/hr = 100*5/18 m/s. Total Dist = 300 m. Time = 300 / (500/18) = 300*18/500 = 3*18/5 = 10.8 s.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q004",
+                "question_number": 4,
+                "question": "A boat goes 8 km upstream and 12 km downstream in 6 hours? No, simpler. Speed of boat in still water is 15 km/hr, stream is 3 km/hr. Dist downstream in 12 min?",
+                "options": [
+                    "3.6 km",
+                    "2.4 km",
+                    "1.5 km",
+                    "1.8 km"
+                ],
+                "answer": "3.6 km",
+                "explanation": "Downstream S = 15+3 = 18. Dist = 18 * (12/60) = 18/5 = 3.6 km.",
+                "topic": "Boats & Streams",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q005",
+                "question_number": 5,
+                "question": "Man rows to a place 48 km distant and back in 14 hours. He finds he can row 4 km with stream in same time as 3 km against stream. Rate of stream?",
+                "options": [
+                    "1 km/hr",
+                    "1.5 km/hr",
+                    "2 km/hr",
+                    "1.8 km/hr"
+                ],
+                "answer": "1 km/hr",
+                "explanation": "Speed Ratio Down:Up = 4:3. Let 4x, 3x. 48/4x + 48/3x = 14. 12/x + 16/x = 14. 28/x = 14. x=2. D=8, U=6. Boat=7, Stream=1.",
+                "topic": "Boats & Streams",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q006",
+                "question_number": 6,
+                "question": "In a certain code, 'COMPUTER' is written as 'RFUVQNPC'. How is 'MEDICINE' written?",
+                "options": [
+                    "EOJDJEFM",
+                    "EOJDEJFM",
+                    "MFEJDJOE",
+                    "MFEDJJOE"
+                ],
+                "answer": "EOJDJEFM",
+                "explanation": "Reverse the word. Change letters +1, -1? COMPUTER -> RETUPMOC. R->R. E->F. T->U. U->V. P->Q. M->N. O->P. C->C. Logic: Reverse letters, +1 to each? No. C->R? No. First and Last kept? Check R and C at ends. C->C same? No C->R. Wait. R-F-U-V-Q-N-P-C. Rev: R-E-T-U-P-M-O-C. R same. E+1=F. T+1=U. U+1=V. P+1=Q. M+1=N. O+1=P. C same. So: Keep first/last of reversed, +1 others. MEDICINE -> ENICIDEM. E..M. N+1=O. I+1=J. C+1=D. I+1=J. D+1=E. E O J D J E F M.",
+                "topic": "Logic: Coding-Decoding",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q007",
+                "question_number": 7,
+                "question": "One morning after sunrise, Suresh was standing facing a pole. The shadow of the pole fell exactly to his right. Which direction was he facing?",
+                "options": [
+                    "East",
+                    "West",
+                    "South",
+                    "North"
+                ],
+                "answer": "South",
+                "explanation": "Sunrise East for Sun. Shadow West. Shadow is to HIS Right. If Right is West, he is facing South.",
+                "topic": "Logic: Direction Sense",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q008",
+                "question_number": 8,
+                "question": "A person crosses a 600 m long street in 5 minutes. Speed in km/hr?",
+                "options": [
+                    "3.6",
+                    "7.2",
+                    "8.4",
+                    "10"
+                ],
+                "answer": "7.2",
+                "explanation": "Speed = 600 / 300 m/s = 2 m/s. 2 * 18/5 = 7.2 km/hr.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q009",
+                "question_number": 9,
+                "question": "Excluding stoppages, bus speed is 54 km/hr. Including stoppages, 45 km/hr. For how many minutes does bus stop per hour?",
+                "options": [
+                    "9",
+                    "10",
+                    "12",
+                    "20"
+                ],
+                "answer": "10",
+                "explanation": "(Diff/Orig) * 60 = (9/54)*60 = 1/6 * 60 = 10 min.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q010",
+                "question_number": 10,
+                "question": "Two trains start at same time from A and B towards each other. Speeds 50 and 60 km/hr. When they meet, one has traveled 120 km more than other. Distance AB?",
+                "options": [
+                    "1200 km",
+                    "1320 km",
+                    "1100 km",
+                    "1440 km"
+                ],
+                "answer": "1320 km",
+                "explanation": "Diff of 10 km/hr -> 120 km more. Time = 120/10 = 12 hrs. Total Dist = (50+60)*12 = 110*12 = 1320 km.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q011",
+                "question_number": 11,
+                "question": "Ratio of speeds of A and B is 3:4. A takes 20 min more than B to reach dest. Time taken by A?",
+                "options": [
+                    "60 min",
+                    "80 min",
+                    "40 min",
+                    "75 min"
+                ],
+                "answer": "80 min",
+                "explanation": "Time Ratio 4:3. 1 unit = 20 min. A takes 4 units = 80 min.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q012",
+                "question_number": 12,
+                "question": "Boat speed 13 km/h in still water. Stream 4 km/h. Time to go 68 km downstream?",
+                "options": [
+                    "3h",
+                    "4h",
+                    "5h",
+                    "2h"
+                ],
+                "answer": "4h",
+                "explanation": "Speed = 17. Time = 68/17 = 4.",
+                "topic": "Boats & Streams",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q013",
+                "question_number": 13,
+                "question": "Recap: 30% of 250?",
+                "options": [
+                    "75",
+                    "70",
+                    "80",
+                    "65"
+                ],
+                "answer": "75",
+                "explanation": "75.",
+                "topic": "Recap: Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q014",
+                "question_number": 14,
+                "question": "A thief is noticed by policeman from 200m. Thief runs at 10km/h, Police at 11km/h. Distance run by thief before being caught?",
+                "options": [
+                    "1 km",
+                    "1.5 km",
+                    "2 km",
+                    "2.5 km"
+                ],
+                "answer": "2 km",
+                "explanation": "Rel Speed = 1 km/h. Time = 0.2km / 1 = 0.2 hr. Dist Thief = 10 * 0.2 = 2 km.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q015",
+                "question_number": 15,
+                "question": "If 'WHITE' is called 'BLUE', 'BLUE' called 'RED', 'RED' called 'YELLOW'. What is color of Human Blood?",
+                "options": [
+                    "RED",
+                    "BLUE",
+                    "YELLOW",
+                    "WHITE"
+                ],
+                "answer": "YELLOW",
+                "explanation": "Blood is RED. RED is called YELLOW.",
+                "topic": "Logic: Coding-Decoding",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q016",
+                "question_number": 16,
+                "question": "Man walks 10m South, turns Left walks 20m, turns Right walks 10m. Which direction from start?",
+                "options": [
+                    "South-East",
+                    "North-East",
+                    "South-West",
+                    "South"
+                ],
+                "answer": "South-East",
+                "explanation": "10S -> L(East) 20E-> R(South) 10S. End point is South and East of start.",
+                "topic": "Logic: Direction Sense",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q017",
+                "question_number": 17,
+                "question": "Sentence Arrangement: P: to the cinema Q: last night R: we went S: with friends. Order?",
+                "options": [
+                    "RQSP",
+                    "RQPS",
+                    "RSQP",
+                    "RPSQ"
+                ],
+                "answer": "RQSP",
+                "explanation": "We went (R) last night (Q) with friends (S) to the cinema (P)? Or We went to the cinema last night... Both valid. RQSP: We went last night with friends to... R P S Q: We went to cinema with friends last night. More natural. Standard: Subject-Verb-Object-Time. R P S Q.",
+                "question_corrected": "Arrange: P: the project Q: completed R: they S: yesterday",
+                "options_corrected": [
+                    "RQPS",
+                    "RPSQ",
+                    "RQSP",
+                    "PQRS"
+                ],
+                "answer_corrected": "RQPS",
+                "explanation_corrected": "They (R) completed(Q) the project (P) yesterday (S).",
+                "topic": "Verbal: Sentence Arrangement",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q017_ACTUAL",
+                "question_number": 17,
+                "question": "Rearrange: P: the project Q: completed R: they S: yesterday",
+                "options": [
+                    "RQPS",
+                    "RQSP",
+                    "PQRS",
+                    "RPSQ"
+                ],
+                "answer": "RQPS",
+                "explanation": "They (R) completed (Q) the project (P) yesterday (S).",
+                "topic": "Verbal: Sentence Arrangement",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q018",
+                "question_number": 18,
+                "question": "Recap: CP $100. Profit 20%. SP?",
+                "options": [
+                    "120",
+                    "110",
+                    "125",
+                    "115"
+                ],
+                "answer": "120",
+                "explanation": "120.",
+                "topic": "Recap: Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q019",
+                "question_number": 19,
+                "question": "Recap: Ratio of 1 hour to 1 day?",
+                "options": [
+                    "1:24",
+                    "1:12",
+                    "1:60",
+                    "24:1"
+                ],
+                "answer": "1:24",
+                "explanation": "1 hour : 24 hours.",
+                "topic": "Recap: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q020",
+                "question_number": 20,
+                "question": "Train 150m long moving at 68 km/h overtakes another 100m long at 50 km/h. Time to pass?",
+                "options": [
+                    "40s",
+                    "45s",
+                    "50s",
+                    "55s"
+                ],
+                "answer": "50s",
+                "explanation": "Rel Speed = 18 km/h = 5 m/s. Dist = 250 m. Time = 250/5 = 50 s.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q021",
+                "question_number": 21,
+                "question": "Man can row 6 km/h in still water. Current 2 km/h. Takes 3 hours more to go upstream than downstream for same distance. Distance?",
+                "options": [
+                    "24 km",
+                    "30 km",
+                    "32 km",
+                    "20 km"
+                ],
+                "answer": "24 km",
+                "explanation": "Down=8, Up=4. D/4 - D/8 = 3. 2D-D = 24. D=24.",
+                "topic": "Boats & Streams",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q022",
+                "question_number": 22,
+                "question": "Recap: All roses are flowers. Some flowers are red. Inference?",
+                "options": [
+                    "Some roses are red",
+                    "All flowers are roses",
+                    "Some red things are flowers",
+                    "No roses are red"
+                ],
+                "answer": "Some red things are flowers",
+                "explanation": "Immediate inference from 'Some flowers are red'.",
+                "topic": "Recap: Inference",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q023",
+                "question_number": 23,
+                "question": "Two cars A and B travel from P to Q. A at 40 km/h, B at 50 km/h. A takes 15 min longer. Distance?",
+                "options": [
+                    "45 km",
+                    "50 km",
+                    "60 km",
+                    "75 km"
+                ],
+                "answer": "50 km",
+                "explanation": "D/40 - D/50 = 1/4. (5D-4D)/200 = 1/4. D/200 = 1/4. D=50.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q024",
+                "question_number": 24,
+                "question": "Recap: Meaning of 'MITIGATE'?",
+                "options": [
+                    "Increase",
+                    "Worsen",
+                    "Make less severe",
+                    "Destroy"
+                ],
+                "answer": "Make less severe",
+                "explanation": "Mitigate = Alleviate.",
+                "topic": "Recap: Vocabulary",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q025",
+                "question_number": 25,
+                "question": "Arrange: 1. Key 2. Door 3. Lock 4. Room 5. Switch on",
+                "options": [
+                    "1,3,2,4,5",
+                    "4,2,1,5,3",
+                    "1,2,3,5,4",
+                    "5,1,2,4,3"
+                ],
+                "answer": "1,3,2,4,5",
+                "explanation": "Key -> Lock -> Door -> Room -> Switch on.",
+                "topic": "Verbal: Sentence Arrangement",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q026",
+                "question_number": 26,
+                "question": "Speed of train relative to man is 20m/s. Man running 5m/s towards train. Train Speed?",
+                "options": [
+                    "15 m/s",
+                    "25 m/s",
+                    "20 m/s",
+                    "10 m/s"
+                ],
+                "answer": "15 m/s",
+                "explanation": "Rel Speed (Opp) = T + M. 20 = T + 5. T = 15.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q027",
+                "question_number": 27,
+                "question": "Recap: 3:5 :: 21:x",
+                "options": [
+                    "35",
+                    "30",
+                    "40",
+                    "45"
+                ],
+                "answer": "35",
+                "explanation": "3x = 105. x=35.",
+                "topic": "Recap: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q028",
+                "question_number": 28,
+                "question": "A jogger running at 9 km/h alongside a railway track is 240m ahead of engine of 120m long train running at 45 km/h. Time to pass jogger?",
+                "options": [
+                    "36s",
+                    "30s",
+                    "32s",
+                    "40s"
+                ],
+                "answer": "36s",
+                "explanation": "Rel Speed = 36 km/h = 10 m/s. Total Dist = 240 + 120 = 360m. Time = 360/10 = 36s.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q029",
+                "question_number": 29,
+                "question": "Recap: Statements: All cats are dogs. No dogs are rats. Conclusion?",
+                "options": [
+                    "Some cats are rats",
+                    "No cats are rats",
+                    "All dogs are cats",
+                    "Some rats are dogs"
+                ],
+                "answer": "No cats are rats",
+                "explanation": "Cats inside Dogs. Dogs disjoint Rats. So Cats disjoint Rats.",
+                "topic": "Recap: Inference",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q030",
+                "question_number": 30,
+                "question": "In 100m race, A beats B by 10m. In 100m race, B beats C by 10m. By how much does A beat C in 100m?",
+                "options": [
+                    "19m",
+                    "20m",
+                    "18m",
+                    "21m"
+                ],
+                "answer": "19m",
+                "explanation": "A=100, B=90. Ratio A/B = 10/9. B/C = 10/9. A/C = 100/81. If A=100, C=81. Beat by 19m.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q031",
+                "question_number": 31,
+                "question": "Recap: Synonym 'LETHARGIC'?",
+                "options": [
+                    "Active",
+                    "Lazy",
+                    "Sharp",
+                    "Quick"
+                ],
+                "answer": "Lazy",
+                "explanation": "Lethargic means sluggish or lazy.",
+                "topic": "Recap: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q032",
+                "question_number": 32,
+                "question": "If Z=52, ACT=48, then BAT=?",
+                "options": [
+                    "39",
+                    "41",
+                    "44",
+                    "46"
+                ],
+                "answer": "46",
+                "explanation": "Z=26*2. ACT=(1+3+20)*2=48. BAT=(2+1+20)*2=46.",
+                "topic": "Logic: Coding-Decoding",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q033",
+                "question_number": 33,
+                "question": "Recap: Selling price of 10 articles = Cost price of 11. Profit %?",
+                "options": [
+                    "10%",
+                    "9.09%",
+                    "11%",
+                    "100%"
+                ],
+                "answer": "10%",
+                "explanation": "Gain of 1 on 10 sold. 1/10 = 10%.",
+                "topic": "Recap: Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q034",
+                "question_number": 34,
+                "question": "Walking at 3/4 of normal speed, a man is 1.5 hours late. Normal time?",
+                "options": [
+                    "4.5 hrs",
+                    "4 hrs",
+                    "3 hrs",
+                    "3.5 hrs"
+                ],
+                "answer": "4.5 hrs",
+                "explanation": "Time becomes 4/3. Increase = 1/3. 1/3 of T = 1.5. T = 4.5.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q035",
+                "question_number": 35,
+                "question": "Code: 256 'you are good', 637 'we are bad', 358 'good and bad'. Code for 'and'?",
+                "options": [
+                    "8",
+                    "3",
+                    "5",
+                    "2"
+                ],
+                "answer": "8",
+                "explanation": "good is 5. bad is 3. So 'and' is 8.",
+                "topic": "Logic: Coding-Decoding",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q036",
+                "question_number": 36,
+                "question": "Recap: Salary $2000 increased by 10%. New?",
+                "options": [
+                    "$2100",
+                    "$2200",
+                    "$2010",
+                    "$2210"
+                ],
+                "answer": "$2200",
+                "explanation": "2200.",
+                "topic": "Recap: Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q037",
+                "question_number": 37,
+                "question": "Boat covers 24 km upstream and 36 km downstream in 6 hours. Also 36 km up and 24 km down in 6.5 hours. Speed of current?",
+                "options": [
+                    "1 km/h",
+                    "2 km/h",
+                    "1.5 km/h",
+                    "2.5 km/h"
+                ],
+                "answer": "2 km/h",
+                "explanation": "Let 1/u = x, 1/d = y. 24x+36y=6. 36x+24y=6.5. Add: 60(x+y)=12.5. x+y=12.5/60=5/24. Subt: 12y-12x=-0.5. y-x=-1/24. 2y=4/24. y=1/12 (d=12). 2x=6/24. x=1/8 (u=8). Current = (12-8)/2 = 2.",
+                "topic": "Boats & Streams",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q038",
+                "question_number": 38,
+                "question": "Recap: A:B=2:3, B:C=4:5. A:C?",
+                "options": [
+                    "8:15",
+                    "2:5",
+                    "6:15",
+                    "8:10"
+                ],
+                "answer": "8:15",
+                "explanation": "8:15.",
+                "topic": "Recap: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q039",
+                "question_number": 39,
+                "question": "Arrange: P: Environmental pollution Q: has become R: health risk S: a serious",
+                "options": [
+                    "PQSR",
+                    "PRQS",
+                    "PQSR",
+                    "QPSR"
+                ],
+                "answer": "PQSR",
+                "explanation": "Pollution (P) has become (Q) a serious (S) risk (R).",
+                "topic": "Verbal: Sentence Arrangement",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q040",
+                "question_number": 40,
+                "question": "Car covers 715 km at constant speed. If speed was 10 km/h more, takes 2 hours less. Original Speed?",
+                "options": [
+                    "45 km/h",
+                    "55 km/h",
+                    "65 km/h",
+                    "50 km/h"
+                ],
+                "answer": "55 km/h",
+                "explanation": "715/S - 715/(S+10) = 2. Try options. 715/55 = 13. 715/65 = 11. 13-11=2. Correct.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q041",
+                "question_number": 41,
+                "question": "Recap: Statements: Some books are pens. All pens are pencils. Conclusion?",
+                "options": [
+                    "Some books are pencils",
+                    "No books are pencils",
+                    "All books are pencils",
+                    "None"
+                ],
+                "answer": "Some books are pencils",
+                "explanation": "Books overlap Pens, Pens inside Pencils. So Books overlap Pencils.",
+                "topic": "Recap: Inference",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q042",
+                "question_number": 42,
+                "question": "Two guns fired at interval 6 mins. A person approaching hears them at 5 min 52 sec interval. Sound speed 330 m/s. Speed of person?",
+                "options": [
+                    "27 km/h",
+                    "24 km/h",
+                    "20 km/h",
+                    "30 km/h"
+                ],
+                "answer": "27 km/h",
+                "explanation": "Distance traveled by sound in 8 sec = Distance by person in 352 sec. 330 * 8 = S * 352. S = 2640/352 = 7.5 m/s. 7.5 * 18/5 = 27 km/h.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q043",
+                "question_number": 43,
+                "question": "Recap: Antonym of 'OPTIMISTIC'?",
+                "options": [
+                    "Happy",
+                    "Pessimistic",
+                    "Sad",
+                    "Angry"
+                ],
+                "answer": "Pessimistic",
+                "explanation": "Pessimistic.",
+                "topic": "Recap: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q044",
+                "question_number": 44,
+                "question": "Man facing North-West. Turns 90 deg clockwise, then 180 deg anti-clockwise, then 90 deg anti-clockwise. Which direction now?",
+                "options": [
+                    "South",
+                    "South-East",
+                    "South-West",
+                    "West"
+                ],
+                "answer": "South-East",
+                "explanation": "NW -> +90 (NE) -> -180 (SW) -> -90 (SE).",
+                "topic": "Logic: Direction Sense",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q045",
+                "question_number": 45,
+                "question": "Train covers distance between two stations in 45 min. If speed reduced by 5 km/h, it takes 48 min. Distance?",
+                "options": [
+                    "50 km",
+                    "60 km",
+                    "64 km",
+                    "80 km"
+                ],
+                "answer": "60 km",
+                "explanation": "S * 45 = (S-5) * 48. 15S = 16S - 80. S=80 km/h. Dist = 80 * 45/60 = 60 km.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q046",
+                "question_number": 46,
+                "question": "Recap: A sum P doubles in 5 years SI. Rate?",
+                "options": [
+                    "20%",
+                    "10%",
+                    "25%",
+                    "15%"
+                ],
+                "answer": "20%",
+                "explanation": "100/5 = 20%.",
+                "topic": "Recap: SI Basics (Interest)",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q047",
+                "question_number": 47,
+                "question": "If 'ORANGE' is 'ZYXWVU', what is 'RANGE'?",
+                "options": [
+                    "YXWVU",
+                    "YXVWU",
+                    "ZYXWV",
+                    "ZYXVW"
+                ],
+                "answer": "YXWVU",
+                "explanation": "Direct coding. R(Y) A(X) N(W) G(V) E(U).",
+                "topic": "Logic: Coding-Decoding",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q048",
+                "question_number": 48,
+                "question": "A is twice as fast as B. B is thrice as fast as C. Journey covered by C in 42 min is covered by A in:",
+                "options": [
+                    "14 min",
+                    "7 min",
+                    "21 min",
+                    "28 min"
+                ],
+                "answer": "7 min",
+                "explanation": "Speed Ratio A:B:C = 6:3:1. Time Ratio 1:2:6. C takes 6x = 42 -> x=7. A takes 1x = 7.",
+                "topic": "Time-Speed-Distance",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q049",
+                "question_number": 49,
+                "question": "Recap: Ratio of sides of square is 1:2. Ratio of areas?",
+                "options": [
+                    "1:2",
+                    "1:4",
+                    "2:1",
+                    "4:1"
+                ],
+                "answer": "1:4",
+                "explanation": "Area varies as square of side.",
+                "topic": "Recap: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT004Q050",
+                "question_number": 50,
+                "question": "Recap: If A=1, B=2... Z=26. LOVE=?",
+                "options": [
+                    "54",
+                    "50",
+                    "48",
+                    "52"
+                ],
+                "answer": "54",
+                "explanation": "12+15+22+5 = 54.",
+                "topic": "Recap: Logic",
+                "difficulty": "EASY",
+                "unique": true
+            }
+        ]
+    }
+]

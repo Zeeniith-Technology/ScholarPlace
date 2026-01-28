@@ -1,0 +1,837 @@
+[
+    {
+        "problem_id": "Q051",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Matrix",
+            "title": "Spiral Matrix Transversal",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft",
+                "Apple"
+            ],
+            "learning_outcomes": [
+                "Matrix Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given an m x n matrix, return all elements of the matrix in spiral order.",
+            "constraints": [
+                "1 <= m, n <= 10"
+            ],
+            "input_format": "m, n, then matrix rows.",
+            "output_format": "Space separated elements.",
+            "example": {
+                "input": "3 3\n1 2 3\n4 5 6\n7 8 9",
+                "output": "1 2 3 6 9 8 7 4 5",
+                "explanation": "Spiral order."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 3\n1 2 3\n4 5 6\n7 8 9",
+                "expected_output": "1 2 3 6 9 8 7 4 5",
+                "explanation": "Square matrix",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 3\n1 2 3",
+                "expected_output": "1 2 3",
+                "explanation": "Single row",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3 1\n1\n2\n3",
+                "expected_output": "1 2 3",
+                "explanation": "Single col",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use 4 boundaries: top, bottom, left, right.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Loop while top <= bottom and left <= right.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Move Right, Down, Left, Up, updating boundaries.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Be careful with corner cases inside loop to avoid double printing.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(m*n)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Boundary Simulation."
+        }
+    },
+    {
+        "problem_id": "Q052",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Matrix",
+            "title": "Transpose Matrix",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Matrix Operations"
+            ]
+        },
+        "problem_statement": {
+            "description": "Transpose a matrix (flip over its main diagonal).",
+            "constraints": [
+                "1 <= N <= 100"
+            ],
+            "input_format": "N (Rows), M (Cols), Matrix.",
+            "output_format": "Transposed Matrix.",
+            "example": {
+                "input": "2 3\n1 2 3\n4 5 6",
+                "output": "1 4\n2 5\n3 6",
+                "explanation": "Rows become cols."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 2\n1 2\n3 4",
+                "expected_output": "1 3\n2 4",
+                "explanation": "Square",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 3\n1 2 3\n4 5 6",
+                "expected_output": "1 4\n2 5\n3 6",
+                "explanation": "Rectangular",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 1\n5",
+                "expected_output": "5",
+                "explanation": "Single element",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "New matrix dimensions will be M x N.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "new_mat[j][i] = old_mat[i][j].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Double loop structures.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Print row by row.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N*M)",
+            "space_complexity": "O(N*M)",
+            "optimal_approach": "Direct mapping."
+        }
+    },
+    {
+        "problem_id": "Q053",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Matrix",
+            "title": "Search a 2D Matrix",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Binary Search in 2D"
+            ]
+        },
+        "problem_statement": {
+            "description": "Search for a value in an m x n matrix where each row is sorted and the first integer of each row is greater than the last integer of the previous row.",
+            "constraints": [
+                "1 <= m, n <= 100",
+                "Target in range"
+            ],
+            "input_format": "m, n, Target, Matrix.",
+            "output_format": "Yes or No.",
+            "example": {
+                "input": "3 4 3\n1 3 5 7\n10 11 16 20\n23 30 34 60",
+                "output": "Yes",
+                "explanation": "3 is present."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 3 5\n1 2 3\n4 5 6\n7 8 9",
+                "expected_output": "Yes",
+                "explanation": "Found",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 2 10\n1 2\n3 4",
+                "expected_output": "No",
+                "explanation": "Not found",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 1 1\n1",
+                "expected_output": "Yes",
+                "explanation": "Single",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Treat the matrix as a flattened sorted array.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Total elements = m*n. Range 0 to m*n-1.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Binary search on index mid: row = mid/n, col = mid%n.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Compare matrix[row][col] with target.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log(m*n))",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Binary Search."
+        }
+    },
+    {
+        "problem_id": "Q054",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Strings",
+            "title": "Longest Palindromic Substring",
+            "difficulty_level": "HARD",
+            "difficulty_stars": 4,
+            "estimated_time_minutes": 30,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Dynamic Programming",
+                "Center Expansion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given a string S, return the longest palindromic substring in S.",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "String S.",
+            "output_format": "The substring.",
+            "example": {
+                "input": "babad",
+                "output": "bab",
+                "explanation": "aba is also valid."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "cbbd",
+                "expected_output": "bb",
+                "explanation": "bb is longest",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "a",
+                "expected_output": "a",
+                "explanation": "Single char",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "ac",
+                "expected_output": "a",
+                "explanation": "First char",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Brute force checks all substrings O(N^3). Too slow.",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Expand Around Center approach.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "For each character, consider it as center (odd length) and pair (even length).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Expand left and right while match.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Expand Around Center."
+        }
+    },
+    {
+        "problem_id": "Q055",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Stack",
+            "title": "Valid Parentheses",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Stack",
+                "Matching"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given a string containing '(', ')', '{', '}', '[' and ']', determine if the input string is valid (closed in correct order).",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "String S.",
+            "output_format": "Yes or No.",
+            "example": {
+                "input": "()[]{}",
+                "output": "Yes",
+                "explanation": "Valid."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "(]",
+                "expected_output": "No",
+                "explanation": "Mismatch",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "([)]",
+                "expected_output": "No",
+                "explanation": "Wrong order",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "{[]}",
+                "expected_output": "Yes",
+                "explanation": "Nested",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use a Stack data structure.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Push opening brackets.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "On closing bracket, check top of stack.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Stack must be empty at end.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Stack."
+        }
+    },
+    {
+        "problem_id": "Q056",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Strings",
+            "title": "Group Anagrams",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Hashing",
+                "Sorting"
+            ]
+        },
+        "problem_statement": {
+            "description": "Group an array of strings into anagrams.",
+            "constraints": [
+                "1 <= N <= 100"
+            ],
+            "input_format": "N followed by N strings.",
+            "output_format": "Print groups on separate lines.",
+            "example": {
+                "input": "3\neat tea tan",
+                "output": "eat tea\ntan",
+                "explanation": "eat and tea are anagrams."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\na b a",
+                "expected_output": "a a\nb",
+                "explanation": "Grouped",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2\nabc def",
+                "expected_output": "abc\ndef",
+                "explanation": "No anagrams",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4\ncat dog tac god",
+                "expected_output": "cat tac\ndog god",
+                "explanation": "Multiple groups",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Two strings are anagrams if sorted versions are same.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use a Map where key is sorted string.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Value is list of original strings.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Iterate Map to print groups.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N * K log K)",
+            "space_complexity": "O(N*K)",
+            "optimal_approach": "HashMap with Sorted Key."
+        }
+    },
+    {
+        "problem_id": "Q057",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Matrix",
+            "title": "Rotate Image",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Matrix In-place"
+            ]
+        },
+        "problem_statement": {
+            "description": "Rotate an N x N matrix by 90 degrees clockwise in-place.",
+            "constraints": [
+                "1 <= N <= 10"
+            ],
+            "input_format": "N, Matrix.",
+            "output_format": "Rotated Matrix.",
+            "example": {
+                "input": "2\n1 2\n3 4",
+                "output": "3 1\n4 2",
+                "explanation": "Rotated."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n1 2 3\n4 5 6\n7 8 9",
+                "expected_output": "7 4 1\n8 5 2\n9 6 3",
+                "explanation": "Standard",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n5",
+                "expected_output": "5",
+                "explanation": "Identity",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2\n5 1\n2 4",
+                "expected_output": "2 5\n4 1",
+                "explanation": "2x2",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Transpose the matrix first.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Then reverse each row.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Transpose: swap(mat[i][j], mat[j][i]).",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Reverse Row: swap start and end elements.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Transpose + Reverse."
+        }
+    },
+    {
+        "problem_id": "Q058",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Arrays",
+            "title": "Pascal's Triangle",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Apple"
+            ],
+            "learning_outcomes": [
+                "Dynamic Programming Basics"
+            ]
+        },
+        "problem_statement": {
+            "description": "Generate first N rows of Pascal's Triangle.",
+            "constraints": [
+                "1 <= N <= 20"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Rows of triangle.",
+            "example": {
+                "input": "3",
+                "output": "1\n1 1\n1 2 1",
+                "explanation": "Row 3 is sum of elements above."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2",
+                "expected_output": "1\n1 1",
+                "explanation": "2 rows",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "1 row",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4",
+                "expected_output": "1\n1 1\n1 2 1\n1 3 3 1",
+                "explanation": "4 rows",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "First and last element of each row is 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Inner elements: arr[i][j] = arr[i-1][j-1] + arr[i-1][j].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Use a 2D array or list of lists.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Be careful with indexing bounds.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(N^2)",
+            "optimal_approach": "Iterative generation."
+        }
+    },
+    {
+        "problem_id": "Q059",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Matrix",
+            "title": "Set Matrix Zeroes",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "Space Optimization"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given an m x n matrix, if an element is 0, set its entire row and column to 0. Do it in-place.",
+            "constraints": [
+                "1 <= m, n <= 20"
+            ],
+            "input_format": "m, n, Matrix.",
+            "output_format": "Modified Matrix.",
+            "example": {
+                "input": "3 3\n1 1 1\n1 0 1\n1 1 1",
+                "output": "1 0 1\n0 0 0\n1 0 1",
+                "explanation": "Center was 0."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 2\n0 1\n1 1",
+                "expected_output": "0 0\n0 1",
+                "explanation": "Corner 0",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 2\n1 1\n1 1",
+                "expected_output": "1 1\n1 1",
+                "explanation": "No zeroes",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3 3\n0 1 1\n1 1 1\n1 1 1",
+                "expected_output": "0 0 0\n0 1 1\n0 1 1",
+                "explanation": "Corner propagation",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "If you just modify while traversing, you will mess up future checks.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use two arrays row[] and col[] to store which rows/cols need to be 0.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Space O(m+n). Can you do O(1)?",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use first row and first column as the dummy arrays.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(m*n)",
+            "space_complexity": "O(1) optimal",
+            "optimal_approach": "First row/col markers."
+        }
+    },
+    {
+        "problem_id": "Q060",
+        "metadata": {
+            "week": 2,
+            "day": 6,
+            "topic": "Math",
+            "title": "Roman to Integer",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google",
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "Hash Map",
+                "Logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Convert a Roman numeral to an integer.",
+            "constraints": [
+                "1 <= Length <= 15",
+                "Valid Roman"
+            ],
+            "input_format": "String S.",
+            "output_format": "Integer Value.",
+            "example": {
+                "input": "III",
+                "output": "3",
+                "explanation": "1+1+1"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "IV",
+                "expected_output": "4",
+                "explanation": "5-1",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "IX",
+                "expected_output": "9",
+                "explanation": "10-1",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "MCMXCIV",
+                "expected_output": "1994",
+                "explanation": "Complex",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Map symbols to values (I=1, V=5...).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterate from left to right.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If val[i] < val[i+1], subtract val[i].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Otherwise add val[i].",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Comparisons."
+        }
+    }
+]

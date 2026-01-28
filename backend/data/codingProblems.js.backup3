@@ -1,0 +1,960 @@
+/**
+ * Week 1 Coding Problems
+ * Real-life and learning-based coding problems for each day
+ * Each problem includes test cases and code templates
+ */
+
+const codingProblems = [
+  // ==================== PRE-WEEK: I/O (INPUT/OUTPUT) ====================
+  {
+    problem_id: 'pre-week-coding-001',
+    day: 'pre-week',
+    title: 'Simple Calculator',
+    description: 'Create a program that takes two numbers and an operator (+, -, *, /) as input and displays the result. This is a real-world application used in calculators.',
+    problem_type: 'real_life',
+    difficulty: 'easy',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Write a function that takes two numbers and an operator
+// and returns the result
+
+function calculate(num1, operator, num2) {
+  // Your code here
+}
+
+// Test your function
+console.log(calculate(10, '+', 5)); // Should output: 15
+console.log(calculate(10, '-', 5)); // Should output: 5
+console.log(calculate(10, '*', 5)); // Should output: 50
+console.log(calculate(10, '/', 5)); // Should output: 2
+`,
+      c: `#include <stdio.h>
+
+// Write a function that takes two numbers and an operator
+// and returns the result
+
+int calculate(int num1, char operator, int num2) {
+  // Your code here
+}
+
+int main() {
+  // Test your function
+  printf("%d\\n", calculate(10, '+', 5)); // Should output: 15
+  printf("%d\\n", calculate(10, '-', 5)); // Should output: 5
+  printf("%d\\n", calculate(10, '*', 5)); // Should output: 50
+  printf("%d\\n", calculate(10, '/', 5)); // Should output: 2
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Write a function that takes two numbers and an operator
+// and returns the result
+
+int calculate(int num1, char operator, int num2) {
+  // Your code here
+}
+
+int main() {
+  // Test your function
+  cout << calculate(10, '+', 5) << endl; // Should output: 15
+  cout << calculate(10, '-', 5) << endl; // Should output: 5
+  cout << calculate(10, '*', 5) << endl; // Should output: 50
+  cout << calculate(10, '/', 5) << endl; // Should output: 2
+  return 0;
+}
+`
+    },
+    code_template: `// Write a function that takes two numbers and an operator
+
+// Test your function
+console.log(calculate(10, '+', 5)); // Should output: 15
+console.log(calculate(10, '-', 5)); // Should output: 5
+console.log(calculate(10, '*', 5)); // Should output: 50
+console.log(calculate(10, '/', 5)); // Should output: 2
+`,
+    test_cases: [
+      {
+        input: 'calculate(10, "+", 5)',
+        expectedOutput: '15',
+        description: 'Addition test'
+      },
+      {
+        input: 'calculate(10, "-", 5)',
+        expectedOutput: '5',
+        description: 'Subtraction test'
+      },
+      {
+        input: 'calculate(10, "*", 5)',
+        expectedOutput: '50',
+        description: 'Multiplication test'
+      },
+      {
+        input: 'calculate(10, "/", 5)',
+        expectedOutput: '2',
+        description: 'Division test'
+      }
+    ],
+    explanation: 'This problem teaches basic input/output operations and arithmetic operations. In real life, calculators use similar logic to perform calculations.'
+  },
+  {
+    problem_id: 'pre-week-coding-002',
+    day: 'pre-week',
+    title: 'User Greeting Program',
+    description: 'Write a program that asks for the user\'s name and age, then greets them with a personalized message. This demonstrates basic I/O operations.',
+    problem_type: 'learning',
+    difficulty: 'easy',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Write a function that takes name and age
+// and returns a greeting message
+
+function greetUser(name, age) {
+  // Your code here
+  // Return: "Hello [name]! You are [age] years old."
+}
+
+// Test your function
+console.log(greetUser("Alice", 25));
+// Should output: Hello Alice! You are 25 years old.
+`,
+      c: `#include <stdio.h>
+
+// Write a function that takes name and age
+// and prints a greeting message
+
+void greetUser(char name[], int age) {
+  // Your code here
+  // Print: "Hello [name]! You are [age] years old."
+}
+
+int main() {
+  // Test your function
+  greetUser("Alice", 25);
+  // Should output: Hello Alice! You are 25 years old.
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+#include <string>
+using namespace std;
+
+// Write a function that takes name and age
+// and prints a greeting message
+
+void greetUser(string name, int age) {
+  // Your code here
+  // Print: "Hello [name]! You are [age] years old."
+}
+
+int main() {
+  // Test your function
+  greetUser("Alice", 25);
+  // Should output: Hello Alice! You are 25 years old.
+  return 0;
+}
+`
+    },
+    code_template: `// Write a function that takes name and age
+
+// Test your function
+console.log(greetUser("Alice", 25));
+// Should output: Hello Alice! You are 25 years old.
+`,
+    test_cases: [
+      {
+        input: 'greetUser("Alice", 25)',
+        expectedOutput: 'Hello Alice! You are 25 years old.',
+        description: 'Basic greeting test'
+      },
+      {
+        input: 'greetUser("Bob", 30)',
+        expectedOutput: 'Hello Bob! You are 30 years old.',
+        description: 'Different user test'
+      }
+    ],
+    explanation: 'This problem helps you understand how to format output strings and combine text with variables. This is essential for creating user-friendly applications.'
+  },
+
+  // ==================== DAY 1: DATA TYPES & VARIABLES ====================
+  {
+    problem_id: 'day-1-coding-001',
+    day: 'day-1',
+    title: 'Temperature Converter',
+    description: 'Build a temperature converter that converts Celsius to Fahrenheit. This is commonly used in weather applications and IoT devices.',
+    problem_type: 'real_life',
+    difficulty: 'easy',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Convert Celsius to Fahrenheit
+// Formula: F = (C * 9/5) + 32
+
+function celsiusToFahrenheit(celsius) {
+  // Your code here
+}
+
+// Test your function
+console.log(celsiusToFahrenheit(0));   // Should output: 32
+console.log(celsiusToFahrenheit(100)); // Should output: 212
+console.log(celsiusToFahrenheit(37));  // Should output: 98.6
+`,
+      c: `#include <stdio.h>
+
+// Convert Celsius to Fahrenheit
+// Formula: F = (C * 9/5) + 32
+
+float celsiusToFahrenheit(float celsius) {
+  // Your code here
+}
+
+int main() {
+  // Test your function
+  printf("%.1f\\n", celsiusToFahrenheit(0));   // Should output: 32.0
+  printf("%.1f\\n", celsiusToFahrenheit(100)); // Should output: 212.0
+  printf("%.1f\\n", celsiusToFahrenheit(37));  // Should output: 98.6
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+#include <iomanip>
+using namespace std;
+
+// Convert Celsius to Fahrenheit
+// Formula: F = (C * 9/5) + 32
+
+float celsiusToFahrenheit(float celsius) {
+  // Your code here
+}
+
+int main() {
+  // Test your function
+  cout << fixed << setprecision(1);
+  cout << celsiusToFahrenheit(0) << endl;   // Should output: 32.0
+  cout << celsiusToFahrenheit(100) << endl; // Should output: 212.0
+  cout << celsiusToFahrenheit(37) << endl;  // Should output: 98.6
+  return 0;
+}
+`
+    },
+    code_template: `// Convert Celsius to Fahrenheit
+
+// Test your function
+console.log(celsiusToFahrenheit(0));   // Should output: 32
+console.log(celsiusToFahrenheit(100)); // Should output: 212
+console.log(celsiusToFahrenheit(37));  // Should output: 98.6
+`,
+    test_cases: [
+      {
+        input: 'celsiusToFahrenheit(0)',
+        expectedOutput: '32',
+        description: 'Freezing point test'
+      },
+      {
+        input: 'celsiusToFahrenheit(100)',
+        expectedOutput: '212',
+        description: 'Boiling point test'
+      },
+      {
+        input: 'celsiusToFahrenheit(37)',
+        expectedOutput: '98.6',
+        description: 'Body temperature test'
+      }
+    ],
+    explanation: 'This problem teaches variable usage and arithmetic operations. Real-world applications include weather apps, smart thermostats, and scientific instruments.'
+  },
+  {
+    problem_id: 'day-1-coding-002',
+    day: 'day-1',
+    title: 'Variable Type Checker',
+    description: 'Create a function that determines the data type of a variable. This helps understand different data types in programming.',
+    problem_type: 'learning',
+    difficulty: 'easy',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Write a function that returns the type of a variable
+// Use typeof operator
+
+function getType(value) {
+  // Your code here
+}
+
+// Test your function
+console.log(getType(42));        // Should output: number
+console.log(getType("hello"));   // Should output: string
+console.log(getType(true));      // Should output: boolean
+console.log(getType(undefined)); // Should output: undefined
+`,
+      c: `#include <stdio.h>
+#include <string.h>
+
+// Write a function that returns the type of a variable
+// In C, we need to check manually
+
+const char* getType(void* value, char type) {
+  // Your code here
+  // type can be 'i' (int), 'f' (float), 'c' (char), 's' (string)
+  if (type == 'i') return "int";
+  if (type == 'f') return "float";
+  if (type == 'c') return "char";
+  if (type == 's') return "string";
+  return "unknown";
+}
+
+int main() {
+  int num = 42;
+  float f = 3.14;
+  char ch = 'A';
+  char str[] = "hello";
+  
+  printf("%s\\n", getType(&num, 'i'));  // Should output: int
+  printf("%s\\n", getType(&f, 'f'));   // Should output: float
+  printf("%s\\n", getType(&ch, 'c'));   // Should output: char
+  printf("%s\\n", getType(str, 's'));   // Should output: string
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+#include <typeinfo>
+#include <string>
+using namespace std;
+
+// Write a function that returns the type of a variable
+// Use typeid operator
+
+string getType(auto value) {
+  // Your code here
+  string typeName = typeid(value).name();
+  if (typeName.find("int") != string::npos) return "int";
+  if (typeName.find("string") != string::npos) return "string";
+  if (typeName.find("bool") != string::npos) return "bool";
+  return typeName;
+}
+
+int main() {
+  cout << getType(42) << endl;        // Should output: int
+  cout << getType("hello") << endl;   // Should output: string
+  cout << getType(true) << endl;      // Should output: bool
+  return 0;
+}
+`
+    },
+    code_template: `// Write a function that returns the type of a variable
+
+// Test your function
+console.log(getType(42));        // Should output: number
+console.log(getType("hello"));   // Should output: string
+console.log(getType(true));      // Should output: boolean
+console.log(getType(undefined)); // Should output: undefined
+`,
+    test_cases: [
+      {
+        input: 'getType(42)',
+        expectedOutput: 'number',
+        description: 'Number type test'
+      },
+      {
+        input: 'getType("hello")',
+        expectedOutput: 'string',
+        description: 'String type test'
+      },
+      {
+        input: 'getType(true)',
+        expectedOutput: 'boolean',
+        description: 'Boolean type test'
+      }
+    ],
+    explanation: 'Understanding data types is fundamental. This problem helps you identify and work with different variable types, which is crucial for debugging and type checking.'
+  },
+
+  // ==================== DAY 2: OPERATORS & DECISION MAKING ====================
+  {
+    problem_id: 'day-2-coding-001',
+    day: 'day-2',
+    title: 'Grade Calculator',
+    description: 'Create a program that calculates a student\'s grade based on their percentage score. Used in educational systems and grading software.',
+    problem_type: 'real_life',
+    difficulty: 'intermediate',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Calculate grade based on percentage
+// A: 90-100, B: 80-89, C: 70-79, D: 60-69, F: below 60
+
+function calculateGrade(percentage) {
+  // Your code here
+  // Use if-else statements
+}
+
+// Test your function
+console.log(calculateGrade(95)); // Should output: A
+console.log(calculateGrade(85)); // Should output: B
+console.log(calculateGrade(75)); // Should output: C
+console.log(calculateGrade(65)); // Should output: D
+console.log(calculateGrade(55)); // Should output: F
+`,
+      c: `#include <stdio.h>
+
+// Calculate grade based on percentage
+// A: 90-100, B: 80-89, C: 70-79, D: 60-69, F: below 60
+
+char calculateGrade(int percentage) {
+  // Your code here
+  // Use if-else statements
+}
+
+int main() {
+  // Test your function
+  printf("%c\\n", calculateGrade(95)); // Should output: A
+  printf("%c\\n", calculateGrade(85)); // Should output: B
+  printf("%c\\n", calculateGrade(75)); // Should output: C
+  printf("%c\\n", calculateGrade(65)); // Should output: D
+  printf("%c\\n", calculateGrade(55)); // Should output: F
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Calculate grade based on percentage
+// A: 90-100, B: 80-89, C: 70-79, D: 60-69, F: below 60
+
+char calculateGrade(int percentage) {
+  // Your code here
+  // Use if-else statements
+}
+
+int main() {
+  // Test your function
+  cout << calculateGrade(95) << endl; // Should output: A
+  cout << calculateGrade(85) << endl; // Should output: B
+  cout << calculateGrade(75) << endl; // Should output: C
+  cout << calculateGrade(65) << endl; // Should output: D
+  cout << calculateGrade(55) << endl; // Should output: F
+  return 0;
+}
+`
+    },
+    code_template: `// Calculate grade based on percentage
+
+// Test your function
+console.log(calculateGrade(95)); // Should output: A
+console.log(calculateGrade(85)); // Should output: B
+console.log(calculateGrade(75)); // Should output: C
+console.log(calculateGrade(65)); // Should output: D
+console.log(calculateGrade(55)); // Should output: F
+`,
+    test_cases: [
+      {
+        input: 'calculateGrade(95)',
+        expectedOutput: 'A',
+        description: 'Grade A test'
+      },
+      {
+        input: 'calculateGrade(85)',
+        expectedOutput: 'B',
+        description: 'Grade B test'
+      },
+      {
+        input: 'calculateGrade(55)',
+        expectedOutput: 'F',
+        description: 'Grade F test'
+      }
+    ],
+    explanation: 'This problem demonstrates conditional logic (if-else statements) and comparison operators. Real-world use cases include student management systems and automated grading.'
+  },
+  {
+    problem_id: 'day-2-coding-002',
+    day: 'day-2',
+    title: 'Leap Year Checker',
+    description: 'Write a function to check if a year is a leap year. This teaches logical operators and conditional statements.',
+    problem_type: 'learning',
+    difficulty: 'intermediate',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Check if a year is a leap year
+// Rules: 
+// - Divisible by 4 AND not divisible by 100, OR
+// - Divisible by 400
+
+function isLeapYear(year) {
+  // Your code here
+  // Return true or false
+}
+
+// Test your function
+console.log(isLeapYear(2024)); // Should output: true
+console.log(isLeapYear(2023)); // Should output: false
+console.log(isLeapYear(2000)); // Should output: true
+console.log(isLeapYear(1900)); // Should output: false
+`,
+      c: `#include <stdio.h>
+#include <stdbool.h>
+
+// Check if a year is a leap year
+// Rules: 
+// - Divisible by 4 AND not divisible by 100, OR
+// - Divisible by 400
+
+bool isLeapYear(int year) {
+  // Your code here
+  // Return true or false
+}
+
+int main() {
+  // Test your function
+  printf("%s\\n", isLeapYear(2024) ? "true" : "false"); // Should output: true
+  printf("%s\\n", isLeapYear(2023) ? "true" : "false"); // Should output: false
+  printf("%s\\n", isLeapYear(2000) ? "true" : "false"); // Should output: true
+  printf("%s\\n", isLeapYear(1900) ? "true" : "false"); // Should output: false
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Check if a year is a leap year
+// Rules: 
+// - Divisible by 4 AND not divisible by 100, OR
+// - Divisible by 400
+
+bool isLeapYear(int year) {
+  // Your code here
+  // Return true or false
+}
+
+int main() {
+  // Test your function
+  cout << (isLeapYear(2024) ? "true" : "false") << endl; // Should output: true
+  cout << (isLeapYear(2023) ? "true" : "false") << endl; // Should output: false
+  cout << (isLeapYear(2000) ? "true" : "false") << endl; // Should output: true
+  cout << (isLeapYear(1900) ? "true" : "false") << endl; // Should output: false
+  return 0;
+}
+`
+    },
+    code_template: `// Check if a year is a leap year
+// Rules: 
+// - Divisible by 4 AND not divisible by 100, OR
+
+// Test your function
+console.log(isLeapYear(2024)); // Should output: true
+console.log(isLeapYear(2023)); // Should output: false
+console.log(isLeapYear(2000)); // Should output: true
+console.log(isLeapYear(1900)); // Should output: false
+`,
+    test_cases: [
+      {
+        input: 'isLeapYear(2024)',
+        expectedOutput: 'true',
+        description: 'Regular leap year'
+      },
+      {
+        input: 'isLeapYear(2023)',
+        expectedOutput: 'false',
+        description: 'Non-leap year'
+      },
+      {
+        input: 'isLeapYear(2000)',
+        expectedOutput: 'true',
+        description: 'Century leap year'
+      },
+      {
+        input: 'isLeapYear(1900)',
+        expectedOutput: 'false',
+        description: 'Century non-leap year'
+      }
+    ],
+    explanation: 'This problem teaches complex conditional logic using AND (&&) and OR (||) operators. Understanding leap year logic is important for date calculations in calendars and scheduling systems.'
+  },
+
+  // ==================== DAY 3: LOOPS & PATTERNS ====================
+  {
+    problem_id: 'day-3-coding-001',
+    day: 'day-3',
+    title: 'Shopping Cart Total',
+    description: 'Calculate the total price of items in a shopping cart. This is used in e-commerce websites and point-of-sale systems.',
+    problem_type: 'real_life',
+    difficulty: 'easy',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Calculate total price of items in an array
+// prices = [10, 20, 30, 15]
+
+function calculateTotal(prices) {
+  // Your code here
+  // Use a loop to sum all prices
+}
+
+// Test your function
+console.log(calculateTotal([10, 20, 30, 15])); // Should output: 75
+console.log(calculateTotal([5, 5, 5]));       // Should output: 15
+`,
+      c: `#include <stdio.h>
+
+// Calculate total price of items in an array
+// prices = [10, 20, 30, 15]
+
+int calculateTotal(int prices[], int size) {
+  // Your code here
+  // Use a loop to sum all prices
+}
+
+int main() {
+  // Test your function
+  int prices1[] = {10, 20, 30, 15};
+  int prices2[] = {5, 5, 5};
+  printf("%d\\n", calculateTotal(prices1, 4)); // Should output: 75
+  printf("%d\\n", calculateTotal(prices2, 3)); // Should output: 15
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Calculate total price of items in an array
+// prices = [10, 20, 30, 15]
+
+int calculateTotal(int prices[], int size) {
+  // Your code here
+  // Use a loop to sum all prices
+}
+
+int main() {
+  // Test your function
+  int prices1[] = {10, 20, 30, 15};
+  int prices2[] = {5, 5, 5};
+  cout << calculateTotal(prices1, 4) << endl; // Should output: 75
+  cout << calculateTotal(prices2, 3) << endl; // Should output: 15
+  return 0;
+}
+`
+    },
+    code_template: `// Calculate total price of items in an array
+
+// Test your function
+console.log(calculateTotal([10, 20, 30, 15])); // Should output: 75
+console.log(calculateTotal([5, 5, 5]));       // Should output: 15
+`,
+    test_cases: [
+      {
+        input: 'calculateTotal([10, 20, 30, 15])',
+        expectedOutput: '75',
+        description: 'Multiple items test'
+      },
+      {
+        input: 'calculateTotal([5, 5, 5])',
+        expectedOutput: '15',
+        description: 'Same price items test'
+      },
+      {
+        input: 'calculateTotal([100])',
+        expectedOutput: '100',
+        description: 'Single item test'
+      }
+    ],
+    explanation: 'This problem teaches loop iteration over arrays. Real-world applications include shopping carts, invoice calculations, and financial systems.'
+  },
+  {
+    problem_id: 'day-3-coding-002',
+    day: 'day-3',
+    title: 'Number Pattern Generator',
+    description: 'Print a number pattern using loops. This helps understand nested loops and pattern generation.',
+    problem_type: 'learning',
+    difficulty: 'intermediate',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Print a pattern like this:
+// 1
+// 12
+// 123
+// 1234
+// 12345
+
+function printPattern(n) {
+  // Your code here
+  // Use nested loops
+}
+
+// Test your function
+printPattern(5);
+// Should output:
+// 1
+// 12
+// 123
+// 1234
+// 12345
+`,
+      c: `#include <stdio.h>
+
+// Print a pattern like this:
+// 1
+// 12
+// 123
+// 1234
+// 12345
+
+void printPattern(int n) {
+  // Your code here
+  // Use nested loops
+}
+
+int main() {
+  // Test your function
+  printPattern(5);
+  // Should output:
+  // 1
+  // 12
+  // 123
+  // 1234
+  // 12345
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Print a pattern like this:
+// 1
+// 12
+// 123
+// 1234
+// 12345
+
+void printPattern(int n) {
+  // Your code here
+  // Use nested loops
+}
+
+int main() {
+  // Test your function
+  printPattern(5);
+  // Should output:
+  // 1
+  // 12
+  // 123
+  // 1234
+  // 12345
+  return 0;
+}
+`
+    },
+    code_template: `// Print a pattern like this:
+// 1
+// 12
+// 123
+// 1234
+
+// Test your function
+printPattern(5);
+// Should output:
+// 1
+// 12
+// 123
+// 1234
+// 12345
+`,
+    test_cases: [
+      {
+        input: 'printPattern(3)',
+        expectedOutput: '1\n12\n123',
+        description: 'Small pattern test'
+      },
+      {
+        input: 'printPattern(5)',
+        expectedOutput: '1\n12\n123\n1234\n12345',
+        description: 'Medium pattern test'
+      }
+    ],
+    explanation: 'Pattern problems teach nested loops and string manipulation. These skills are essential for formatting output and understanding algorithm complexity.'
+  },
+
+  // ==================== DAY 4: ARRAYS (DSA FOUNDATION) ====================
+  {
+    problem_id: 'day-4-coding-001',
+    day: 'day-4',
+    title: 'Student Score Analyzer',
+    description: 'Find the highest, lowest, and average score from an array of student scores. Used in analytics and reporting systems.',
+    problem_type: 'real_life',
+    difficulty: 'intermediate',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Analyze student scores
+// Return an object with max, min, and average
+
+function analyzeScores(scores) {
+  // Your code here
+  // Return: { max: number, min: number, average: number }
+}
+
+// Test your function
+console.log(analyzeScores([85, 90, 78, 92, 88]));
+// Should output: { max: 92, min: 78, average: 87 }
+`,
+      c: `#include <stdio.h>
+
+// Analyze student scores
+// Print max, min, and average
+
+void analyzeScores(int scores[], int size) {
+  // Your code here
+  // Print: max, min, and average
+}
+
+int main() {
+  // Test your function
+  int scores[] = {85, 90, 78, 92, 88};
+  analyzeScores(scores, 5);
+  // Should output: max: 92, min: 78, average: 87
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Analyze student scores
+// Print max, min, and average
+
+void analyzeScores(int scores[], int size) {
+  // Your code here
+  // Print: max, min, and average
+}
+
+int main() {
+  // Test your function
+  int scores[] = {85, 90, 78, 92, 88};
+  analyzeScores(scores, 5);
+  // Should output: max: 92, min: 78, average: 87
+  return 0;
+}
+`
+    },
+    code_template: `// Analyze student scores
+
+// Test your function
+console.log(analyzeScores([85, 90, 78, 92, 88]));
+// Should output: { max: 92, min: 78, average: 87 }
+`,
+    test_cases: [
+      {
+        input: 'analyzeScores([85, 90, 78, 92, 88])',
+        expectedOutput: '{ max: 92, min: 78, average: 87 }',
+        description: 'Multiple scores test'
+      },
+      {
+        input: 'analyzeScores([100, 50])',
+        expectedOutput: '{ max: 100, min: 50, average: 75 }',
+        description: 'Two scores test'
+      }
+    ],
+    explanation: 'This problem teaches array operations: finding maximum, minimum, and calculating averages. Real-world use cases include grade books, analytics dashboards, and data analysis tools.'
+  },
+  {
+    problem_id: 'day-4-coding-002',
+    day: 'day-4',
+    title: 'Array Reversal',
+    description: 'Reverse an array without using built-in reverse() method. This teaches fundamental array manipulation.',
+    problem_type: 'learning',
+    difficulty: 'intermediate',
+    language: 'javascript',
+    code_templates: {
+      javascript: `// Reverse an array manually
+// [1, 2, 3, 4] -> [4, 3, 2, 1]
+
+function reverseArray(arr) {
+  // Your code here
+  // Don't use arr.reverse()
+}
+
+// Test your function
+console.log(reverseArray([1, 2, 3, 4])); // Should output: [4, 3, 2, 1]
+console.log(reverseArray([10, 20, 30])); // Should output: [30, 20, 10]
+`,
+      c: `#include <stdio.h>
+
+// Reverse an array manually
+// [1, 2, 3, 4] -> [4, 3, 2, 1]
+
+void reverseArray(int arr[], int size) {
+  // Your code here
+  // Don't use built-in reverse
+}
+
+void printArray(int arr[], int size) {
+  for (int i = 0; i < size; i++) {
+    printf("%d ", arr[i]);
+  }
+  printf("\\n");
+}
+
+int main() {
+  // Test your function
+  int arr1[] = {1, 2, 3, 4};
+  int arr2[] = {10, 20, 30};
+  reverseArray(arr1, 4);
+  reverseArray(arr2, 3);
+  printArray(arr1, 4); // Should output: 4 3 2 1
+  printArray(arr2, 3); // Should output: 30 20 10
+  return 0;
+}
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Reverse an array manually
+// [1, 2, 3, 4] -> [4, 3, 2, 1]
+
+void reverseArray(int arr[], int size) {
+  // Your code here
+  // Don't use built-in reverse
+}
+
+void printArray(int arr[], int size) {
+  for (int i = 0; i < size; i++) {
+    cout << arr[i] << " ";
+  }
+  cout << endl;
+}
+
+int main() {
+  // Test your function
+  int arr1[] = {1, 2, 3, 4};
+  int arr2[] = {10, 20, 30};
+  reverseArray(arr1, 4);
+  reverseArray(arr2, 3);
+  printArray(arr1, 4); // Should output: 4 3 2 1
+  printArray(arr2, 3); // Should output: 30 20 10
+  return 0;
+}
+`
+    },
+    code_template: `// Reverse an array manually
+// [1, 2, 3, 4] -> [4, 3, 2, 1]
+
+function reverseArray(arr) {
+  // Your code here
+  // Don't use arr.reverse()
+}
+
+// Test your function
+console.log(reverseArray([1, 2, 3, 4])); // Should output: [4, 3, 2, 1]
+console.log(reverseArray([10, 20, 30])); // Should output: [30, 20, 10]
+`,
+    test_cases: [
+      {
+        input: 'reverseArray([1, 2, 3, 4])',
+        expectedOutput: '[4, 3, 2, 1]',
+        description: 'Basic reversal test'
+      },
+      {
+        input: 'reverseArray([10, 20, 30])',
+        expectedOutput: '[30, 20, 10]',
+        description: 'Different array test'
+      }
+    ],
+    explanation: 'This problem teaches array manipulation and indexing. Real-world applications include data processing, algorithm implementation, and system programming.'
+  }
+];
+
+export default codingProblems;
+
+export default codingProblems;

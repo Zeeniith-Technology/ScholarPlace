@@ -1,0 +1,827 @@
+[
+    {
+        "problem_id": "Q071",
+        "metadata": {
+            "week": 3,
+            "day": 4,
+            "topic": "Stack",
+            "title": "Stack Implementation using Array",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Stack Operations"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement a Stack using an Array with push, pop, top, and isEmpty operations.",
+            "constraints": [
+                "Capacity 1000"
+            ],
+            "input_format": "Series of commands.",
+            "output_format": "Results of operations.",
+            "example": {
+                "input": "push 1, push 2, pop, top",
+                "output": "2, 1",
+                "explanation": "Popped 2, Top is 1."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "push 5, top",
+                "expected_output": "5",
+                "explanation": "Push and Peek",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "pop",
+                "expected_output": "Underflow",
+                "explanation": "Empty pop",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "push 1, push 2, pop, top",
+                "expected_output": "1",
+                "explanation": "Standard",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use an array and a top pointer.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Initialize top = -1.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Push: arr[++top] = val.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Pop: return arr[top--]. Check for underflow.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1) for all ops",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Array."
+        }
+    },
+    {
+        "problem_id": "Q072",
+        "metadata": {
+            "week": 3,
+            "day": 4,
+            "topic": "Queue",
+            "title": "Queue Implementation using Array",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Queue Operations"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement a Queue using an Array with enqueue, dequeue, front operations.",
+            "constraints": [
+                "Capacity 1000"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Results.",
+            "example": {
+                "input": "enq 1, enq 2, deq, front",
+                "output": "1, 2",
+                "explanation": "Dequeued 1, Front is 2."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "enq 5, front",
+                "expected_output": "5",
+                "explanation": "Standard",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "deq",
+                "expected_output": "Underflow",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "enq 1, deq, enq 2, front",
+                "expected_output": "2",
+                "explanation": "Basic flow",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use front and rear pointers.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Enqueue adds at rear.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Dequeue increments front.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Handle generic array queue (drifting) or circular queue for efficiency.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Circular Buffer."
+        }
+    },
+    {
+        "problem_id": "Q073",
+        "metadata": {
+            "week": 3,
+            "day": 4,
+            "topic": "Stack",
+            "title": "Stack using Linked List",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Dynamic Stack"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Stack using Linked List.",
+            "constraints": [
+                "Dynamic Size"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Results.",
+            "example": {
+                "input": "push 1, pop",
+                "output": "1",
+                "explanation": "Popped 1."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "push 10, top",
+                "expected_output": "10",
+                "explanation": "Basic",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "size",
+                "expected_output": "0",
+                "explanation": "Empty stats",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "push 1, push 2, pop, top",
+                "expected_output": "1",
+                "explanation": "Correct LIFO",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Insert at head for O(1) push.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Delete at head for O(1) pop.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Head pointer acts as Top.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Check for null on pop.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "LL Head insertion."
+        }
+    },
+    {
+        "problem_id": "Q074",
+        "metadata": {
+            "week": 3,
+            "day": 4,
+            "topic": "Queue",
+            "title": "Queue using Linked List",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Dynamic Queue"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Queue using Linked List.",
+            "constraints": [
+                "Dynamic Size"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Results.",
+            "example": {
+                "input": "enq 1, enq 2, deq",
+                "output": "1",
+                "explanation": "FIFO."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "enq 10, front",
+                "expected_output": "10",
+                "explanation": "Basic",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "deq",
+                "expected_output": "null",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "enq 1, deq, front",
+                "expected_output": "null",
+                "explanation": "Empty after deq",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Need Head (Front) and Tail (Rear) pointers.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Enqueue: Add at Tail. Update Tail.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Dequeue: Remove Head. Update Head.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If Head becomes null, set Tail to null too.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "LL with Tail pointer."
+        }
+    },
+    {
+        "problem_id": "Q075",
+        "metadata": {
+            "week": 3,
+            "day": 5,
+            "topic": "Stack",
+            "title": "Min Stack",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Flipkart"
+            ],
+            "learning_outcomes": [
+                "O(1) Retrieval"
+            ]
+        },
+        "problem_statement": {
+            "description": "Design a stack that supports push, pop, top, and retrieving the minimum element in constant time.",
+            "constraints": [
+                "O(1) for getMin"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Outputs.",
+            "example": {
+                "input": "push -2, push 0, push -3, getMin, pop, top, getMin",
+                "output": "-3, 0, -2",
+                "explanation": "Min sequence."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "push 1, min",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "push 2, push 1, min",
+                "expected_output": "1",
+                "explanation": "New min",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "push 1, push 2, min",
+                "expected_output": "1",
+                "explanation": "Old min retained",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use an auxiliary stack to store minimums.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "On push(x), push x to main stack. Push min(x, minStack.top) to min stack.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "On pop, pop both.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Optimization: Only push to minStack if x <= currentMin.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Auxiliary Stack."
+        }
+    },
+    {
+        "problem_id": "Q076",
+        "metadata": {
+            "week": 3,
+            "day": 5,
+            "topic": "Stack",
+            "title": "Evaluate Reverse Polish Notation",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "LinkedIn"
+            ],
+            "learning_outcomes": [
+                "Postfix Evaluation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Evaluate the value of an arithmetic expression in Reverse Polish Notation (Postfix).",
+            "constraints": [
+                "Valid Expression"
+            ],
+            "input_format": "Array of strings (tokens).",
+            "output_format": "Integer result.",
+            "example": {
+                "input": "2 1 + 3 *",
+                "output": "9",
+                "explanation": "(2+1)*3 = 9"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "4 13 5 / +",
+                "expected_output": "6",
+                "explanation": "4 + (13/5) = 4+2=6",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "10 6 9 3 + -11 * / * 17 + 5 +",
+                "expected_output": "22",
+                "explanation": "Complex",
+                "category": "complex"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3 4 +",
+                "expected_output": "7",
+                "explanation": "Simple",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Scan from left to right.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If number, push to stack.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If operator, pop two numbers, apply op, push result.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Order of operands for - and / matters: op2 is top, op1 is below.",
+                "hint_type": "common_mistake"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Stack."
+        }
+    },
+    {
+        "problem_id": "Q077",
+        "metadata": {
+            "week": 3,
+            "day": 5,
+            "topic": "Stack",
+            "title": "Next Greater Element II",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Monotonic Stack",
+                "Circular Array"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find Next Greater Element for every element in a circular array.",
+            "constraints": [
+                "1 <= N <= 10000"
+            ],
+            "input_format": "N, Array.",
+            "output_format": "Array of NGE.",
+            "example": {
+                "input": "1 2 1",
+                "output": "2 -1 2",
+                "explanation": "NGE of last 1 is 2 (circular)."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 2 1",
+                "expected_output": "-1 3 3",
+                "explanation": "Circular check",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 2 3",
+                "expected_output": "2 3 -1",
+                "explanation": "Increasing",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 1",
+                "expected_output": "-1 -1",
+                "explanation": "Same",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Monotonic Decreasing Stack stores indices.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Circular array can be simulated by iterating 2*N times.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Use index i % N.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Only update result for i < N.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Stack with Modulo."
+        }
+    },
+    {
+        "problem_id": "Q078",
+        "metadata": {
+            "week": 3,
+            "day": 5,
+            "topic": "Stack",
+            "title": "Sort a Stack",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Recursion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Sort values in a stack using recursion (or temporary stack).",
+            "constraints": [
+                "Recursion or Aux Stack allowed"
+            ],
+            "input_format": "Stack elements.",
+            "output_format": "Sorted Stack.",
+            "example": {
+                "input": "3 1 2 (Top is 2)",
+                "output": "1 2 3 (Top is 3)",
+                "explanation": "Sorted."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 2 1",
+                "expected_output": "1 2 3",
+                "explanation": "Reverse",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 2 3",
+                "expected_output": "1 2 3",
+                "explanation": "Sorted",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Pop out top element.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Recursively sort remaining stack.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Insert the popped element into sorted stack.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Sorted Insert: recursive function that pops until it finds correct spot.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(N) stack",
+            "optimal_approach": "Recursion."
+        }
+    },
+    {
+        "problem_id": "Q079",
+        "metadata": {
+            "week": 3,
+            "day": 5,
+            "topic": "Queue",
+            "title": "Implement Queue using Stacks",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Stack to Queue"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Queue using two Stacks.",
+            "constraints": [
+                "Two Stacks"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Results.",
+            "example": {
+                "input": "enq 1, enq 2, deq",
+                "output": "1",
+                "explanation": "FIFO."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "enq 1, enq 2, top",
+                "expected_output": "1",
+                "explanation": "Peek",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "deq",
+                "expected_output": "Empty",
+                "explanation": "Underflow",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "enq 1, deq, enq 2, deq",
+                "expected_output": "1, 2",
+                "explanation": "Sequence",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use two stacks: input and output.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Enqueue: Push to input stack.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Dequeue: Pop from output stack. If output empty, move all from input to output.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Amortized complexity is O(1).",
+                "hint_type": "interview"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1) amortized",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Two Stacks."
+        }
+    },
+    {
+        "problem_id": "Q080",
+        "metadata": {
+            "week": 3,
+            "day": 5,
+            "topic": "Stack",
+            "title": "Implement Stack using Queues",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Queue to Stack"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Stack using Queues.",
+            "constraints": [
+                "One or Two Queues"
+            ],
+            "input_format": "Commands.",
+            "output_format": "Results.",
+            "example": {
+                "input": "push 1, push 2, pop",
+                "output": "2",
+                "explanation": "LIFO."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "push 10, top",
+                "expected_output": "10",
+                "explanation": "Basic",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "pop",
+                "expected_output": "Empty",
+                "explanation": "Edge",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "push 1, push 2, push 3, pop",
+                "expected_output": "3",
+                "explanation": "LIFO",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Method 1: Two Queues. Push is O(1), Pop is O(N).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Method 2: One Queue. Push O(N), Pop O(1).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "For One Queue: On push, enqueue x, then dequeue and enqueue all previous elements.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "This rotates the queue so new element is at front.",
+                "hint_type": "complexity"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N) push, O(1) pop",
+            "space_complexity": "O(N)",
+            "optimal_approach": "One Queue."
+        }
+    }
+]

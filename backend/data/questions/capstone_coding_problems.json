@@ -1,0 +1,550 @@
+[
+    {
+        "question_id": "W1_CP1",
+        "week": 1,
+        "test_id": "WT001",
+        "position": "Capstone_1",
+        "question_number": 51,
+        "title": "Generate Number Pyramid in Array",
+        "problem_statement": "Write a function that generates a number pyramid pattern stored in a 2D array. Row i should contain the first (i+1) consecutive integers starting from 1.\n\nFor example, for n=4:\nRow 0: [1]\nRow 1: [1, 2]\nRow 2: [1, 2, 3]\nRow 3: [1, 2, 3, 4]\n\nReturn the 2D array representing this pyramid.",
+        "function_signature": "vector<vector<int>> generatePyramid(int n)",
+        "input_format": "Integer n (1 ≤ n ≤ 100) - number of rows",
+        "output_format": "2D vector where result[i] contains first (i+1) integers",
+        "constraints": [
+            "1 ≤ n ≤ 100",
+            "Each row must contain consecutive integers starting from 1",
+            "Must use nested loops"
+        ],
+        "test_cases": [
+            {
+                "input": "n = 3",
+                "output": "[[1], [1,2], [1,2,3]]",
+                "explanation": "3 rows: row 0 has 1 element, row 1 has 2 elements, row 2 has 3 elements"
+            },
+            {
+                "input": "n = 1",
+                "output": "[[1]]",
+                "explanation": "Single row with single element"
+            },
+            {
+                "input": "n = 5",
+                "output": "[[1], [1,2], [1,2,3], [1,2,3,4], [1,2,3,4,5]]",
+                "explanation": "5 rows with increasing elements"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n²)",
+            "space": "O(n²)",
+            "reasoning": "Total elements = 1+2+3+...+n = n(n+1)/2 which is O(n²)"
+        },
+        "hints": [
+            "Use outer loop for rows (0 to n-1)",
+            "Use inner loop for elements in each row (1 to row_number+1)",
+            "Create new vector for each row"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 15,
+        "concepts_tested": [
+            "Nested Loops",
+            "2D Arrays",
+            "Pattern Generation"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W1_CP2",
+        "week": 1,
+        "test_id": "WT001",
+        "position": "Capstone_2",
+        "question_number": 52,
+        "title": "Safe Array Maximum Finder",
+        "problem_statement": "Implement a function findMax(arr, size) that finds the maximum element in an array. The function receives a size parameter that might be incorrect (larger than actual array size). You must safely handle this by validating the size parameter before processing.\n\nReturn the maximum element if valid, or return -1 if the array is empty or size is invalid.",
+        "function_signature": "int findMax(vector<int>& arr, int size)",
+        "input_format": "Vector arr and integer size (size may be incorrect)",
+        "output_format": "Maximum element in the array, or -1 if invalid",
+        "constraints": [
+            "0 ≤ arr.size() ≤ 1000",
+            "size can be any integer (positive, negative, or larger than arr.size())",
+            "Array elements: -10⁶ ≤ arr[i] ≤ 10⁶",
+            "Must validate size before processing"
+        ],
+        "test_cases": [
+            {
+                "input": "arr = [3, 7, 2, 9, 1], size = 5",
+                "output": "9",
+                "explanation": "Size is correct, maximum is 9"
+            },
+            {
+                "input": "arr = [3, 7, 2, 9, 1], size = 10",
+                "output": "9",
+                "explanation": "Size is too large, function should clamp to actual size (5) and return 9"
+            },
+            {
+                "input": "arr = [], size = 5",
+                "output": "-1",
+                "explanation": "Empty array, return -1"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n)",
+            "space": "O(1)",
+            "reasoning": "Single pass through valid array elements, no extra space"
+        },
+        "hints": [
+            "First: validate and clamp size to min(size, arr.size())",
+            "Handle edge case: empty array",
+            "Use single loop to find maximum"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 15,
+        "concepts_tested": [
+            "Input Validation",
+            "Array Traversal",
+            "Edge Case Handling"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W2_CP1",
+        "week": 2,
+        "test_id": "WT002",
+        "position": "Capstone_1",
+        "question_number": 51,
+        "title": "Two Sum - Two Pointer Approach",
+        "problem_statement": "Given a sorted array of integers and a target sum, find if there exist two distinct elements that add up to the target using the two-pointer technique.\n\nReturn true if such a pair exists, false otherwise. You must use the two-pointer approach for O(n) time complexity.",
+        "function_signature": "bool twoSumTwoPointer(vector<int>& arr, int target)",
+        "input_format": "Sorted vector arr and integer target",
+        "output_format": "Boolean - true if pair exists, false otherwise",
+        "constraints": [
+            "2 ≤ arr.size() ≤ 10⁴",
+            "Array is sorted in ascending order",
+            "-10⁹ ≤ arr[i] ≤ 10⁹",
+            "-10⁹ ≤ target ≤ 10⁹",
+            "Elements must be distinct (different indices)"
+        ],
+        "test_cases": [
+            {
+                "input": "arr = [1, 2, 3, 4, 6], target = 6",
+                "output": "true",
+                "explanation": "2 + 4 = 6, indices 1 and 3"
+            },
+            {
+                "input": "arr = [1, 2, 3, 4, 6], target = 12",
+                "output": "false",
+                "explanation": "No pair sums to 12"
+            },
+            {
+                "input": "arr = [-3, -1, 0, 2, 5], target = -1",
+                "output": "true",
+                "explanation": "-3 + 2 = -1"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n)",
+            "space": "O(1)",
+            "reasoning": "Two pointers scan array once from opposite ends, no extra space"
+        },
+        "hints": [
+            "Start with left=0, right=n-1",
+            "If arr[left] + arr[right] == target: return true",
+            "If sum > target: decrement right",
+            "If sum < target: increment left"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 18,
+        "concepts_tested": [
+            "Two Pointer",
+            "Sorted Arrays",
+            "Optimization"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W2_CP2",
+        "week": 2,
+        "test_id": "WT002",
+        "position": "Capstone_2",
+        "question_number": 52,
+        "title": "Parse CSV String to Array",
+        "problem_statement": "Parse a comma-separated string into a vector of strings, handling edge cases:\n- Leading/trailing spaces in fields (should be trimmed)\n- Empty fields from consecutive commas (should be preserved as empty strings)\n- Empty input string (return empty vector)\n\nExample: 'apple, banana,,cherry ' → ['apple', 'banana', '', 'cherry']",
+        "function_signature": "vector<string> parseCSV(string csv)",
+        "input_format": "String csv containing comma-separated values",
+        "output_format": "Vector of trimmed strings",
+        "constraints": [
+            "0 ≤ csv.length() ≤ 10⁴",
+            "Fields contain only alphanumeric characters and spaces",
+            "Must trim leading/trailing spaces from each field",
+            "Preserve empty fields"
+        ],
+        "test_cases": [
+            {
+                "input": "csv = 'apple,banana,cherry'",
+                "output": "['apple', 'banana', 'cherry']",
+                "explanation": "Standard CSV parsing"
+            },
+            {
+                "input": "csv = ' apple , banana , cherry '",
+                "output": "['apple', 'banana', 'cherry']",
+                "explanation": "Spaces are trimmed from each field"
+            },
+            {
+                "input": "csv = 'a,,c,d'",
+                "output": "['a', '', 'c', 'd']",
+                "explanation": "Empty field preserved between consecutive commas"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n)",
+            "space": "O(n)",
+            "reasoning": "Single pass through string, output size proportional to input"
+        },
+        "hints": [
+            "Iterate through string character by character",
+            "Build current field until comma is found",
+            "Trim spaces from field before adding to result",
+            "Handle last field (no trailing comma)"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 20,
+        "concepts_tested": [
+            "String Parsing",
+            "Edge Cases",
+            "Input Handling"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W3_CP1",
+        "week": 3,
+        "test_id": "WT003",
+        "position": "Capstone_1",
+        "question_number": 51,
+        "title": "Check Palindrome Permutation",
+        "problem_statement": "Given a string, determine if it can be rearranged to form a palindrome. You need to check if the character frequency distribution allows palindrome formation.\n\nA string can form a palindrome if at most one character has an odd frequency (this character would be in the middle).",
+        "function_signature": "bool canFormPalindrome(string s)",
+        "input_format": "String s containing lowercase letters",
+        "output_format": "Boolean - true if can be rearranged to palindrome, false otherwise",
+        "constraints": [
+            "1 ≤ s.length() ≤ 10⁵",
+            "s contains only lowercase English letters (a-z)",
+            "Case-sensitive"
+        ],
+        "test_cases": [
+            {
+                "input": "s = 'aab'",
+                "output": "true",
+                "explanation": "Can form 'aba' - frequencies: a=2 (even), b=1 (odd). One odd frequency allowed."
+            },
+            {
+                "input": "s = 'racecar'",
+                "output": "true",
+                "explanation": "Already a palindrome - frequencies: r=2, a=2, c=2, e=1. One odd frequency (e)."
+            },
+            {
+                "input": "s = 'abc'",
+                "output": "false",
+                "explanation": "All three characters have odd frequency (1 each). More than one odd frequency."
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n)",
+            "space": "O(1)",
+            "reasoning": "Single pass to count frequencies, O(26) = O(1) space for frequency array"
+        },
+        "hints": [
+            "Count frequency of each character",
+            "Count how many characters have odd frequency",
+            "Can form palindrome if odd_count ≤ 1"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 17,
+        "concepts_tested": [
+            "Frequency Counting",
+            "String Properties",
+            "Palindrome Logic"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W3_CP2",
+        "week": 3,
+        "test_id": "WT003",
+        "position": "Capstone_2",
+        "question_number": 52,
+        "title": "String to Linked List Converter",
+        "problem_statement": "Convert a space-separated string of words into a singly linked list where each node contains one word.\n\nExample: 'hello world code' → LinkedList: 'hello' -> 'world' -> 'code' -> NULL\n\nReturn the head of the created linked list.",
+        "function_signature": "ListNode* stringToLinkedList(string s)",
+        "input_format": "String s with space-separated words",
+        "output_format": "Pointer to head of linked list",
+        "constraints": [
+            "0 ≤ s.length() ≤ 10⁴",
+            "Words separated by single spaces",
+            "No leading/trailing spaces",
+            "Words contain only lowercase letters"
+        ],
+        "test_cases": [
+            {
+                "input": "s = 'apple banana cherry'",
+                "output": "apple -> banana -> cherry -> NULL",
+                "explanation": "Three nodes created for three words"
+            },
+            {
+                "input": "s = 'hello'",
+                "output": "hello -> NULL",
+                "explanation": "Single word creates single node"
+            },
+            {
+                "input": "s = ''",
+                "output": "NULL",
+                "explanation": "Empty string returns null pointer"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n)",
+            "space": "O(m)",
+            "reasoning": "n = string length for parsing, m = number of words for linked list nodes"
+        },
+        "hints": [
+            "Parse string to extract words separated by spaces",
+            "Maintain head pointer (first node) and tail pointer (last node)",
+            "For each word: create new node, append to tail, update tail",
+            "Return head pointer"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 18,
+        "concepts_tested": [
+            "String Parsing",
+            "Linked List Construction",
+            "Pointer Management"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W4_CP1",
+        "week": 4,
+        "test_id": "WT004",
+        "position": "Capstone_1",
+        "question_number": 51,
+        "title": "Detect Cycle Before Reversal",
+        "problem_statement": "Given a linked list, you need to safely reverse it. However, if the list contains a cycle, reversal would cause an infinite loop.\n\nFirst detect if a cycle exists using Floyd's Cycle Detection Algorithm. If no cycle exists, reverse the list and return the new head. If a cycle exists, return NULL without attempting reversal.",
+        "function_signature": "ListNode* safeReverse(ListNode* head)",
+        "input_format": "Pointer to head of linked list (may contain cycle)",
+        "output_format": "New head of reversed list if no cycle, NULL if cycle exists",
+        "constraints": [
+            "0 ≤ number of nodes ≤ 10⁴",
+            "Must use Floyd's algorithm for cycle detection",
+            "Must use iterative reversal (3-pointer approach)",
+            "O(1) space complexity"
+        ],
+        "test_cases": [
+            {
+                "input": "head = 1 -> 2 -> 3 -> NULL",
+                "output": "3 -> 2 -> 1 -> NULL",
+                "explanation": "No cycle detected, list is reversed"
+            },
+            {
+                "input": "head = 1 -> 2 -> 3 -> 2 (cycle back to node 2)",
+                "output": "NULL",
+                "explanation": "Cycle detected, return NULL without reversal"
+            },
+            {
+                "input": "head = NULL",
+                "output": "NULL",
+                "explanation": "Empty list, return NULL"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(n)",
+            "space": "O(1)",
+            "reasoning": "Floyd's detection O(n), reversal O(n), total O(n). No extra space."
+        },
+        "hints": [
+            "Phase 1: Use slow/fast pointers to detect cycle",
+            "If fast reaches NULL, no cycle exists",
+            "If slow == fast at some point, cycle exists",
+            "Phase 2: If no cycle, use prev/curr/next pointers to reverse"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 20,
+        "concepts_tested": [
+            "Cycle Detection",
+            "Floyd's Algorithm",
+            "Linked List Reversal"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W4_CP2",
+        "week": 4,
+        "test_id": "WT004",
+        "position": "Capstone_2",
+        "question_number": 52,
+        "title": "Merge Two Sorted Lists In-Place",
+        "problem_statement": "Merge two sorted linked lists into one sorted linked list using in-place merging (rearranging existing nodes, not creating new ones).\n\nYou must achieve O(1) space complexity by only changing next pointers, not allocating new nodes.",
+        "function_signature": "ListNode* mergeTwoLists(ListNode* l1, ListNode* l2)",
+        "input_format": "Pointers to heads of two sorted linked lists",
+        "output_format": "Pointer to head of merged sorted list",
+        "constraints": [
+            "0 ≤ number of nodes in each list ≤ 50",
+            "Both lists are sorted in ascending order",
+            "-100 ≤ Node.val ≤ 100",
+            "Must use in-place merging (no new node allocation)",
+            "Use dummy head technique"
+        ],
+        "test_cases": [
+            {
+                "input": "l1 = 1 -> 2 -> 4, l2 = 1 -> 3 -> 4",
+                "output": "1 -> 1 -> 2 -> 3 -> 4 -> 4",
+                "explanation": "Merge two sorted lists"
+            },
+            {
+                "input": "l1 = [], l2 = 0",
+                "output": "0",
+                "explanation": "One list empty, return other list"
+            },
+            {
+                "input": "l1 = [], l2 = []",
+                "output": "[]",
+                "explanation": "Both empty, return NULL"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(m + n)",
+            "space": "O(1)",
+            "reasoning": "Visit each node once from both lists, only use dummy node (constant space)"
+        },
+        "hints": [
+            "Create dummy head node to simplify edge cases",
+            "Use tail pointer to track end of merged list",
+            "Compare l1 and l2 values, append smaller to tail",
+            "After loop, append remaining nodes from non-empty list"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 18,
+        "concepts_tested": [
+            "Linked List Merging",
+            "In-place Algorithm",
+            "Dummy Node Technique"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W5_CP1",
+        "week": 5,
+        "test_id": "WT005",
+        "position": "Capstone_1",
+        "question_number": 51,
+        "title": "Implement Undo System with Two Stacks",
+        "problem_statement": "Implement an UndoManager class that supports undo and redo operations for text editing commands.\n\nImplement three methods:\n- executeCommand(string cmd): Execute a command and add it to undo history\n- undo(): Undo the last command (move from undo stack to redo stack)\n- redo(): Redo the last undone command (move from redo stack to undo stack)\n\nReturn the current state after each operation.",
+        "function_signature": "class UndoManager {\n    stack<string> undoStack;\n    stack<string> redoStack;\npublic:\n    void executeCommand(string cmd);\n    string undo();\n    string redo();\n}",
+        "input_format": "Sequence of operations: execute, undo, redo",
+        "output_format": "Current command state or 'EMPTY' if no commands",
+        "constraints": [
+            "1 ≤ number of operations ≤ 1000",
+            "Commands are non-empty strings",
+            "undo() on empty undo stack returns 'EMPTY'",
+            "redo() on empty redo stack returns 'EMPTY'",
+            "New command after undo clears redo stack"
+        ],
+        "test_cases": [
+            {
+                "input": "execute('A'), execute('B'), undo(), undo()",
+                "output": "['A', 'B', 'A', 'EMPTY']",
+                "explanation": "Execute A and B, undo B (back to A), undo A (empty)"
+            },
+            {
+                "input": "execute('A'), undo(), redo()",
+                "output": "['A', 'EMPTY', 'A']",
+                "explanation": "Execute A, undo (empty), redo (back to A)"
+            },
+            {
+                "input": "execute('A'), undo(), execute('B')",
+                "output": "['A', 'EMPTY', 'B']",
+                "explanation": "New command after undo clears redo history"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(1) per operation",
+            "space": "O(n) for n commands",
+            "reasoning": "Stack push/pop are O(1), space for storing command history"
+        },
+        "hints": [
+            "executeCommand: push to undoStack, clear redoStack",
+            "undo: pop from undoStack, push to redoStack",
+            "redo: pop from redoStack, push to undoStack",
+            "Return top of undoStack as current state"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 20,
+        "concepts_tested": [
+            "Stack Implementation",
+            "LIFO Logic",
+            "State Management"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    },
+    {
+        "question_id": "W5_CP2",
+        "week": 5,
+        "test_id": "WT005",
+        "position": "Capstone_2",
+        "question_number": 52,
+        "title": "Fair Task Scheduler with Queue",
+        "problem_statement": "Implement a TaskScheduler class using a queue (FIFO) to process tasks in fair order.\n\nImplement three methods:\n- addTask(string taskId): Add a task to the queue\n- processNext(): Process and remove the next task (first-come, first-served)\n- getTotalPending(): Return number of pending tasks\n\nReturn the processed task ID or 'NONE' if queue is empty.",
+        "function_signature": "class TaskScheduler {\n    queue<string> taskQueue;\npublic:\n    void addTask(string taskId);\n    string processNext();\n    int getTotalPending();\n}",
+        "input_format": "Sequence of operations: addTask, processNext, getTotalPending",
+        "output_format": "Task ID for processNext, count for getTotalPending",
+        "constraints": [
+            "1 ≤ number of operations ≤ 10⁴",
+            "Task IDs are non-empty strings",
+            "processNext() on empty queue returns 'NONE'",
+            "Must maintain FIFO order"
+        ],
+        "test_cases": [
+            {
+                "input": "add('T1'), add('T2'), add('T3'), processNext(), processNext()",
+                "output": "['T1', 'T2']",
+                "explanation": "FIFO: T1 added first, processed first. Then T2."
+            },
+            {
+                "input": "add('A'), processNext(), processNext()",
+                "output": "['A', 'NONE']",
+                "explanation": "Process A, then queue is empty"
+            },
+            {
+                "input": "add('X'), add('Y'), getTotalPending(), processNext(), getTotalPending()",
+                "output": "[2, 'X', 1]",
+                "explanation": "2 pending, process X, 1 pending (Y remains)"
+            }
+        ],
+        "expected_complexity": {
+            "time": "O(1) per operation",
+            "space": "O(n) for n tasks",
+            "reasoning": "Queue enqueue/dequeue are O(1), space for pending tasks"
+        },
+        "hints": [
+            "addTask: enqueue to back of queue",
+            "processNext: dequeue from front of queue (FIFO)",
+            "getTotalPending: return queue.size()",
+            "Check if queue is empty before dequeue"
+        ],
+        "difficulty": "MEDIUM",
+        "estimated_time_minutes": 15,
+        "concepts_tested": [
+            "Queue Implementation",
+            "FIFO Logic",
+            "Fairness"
+        ],
+        "requires_coding": true,
+        "is_based_on_bank": false
+    }
+]

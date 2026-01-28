@@ -1,0 +1,827 @@
+[
+    {
+        "problem_id": "Q061",
+        "metadata": {
+            "week": 3,
+            "day": 1,
+            "topic": "Linked List",
+            "title": "Traverse a Linked List",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Linked List Basics"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given a linked list, print all its elements.",
+            "constraints": [
+                "0 <= N <= 1000"
+            ],
+            "input_format": "N followed by N integers (representing LL nodes).",
+            "output_format": "Space separated values.",
+            "example": {
+                "input": "3\n1 2 3",
+                "output": "1 2 3",
+                "explanation": "Traversal."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2\n10 20",
+                "expected_output": "10 20",
+                "explanation": "Two nodes",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "",
+                "explanation": "Empty list",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1\n5",
+                "expected_output": "5",
+                "explanation": "Single node",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Start at head.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Loop while current node is not null.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Print current.data.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Move to current.next.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Traversal."
+        }
+    },
+    {
+        "problem_id": "Q062",
+        "metadata": {
+            "week": 3,
+            "day": 1,
+            "topic": "Linked List",
+            "title": "Insert Node at Head",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Pointer Manipulation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Insert a new node at the beginning of the Linked List.",
+            "constraints": [
+                "0 <= N <= 1000"
+            ],
+            "input_format": "N, elements, then New_Value.",
+            "output_format": "Modified list.",
+            "example": {
+                "input": "3\n1 2 3\n0",
+                "output": "0 1 2 3",
+                "explanation": "0 inserted at front."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2\n2 3\n1",
+                "expected_output": "1 2 3",
+                "explanation": "Standard",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0\n\n5",
+                "expected_output": "5",
+                "explanation": "Into empty list",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1\n10\n20",
+                "expected_output": "20 10",
+                "explanation": "Front",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Create new node with New_Value.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Set new_node.next = head.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Update head to new_node.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return new head.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Pointer update."
+        }
+    },
+    {
+        "problem_id": "Q063",
+        "metadata": {
+            "week": 3,
+            "day": 1,
+            "topic": "Linked List",
+            "title": "Delete Node",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Deletion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Delete a node with value K from the linked list (first occurrence).",
+            "constraints": [
+                "0 <= N <= 1000"
+            ],
+            "input_format": "N, elements, K.",
+            "output_format": "Modified list.",
+            "example": {
+                "input": "3\n1 2 3\n2",
+                "output": "1 3",
+                "explanation": "2 removed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n1 2 3\n1",
+                "expected_output": "2 3",
+                "explanation": "Head deletion",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3\n1 2 3\n3",
+                "expected_output": "1 2",
+                "explanation": "Tail deletion",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3\n1 2 3\n4",
+                "expected_output": "1 2 3",
+                "explanation": "Not found",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Handle head case separately (if head.val == K).",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Traverse with prev and curr pointers.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If curr.val == K, set prev.next = curr.next.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Stop after deletion.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Traversal."
+        }
+    },
+    {
+        "problem_id": "Q064",
+        "metadata": {
+            "week": 3,
+            "day": 2,
+            "topic": "Linked List",
+            "title": "Middle of Linked List",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Flipkart"
+            ],
+            "learning_outcomes": [
+                "Fast and Slow Pointers"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the middle node of the linked list. If even nodes, second middle.",
+            "constraints": [
+                "0 <= N <= 1000"
+            ],
+            "input_format": "N, elements.",
+            "output_format": "Middle node value.",
+            "example": {
+                "input": "5\n1 2 3 4 5",
+                "output": "3",
+                "explanation": "Middle."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "6\n1 2 3 4 5 6",
+                "expected_output": "4",
+                "explanation": "Even, 4 is second middle",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n10",
+                "expected_output": "10",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2\n1 2",
+                "expected_output": "2",
+                "explanation": "Two elements",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Count nodes method requires 2 passes.",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use Fast and Slow pointers (Tortoise and Hare).",
+                "hint_type": "optimal"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Slow moves 1 step, Fast moves 2 steps.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "When Fast reaches end, Slow is at middle.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Fast-Slow Pointers."
+        }
+    },
+    {
+        "problem_id": "Q065",
+        "metadata": {
+            "week": 3,
+            "day": 2,
+            "topic": "Linked List",
+            "title": "Reverse Linked List",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Most Companies"
+            ],
+            "learning_outcomes": [
+                "In-place Reversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Reverse a singly linked list.",
+            "constraints": [
+                "0 <= N <= 1000"
+            ],
+            "input_format": "N, elements.",
+            "output_format": "Reversed list.",
+            "example": {
+                "input": "3\n1 2 3",
+                "output": "3 2 1",
+                "explanation": "Reversed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1\n5",
+                "expected_output": "5",
+                "explanation": "No change",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2\n1 2",
+                "expected_output": "2 1",
+                "explanation": "Swap",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0",
+                "expected_output": "",
+                "explanation": "Empty",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Iterative approach uses 3 pointers: prev, curr, next.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Save curr.next.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Set curr.next = prev.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Move prev and curr one step forward.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Iterative."
+        }
+    },
+    {
+        "problem_id": "Q066",
+        "metadata": {
+            "week": 3,
+            "day": 2,
+            "topic": "Linked List",
+            "title": "Detect Cycle using Floyd's Cycle Detection",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Cycle Detection"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if linked list has a cycle.",
+            "constraints": [
+                "0 <= N <= 1000, pos denotes index where tail connects"
+            ],
+            "input_format": "N, elements, pos (input handled such that cycle is created if pos >= 0).",
+            "output_format": "True or False.",
+            "example": {
+                "input": "4\n3 2 0 -4\n1",
+                "output": "True",
+                "explanation": "-4 connects to 2 (index 1)."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2\n1 2\n-1",
+                "expected_output": "False",
+                "explanation": "No cycle",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2\n1 2\n0",
+                "expected_output": "True",
+                "explanation": "Cycle at 0",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1\n1\n-1",
+                "expected_output": "False",
+                "explanation": "Single node no cycle",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use Fast and Slow pointers.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If Fast and Slow meet, there is a cycle.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If Fast reaches NULL, no cycle.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Ensure Fast moves 2 steps, Slow 1.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Floyd's Algorithm."
+        }
+    },
+    {
+        "problem_id": "Q067",
+        "metadata": {
+            "week": 3,
+            "day": 3,
+            "topic": "Linked List",
+            "title": "Merge Two Sorted Lists",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Merging"
+            ]
+        },
+        "problem_statement": {
+            "description": "Merge two sorted linked lists into one sorted list.",
+            "constraints": [
+                "0 <= N,M <= 50"
+            ],
+            "input_format": "N, List1, M, List2.",
+            "output_format": "Merged List.",
+            "example": {
+                "input": "3\n1 2 4\n3\n1 3 4",
+                "output": "1 1 2 3 4 4",
+                "explanation": "Merged."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0\n\n0\n",
+                "expected_output": "",
+                "explanation": "Both empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0\n\n1\n0",
+                "expected_output": "0",
+                "explanation": "One empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2\n5 10\n2\n1 15",
+                "expected_output": "1 5 10 15",
+                "explanation": "Interleaved",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Create a dummy head for new list.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Compare heads of L1 and L2.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Attach smaller node to current.next and move pointer.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Attach remaining non-null list at the end.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N+M)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Iterative Merge."
+        }
+    },
+    {
+        "problem_id": "Q068",
+        "metadata": {
+            "week": 3,
+            "day": 3,
+            "topic": "Linked List",
+            "title": "Remove Nth Node From End",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "Two Pointer Gap"
+            ]
+        },
+        "problem_statement": {
+            "description": "Remove the Nth node from the end of the list and return its head.",
+            "constraints": [
+                "1 <= N <= Size"
+            ],
+            "input_format": "Size, List, N.",
+            "output_format": "Modified List.",
+            "example": {
+                "input": "5\n1 2 3 4 5\n2",
+                "output": "1 2 3 5",
+                "explanation": "4 is 2nd from end."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1\n1\n1",
+                "expected_output": "",
+                "explanation": "Remove only node",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2\n1 2\n1",
+                "expected_output": "1",
+                "explanation": "Remove last",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2\n1 2\n2",
+                "expected_output": "2",
+                "explanation": "Remove first",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Two passes: Count length L, then remove (L-N+1)th node.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "One pass: Use two pointers with gap N.",
+                "hint_type": "optimal"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Move Fast N steps ahead.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Then move both Fast and Slow until Fast is at end.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "One Pass."
+        }
+    },
+    {
+        "problem_id": "Q069",
+        "metadata": {
+            "week": 3,
+            "day": 3,
+            "topic": "Linked List",
+            "title": "Palindrome Linked List",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "List Manipulation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a linked list is a palindrome.",
+            "constraints": [
+                "1 <= N <= 10^5"
+            ],
+            "input_format": "N, List.",
+            "output_format": "True or False.",
+            "example": {
+                "input": "4\n1 2 2 1",
+                "output": "True",
+                "explanation": "Palindrome."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2\n1 2",
+                "expected_output": "False",
+                "explanation": "Not palindrome",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n1",
+                "expected_output": "True",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3\n1 0 1",
+                "expected_output": "True",
+                "explanation": "Palindrome",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Stack method: push all, then pop and compare. O(N) space.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "O(1) space: Find middle.",
+                "hint_type": "optimal"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Reverse the second half.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Compare first half and reversed second half.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Reverse Half."
+        }
+    },
+    {
+        "problem_id": "Q070",
+        "metadata": {
+            "week": 3,
+            "day": 3,
+            "topic": "Linked List",
+            "title": "Intersection of Two Linked Lists",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Length Difference"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the node where two linked lists intersect.",
+            "constraints": [
+                "No cycles"
+            ],
+            "input_format": "ListA, ListB.",
+            "output_format": "Intersected Node Value or null.",
+            "example": {
+                "input": "intersectVal = 8\nListA = [4,1,8,4,5], ListB = [5,6,1,8,4,5]",
+                "output": "8",
+                "explanation": "Intersect at 8."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "ListA=[1,2], ListB=[3,4]",
+                "expected_output": "null",
+                "explanation": "No intersection",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "ListA=[1], ListB=[1]",
+                "expected_output": "1",
+                "explanation": "Same node",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "ListA=[2,6,4], ListB=[1,5]",
+                "expected_output": "null",
+                "explanation": "Distinct",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Naive: Compare every node A with every node B. O(N*M).",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Better: Use Hash Set to store nodes of A. O(N+M) space.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Optimal: Calculate lengths L1 and L2.",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Advance pointer of longer list by |L1-L2| steps, then move together.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N+M)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Length Difference."
+        }
+    }
+]

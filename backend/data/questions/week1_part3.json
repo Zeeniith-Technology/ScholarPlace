@@ -1,0 +1,832 @@
+[
+    {
+        "problem_id": "Q021",
+        "metadata": {
+            "week": 1,
+            "day": 5,
+            "topic": "Functions",
+            "title": "Function to Add Two Numbers",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Modular Code",
+                "Return Values"
+            ]
+        },
+        "problem_statement": {
+            "description": "Create a function `add(a, b)` that returns the sum of two integers.",
+            "constraints": [
+                "-1000 <= A, B <= 1000"
+            ],
+            "input_format": "Two integers A and B.",
+            "output_format": "Print the result returned by the function.",
+            "example": {
+                "input": "10 20",
+                "output": "30",
+                "explanation": "Function returns 30."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 7",
+                "expected_output": "12",
+                "explanation": "Basic addition",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0 0",
+                "expected_output": "0",
+                "explanation": "Zeroes",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "-5 5",
+                "expected_output": "0",
+                "explanation": "Negative + Positive",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Define a function with two parameters.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Return a + b inside the function.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Call the function from main and print result.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Ensure function signature matches requirement (though in this environment structure matters most).",
+                "hint_type": "interview"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Return a+b."
+        }
+    },
+    {
+        "problem_id": "Q022",
+        "metadata": {
+            "week": 1,
+            "day": 5,
+            "topic": "Recursion",
+            "title": "Recursive Factorial",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "TCS",
+                "Wipro"
+            ],
+            "learning_outcomes": [
+                "Recursion Basics",
+                "Base Case"
+            ]
+        },
+        "problem_statement": {
+            "description": "Calculate factorial of N using recursion.",
+            "constraints": [
+                "0 <= N <= 12 (to fit in int)"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Factorial of N.",
+            "example": {
+                "input": "5",
+                "output": "120",
+                "explanation": "5*4*3*2*1"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5",
+                "expected_output": "120",
+                "explanation": "Standard case",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "1",
+                "explanation": "Base case 0! = 1",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Base case 1! = 1",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Base case: if N <= 1 return 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Recursive step: return N * factorial(N-1).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Ensure function calls itself.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Watch for stack overflow if N is too large (recursion depth).",
+                "hint_type": "trade_off"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N) stack space",
+            "optimal_approach": "Recursive solution."
+        }
+    },
+    {
+        "problem_id": "Q023",
+        "metadata": {
+            "week": 1,
+            "day": 5,
+            "topic": "Recursion",
+            "title": "Nth Fibonacci Number",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Recursion",
+                "Tree Recursion"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the Nth Fibonacci number using recursion. (0th is 0, 1st is 1).",
+            "constraints": [
+                "0 <= N <= 30"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Nth Fibonacci number.",
+            "example": {
+                "input": "6",
+                "output": "8",
+                "explanation": "0, 1, 1, 2, 3, 5, 8 (6th index)"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5",
+                "expected_output": "5",
+                "explanation": "5th term",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "0",
+                "expected_output": "0",
+                "explanation": "0th term",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "10",
+                "expected_output": "55",
+                "explanation": "10th term",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Base cases: if N=0 return 0, if N=1 return 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Recursive step: fib(N) = fib(N-1) + fib(N-2).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "This is naive recursion, very slow for large N.",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Time complexity is exponential O(2^N).",
+                "hint_type": "interview"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(2^N)",
+            "space_complexity": "O(N) stack",
+            "optimal_approach": "Recursive for learning, DP for efficiency."
+        }
+    },
+    {
+        "problem_id": "Q024",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Recursion",
+            "title": "Power Function",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Recursion",
+                "Math"
+            ]
+        },
+        "problem_statement": {
+            "description": "Calculate X raised to the power N (X^N) using recursion.",
+            "constraints": [
+                "1 <= X <= 10",
+                "0 <= N <= 10"
+            ],
+            "input_format": "Integers X and N.",
+            "output_format": "Result of X^N.",
+            "example": {
+                "input": "2 3",
+                "output": "8",
+                "explanation": "2*2*2 = 8"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 2",
+                "expected_output": "25",
+                "explanation": "5^2",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "10 0",
+                "expected_output": "1",
+                "explanation": "Power 0 is 1",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2 10",
+                "expected_output": "1024",
+                "explanation": "Larger power",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Base case: N=0 return 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Recurrence: X * power(X, N-1).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Can you optimize to O(log N)? power(X, N/2).",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If optimized, handle odd N by multiplying extra X.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N) linear, O(log N) optimized",
+            "space_complexity": "O(N) or O(log N)",
+            "optimal_approach": "Binary Exponentiation."
+        }
+    },
+    {
+        "problem_id": "Q025",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Logic",
+            "title": "Palindrome Number",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic",
+                "TCS"
+            ],
+            "learning_outcomes": [
+                "Digit Extraction",
+                "Reversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a given integer is a palindrome (reads same forwards and backwards).",
+            "constraints": [
+                "0 <= N <= 10^9"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Print 'Yes' or 'No'.",
+            "example": {
+                "input": "121",
+                "output": "Yes",
+                "explanation": "121 reversed is 121."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "123",
+                "expected_output": "No",
+                "explanation": "Reversed is 321",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "7",
+                "expected_output": "Yes",
+                "explanation": "Single digit is palindrome",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1221",
+                "expected_output": "Yes",
+                "explanation": "Even length palindrome",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Extract digits one by one using % 10.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Build the reversed number: rev = rev * 10 + digit.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Compare original N with reversed N.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Store original N in a temp variable before modifying it in loop.",
+                "hint_type": "common_mistake"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log N) (number of digits)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Digit reversal."
+        }
+    },
+    {
+        "problem_id": "Q026",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Math",
+            "title": "GCD of Two Numbers",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Goldman Sachs"
+            ],
+            "learning_outcomes": [
+                "Euclidean Algorithm"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the Greatest Common Divisor (GCD) of two numbers.",
+            "constraints": [
+                "1 <= A, B <= 10^9"
+            ],
+            "input_format": "Two integers A and B.",
+            "output_format": "Their GCD.",
+            "example": {
+                "input": "12 18",
+                "output": "6",
+                "explanation": "Divisors of 12: 1,2,3,4,6,12. 18: 1,2,3,6,9,18. Max common is 6."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "10 5",
+                "expected_output": "5",
+                "explanation": "5 divides 10",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "13 7",
+                "expected_output": "1",
+                "explanation": "Co-prime",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "100 100",
+                "expected_output": "100",
+                "explanation": "Same numbers",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use loops to find common factors (Naive).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Euclidean algorithm is better: gcd(a, b) = gcd(b, a % b).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Repeat until b becomes 0, then a is GCD.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Recursive or Iterative implementation both work.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log(min(A,B)))",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Euclidean Algorithm."
+        }
+    },
+    {
+        "problem_id": "Q027",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Math",
+            "title": "LCM of Two Numbers",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "GCD Relation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the Least Common Multiple (LCM) of two numbers.",
+            "constraints": [
+                "1 <= A, B <= 10000"
+            ],
+            "input_format": "Two integers A and B.",
+            "output_format": "Their LCM.",
+            "example": {
+                "input": "4 6",
+                "output": "12",
+                "explanation": "Multiples of 4: 4,8,12... 6: 6,12... Match at 12."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 7",
+                "expected_output": "35",
+                "explanation": "Product of primes",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 4",
+                "expected_output": "4",
+                "explanation": "One is multiple of other",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 5",
+                "expected_output": "5",
+                "explanation": "LCM with 1",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Relationship: LCM(a, b) = (a * b) / GCD(a, b).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Find GCD first.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Be careful of overflow when calculating a*b.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use long long for product.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log(min(A,B))) due to GCD",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Formula using GCD."
+        }
+    },
+    {
+        "problem_id": "Q028",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Math",
+            "title": "Prime Check",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Loop Optimization",
+                "Sqrt"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a number is Prime.",
+            "constraints": [
+                "1 <= N <= 10^9"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Print 'Yes' or 'No'.",
+            "example": {
+                "input": "7",
+                "output": "Yes",
+                "explanation": "Only divisible by 1 and 7."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "4",
+                "expected_output": "No",
+                "explanation": "Divisible by 2",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "No",
+                "explanation": "1 is not prime",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2",
+                "expected_output": "Yes",
+                "explanation": "2 is prime",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Loop from 2 to N-1 check divisibility.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Optimization: Loop only up to sqrt(N).",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If factors found, return No immediately.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Handle N=1 separately.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(sqrt(N))",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Sqrt optimization."
+        }
+    },
+    {
+        "problem_id": "Q029",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Math",
+            "title": "Armstrong Number",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "TCS"
+            ],
+            "learning_outcomes": [
+                "Digit Logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a number is an Armstrong number (sum of cubes of digits equals the number itself, for 3 digit numbers. Generally sum of digits raised to power of count of digits). Assume 3 digits for basic version or general.",
+            "constraints": [
+                "1 <= N <= 10000"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Print 'Yes' or 'No'.",
+            "example": {
+                "input": "153",
+                "output": "Yes",
+                "explanation": "1^3 + 5^3 + 3^3 = 1 + 125 + 27 = 153"
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "370",
+                "expected_output": "Yes",
+                "explanation": "3^3 + 7^3 + 0^3 = 27 + 343 + 0 = 370",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "123",
+                "expected_output": "No",
+                "explanation": "Not armstrong",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1634",
+                "expected_output": "Yes",
+                "explanation": "1^4 + 6^4 + 3^4 + 4^4 = 1634",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Count digits first (D).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Extract each digit, raise to power D, sum it.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Compare sum with original number.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Be careful with updating the number variable, keep a copy.",
+                "hint_type": "common_mistake"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Digit extraction."
+        }
+    },
+    {
+        "problem_id": "Q030",
+        "metadata": {
+            "week": 1,
+            "day": 6,
+            "topic": "Math",
+            "title": "Count Digits",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 5,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Digit Extraction"
+            ]
+        },
+        "problem_statement": {
+            "description": "Count the number of digits in an integer.",
+            "constraints": [
+                "0 <= N <= 10^15"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Count of digits.",
+            "example": {
+                "input": "12345",
+                "output": "5",
+                "explanation": "5 digits."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0",
+                "expected_output": "1",
+                "explanation": "0 has 1 digit",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "999",
+                "expected_output": "3",
+                "explanation": "3 digits",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "100000",
+                "expected_output": "6",
+                "explanation": "6 digits",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Repeatedly divide by 10 until 0.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Increment counter in each step.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Handle 0 explicitly (loop condition N > 0 might miss it).",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Alternatively convert to string and take length.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Logarithm or Loop."
+        }
+    }
+]

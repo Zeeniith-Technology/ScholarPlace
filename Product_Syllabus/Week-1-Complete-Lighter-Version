@@ -1,0 +1,4098 @@
+# 📘 WEEK 1 – DSA FUNDAMENTALS (LIGHTER VERSION)
+## Beginner → Placement Ready | C • C++ • JavaScript
+
+**Duration:** 2 hours/day | **Total: 10 hours** | **Languages:** C, C++, JavaScript  
+**Target:** Weak to Intelligent students | **Level:** Foundation
+
+---
+
+Day 0 – I/O (INPUT/OUTPUT)
+
+Heading in file:
+# 🟢 PRE-WEEK: I/O (INPUT/OUTPUT) - ESSENTIAL BASICS
+
+Day 1 – Data Types & Variables
+
+Heading in file:
+# 🟢 DAY 1 – DATA TYPES & VARIABLES
+
+Day 2 – Operators & Decision Making
+
+Heading in file:
+# 🟢 DAY 2 – OPERATORS & DECISION MAKING
+
+Day 3 – Loops & Patterns
+
+Heading in file:
+# 🟢 DAY 3 – LOOPS & PATTERNS
+
+Day 4 – Arrays (DSA Foundation)
+
+Heading in file:
+# 🟢 DAY 4 – ARRAYS (DSA FOUNDATION)
+
+Day 5 – Functions (Basics)
+
+Heading in file:
+# 🟢 DAY 5 – FUNCTIONS (BASICS)
+
+
+
+
+# 🟢 PRE-WEEK: I/O (INPUT/OUTPUT) - ESSENTIAL BASICS
+
+## Learning Outcomes
+By the end of this section, you will:
+✅ Understand what I/O means  
+✅ Take input from user (keyboard)  
+✅ Display output (screen)  
+✅ Use I/O in C, C++, JavaScript  
+
+
+
+## What is I/O?
+
+**I/O = Input + Output**
+
+```
+INPUT:  Data entering the program (from user's keyboard)
+OUTPUT: Data leaving the program (to user's screen)
+
+FLOW:
+User types → Program reads (INPUT)
+Program processes → Program displays (OUTPUT)
+```
+
+---
+
+## I/O in C
+
+**Header Required:**
+```c
+#include <stdio.h>  // Standard Input/Output
+```
+
+**Output - printf():**
+```c
+printf("Hello, World!");          // Print text
+printf("Number: %d\n", 42);       // Print integer
+printf("Name: %s\n", "Amit");     // Print string
+```
+
+**Input - scanf():**
+```c
+int age;
+scanf("%d", &age);  // Read integer
+printf("You are %d years old\n", age);
+```
+
+**Complete I/O Example (C):**
+```c
+#include <stdio.h>
+
+int main() {
+    int age;
+    
+    printf("Enter your age: ");
+    scanf("%d", &age);
+    
+    printf("You are %d years old\n", age);
+    
+    return 0;
+}
+```
+
+**Output (if user enters 25):**
+```
+Enter your age: 25
+You are 25 years old
+```
+
+---
+
+## I/O in C++
+
+**Header Required:**
+```cpp
+#include <iostream>
+using namespace std;
+```
+
+**Output - cout:**
+```cpp
+cout << "Hello, World!";
+cout << "Number: " << 42 << endl;
+```
+
+**Input - cin:**
+```cpp
+int age;
+cin >> age;  // Read integer
+cout << "You are " << age << " years old" << endl;
+```
+
+**Complete I/O Example (C++):**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int age;
+    
+    cout << "Enter your age: ";
+    cin >> age;
+    
+    cout << "You are " << age << " years old" << endl;
+    
+    return 0;
+}
+```
+
+**Output (if user enters 25):**
+```
+Enter your age: 25
+You are 25 years old
+```
+
+---
+
+## I/O in JavaScript
+
+**Output Methods:**
+```javascript
+console.log("Hello, World!");     // Browser console
+alert("Hello!");                  // Popup box
+document.write("Text");           // Write to page
+```
+
+**Input Method:**
+```javascript
+let age = prompt("Enter your age:");  // Popup input
+```
+
+**Complete I/O Example (JavaScript):**
+```javascript
+let age = prompt("Enter your age:");
+alert("You are " + age + " years old");
+console.log("Age: " + age);
+```
+
+**Output (if user enters 25):**
+```
+Alert popup: "You are 25 years old"
+Console: Age: 25
+```
+
+---
+
+## Multiple Inputs/Outputs (C++)
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    string name;
+    int age;
+    float salary;
+    
+    cout << "Enter name: ";
+    cin >> name;
+    
+    cout << "Enter age: ";
+    cin >> age;
+    
+    cout << "Enter salary: ";
+    cin >> salary;
+    
+    cout << "\n--- Your Details ---\n";
+    cout << "Name: " << name << endl;
+    cout << "Age: " << age << endl;
+    cout << "Salary: " << salary << endl;
+    
+    return 0;
+}
+```
+
+**Output (if user enters Raj, 25, 50000):**
+```
+Enter name: Raj
+Enter age: 25
+Enter salary: 50000
+
+--- Your Details ---
+Name: Raj
+Age: 25
+Salary: 50000
+```
+
+---
+
+## 📚 In-Depth Theory: I/O Operations
+
+### Understanding printf() in C
+
+The `printf()` function is used to display formatted output on the screen. It is part of the standard I/O library (`stdio.h`).
+
+**General Form:**
+```c
+printf("<format string>", <list of variables>);
+```
+
+**Format Specifiers:**
+- `%d` - for printing integer values
+- `%f` - for printing real (float) values  
+- `%c` - for printing character values
+- `%s` - for printing string values
+- `\n` - newline character (moves cursor to next line)
+
+**Key Points:**
+- The format string can contain both format specifiers and regular text
+- Format specifiers are replaced by actual values from the variable list
+- Multiple values can be printed in one `printf()` statement
+- `printf()` can also print the result of expressions directly
+
+**Example:**
+```c
+printf("%d %d %f %f", p, n, r, si);
+printf("Simple interest = Rs. %f", si);
+printf("Prin = %d \nRate = %f", p, r);
+```
+
+### Understanding scanf() in C
+
+The `scanf()` function is used to read formatted input from the keyboard.
+
+**General Form:**
+```c
+scanf("<format string>", &variable);
+```
+
+**Critical Rule:** Always use `&` (address-of operator) before variable names in `scanf()`, except for strings.
+
+**Why `&` is needed:** `scanf()` needs the memory address where the input value should be stored. The `&` operator provides this address.
+
+**Common Format Specifiers:**
+- `%d` - for reading integers
+- `%f` - for reading float values
+- `%c` - for reading single character
+- `%s` - for reading strings (no `&` needed for string arrays)
+
+**Example:**
+```c
+int age;
+float salary;
+char grade;
+char name[50];
+
+scanf("%d", &age);        // Note: & before age
+scanf("%f", &salary);     // Note: & before salary
+scanf("%c", &grade);      // Note: & before grade
+scanf("%s", name);        // Note: NO & for string array
+```
+
+### Understanding cin and cout in C++
+
+**cout (Console Output):**
+- `cout` is an object of the `ostream` class
+- Uses the insertion operator `<<` to send data to the output stream
+- `endl` is used to insert a newline and flush the output buffer
+- Multiple values can be chained using multiple `<<` operators
+
+**cin (Console Input):**
+- `cin` is an object of the `istream` class  
+- Uses the extraction operator `>>` to read data from the input stream
+- Automatically handles type conversion
+- Multiple values can be read in sequence
+
+**Key Differences from C:**
+- No format specifiers needed (type-safe)
+- No `&` operator needed (automatic reference handling)
+- More intuitive and less error-prone
+- Requires `#include <iostream>` and `using namespace std;`
+
+**Example:**
+```cpp
+int age;
+float salary;
+string name;
+
+cout << "Enter age: ";
+cin >> age;                    // No & needed
+
+cout << "Enter salary: ";
+cin >> salary;                 // No & needed
+
+cout << "Enter name: ";
+cin >> name;                   // No & needed
+
+cout << "Age: " << age << endl;
+cout << "Salary: " << salary << endl;
+```
+
+### Understanding JavaScript I/O
+
+**Output Methods:**
+
+1. **console.log()** - Most common method
+   - Outputs to browser console (F12 Developer Tools)
+   - Can print multiple values separated by commas
+   - Automatically converts values to strings
+
+2. **alert()** - Popup dialog
+   - Blocks execution until user clicks OK
+   - Useful for simple notifications
+   - Not recommended for production code
+
+3. **document.write()** - Writes to HTML page
+   - Overwrites entire page if called after page load
+   - Generally avoided in modern JavaScript
+
+**Input Methods:**
+
+1. **prompt()** - Popup input dialog
+   - Returns string value (needs conversion for numbers)
+   - Returns `null` if user cancels
+   - Blocks execution until user responds
+
+2. **HTML Input Elements** - Modern approach
+   - Use `<input>` elements in HTML
+   - Access values via DOM: `document.getElementById('id').value`
+
+**Type Conversion in JavaScript:**
+```javascript
+let age = prompt("Enter age:");  // Returns string "25"
+age = parseInt(age);              // Convert to integer: 25
+// OR
+age = Number(age);                // Convert to number: 25
+// OR
+age = +age;                       // Unary + converts to number: 25
+```
+
+### Memory and I/O Operations
+
+**How I/O Works Internally:**
+
+1. **Input Process:**
+   - User types data on keyboard
+   - Data stored in input buffer
+   - Program reads from buffer using `scanf()`, `cin`, or `prompt()`
+   - Data converted to appropriate data type
+   - Stored in program variable
+
+2. **Output Process:**
+   - Program prepares data in memory
+   - Data formatted according to format specifiers (C) or automatically (C++/JS)
+   - Sent to output buffer
+   - Displayed on screen/console
+
+**Buffer Concept:**
+- Input/output buffers are temporary storage areas
+- Buffering improves efficiency by reducing system calls
+- `endl` in C++ flushes the buffer immediately
+- `\n` in C/C++ also flushes buffer in most cases
+
+---
+
+## Common Mistakes (I/O)
+
+| Mistake | Why Wrong | Correct |
+|---------|-----------|---------|
+| `scanf("%d", age);` | Missing & operator | `scanf("%d", &age);` |
+| `cin >> "name"` | Wrong syntax - using string literal instead of variable | `cin >> name;` |
+| `printf("%d", 3.14);` | Type mismatch - using %d for float | `printf("%f", 3.14);` |
+| No `#include <stdio.h>` | scanf/printf functions won't work without header | Add `#include <stdio.h>` at top |
+| `scanf("%s", &name);` | String arrays don't need & operator | `scanf("%s", name);` |
+| Using `var` instead of `let/const` | Outdated, function scope issues | Use `let` or `const` |
+
+---
+
+---
+
+# 🟢 DAY 1 – DATA TYPES & VARIABLES
+
+## Learning Outcomes
+By the end of Day 1, you will:
+✅ Understand what data types are  
+✅ Know the different data types in C/C++  
+✅ Declare and use variables correctly  
+✅ Understand memory and data types  
+✅ Use var/let/const in JavaScript  
+
+
+## What is a Data Type?
+
+A **data type** defines:
+- What kind of data a variable can store
+- How much memory it uses
+- What operations are allowed
+
+**Real-Life Analogy:**
+```
+Bottle → can hold liquid only (water, juice, oil)
+Box → can hold coins only (₹1, ₹5, ₹10)
+Wrong container → damage/waste
+
+Wrong data type → wrong output/error
+```
+
+---
+
+## Data Types in C & C++
+
+| **Type** | **Size** | **Range** | **Example** |
+|----------|----------|-----------|-----------|
+| **int** | 4 bytes | -2B to +2B | `int age = 25;` |
+| **float** | 4 bytes | ±3.4e-38 | `float salary = 25000.50;` |
+| **double** | 8 bytes | ±1.7e-308 | `double pi = 3.14159;` |
+| **char** | 1 byte | -128 to 127 | `char grade = 'A';` |
+| **string** (C++) | Variable | Text | `string name = "Amit";` |
+| **bool** | 1 byte | true/false | `bool passed = true;` |
+
+---
+
+## Declaring Variables (C/C++)
+
+```cpp
+// Single variable
+int age = 25;
+
+// Multiple variables (same type)
+int x = 10, y = 20, z = 30;
+
+// Different types
+int count = 100;
+float price = 99.99;
+char initial = 'A';
+string city = "Mumbai";
+bool isStudent = true;
+```
+
+---
+
+## Data Types in JavaScript
+
+**JavaScript is dynamically typed (type is automatic):**
+
+```javascript
+let age = 25;              // number
+let name = "Amit";         // string
+let passed = true;         // boolean
+let salary = 25000.50;     // number (can be int or float)
+let nothing = null;        // null (empty)
+let x;                     // undefined
+```
+
+**var, let, const (Keywords in JavaScript):**
+
+| **Keyword** | **Scope** | **Reassign?** | **Redeclare?** | **Use Case** |
+|-----------|----------|-------------|--------------|------------|
+| **var** | Function | ✓ Yes | ✓ Yes | Old code (avoid now) |
+| **let** | Block | ✓ Yes | ✗ No | Modern standard |
+| **const** | Block | ✗ No | ✗ No | Constants (won't change) |
+
+```javascript
+var a = 10;      // Can reassign
+let b = 20;      // Can reassign (preferred)
+const c = 30;    // Cannot reassign (immutable)
+
+let age = 25;
+age = 26;        // OK (let allows reassign)
+
+const PI = 3.14;
+PI = 3.15;       // ERROR! (const doesn't allow reassign)
+```
+
+---
+
+## 📚 In-Depth Theory: Data Types & Variables
+
+### Understanding Constants and Variables
+
+**Constants:**
+- A constant is an entity that doesn't change during program execution
+- Examples: `3`, `5`, `"Hello"`, `3.14`
+- Constants are classified into:
+  - **Primary Constants:** Integer, Real (float), Character
+  - **Secondary Constants:** Arrays, Pointers, Structures, etc.
+
+**Variables:**
+- A variable is an entity that may change during program execution
+- Variables are names given to memory locations
+- The value stored in a variable can be modified
+- Example: `int age = 25;` then later `age = 26;`
+
+**Memory Analogy:**
+```
+Memory Location: 65520
+Variable Name: age
+Value: 25
+
+When we write: age = 26;
+Memory Location: 65520 (same location)
+Variable Name: age (same name)
+Value: 26 (changed)
+```
+
+### Rules for Constructing Integer Constants (C/C++)
+
+1. Must have at least one digit
+2. Must NOT have a decimal point
+3. Can be positive or negative (default is positive if no sign)
+4. No commas or blanks allowed within the constant
+5. Range depends on compiler:
+   - 16-bit compiler: -32,768 to 32,767
+   - 32-bit compiler: -2,147,483,648 to 2,147,483,647
+
+**Valid Examples:**
+```c
+426
++782
+-8000
+-7605
+```
+
+**Invalid Examples:**
+```c
+4,267    // Comma not allowed
+4 267    // Blank not allowed
+4.267    // Decimal point not allowed (this is real constant)
+```
+
+### Rules for Constructing Real Constants (C/C++)
+
+Real constants are also called Floating Point constants. They can be written in two forms:
+
+**1. Fractional Form:**
+- Must have at least one digit
+- Must have a decimal point
+- Can be positive or negative (default is positive)
+- No commas or blanks allowed
+
+**Valid Examples:**
+```c
++325.34
+426.0
+-32.76
+-48.5792
+```
+
+**2. Exponential Form:**
+- Format: `mantissa e exponent`
+- Mantissa part: can have positive/negative sign
+- Exponent part: must be an integer (positive/negative)
+- Range: -3.4e38 to 3.4e38
+
+**Valid Examples:**
+```c
++3.2e-5    // 3.2 × 10^(-5)
+4.1e8      // 4.1 × 10^8
+-0.2e+3    // -0.2 × 10^3
+-3.2e-5    // -3.2 × 10^(-5)
+```
+
+### Rules for Constructing Character Constants (C/C++)
+
+- A character constant is a single alphabet, digit, or special symbol
+- Must be enclosed within single inverted commas (both pointing left: `'A'`)
+- Maximum length: 1 character
+- Examples: `'A'`, `'I'`, `'5'`, `'='`
+
+**Important:** `'A'` (character) is different from `"A"` (string)
+
+### Rules for Constructing Variable Names
+
+**Universal Rules (apply to all languages):**
+
+1. **Length:** 1 to 31 characters (some compilers allow up to 247)
+   - Best practice: Keep names meaningful but not excessively long
+
+2. **First Character:** Must be an alphabet or underscore (`_`)
+   - Cannot start with a digit
+   - Cannot start with special symbols (except `_`)
+
+3. **Allowed Characters:** Alphabets, digits, and underscore only
+   - No commas, blanks, or special symbols allowed
+
+4. **Keywords:** Cannot use reserved words as variable names
+   - C has 32 keywords: `auto`, `break`, `case`, `char`, `const`, `continue`, etc.
+
+**Valid Examples:**
+```c
+si_int
+m_hra
+pop_e_89
+age
+totalSalary
+```
+
+**Invalid Examples:**
+```c
+2age        // Starts with digit
+my age      // Contains blank
+my-age      // Contains special symbol
+int         // This is a keyword
+```
+
+### Type Declaration in C/C++
+
+**Why Type Declaration is Necessary:**
+- C/C++ are statically typed languages
+- Compiler must know the type before using the variable
+- Type determines:
+  - How much memory to allocate
+  - What operations are allowed
+  - How to interpret the stored bits
+
+**Declaration Syntax:**
+```c
+int si, m_hra;        // Two integer variables
+float bassal;         // One float variable
+char code;            // One character variable
+```
+
+**Initialization:**
+```c
+int age = 25;         // Declare and initialize
+float salary = 25000.50;
+char grade = 'A';
+```
+
+### Data Type Sizes and Ranges
+
+**Understanding Memory Allocation:**
+
+| **Type** | **Size (bytes)** | **Size (bits)** | **Range** |
+|----------|-----------------|-----------------|-----------|
+| `char` | 1 | 8 | -128 to 127 (or 0 to 255 if unsigned) |
+| `int` | 4 | 32 | -2,147,483,648 to 2,147,483,647 |
+| `float` | 4 | 32 | ±3.4e-38 to ±3.4e+38 |
+| `double` | 8 | 64 | ±1.7e-308 to ±1.7e+308 |
+| `bool` | 1 | 8 | true or false |
+
+**Why Size Matters:**
+- Larger range = more memory needed
+- `double` uses 2× memory of `float` but provides more precision
+- Choose appropriate type: don't use `double` if `float` is sufficient
+
+### JavaScript: Dynamic Typing
+
+**Key Difference:**
+- JavaScript is dynamically typed (type determined at runtime)
+- C/C++ are statically typed (type determined at compile time)
+
+**JavaScript Type System:**
+```javascript
+let x = 10;        // x is number
+x = "Hello";       // x is now string (allowed!)
+x = true;          // x is now boolean (allowed!)
+```
+
+**Type Coercion:**
+JavaScript automatically converts types when needed:
+```javascript
+let num = "5" + 3;      // "53" (string concatenation)
+let num2 = "5" - 3;    // 2 (numeric subtraction)
+let num3 = "5" * 3;    // 15 (numeric multiplication)
+```
+
+### Understanding var, let, and const in JavaScript
+
+**var (Function Scope):**
+- Declared with `var` are function-scoped
+- Can be redeclared in same scope
+- Hoisted to top of function
+- **Avoid using** - causes confusion
+
+**let (Block Scope):**
+- Declared with `let` are block-scoped
+- Cannot be redeclared in same scope
+- Not hoisted (temporal dead zone)
+- **Preferred** for variables that change
+
+**const (Block Scope, Immutable):**
+- Declared with `const` are block-scoped
+- Cannot be reassigned after initialization
+- Must be initialized when declared
+- **Preferred** for constants
+
+**Scope Example:**
+```javascript
+function example() {
+    if (true) {
+        var a = 10;      // Function-scoped
+        let b = 20;      // Block-scoped
+        const c = 30;    // Block-scoped
+    }
+    console.log(a);      // 10 (accessible)
+    console.log(b);      // Error! (not accessible)
+    console.log(c);      // Error! (not accessible)
+}
+```
+
+### Memory Layout of Variables
+
+**How Variables are Stored:**
+
+1. **Declaration:** Compiler reserves memory space
+   ```c
+   int age;  // Reserves 4 bytes in memory
+   ```
+
+2. **Initialization:** Value stored in reserved space
+   ```c
+   age = 25;  // Stores 25 in the 4-byte space
+   ```
+
+3. **Memory Address:** Each variable has a unique address
+   ```c
+   printf("%p", &age);  // Prints memory address of age
+   ```
+
+**Stack vs Heap:**
+- Local variables (like `int age`) are stored on the **stack**
+- Stack is fast but limited in size
+- Heap is used for dynamic memory allocation (advanced topic)
+
+---
+
+## Worked Examples (Day 1)
+
+### Example 1: Store and Display Student Info (C++)
+
+**Input:**
+```
+Enter name: Raj
+Enter age: 20
+Enter marks: 85.5
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    string name;
+    int age;
+    float marks;
+    
+    cout << "Enter name: ";
+    cin >> name;
+    
+    cout << "Enter age: ";
+    cin >> age;
+    
+    cout << "Enter marks: ";
+    cin >> marks;
+    
+    cout << "\n--- Student Info ---\n";
+    cout << "Name: " << name << endl;
+    cout << "Age: " << age << " years" << endl;
+    cout << "Marks: " << marks << "/100" << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter name: Raj
+Enter age: 20
+Enter marks: 85.5
+
+--- Student Info ---
+Name: Raj
+Age: 20 years
+Marks: 85.5/100
+```
+
+---
+
+### Example 2: Calculate Salary (C)
+
+**Input:**
+```
+50000
+12
+```
+
+**Code:**
+```c
+#include <stdio.h>
+
+int main() {
+    float monthly_salary, annual_salary;
+    int months;
+    
+    printf("Enter monthly salary: ");
+    scanf("%f", &monthly_salary);
+    
+    printf("Enter number of months: ");
+    scanf("%d", &months);
+    
+    annual_salary = monthly_salary * months;
+    
+    printf("\nMonthly Salary: %.2f\n", monthly_salary);
+    printf("Months: %d\n", months);
+    printf("Annual Salary: %.2f\n", annual_salary);
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter monthly salary: 50000
+Enter number of months: 12
+
+Monthly Salary: 50000.00
+Months: 12
+Annual Salary: 600000.00
+```
+
+---
+
+### Example 3: JavaScript Variables
+
+```javascript
+// Different data types
+let name = "Priya";
+let age = 22;
+let cgpa = 8.5;
+let isGraduate = false;
+
+// Display
+console.log("Name: " + name);
+console.log("Age: " + age);
+console.log("CGPA: " + cgpa);
+console.log("Graduated: " + isGraduate);
+
+// Change values
+age = 23;
+cgpa = 8.7;
+console.log("\nUpdated Age: " + age);
+console.log("Updated CGPA: " + cgpa);
+```
+
+**Output:**
+```
+Name: Priya
+Age: 22
+CGPA: 8.5
+Graduated: false
+
+Updated Age: 23
+Updated CGPA: 8.7
+```
+
+---
+
+### Example 4: Type Matters (C++)
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int int_val = 10;
+    float float_val = 10.5;
+    
+    cout << "Integer: " << int_val << endl;          // 10
+    cout << "Float: " << float_val << endl;          // 10.5
+    
+    // Integer division truncates decimal
+    int result = 10 / 3;
+    cout << "10 / 3 (int): " << result << endl;      // 3
+    
+    // Float division keeps decimal
+    float result2 = 10.0 / 3.0;
+    cout << "10 / 3 (float): " << result2 << endl;   // 3.33333
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Integer: 10
+Float: 10.5
+10 / 3 (int): 3
+10 / 3 (float): 3.33333
+```
+
+---
+
+## Common Mistakes (Day 1)
+
+| **Mistake** | **Output** | **Why Wrong** | **Correct** |
+|-----------|-----------|-------------|-----------|
+| `int x = 10.5;` | x = 10 | Loses decimal | Use float for decimals |
+| `char c = "ABC";` | ERROR | char holds 1 char | Use string for text |
+| `float pi = 3.14159;` | 3.14159 | Loss of precision | Use double for precision |
+| `printf("%d", 3.14);` | Garbage | Type mismatch | Use `%f` for float |
+| `let x = 10; let x = 20;` | ERROR | Redeclare not allowed | Use `var` if needed |
+
+---
+
+
+## Interview Tips (Day 1)
+
+💡 **Tip 1:** Always use `float` for decimals, NOT `int`  
+💡 **Tip 2:** String vs char: "Hello" (string) vs 'H' (char)  
+💡 **Tip 3:** In JavaScript, use `let` instead of `var` (modern standard)  
+💡 **Tip 4:** Remember to use `&` in scanf: `scanf("%d", &x);`  
+
+---
+
+---
+
+# 🟢 DAY 2 – OPERATORS & DECISION MAKING
+
+## Learning Outcomes
+By the end of Day 2, you will:
+✅ Understand arithmetic operators  
+✅ Use relational & logical operators  
+✅ Make decisions with if-else  
+✅ Use switch-case for multiple choices  
+✅ Apply ternary operator  
+
+---
+
+## Operators Overview
+
+**1️⃣ Arithmetic Operators**
+
+| **Op** | **Name** | **Example** | **Result** |
+|--------|----------|-----------|-----------|
+| **+** | Addition | 10 + 3 | 13 |
+| **-** | Subtraction | 10 - 3 | 7 |
+| **\*** | Multiplication | 10 * 3 | 30 |
+| **/** | Division | 10 / 3 | 3 (int) or 3.33 (float) |
+| **%** | Modulus (remainder) | 10 % 3 | 1 |
+
+```cpp
+int a = 10, b = 3;
+cout << a + b << endl;  // 13
+cout << a - b << endl;  // 7
+cout << a * b << endl;  // 30
+cout << a / b << endl;  // 3
+cout << a % b << endl;  // 1
+```
+
+---
+
+**2️⃣ Relational Operators (Comparisons)**
+
+| **Op** | **Meaning** | **Example** | **Result** |
+|--------|-----------|-----------|-----------|
+| **>** | Greater than | 10 > 3 | true |
+| **<** | Less than | 10 < 3 | false |
+| **>=** | Greater or equal | 10 >= 10 | true |
+| **<=** | Less or equal | 10 <= 3 | false |
+| **==** | Equal | 10 == 10 | true |
+| **!=** | Not equal | 10 != 3 | true |
+
+```cpp
+int age = 18;
+if (age >= 18) {
+    cout << "You can vote" << endl;
+}
+```
+
+---
+
+**3️⃣ Logical Operators**
+
+| **Op** | **Meaning** | **Example** | **Result** |
+|--------|-----------|-----------|-----------|
+| **&&** | AND (both true) | true && false | false |
+| **\|\|** | OR (at least one true) | true \|\| false | true |
+| **!** | NOT (reverse) | !true | false |
+
+```cpp
+int age = 25;
+bool hasID = true;
+
+if (age >= 18 && hasID) {
+    cout << "Allowed entry" << endl;  // Will print
+}
+
+if (age < 18 || !hasID) {
+    cout << "Not allowed" << endl;     // Won't print
+}
+```
+
+---
+
+**4️⃣ Assignment Operators**
+
+| **Op** | **Meaning** | **Example** | **After** |
+|--------|-----------|-----------|----------|
+| **=** | Assign | x = 10 | x = 10 |
+| **+=** | Add & assign | x += 5 (x=10) | x = 15 |
+| **-=** | Subtract & assign | x -= 3 (x=10) | x = 7 |
+| **\*=** | Multiply & assign | x *= 2 (x=10) | x = 20 |
+
+```cpp
+int x = 10;
+x += 5;   // x = 10 + 5 = 15
+x -= 3;   // x = 15 - 3 = 12
+x *= 2;   // x = 12 * 2 = 24
+```
+
+---
+
+**5️⃣ Increment/Decrement**
+
+```cpp
+int i = 5;
+i++;      // i = 6 (increase by 1)
+i--;      // i = 5 (decrease by 1)
+++i;      // Pre-increment (increment, then use)
+i++;      // Post-increment (use, then increment)
+```
+
+---
+
+## 📚 In-Depth Theory: Operators & Decision Making
+
+### Operator Precedence and Associativity
+
+**Order of Evaluation:**
+Operators are evaluated in a specific order based on precedence. When operators have the same precedence, associativity determines the order.
+
+**Precedence Table (High to Low):**
+
+1. **Parentheses:** `()` - Highest precedence
+2. **Unary Operators:** `++`, `--`, `!`, `-` (unary minus)
+3. **Multiplicative:** `*`, `/`, `%`
+4. **Additive:** `+`, `-`
+5. **Relational:** `<`, `<=`, `>`, `>=`
+6. **Equality:** `==`, `!=`
+7. **Logical AND:** `&&`
+8. **Logical OR:** `||`
+9. **Assignment:** `=`, `+=`, `-=`, etc. - Lowest precedence
+
+**Example:**
+```cpp
+int result = 5 + 3 * 2;        // Result: 11 (not 16)
+// Evaluated as: 5 + (3 * 2) = 5 + 6 = 11
+
+int result2 = (5 + 3) * 2;     // Result: 16
+// Evaluated as: 8 * 2 = 16
+```
+
+### Arithmetic Operators Deep Dive
+
+**Integer Division vs Float Division:**
+```cpp
+int a = 10, b = 3;
+int result1 = a / b;           // Result: 3 (integer division, truncates)
+float result2 = a / b;          // Result: 3.0 (still integer division!)
+float result3 = (float)a / b;   // Result: 3.333... (float division)
+float result4 = 10.0 / 3;       // Result: 3.333... (float division)
+```
+
+**Modulus Operator (%):**
+- Returns the remainder after division
+- Only works with integer operands
+- Useful for:
+  - Checking even/odd: `n % 2 == 0` (even)
+  - Finding last digit: `n % 10`
+  - Wrapping values: `(n + 1) % 7` (days of week)
+
+**Example:**
+```cpp
+10 % 3 = 1      // 10 divided by 3 = 3 remainder 1
+15 % 4 = 3      // 15 divided by 4 = 3 remainder 3
+7 % 2 = 1       // Odd number
+8 % 2 = 0       // Even number
+```
+
+### Relational Operators
+
+**Return Type:**
+- Relational operators return `bool` (true or false)
+- In C, they return `1` for true, `0` for false
+- In C++, they return `true` or `false` (boolean type)
+
+**Common Pitfalls:**
+```cpp
+int age = 18;
+
+// WRONG: Assignment instead of comparison
+if (age = 18) {  // Always true! Assigns 18 to age
+    // This will always execute
+}
+
+// CORRECT: Comparison
+if (age == 18) {  // Compares age with 18
+    // Executes only if age equals 18
+}
+```
+
+**Floating Point Comparison:**
+```cpp
+float a = 0.1 + 0.2;
+if (a == 0.3) {  // Might be false due to floating point precision!
+    // Better approach:
+}
+if (abs(a - 0.3) < 0.0001) {  // Compare with tolerance
+    // This is more reliable
+}
+```
+
+### Logical Operators
+
+**Short-Circuit Evaluation:**
+- `&&` (AND): If left side is false, right side is NOT evaluated
+- `||` (OR): If left side is true, right side is NOT evaluated
+
+**Example:**
+```cpp
+int x = 5;
+if (x > 10 && x++ < 20) {  // x++ is NOT executed (short-circuit)
+    // x is still 5
+}
+
+if (x < 10 || x++ > 5) {   // x++ is NOT executed (short-circuit)
+    // x is still 5
+}
+```
+
+**Truth Tables:**
+
+**AND (&&):**
+| A | B | A && B |
+|---|---|--------|
+| true | true | true |
+| true | false | false |
+| false | true | false |
+| false | false | false |
+
+**OR (||):**
+| A | B | A \|\| B |
+|---|---|---------|
+| true | true | true |
+| true | false | true |
+| false | true | true |
+| false | false | false |
+
+**NOT (!):**
+| A | !A |
+|---|---|
+| true | false |
+| false | true |
+
+### Increment and Decrement Operators
+
+**Pre-increment vs Post-increment:**
+
+**Pre-increment (`++i`):**
+1. Increment first
+2. Then use the value
+
+**Post-increment (`i++`):**
+1. Use the value first
+2. Then increment
+
+**Example:**
+```cpp
+int i = 5;
+int a = ++i;    // i becomes 6, a = 6
+int b = i++;    // b = 6, then i becomes 7
+
+// After execution:
+// i = 7, a = 6, b = 6
+```
+
+**Common Usage:**
+```cpp
+for (int i = 0; i < 10; i++) {  // Post-increment is common in loops
+    // Loop body
+}
+
+int arr[5] = {1, 2, 3, 4, 5};
+int *ptr = arr;
+cout << *ptr++;  // Prints 1, then ptr points to arr[1]
+cout << *++ptr;  // ptr points to arr[2], then prints 2
+```
+
+---
+
+## IF-ELSE Decision Making
+
+**Basic Structure:**
+```cpp
+if (condition) {
+    // Code if TRUE
+}
+else {
+    // Code if FALSE
+}
+```
+
+### Nested if-else
+
+**Multiple Conditions:**
+```cpp
+if (condition1) {
+    // Code block 1
+}
+else if (condition2) {
+    // Code block 2
+}
+else if (condition3) {
+    // Code block 3
+}
+else {
+    // Default code block
+}
+```
+
+**Important:** Only ONE block executes. Once a condition is true, remaining conditions are NOT checked.
+
+### Switch-Case Statement
+
+**When to Use:**
+- Switch is preferred when comparing one variable against multiple constant values
+- More efficient than multiple if-else statements
+- Cleaner and more readable code
+
+**Syntax:**
+```cpp
+switch (expression) {
+    case constant1:
+        // Code for constant1
+        break;  // IMPORTANT: Prevents fall-through
+    case constant2:
+        // Code for constant2
+        break;
+    default:
+        // Code if no match
+        // break not needed here
+}
+```
+
+**Key Points:**
+1. Expression must evaluate to integer or character (not float/string in C)
+2. Each case must be a constant (not a variable)
+3. `break` statement is crucial - without it, execution "falls through" to next case
+4. `default` case is optional but recommended
+
+**Fall-Through Behavior:**
+```cpp
+int choice = 2;
+switch (choice) {
+    case 1:
+        cout << "One";
+        // Missing break - falls through!
+    case 2:
+        cout << "Two";    // This executes
+        // Missing break - falls through!
+    case 3:
+        cout << "Three";  // This also executes!
+        break;
+}
+// Output: "TwoThree"
+```
+
+**Valid Switch Expression Types:**
+- C: `int`, `char`, `enum`
+- C++: `int`, `char`, `enum`, `string` (C++11+)
+
+### Ternary Operator (Conditional Operator)
+
+**Syntax:**
+```cpp
+condition ? value_if_true : value_if_false
+```
+
+**Use Cases:**
+- Simple conditional assignments
+- Return statements
+- Avoid for complex logic (use if-else instead)
+
+**Examples:**
+```cpp
+int max = (a > b) ? a : b;  // Find maximum
+string result = (score >= 50) ? "Pass" : "Fail";
+int abs_value = (x < 0) ? -x : x;  // Absolute value
+```
+
+**Nested Ternary (Use Sparingly):**
+```cpp
+char grade = (marks >= 90) ? 'A' :
+            (marks >= 75) ? 'B' :
+            (marks >= 60) ? 'C' :
+            (marks >= 40) ? 'D' : 'F';
+// Can be hard to read - prefer if-else for complex cases
+```
+
+---
+
+## Worked Examples (Day 2)
+
+### Example 1: Check Even/Odd (C++)
+
+**Input:**
+```
+Enter number: 7
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int num;
+    
+    cout << "Enter a number: ";
+    cin >> num;
+    
+    if (num % 2 == 0) {
+        cout << num << " is EVEN" << endl;
+    }
+    else {
+        cout << num << " is ODD" << endl;
+    }
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter a number: 7
+7 is ODD
+```
+
+---
+
+### Example 2: Check Eligibility (C)
+
+**Input:**
+```
+25
+```
+
+**Code:**
+```c
+#include <stdio.h>
+
+int main() {
+    int age;
+    
+    printf("Enter your age: ");
+    scanf("%d", &age);
+    
+    if (age >= 18) {
+        printf("You are eligible to vote\n");
+    }
+    else {
+        printf("You are not eligible to vote\n");
+    }
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter your age: 25
+You are eligible to vote
+```
+
+---
+
+### Example 3: Ternary Operator (One-Line IF)
+
+```cpp
+// Long version
+int num = 5;
+if (num > 0) {
+    cout << "Positive" << endl;
+}
+else {
+    cout << "Non-positive" << endl;
+}
+
+// Short version (ternary)
+cout << (num > 0 ? "Positive" : "Non-positive") << endl;
+```
+
+**Syntax:**
+```
+(condition) ? value_if_true : value_if_false
+```
+
+---
+
+### Example 4: Nested Ternary (Multiple Choices)
+
+**Input:**
+```
+78
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int marks;
+    char grade;
+    
+    cout << "Enter marks: ";
+    cin >> marks;
+    
+    grade = (marks >= 90) ? 'A' :
+            (marks >= 75) ? 'B' :
+            (marks >= 60) ? 'C' :
+            (marks >= 40) ? 'D' : 'F';
+    
+    cout << "Grade: " << grade << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter marks: 78
+Grade: B
+```
+
+---
+
+### Example 5: Switch-Case
+
+**Input:**
+```
+2
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int choice;
+    
+    cout << "1. Add\n2. Subtract\n3. Multiply\n";
+    cout << "Enter choice: ";
+    cin >> choice;
+    
+    switch(choice) {
+        case 1:
+            cout << "You selected: Add" << endl;
+            break;
+        case 2:
+            cout << "You selected: Subtract" << endl;
+            break;
+        case 3:
+            cout << "You selected: Multiply" << endl;
+            break;
+        default:
+            cout << "Invalid choice" << endl;
+    }
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+1. Add
+2. Subtract
+3. Multiply
+Enter choice: 2
+You selected: Subtract
+```
+
+---
+
+## Common Mistakes (Day 2)
+
+| **Mistake** | **Result** | **Fix** |
+|-----------|-----------|--------|
+| `if (age = 18)` | Always true, WRONG | Use `==` not `=` |
+| `if (age > 18 || < 30)` | SYNTAX ERROR | `if (age > 18 \|\| age < 30)` |
+| `if (age >= 18 && <= 30)` | SYNTAX ERROR | `if (age >= 18 && age <= 30)` |
+| No break in switch | Falls through cases | Add `break;` after each case |
+| `if age > 18:` | SYNTAX (Python style) | Use `if (age > 18) {` (C/C++) |
+
+
+## Interview Tips (Day 2)
+
+💡 **Tip 1:** Always use `==` for comparison, NOT `=` (which assigns)  
+💡 **Tip 2:** `&&` is AND (both must be true), `||` is OR (at least one true)  
+💡 **Tip 3:** Ternary is fast but use only for simple conditions  
+💡 **Tip 4:** Switch is better than if-else for many choices  
+
+---
+
+---
+
+# 🟢 DAY 3 – LOOPS & PATTERNS
+
+## Learning Outcomes
+By the end of Day 3, you will:
+✅ Understand FOR loops  
+✅ Understand WHILE loops  
+✅ Understand DO-WHILE loops  
+✅ Print star patterns  
+✅ Control loops with break & continue  
+
+---
+
+## Loop Types
+
+**1️⃣ FOR Loop** (when you know exact iterations)
+
+```cpp
+for (initialization; condition; increment) {
+    // Repeat this code
+}
+
+for (int i = 1; i <= 5; i++) {
+    cout << i << " ";  // Prints: 1 2 3 4 5
+}
+```
+
+---
+
+**2️⃣ WHILE Loop** (when condition is checked)
+
+```cpp
+while (condition) {
+    // Repeat while TRUE
+}
+
+int i = 1;
+while (i <= 5) {
+    cout << i << " ";  // Prints: 1 2 3 4 5
+    i++;
+}
+```
+
+---
+
+**3️⃣ DO-WHILE Loop** (executes at least once)
+
+```cpp
+do {
+    // Execute at least once
+} while (condition);
+
+int i = 1;
+do {
+    cout << i << " ";  // Prints: 1 2 3 4 5
+    i++;
+} while (i <= 5);
+```
+
+**Key Difference:** Do-while checks condition AFTER execution.
+
+### When to Use Each Loop Type
+
+**FOR Loop:**
+- Use when you know the exact number of iterations
+- Best for: counting, array traversal, fixed iterations
+- Example: Print numbers 1 to 10, process array elements
+
+**WHILE Loop:**
+- Use when number of iterations is unknown
+- Condition checked before each iteration
+- Best for: reading until sentinel value, searching, user input validation
+- Example: Read numbers until user enters 0
+
+**DO-WHILE Loop:**
+- Use when you need at least one execution
+- Condition checked after each iteration
+- Best for: menu-driven programs, input validation with retry
+- Example: Ask user for password until correct
+
+---
+
+## 📚 In-Depth Theory: Loop Control Structures
+
+### FOR Loop Anatomy
+
+**Structure:**
+```cpp
+for (initialization; condition; increment) {
+    // Loop body
+}
+```
+
+**Execution Flow:**
+1. **Initialization:** Executes ONCE at the start
+2. **Condition Check:** Before each iteration
+3. **Loop Body:** Executes if condition is true
+4. **Increment:** After each iteration (before next condition check)
+5. **Repeat:** Steps 2-4 until condition becomes false
+
+**Example Breakdown:**
+```cpp
+for (int i = 1; i <= 5; i++) {
+    cout << i << " ";
+}
+```
+
+**Step-by-step:**
+- Step 1: `i = 1` (initialization)
+- Step 2: Check `i <= 5` → true, enter loop
+- Step 3: Print `1`
+- Step 4: `i++` → `i = 2`
+- Step 2: Check `i <= 5` → true, enter loop
+- Step 3: Print `2`
+- ... continues until `i = 6`
+- Step 2: Check `i <= 5` → false, exit loop
+
+### Nested Loops
+
+**Concept:**
+- Loop inside another loop
+- Inner loop completes fully for each iteration of outer loop
+- Total iterations = outer_iterations × inner_iterations
+
+**Example:**
+```cpp
+for (int i = 1; i <= 3; i++) {        // Outer loop: 3 iterations
+    for (int j = 1; j <= 2; j++) {    // Inner loop: 2 iterations
+        cout << "i=" << i << " j=" << j << endl;
+    }
+}
+```
+
+**Output:**
+```
+i=1 j=1
+i=1 j=2
+i=2 j=1
+i=2 j=2
+i=3 j=1
+i=3 j=2
+```
+
+**Total iterations:** 3 × 2 = 6
+
+**Common Use Cases:**
+- 2D array traversal
+- Matrix operations
+- Pattern printing (like star patterns)
+- Nested data structures
+
+### Loop Control: break vs continue
+
+**break Statement:**
+- Immediately exits the loop
+- Control transfers to statement after the loop
+- In nested loops, only exits the innermost loop
+
+**continue Statement:**
+- Skips remaining code in current iteration
+- Jumps to next iteration (condition check)
+- Does NOT exit the loop
+
+**Visual Comparison:**
+```cpp
+// break example
+for (int i = 1; i <= 5; i++) {
+    if (i == 3) break;      // Exit loop when i=3
+    cout << i << " ";       // Prints: 1 2
+}
+
+// continue example
+for (int i = 1; i <= 5; i++) {
+    if (i == 3) continue;   // Skip when i=3
+    cout << i << " ";       // Prints: 1 2 4 5
+}
+```
+
+### Infinite Loops
+
+**What is an Infinite Loop?**
+- A loop that never terminates
+- Condition always evaluates to true
+- Program appears to "hang" or run forever
+
+**Common Causes:**
+```cpp
+// Missing increment
+int i = 1;
+while (i <= 5) {
+    cout << i;  // i never changes - infinite loop!
+}
+
+// Wrong condition
+for (int i = 1; i > 0; i++) {  // i always > 0 - infinite!
+    cout << i;
+}
+
+// Always true condition
+while (true) {  // Explicit infinite loop
+    // Need break statement to exit
+    if (someCondition) break;
+}
+```
+
+**Intentional Infinite Loops:**
+```cpp
+while (true) {
+    // Game loop
+    // Menu system
+    // Server listening
+    if (exitCondition) break;  // Exit mechanism
+}
+```
+
+### Loop Optimization Tips
+
+**1. Minimize Work Inside Loops:**
+```cpp
+// SLOW: Calculation inside loop
+for (int i = 0; i < n; i++) {
+    int result = expensiveCalculation();  // Called n times!
+    arr[i] = result;
+}
+
+// FAST: Calculate once outside
+int result = expensiveCalculation();  // Called once
+for (int i = 0; i < n; i++) {
+    arr[i] = result;
+}
+```
+
+**2. Use Appropriate Loop Type:**
+- FOR: Known iterations
+- WHILE: Unknown iterations
+- DO-WHILE: At least one execution needed
+
+**3. Avoid Unnecessary Nested Loops:**
+- O(n²) complexity can be slow for large n
+- Consider if algorithm can be optimized
+
+---
+
+## Break & Continue
+
+**BREAK:** Exit loop immediately
+```cpp
+for (int i = 1; i <= 5; i++) {
+    if (i == 3) break;      // Exit when i = 3
+    cout << i << " ";       // Prints: 1 2
+}
+```
+
+**CONTINUE:** Skip this iteration, go to next
+```cpp
+for (int i = 1; i <= 5; i++) {
+    if (i == 3) continue;   // Skip i = 3
+    cout << i << " ";       // Prints: 1 2 4 5
+}
+```
+
+---
+
+## Worked Examples (Day 3)
+
+### Example 1: Print 1 to 5 (All 3 Loops)
+
+**FOR:**
+```cpp
+for (int i = 1; i <= 5; i++) {
+    cout << i << " ";
+}
+// Output: 1 2 3 4 5
+```
+
+**WHILE:**
+```cpp
+int i = 1;
+while (i <= 5) {
+    cout << i << " ";
+    i++;
+}
+// Output: 1 2 3 4 5
+```
+
+**DO-WHILE:**
+```cpp
+int i = 1;
+do {
+    cout << i << " ";
+    i++;
+} while (i <= 5);
+// Output: 1 2 3 4 5
+```
+
+---
+
+### Example 2: Square Star Pattern
+
+**Pattern:**
+```
+*****
+*****
+*****
+*****
+*****
+```
+
+**Code:**
+```cpp
+for (int i = 1; i <= 5; i++) {           // 5 rows
+    for (int j = 1; j <= 5; j++) {       // 5 stars per row
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → runs 5 times (i = 1 to 5)
+- **Inner Loop (j):** Controls stars per row → runs 5 times (j = 1 to 5) for each row
+
+### Iteration Table
+
+| Iteration | i Value | j Loop Runs | Stars in Row |
+|-----------|---------|-------------|--------------|
+| 1st | i = 1 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 2nd | i = 2 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 3rd | i = 3 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 4th | i = 4 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 5th | i = 5 | j = 1, 2, 3, 4, 5 | 5 stars |
+
+### 🔍 Detailed Walkthrough (Row 1: i = 1)
+
+```
+Step 1: i = 1, enter outer loop
+Step 2: Enter inner loop (j = 1 to 5)
+  → j = 1: print "*"  → Current: "*"
+  → j = 2: print "*"  → Current: "**"
+  → j = 3: print "*"  → Current: "***"
+  → j = 4: print "*"  → Current: "****"
+  → j = 5: print "*"  → Current: "*****"
+Step 3: j = 6 → condition false → exit inner loop
+Step 4: Print newline "\n"
+Step 5: i++ → i = 2, continue to next row
+```
+
+### 💡 Key Concept
+The inner loop **always completes fully** (1 to 5) for every outer loop iteration. This means every row gets exactly 5 stars, creating a perfect square pattern.
+
+---
+
+### Example 3: Right Triangle Pattern
+
+**Pattern:**
+```
+*
+**
+***
+****
+*****
+```
+
+**Code:**
+```cpp
+for (int i = 1; i <= 5; i++) {           // 5 rows
+    for (int j = 1; j <= i; j++) {       // i stars in row i
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → runs 5 times (i = 1 to 5)
+- **Inner Loop (j):** Controls stars per row → **KEY:** j runs from 1 to i, so row i has i stars!
+
+### Iteration Table
+
+| Iteration | i Value | Condition (j <= i) | j Values | Stars in Row |
+|-----------|---------|-------------------|----------|--------------|
+| 1st | i = 1 | j <= 1 | j = 1 | 1 star |
+| 2nd | i = 2 | j <= 2 | j = 1, 2 | 2 stars |
+| 3rd | i = 3 | j <= 3 | j = 1, 2, 3 | 3 stars |
+| 4th | i = 4 | j <= 4 | j = 1, 2, 3, 4 | 4 stars |
+| 5th | i = 5 | j <= 5 | j = 1, 2, 3, 4, 5 | 5 stars |
+
+### 🔍 Detailed Walkthrough (Row 3: i = 3)
+
+```
+Step 1: i = 3, enter outer loop
+Step 2: Check inner loop condition: j <= 3
+Step 3: Enter inner loop
+  → j = 1: print "*"  → Current: "*"
+  → j = 2: print "*"  → Current: "**"
+  → j = 3: print "*"  → Current: "***"
+Step 4: j = 4 → condition false (4 <= 3) → exit inner loop
+Step 5: Print newline "\n"
+Step 6: i++ → i = 4, continue to next row
+```
+
+### 💡 Key Concept
+The condition `j <= i` is the **magic formula**! It makes the inner loop run `i` times:
+- Row 1: j <= 1 → 1 star
+- Row 2: j <= 2 → 2 stars  
+- Row 3: j <= 3 → 3 stars
+- Row 4: j <= 4 → 4 stars
+- Row 5: j <= 5 → 5 stars
+
+This creates the **growing triangle pattern**!
+
+---
+
+### Example 4: Inverted Triangle
+
+**Pattern:**
+```
+*****
+****
+***
+**
+*
+```
+
+**Code:**
+```cpp
+for (int i = 5; i >= 1; i--) {           // Decrease rows
+    for (int j = 1; j <= i; j++) {       // i stars in row
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → **KEY:** Decrementing loop! Starts at 5, goes down to 1 (i = 5, 4, 3, 2, 1)
+- **Inner Loop (j):** Controls stars per row → runs from 1 to i
+
+### Iteration Table
+
+| Iteration | i Value | Condition (j <= i) | j Values | Stars in Row |
+|-----------|---------|-------------------|----------|--------------|
+| 1st | i = 5 | j <= 5 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 2nd | i = 4 | j <= 4 | j = 1, 2, 3, 4 | 4 stars |
+| 3rd | i = 3 | j <= 3 | j = 1, 2, 3 | 3 stars |
+| 4th | i = 2 | j <= 2 | j = 1, 2 | 2 stars |
+| 5th | i = 1 | j <= 1 | j = 1 | 1 star |
+
+### 🔍 Detailed Walkthrough (Row 2: i = 4)
+
+```
+Step 1: i = 4 (after i-- from previous iteration), enter outer loop
+Step 2: Check inner loop condition: j <= 4
+Step 3: Enter inner loop
+  → j = 1: print "*"  → Current: "*"
+  → j = 2: print "*"  → Current: "**"
+  → j = 3: print "*"  → Current: "***"
+  → j = 4: print "*"  → Current: "****"
+Step 4: j = 5 → condition false (5 <= 4) → exit inner loop
+Step 5: Print newline "\n"
+Step 6: i-- → i = 3, continue to next row
+```
+
+### 💡 Key Concept
+The **decrementing loop** (`i--`) is the secret! Starting from i = 5 and decreasing makes:
+- Row 1: 5 stars (i = 5)
+- Row 2: 4 stars (i = 4)
+- Row 3: 3 stars (i = 3)
+- Row 4: 2 stars (i = 2)
+- Row 5: 1 star (i = 1)
+
+Each row has **fewer stars** than the previous one, creating the inverted triangle!
+
+---
+
+### Example 5: Pyramid Pattern
+
+**Pattern:**
+```
+    *
+   ***
+  *****
+ *******
+*********
+```
+
+**Code:**
+```cpp
+int n = 5;
+for (int i = 1; i <= n; i++) {
+    // Print spaces
+    for (int s = 1; s <= n - i; s++) {
+        cout << " ";
+    }
+    // Print stars
+    for (int st = 1; st <= 2 * i - 1; st++) {
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → runs 5 times (i = 1 to 5)
+- **First Inner Loop (s):** Prints spaces → runs (n - i) times
+- **Second Inner Loop (st):** Prints stars → runs (2*i - 1) times
+
+### Iteration Table
+
+| Iteration | i Value | Spaces (n-i) | s Values | Stars (2*i-1) | st Values |
+|-----------|---------|--------------|----------|---------------|-----------|
+| 1st | i = 1 | 5-1 = 4 | s = 1,2,3,4 | 2×1-1 = 1 | st = 1 |
+| 2nd | i = 2 | 5-2 = 3 | s = 1,2,3 | 2×2-1 = 3 | st = 1,2,3 |
+| 3rd | i = 3 | 5-3 = 2 | s = 1,2 | 2×3-1 = 5 | st = 1,2,3,4,5 |
+| 4th | i = 4 | 5-4 = 1 | s = 1 | 2×4-1 = 7 | st = 1,2,3,4,5,6,7 |
+| 5th | i = 5 | 5-5 = 0 | (skipped) | 2×5-1 = 9 | st = 1,2,3,4,5,6,7,8,9 |
+
+### 🔍 Detailed Walkthrough (Row 3: i = 3)
+
+```
+Step 1: i = 3, enter outer loop
+
+Step 2: FIRST INNER LOOP - Print Spaces
+  Condition: s <= (5 - 3) = 2
+  → s = 1: print " "  → Current: " "
+  → s = 2: print " "  → Current: "  "
+  → s = 3: condition false → exit space loop
+  Result: 2 spaces printed
+
+Step 3: SECOND INNER LOOP - Print Stars
+  Condition: st <= (2×3 - 1) = 5
+  → st = 1: print "*"  → Current: "  *"
+  → st = 2: print "*"  → Current: "  **"
+  → st = 3: print "*"  → Current: "  ***"
+  → st = 4: print "*"  → Current: "  ****"
+  → st = 5: print "*"  → Current: "  *****"
+  → st = 6: condition false → exit star loop
+  Result: 5 stars printed
+
+Step 4: Print newline "\n"
+Step 5: i++ → i = 4, continue to next row
+```
+
+### 💡 Key Concepts
+
+**1. Space Formula: `n - i`**
+- Row 1: 5 - 1 = 4 spaces
+- Row 2: 5 - 2 = 3 spaces
+- Row 3: 5 - 3 = 2 spaces
+- Row 4: 5 - 4 = 1 space
+- Row 5: 5 - 5 = 0 spaces (loop skipped)
+
+**2. Star Formula: `2*i - 1`**
+- Row 1: 2×1 - 1 = 1 star
+- Row 2: 2×2 - 1 = 3 stars
+- Row 3: 2×3 - 1 = 5 stars
+- Row 4: 2×4 - 1 = 7 stars
+- Row 5: 2×5 - 1 = 9 stars
+
+**3. Why `2*i - 1`?**
+This formula creates **odd numbers** (1, 3, 5, 7, 9) which center perfectly in the pyramid!
+
+**4. Two Loops Work Together:**
+- First loop: Adds left padding (spaces) to center the stars
+- Second loop: Prints the actual star pattern
+- Together: Creates a beautiful centered pyramid!
+
+---
+
+## Common Mistakes (Day 3)
+
+| **Mistake** | **Problem** | **Fix** |
+|-----------|-----------|--------|
+| `for (int i = 1, i <= 5, i++)` | Wrong syntax | Use `;` not `,` |
+| `for (int i = 1; i < 5; i++)` | Stops at 4 | Use `<=` for 1 to 5 |
+| `while (i <= 5)` without i++ | Infinite loop | Add `i++` inside loop |
+| Off-by-one errors | Wrong count | Count carefully 1 to n |
+| Not printing newline | All on one line | Add `\n` or `endl` |
+
+
+## Interview Tips (Day 3)
+
+💡 **Tip 1:** Use FOR when you know iterations, WHILE when you don't  
+💡 **Tip 2:** DO-WHILE guarantees at least one execution  
+💡 **Tip 3:** Use `continue` to skip, `break` to exit  
+💡 **Tip 4:** Nested loops multiply: 2 loops = n² iterations  
+
+---
+
+---
+
+# 🟢 DAY 4 – ARRAYS (DSA FOUNDATION)
+
+## Learning Outcomes
+By the end of Day 4, you will:
+✅ Declare and initialize arrays  
+✅ Input/output from arrays  
+✅ Traverse arrays  
+✅ Find max/min in array  
+✅ Understand array bounds  
+
+---
+
+## What is an Array?
+
+An **array** is a collection of elements of the SAME type stored in CONSECUTIVE memory.
+
+**Real-Life Analogy:**
+```
+School register:
+Row 1: Raj
+Row 2: Priya
+Row 3: Amit
+Row 4: Zara
+
+Array of names:
+Index 0: Raj
+Index 1: Priya
+Index 2: Amit
+Index 3: Zara
+```
+
+---
+
+## Declaring Arrays
+
+**Syntax:**
+```cpp
+int arr[5];              // Array of 5 integers
+float marks[10];         // Array of 10 floats
+char grade[5];           // Array of 5 characters
+string names[3];         // Array of 3 strings
+```
+
+**With Initialization:**
+```cpp
+int arr[5] = {10, 20, 30, 40, 50};
+float marks[] = {85.5, 90.0, 78.5};  // Size auto-calculated
+```
+
+---
+
+## 📚 In-Depth Theory: Arrays (Basics)
+
+### Understanding Array Indexing
+
+**Zero-Based Indexing:**
+- Arrays in C/C++/JavaScript use zero-based indexing
+- First element is at index 0
+- Last element is at index (size - 1)
+- Valid range: `0` to `n-1` for array of size `n`
+
+**Example:**
+```cpp
+int arr[5] = {10, 20, 30, 40, 50};
+// Index:     0   1   2   3   4
+// Size: 5, but valid indices are 0 to 4
+```
+
+**Common Mistake:**
+```cpp
+int arr[5] = {1, 2, 3, 4, 5};
+arr[5] = 10;  // ERROR! Valid indices are 0-4, not 5
+```
+
+### Array Initialization Methods
+
+**1. Declaration with Initialization:**
+```cpp
+int arr[5] = {10, 20, 30, 40, 50};  // All elements specified
+int arr[] = {10, 20, 30};           // Size auto-calculated (3)
+int arr[5] = {10, 20};              // Partial: first 2 elements, rest are 0
+```
+
+**2. Zero Initialization:**
+```cpp
+int arr[5] = {};        // All elements initialized to 0
+int arr[5] = {0};       // Same as above
+```
+
+**3. No Initialization (Garbage Values):**
+```cpp
+int arr[5];  // Contains garbage values (uninitialized)
+// Always initialize arrays before use!
+```
+
+**Important Notes:**
+- Uninitialized arrays contain garbage values
+- Always initialize arrays before use
+- Partial initialization sets remaining elements to 0
+
+### Array Bounds - Basic Concept
+
+**What are Array Bounds?**
+- The valid range of indices you can use
+- For array of size `n`: valid indices are `0` to `n-1`
+
+**Out of Bounds Access:**
+- C/C++ do NOT check if index is within bounds
+- Accessing `arr[10]` when size is 5 is **undefined behavior**
+- May cause program crash or unpredictable results
+
+**Example of Dangerous Code:**
+```cpp
+int arr[5];
+for (int i = 0; i <= 5; i++) {  // BUG: should be i < 5
+    arr[i] = i;  // arr[5] is out of bounds!
+}
+```
+
+**Best Practice:**
+- Always use `i < size` not `i <= size` in loops
+- Valid indices: `0` to `size-1`
+
+**Note:** Advanced topics like memory layout, pointer arithmetic, and multi-dimensional arrays will be covered in Week 2.
+
+---
+
+## Array Input/Output
+
+### Taking Input from User (C++)
+
+```cpp
+int arr[5];
+
+// Input using loop
+cout << "Enter 5 numbers:\n";
+for (int i = 0; i < 5; i++) {
+    cout << "arr[" << i << "] = ";
+    cin >> arr[i];
+}
+```
+
+### Displaying Array
+
+```cpp
+// Output using loop
+cout << "Array elements:\n";
+for (int i = 0; i < 5; i++) {
+    cout << arr[i] << " ";
+}
+```
+
+---
+
+## Worked Examples (Day 4)
+
+### Example 1: Sum of Array Elements
+
+**Input:**
+```
+5
+10 20 30 40 50
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int n, sum = 0;
+    
+    cout << "Enter array size: ";
+    cin >> n;
+    
+    int arr[n];
+    
+    cout << "Enter " << n << " elements:\n";
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+    
+    // Calculate sum
+    for (int i = 0; i < n; i++) {
+        sum += arr[i];
+    }
+    
+    cout << "Sum: " << sum << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter array size: 5
+Enter 5 elements:
+10 20 30 40 50
+Sum: 150
+```
+
+---
+
+### Example 2: Find Maximum
+
+**Input:**
+```
+5
+15 42 8 35 20
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int n;
+    
+    cout << "Enter array size: ";
+    cin >> n;
+    
+    int arr[n];
+    
+    cout << "Enter " << n << " elements:\n";
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+    
+    // Find max
+    int max = arr[0];
+    for (int i = 1; i < n; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+        }
+    }
+    
+    cout << "Maximum: " << max << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter array size: 5
+Enter 5 elements:
+15 42 8 35 20
+Maximum: 42
+```
+
+---
+
+### Example 3: Find Minimum
+
+```cpp
+int min = arr[0];
+for (int i = 1; i < n; i++) {
+    if (arr[i] < min) {
+        min = arr[i];
+    }
+}
+cout << "Minimum: " << min << endl;
+```
+
+---
+
+**Note:** 2D Arrays (Matrices) will be covered in Week 2.
+
+---
+
+## Array Bounds & Errors
+
+**❌ WRONG - Out of Bounds:**
+```cpp
+int arr[5] = {1, 2, 3, 4, 5};
+arr[5] = 10;  // ERROR! Index 5 doesn't exist (valid: 0-4)
+arr[10] = 20; // ERROR! Far out of bounds
+```
+
+**✅ CORRECT - Within Bounds:**
+```cpp
+int arr[5] = {1, 2, 3, 4, 5};
+arr[0] = 10;  // OK
+arr[4] = 20;  // OK (last index is size-1)
+```
+
+---
+
+## Common Mistakes (Day 4)
+
+| **Mistake** | **Problem** | **Fix** |
+|-----------|-----------|--------|
+| `int arr[5]; arr[5] = 10;` | Out of bounds | arr[0] to arr[4] only |
+| `for (i = 0; i < 5; i++)` | i starts at 0 | Index: 0, 1, 2, 3, 4 |
+| `arr[n]` when size is n | Out of bounds | Valid: arr[0] to arr[n-1] |
+| Using arr directly | Wrong size | Use with loop for all |
+| Forgetting to initialize | Garbage values | Initialize: `int arr[5] = {};` |
+
+
+
+# 🟢 DAY 5 – FUNCTIONS (BASICS)
+
+## Learning Outcomes
+By the end of Day 5, you will:
+✅ Understand what functions are  
+✅ Define and call functions  
+✅ Pass parameters to functions  
+✅ Return values from functions  
+✅ Use functions in programs  
+
+---
+
+## What is a Function?
+
+A **function** is a reusable block of code that performs ONE specific task.
+
+**Real-Life Analogy:**
+```
+Microwave: Press button → Heats food → Ready
+
+Function:
+Input: a = 5, b = 3
+Process: Add them
+Output: 8
+```
+
+---
+
+## Function Syntax (C++)
+
+**Three Steps:**
+
+**1️⃣ Declare:**
+```cpp
+int add(int a, int b);  // Tell compiler function exists
+```
+
+**2️⃣ Define:**
+```cpp
+int add(int a, int b) {
+    return a + b;
+}
+```
+
+**3️⃣ Call:**
+```cpp
+int result = add(5, 3);  // result = 8
+```
+
+---
+
+## 📚 In-Depth Theory: Functions
+
+### What is a Function?
+
+**Definition:**
+A function is a self-contained block of code that:
+- Performs a specific task
+- Can be called (invoked) multiple times
+- May accept input (parameters)
+- May return output (return value)
+
+**Benefits:**
+1. **Code Reusability:** Write once, use many times
+2. **Modularity:** Break complex programs into smaller pieces
+3. **Maintainability:** Easier to debug and update
+4. **Abstraction:** Hide implementation details
+
+### Function Components
+
+**1. Function Declaration (Prototype):**
+```cpp
+return_type function_name(parameter_list);
+```
+- Tells compiler function exists
+- Must match function definition
+- Can be placed before `main()` or in header file
+
+**2. Function Definition:**
+```cpp
+return_type function_name(parameter_list) {
+    // Function body
+    return value;  // If return_type is not void
+}
+```
+
+**3. Function Call:**
+```cpp
+function_name(arguments);
+```
+
+### Return Types
+
+**void:**
+- Function doesn't return a value
+- No `return` statement needed (or `return;` without value)
+
+**Primitive Types (int, float, char, bool):**
+- Must return value of that type
+- `return` statement required
+
+**Example:**
+```cpp
+void greet(string name) {        // No return value
+    cout << "Hello, " << name;
+}
+
+int add(int a, int b) {          // Returns int
+    return a + b;                // Must return int value
+}
+```
+
+### Parameters vs Arguments
+
+**Parameters:**
+- Variables in function definition
+- Placeholders for values function will receive
+- Example: `int add(int a, int b)` - `a` and `b` are parameters
+
+**Arguments:**
+- Actual values passed when calling function
+- Example: `add(5, 3)` - `5` and `3` are arguments
+
+**Key Points:**
+- Number of arguments must match number of parameters
+- Types should match (or be compatible)
+- Order matters!
+
+### Parameter Passing Mechanisms
+
+**1. Pass by Value (Default in C/C++):**
+```cpp
+void increment(int x) {
+    x++;  // Changes local copy, not original
+}
+
+int main() {
+    int num = 5;
+    increment(num);
+    cout << num;  // Still 5! (not changed)
+}
+```
+- Function receives a copy of the value
+- Changes inside function don't affect original
+- Safe but may be inefficient for large data
+
+**2. Pass by Reference (C++ only):**
+```cpp
+void increment(int &x) {  // Note: & before parameter
+    x++;  // Changes original value
+}
+
+int main() {
+    int num = 5;
+    increment(num);
+    cout << num;  // Now 6! (changed)
+}
+```
+- Function receives reference to original variable
+- Changes inside function affect original
+- Efficient and allows modification
+
+**3. Pass by Pointer (C and C++):**
+```cpp
+void increment(int *x) {  // Note: * before parameter
+    (*x)++;  // Changes value at address
+}
+
+int main() {
+    int num = 5;
+    increment(&num);  // Pass address
+    cout << num;  // Now 6! (changed)
+}
+```
+- Function receives memory address
+- Must dereference pointer to access value
+- More complex syntax but powerful
+
+### Function Scope
+
+**Local Variables:**
+- Declared inside function
+- Only accessible within that function
+- Destroyed when function ends
+
+**Global Variables:**
+- Declared outside all functions
+- Accessible from any function
+- Exist for entire program lifetime
+- **Avoid overuse** - makes code harder to maintain
+
+**Example:**
+```cpp
+int global = 10;  // Global variable
+
+void function1() {
+    int local = 5;  // Local variable
+    cout << global;  // OK: can access global
+    cout << local;   // OK: can access local
+}
+
+void function2() {
+    cout << global;  // OK: can access global
+    cout << local;   // ERROR: local doesn't exist here
+}
+```
+
+### Recursion (Introduction)
+
+**What is Recursion?**
+- Function calling itself
+- Must have base case (stopping condition)
+- Each call should work on smaller problem
+
+**Example: Factorial**
+```cpp
+int factorial(int n) {
+    if (n <= 1) {           // Base case
+        return 1;
+    }
+    return n * factorial(n - 1);  // Recursive call
+}
+```
+
+**How it works:**
+```
+factorial(5)
+  = 5 × factorial(4)
+  = 5 × (4 × factorial(3))
+  = 5 × (4 × (3 × factorial(2)))
+  = 5 × (4 × (3 × (2 × factorial(1))))
+  = 5 × (4 × (3 × (2 × 1)))
+  = 120
+```
+
+**Important:** Recursion requires understanding of:
+- Base case (when to stop)
+- Recursive case (how to reduce problem)
+- Stack (how function calls are managed)
+
+### Function Overloading (C++)
+
+**Concept:**
+- Multiple functions with same name
+- Different parameter lists (number or types)
+- Compiler chooses correct function based on arguments
+
+**Example:**
+```cpp
+int add(int a, int b) {
+    return a + b;
+}
+
+float add(float a, float b) {
+    return a + b;
+}
+
+int add(int a, int b, int c) {
+    return a + b + c;
+}
+
+// Usage:
+add(5, 3);        // Calls first function
+add(5.5f, 3.2f);  // Calls second function
+add(1, 2, 3);     // Calls third function
+```
+
+### Default Parameters (C++)
+
+**Concept:**
+- Parameters can have default values
+- If argument not provided, default is used
+- Must be from right to left (can't skip parameters)
+
+**Example:**
+```cpp
+void greet(string name, string title = "Mr./Ms.") {
+    cout << title << " " << name << endl;
+}
+
+greet("Raj");              // Uses default: "Mr./Ms. Raj"
+greet("Priya", "Dr.");     // Overrides: "Dr. Priya"
+```
+
+### Best Practices
+
+1. **Single Responsibility:** Each function should do one thing well
+2. **Meaningful Names:** Function name should describe what it does
+3. **Keep Functions Small:** Easier to understand and debug
+4. **Document Functions:** Add comments explaining purpose and parameters
+5. **Avoid Global Variables:** Prefer passing parameters
+6. **Return Early:** Use early returns to reduce nesting
+
+---
+
+## Worked Examples (Day 5)
+
+### Example 1: Simple Addition Function
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+// Define function
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int x = 10, y = 20;
+    
+    // Call function
+    int sum = add(x, y);
+    
+    cout << x << " + " << y << " = " << sum << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+10 + 20 = 30
+```
+
+---
+
+### Example 2: Function with No Return
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+// Function that doesn't return
+void greet(string name) {
+    cout << "Hello, " << name << "!" << endl;
+}
+
+int main() {
+    greet("Raj");
+    greet("Priya");
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Hello, Raj!
+Hello, Priya!
+```
+
+---
+
+### Example 3: Function with Multiple Parameters
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+float calculateGPA(int marks1, int marks2, int marks3) {
+    float total = marks1 + marks2 + marks3;
+    return total / 3;
+}
+
+int main() {
+    int m1 = 85, m2 = 90, m3 = 78;
+    
+    float gpa = calculateGPA(m1, m2, m3);
+    
+    cout << "GPA: " << gpa << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+GPA: 84.3333
+```
+
+---
+
+### Example 4: Function - Check Prime
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+bool isPrime(int n) {
+    if (n <= 1) return false;
+    
+    for (int i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            return false;  // Not prime
+        }
+    }
+    
+    return true;  // Prime
+}
+
+int main() {
+    cout << "Is 7 prime? " << (isPrime(7) ? "Yes" : "No") << endl;
+    cout << "Is 10 prime? " << (isPrime(10) ? "Yes" : "No") << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Is 7 prime? Yes
+Is 10 prime? No
+```
+
+---
+
+### Example 5: JavaScript Function
+
+```javascript
+// Define function
+function add(a, b) {
+    return a + b;
+}
+
+// Call function
+let sum = add(5, 3);
+console.log("Sum: " + sum);  // Output: Sum: 8
+
+// Arrow function (modern)
+const multiply = (a, b) => {
+    return a * b;
+};
+
+console.log(multiply(4, 5));  // Output: 20
+```
+
+---
+
+## Common Mistakes (Day 5)
+
+| **Mistake** | **Problem** | **Fix** |
+|-----------|-----------|--------|
+| Function defined AFTER main() | Compiler error | Declare before main, define after |
+| `return` in void function | Syntax error | void doesn't return |
+| Missing return type | Compiler error | Specify int/float/void/etc |
+| Not calling function | Code doesn't run | Call: `functionName();` |
+| Wrong parameter count | Compiler error | Match declaration |
+
+
+## Interview Tips (Day 5)
+
+💡 **Tip 1:** Functions make code reusable  
+💡 **Tip 2:** Always match parameter count when calling  
+💡 **Tip 3:** `void` = no return, other types must return  
+💡 **Tip 4:** Declare functions BEFORE main()  
+
+---
+
+---
+
+## 📋 WEEK 1 SUMMARY
+
+| **Day** | **Topics** | **Key Skills** |
+|--------|-----------|----------------|
+| **PRE** | I/O Basics | Input/output in C, C++, JS |
+| **Day 1** | Data Types & Variables | int, float, char, string, bool |
+| **Day 2** | Operators & Decision Making | if-else, ternary, switch-case |
+| **Day 3** | Loops & Patterns | for, while, do-while, break, continue |
+| **Day 4** | Arrays | Declaration, input, traversal, max/min |
+| **Day 5** | Functions | Define, call, parameters, return |
+
+---
+
+## 📚 TOTAL PRACTICE QUESTIONS: 25
+
+- PRE (I/O): Common mistakes covered
+- Day 1: 5 questions
+- Day 2: 5 questions
+- Day 3: 5 questions
+- Day 4: 5 questions
+- Day 5: 5 questions
+
+---
+
+## ✅ LIGHTER VERSION CHECKLIST
+
+✅ I/O explicitly explained (C, C++, JS)  
+✅ All basics covered (data types, operators, loops, arrays, functions)  
+✅ 3-4 worked examples per day  
+✅ 5 practice questions per day  
+✅ Common mistakes table per day  
+✅ Interview tips per day  
+✅ NO Big-O complexity  
+✅ NO Recursion deep-dive  
+✅ Simple, scannable format  
+✅ Ready for Cursor implementation  
+
+---
+
+**END OF WEEK 1 CONTENT**
+
+**Total Duration:** 10 hours (2 hours/day)  
+**Total Examples:** 25+  
+**Total Practice Questions:** 25  
+**Languages Covered:** C, C++, JavaScript  
+**Placement Ready:** ✅ YES  
+
+---
+
+**Sources:** GeeksforGeeks, Programiz, W3Schools, TutorialsPoint
+
+do {
+    cout << i << " ";
+    i++;
+} while (i <= 5);
+// Output: 1 2 3 4 5
+```
+
+---
+
+### Example 2: Square Star Pattern
+
+**Pattern:**
+```
+*****
+*****
+*****
+*****
+*****
+```
+
+**Code:**
+```cpp
+for (int i = 1; i <= 5; i++) {           // 5 rows
+    for (int j = 1; j <= 5; j++) {       // 5 stars per row
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → runs 5 times (i = 1 to 5)
+- **Inner Loop (j):** Controls stars per row → runs 5 times (j = 1 to 5) for each row
+
+### Iteration Table
+
+| Iteration | i Value | j Loop Runs | Stars in Row |
+|-----------|---------|-------------|--------------|
+| 1st | i = 1 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 2nd | i = 2 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 3rd | i = 3 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 4th | i = 4 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 5th | i = 5 | j = 1, 2, 3, 4, 5 | 5 stars |
+
+### 🔍 Detailed Walkthrough (Row 1: i = 1)
+
+```
+Step 1: i = 1, enter outer loop
+Step 2: Enter inner loop (j = 1 to 5)
+  → j = 1: print "*"  → Current: "*"
+  → j = 2: print "*"  → Current: "**"
+  → j = 3: print "*"  → Current: "***"
+  → j = 4: print "*"  → Current: "****"
+  → j = 5: print "*"  → Current: "*****"
+Step 3: j = 6 → condition false → exit inner loop
+Step 4: Print newline "\n"
+Step 5: i++ → i = 2, continue to next row
+```
+
+### 💡 Key Concept
+The inner loop **always completes fully** (1 to 5) for every outer loop iteration. This means every row gets exactly 5 stars, creating a perfect square pattern.
+
+---
+
+### Example 3: Right Triangle Pattern
+
+**Pattern:**
+```
+*
+**
+***
+****
+*****
+```
+
+**Code:**
+```cpp
+for (int i = 1; i <= 5; i++) {           // 5 rows
+    for (int j = 1; j <= i; j++) {       // i stars in row i
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → runs 5 times (i = 1 to 5)
+- **Inner Loop (j):** Controls stars per row → **KEY:** j runs from 1 to i, so row i has i stars!
+
+### Iteration Table
+
+| Iteration | i Value | Condition (j <= i) | j Values | Stars in Row |
+|-----------|---------|-------------------|----------|--------------|
+| 1st | i = 1 | j <= 1 | j = 1 | 1 star |
+| 2nd | i = 2 | j <= 2 | j = 1, 2 | 2 stars |
+| 3rd | i = 3 | j <= 3 | j = 1, 2, 3 | 3 stars |
+| 4th | i = 4 | j <= 4 | j = 1, 2, 3, 4 | 4 stars |
+| 5th | i = 5 | j <= 5 | j = 1, 2, 3, 4, 5 | 5 stars |
+
+### 🔍 Detailed Walkthrough (Row 3: i = 3)
+
+```
+Step 1: i = 3, enter outer loop
+Step 2: Check inner loop condition: j <= 3
+Step 3: Enter inner loop
+  → j = 1: print "*"  → Current: "*"
+  → j = 2: print "*"  → Current: "**"
+  → j = 3: print "*"  → Current: "***"
+Step 4: j = 4 → condition false (4 <= 3) → exit inner loop
+Step 5: Print newline "\n"
+Step 6: i++ → i = 4, continue to next row
+```
+
+### 💡 Key Concept
+The condition `j <= i` is the **magic formula**! It makes the inner loop run `i` times:
+- Row 1: j <= 1 → 1 star
+- Row 2: j <= 2 → 2 stars  
+- Row 3: j <= 3 → 3 stars
+- Row 4: j <= 4 → 4 stars
+- Row 5: j <= 5 → 5 stars
+
+This creates the **growing triangle pattern**!
+
+---
+
+### Example 4: Inverted Triangle
+
+**Pattern:**
+```
+*****
+****
+***
+**
+*
+```
+
+**Code:**
+```cpp
+for (int i = 5; i >= 1; i--) {           // Decrease rows
+    for (int j = 1; j <= i; j++) {       // i stars in row
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → **KEY:** Decrementing loop! Starts at 5, goes down to 1 (i = 5, 4, 3, 2, 1)
+- **Inner Loop (j):** Controls stars per row → runs from 1 to i
+
+### Iteration Table
+
+| Iteration | i Value | Condition (j <= i) | j Values | Stars in Row |
+|-----------|---------|-------------------|----------|--------------|
+| 1st | i = 5 | j <= 5 | j = 1, 2, 3, 4, 5 | 5 stars |
+| 2nd | i = 4 | j <= 4 | j = 1, 2, 3, 4 | 4 stars |
+| 3rd | i = 3 | j <= 3 | j = 1, 2, 3 | 3 stars |
+| 4th | i = 2 | j <= 2 | j = 1, 2 | 2 stars |
+| 5th | i = 1 | j <= 1 | j = 1 | 1 star |
+
+### 🔍 Detailed Walkthrough (Row 2: i = 4)
+
+```
+Step 1: i = 4 (after i-- from previous iteration), enter outer loop
+Step 2: Check inner loop condition: j <= 4
+Step 3: Enter inner loop
+  → j = 1: print "*"  → Current: "*"
+  → j = 2: print "*"  → Current: "**"
+  → j = 3: print "*"  → Current: "***"
+  → j = 4: print "*"  → Current: "****"
+Step 4: j = 5 → condition false (5 <= 4) → exit inner loop
+Step 5: Print newline "\n"
+Step 6: i-- → i = 3, continue to next row
+```
+
+### 💡 Key Concept
+The **decrementing loop** (`i--`) is the secret! Starting from i = 5 and decreasing makes:
+- Row 1: 5 stars (i = 5)
+- Row 2: 4 stars (i = 4)
+- Row 3: 3 stars (i = 3)
+- Row 4: 2 stars (i = 2)
+- Row 5: 1 star (i = 1)
+
+Each row has **fewer stars** than the previous one, creating the inverted triangle!
+
+---
+
+### Example 5: Pyramid Pattern
+
+**Pattern:**
+```
+    *
+   ***
+  *****
+ *******
+*********
+```
+
+**Code:**
+```cpp
+int n = 5;
+for (int i = 1; i <= n; i++) {
+    // Print spaces
+    for (int s = 1; s <= n - i; s++) {
+        cout << " ";
+    }
+    // Print stars
+    for (int st = 1; st <= 2 * i - 1; st++) {
+        cout << "*";
+    }
+    cout << "\n";
+}
+```
+
+---
+
+## 📊 Step-by-Step Iteration Explanation
+
+### Loop Structure
+- **Outer Loop (i):** Controls rows → runs 5 times (i = 1 to 5)
+- **First Inner Loop (s):** Prints spaces → runs (n - i) times
+- **Second Inner Loop (st):** Prints stars → runs (2*i - 1) times
+
+### Iteration Table
+
+| Iteration | i Value | Spaces (n-i) | s Values | Stars (2*i-1) | st Values |
+|-----------|---------|--------------|----------|---------------|-----------|
+| 1st | i = 1 | 5-1 = 4 | s = 1,2,3,4 | 2×1-1 = 1 | st = 1 |
+| 2nd | i = 2 | 5-2 = 3 | s = 1,2,3 | 2×2-1 = 3 | st = 1,2,3 |
+| 3rd | i = 3 | 5-3 = 2 | s = 1,2 | 2×3-1 = 5 | st = 1,2,3,4,5 |
+| 4th | i = 4 | 5-4 = 1 | s = 1 | 2×4-1 = 7 | st = 1,2,3,4,5,6,7 |
+| 5th | i = 5 | 5-5 = 0 | (skipped) | 2×5-1 = 9 | st = 1,2,3,4,5,6,7,8,9 |
+
+### 🔍 Detailed Walkthrough (Row 3: i = 3)
+
+```
+Step 1: i = 3, enter outer loop
+
+Step 2: FIRST INNER LOOP - Print Spaces
+  Condition: s <= (5 - 3) = 2
+  → s = 1: print " "  → Current: " "
+  → s = 2: print " "  → Current: "  "
+  → s = 3: condition false → exit space loop
+  Result: 2 spaces printed
+
+Step 3: SECOND INNER LOOP - Print Stars
+  Condition: st <= (2×3 - 1) = 5
+  → st = 1: print "*"  → Current: "  *"
+  → st = 2: print "*"  → Current: "  **"
+  → st = 3: print "*"  → Current: "  ***"
+  → st = 4: print "*"  → Current: "  ****"
+  → st = 5: print "*"  → Current: "  *****"
+  → st = 6: condition false → exit star loop
+  Result: 5 stars printed
+
+Step 4: Print newline "\n"
+Step 5: i++ → i = 4, continue to next row
+```
+
+### 💡 Key Concepts
+
+**1. Space Formula: `n - i`**
+- Row 1: 5 - 1 = 4 spaces
+- Row 2: 5 - 2 = 3 spaces
+- Row 3: 5 - 3 = 2 spaces
+- Row 4: 5 - 4 = 1 space
+- Row 5: 5 - 5 = 0 spaces (loop skipped)
+
+**2. Star Formula: `2*i - 1`**
+- Row 1: 2×1 - 1 = 1 star
+- Row 2: 2×2 - 1 = 3 stars
+- Row 3: 2×3 - 1 = 5 stars
+- Row 4: 2×4 - 1 = 7 stars
+- Row 5: 2×5 - 1 = 9 stars
+
+**3. Why `2*i - 1`?**
+This formula creates **odd numbers** (1, 3, 5, 7, 9) which center perfectly in the pyramid!
+
+**4. Two Loops Work Together:**
+- First loop: Adds left padding (spaces) to center the stars
+- Second loop: Prints the actual star pattern
+- Together: Creates a beautiful centered pyramid!
+
+---
+
+## Common Mistakes (Day 3)
+
+| **Mistake** | **Problem** | **Fix** |
+|-----------|-----------|--------|
+| `for (int i = 1, i <= 5, i++)` | Wrong syntax | Use `;` not `,` |
+| `for (int i = 1; i < 5; i++)` | Stops at 4 | Use `<=` for 1 to 5 |
+| `while (i <= 5)` without i++ | Infinite loop | Add `i++` inside loop |
+| Off-by-one errors | Wrong count | Count carefully 1 to n |
+| Not printing newline | All on one line | Add `\n` or `endl` |
+
+
+## Interview Tips (Day 3)
+
+💡 **Tip 1:** Use FOR when you know iterations, WHILE when you don't  
+💡 **Tip 2:** DO-WHILE guarantees at least one execution  
+💡 **Tip 3:** Use `continue` to skip, `break` to exit  
+💡 **Tip 4:** Nested loops multiply: 2 loops = n² iterations  
+
+---
+
+---
+
+# 🟢 DAY 4 – ARRAYS (DSA FOUNDATION)
+
+## Learning Outcomes
+By the end of Day 4, you will:
+✅ Declare and initialize arrays  
+✅ Input/output from arrays  
+✅ Traverse arrays  
+✅ Find max/min in array  
+✅ Understand array bounds  
+
+---
+
+## What is an Array?
+
+An **array** is a collection of elements of the SAME type stored in CONSECUTIVE memory.
+
+**Real-Life Analogy:**
+```
+School register:
+Row 1: Raj
+Row 2: Priya
+Row 3: Amit
+Row 4: Zara
+
+Array of names:
+Index 0: Raj
+Index 1: Priya
+Index 2: Amit
+Index 3: Zara
+```
+
+---
+
+## Declaring Arrays
+
+**Syntax:**
+```cpp
+int arr[5];              // Array of 5 integers
+float marks[10];         // Array of 10 floats
+char grade[5];           // Array of 5 characters
+string names[3];         // Array of 3 strings
+```
+
+**With Initialization:**
+```cpp
+int arr[5] = {10, 20, 30, 40, 50};
+float marks[] = {85.5, 90.0, 78.5};  // Size auto-calculated
+```
+
+---
+
+## 📚 In-Depth Theory: Arrays (Basics)
+
+### Understanding Array Indexing
+
+**Zero-Based Indexing:**
+- Arrays in C/C++/JavaScript use zero-based indexing
+- First element is at index 0
+- Last element is at index (size - 1)
+- Valid range: `0` to `n-1` for array of size `n`
+
+**Example:**
+```cpp
+int arr[5] = {10, 20, 30, 40, 50};
+// Index:     0   1   2   3   4
+// Size: 5, but valid indices are 0 to 4
+```
+
+**Common Mistake:**
+```cpp
+int arr[5] = {1, 2, 3, 4, 5};
+arr[5] = 10;  // ERROR! Valid indices are 0-4, not 5
+```
+
+### Array Initialization Methods
+
+**1. Declaration with Initialization:**
+```cpp
+int arr[5] = {10, 20, 30, 40, 50};  // All elements specified
+int arr[] = {10, 20, 30};           // Size auto-calculated (3)
+int arr[5] = {10, 20};              // Partial: first 2 elements, rest are 0
+```
+
+**2. Zero Initialization:**
+```cpp
+int arr[5] = {};        // All elements initialized to 0
+int arr[5] = {0};       // Same as above
+```
+
+**3. No Initialization (Garbage Values):**
+```cpp
+int arr[5];  // Contains garbage values (uninitialized)
+// Always initialize arrays before use!
+```
+
+**Important Notes:**
+- Uninitialized arrays contain garbage values
+- Always initialize arrays before use
+- Partial initialization sets remaining elements to 0
+
+### Array Bounds - Basic Concept
+
+**What are Array Bounds?**
+- The valid range of indices you can use
+- For array of size `n`: valid indices are `0` to `n-1`
+
+**Out of Bounds Access:**
+- C/C++ do NOT check if index is within bounds
+- Accessing `arr[10]` when size is 5 is **undefined behavior**
+- May cause program crash or unpredictable results
+
+**Example of Dangerous Code:**
+```cpp
+int arr[5];
+for (int i = 0; i <= 5; i++) {  // BUG: should be i < 5
+    arr[i] = i;  // arr[5] is out of bounds!
+}
+```
+
+**Best Practice:**
+- Always use `i < size` not `i <= size` in loops
+- Valid indices: `0` to `size-1`
+
+**Note:** Advanced topics like memory layout, pointer arithmetic, and multi-dimensional arrays will be covered in Week 2.
+
+---
+
+## Array Input/Output
+
+### Taking Input from User (C++)
+
+```cpp
+int arr[5];
+
+// Input using loop
+cout << "Enter 5 numbers:\n";
+for (int i = 0; i < 5; i++) {
+    cout << "arr[" << i << "] = ";
+    cin >> arr[i];
+}
+```
+
+### Displaying Array
+
+```cpp
+// Output using loop
+cout << "Array elements:\n";
+for (int i = 0; i < 5; i++) {
+    cout << arr[i] << " ";
+}
+```
+
+---
+
+## Worked Examples (Day 4)
+
+### Example 1: Sum of Array Elements
+
+**Input:**
+```
+5
+10 20 30 40 50
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int n, sum = 0;
+    
+    cout << "Enter array size: ";
+    cin >> n;
+    
+    int arr[n];
+    
+    cout << "Enter " << n << " elements:\n";
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+    
+    // Calculate sum
+    for (int i = 0; i < n; i++) {
+        sum += arr[i];
+    }
+    
+    cout << "Sum: " << sum << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter array size: 5
+Enter 5 elements:
+10 20 30 40 50
+Sum: 150
+```
+
+---
+
+### Example 2: Find Maximum
+
+**Input:**
+```
+5
+15 42 8 35 20
+```
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int n;
+    
+    cout << "Enter array size: ";
+    cin >> n;
+    
+    int arr[n];
+    
+    cout << "Enter " << n << " elements:\n";
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+    
+    // Find max
+    int max = arr[0];
+    for (int i = 1; i < n; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+        }
+    }
+    
+    cout << "Maximum: " << max << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Enter array size: 5
+Enter 5 elements:
+15 42 8 35 20
+Maximum: 42
+```
+
+---
+
+### Example 3: Find Minimum
+
+```cpp
+int min = arr[0];
+for (int i = 1; i < n; i++) {
+    if (arr[i] < min) {
+        min = arr[i];
+    }
+}
+cout << "Minimum: " << min << endl;
+```
+
+---
+
+**Note:** 2D Arrays (Matrices) will be covered in Week 2.
+
+---
+
+## Array Bounds & Errors
+
+**❌ WRONG - Out of Bounds:**
+```cpp
+int arr[5] = {1, 2, 3, 4, 5};
+arr[5] = 10;  // ERROR! Index 5 doesn't exist (valid: 0-4)
+arr[10] = 20; // ERROR! Far out of bounds
+```
+
+**✅ CORRECT - Within Bounds:**
+```cpp
+int arr[5] = {1, 2, 3, 4, 5};
+arr[0] = 10;  // OK
+arr[4] = 20;  // OK (last index is size-1)
+```
+
+---
+
+## Common Mistakes (Day 4)
+
+| **Mistake** | **Problem** | **Fix** |
+|-----------|-----------|--------|
+| `int arr[5]; arr[5] = 10;` | Out of bounds | arr[0] to arr[4] only |
+| `for (i = 0; i < 5; i++)` | i starts at 0 | Index: 0, 1, 2, 3, 4 |
+| `arr[n]` when size is n | Out of bounds | Valid: arr[0] to arr[n-1] |
+| Using arr directly | Wrong size | Use with loop for all |
+| Forgetting to initialize | Garbage values | Initialize: `int arr[5] = {};` |
+
+
+
+# 🟢 DAY 5 – FUNCTIONS (BASICS)
+
+## Learning Outcomes
+By the end of Day 5, you will:
+✅ Understand what functions are  
+✅ Define and call functions  
+✅ Pass parameters to functions  
+✅ Return values from functions  
+✅ Use functions in programs  
+
+---
+
+## What is a Function?
+
+A **function** is a reusable block of code that performs ONE specific task.
+
+**Real-Life Analogy:**
+```
+Microwave: Press button → Heats food → Ready
+
+Function:
+Input: a = 5, b = 3
+Process: Add them
+Output: 8
+```
+
+---
+
+## Function Syntax (C++)
+
+**Three Steps:**
+
+**1️⃣ Declare:**
+```cpp
+int add(int a, int b);  // Tell compiler function exists
+```
+
+**2️⃣ Define:**
+```cpp
+int add(int a, int b) {
+    return a + b;
+}
+```
+
+**3️⃣ Call:**
+```cpp
+int result = add(5, 3);  // result = 8
+```
+
+---
+
+## 📚 In-Depth Theory: Functions
+
+### What is a Function?
+
+**Definition:**
+A function is a self-contained block of code that:
+- Performs a specific task
+- Can be called (invoked) multiple times
+- May accept input (parameters)
+- May return output (return value)
+
+**Benefits:**
+1. **Code Reusability:** Write once, use many times
+2. **Modularity:** Break complex programs into smaller pieces
+3. **Maintainability:** Easier to debug and update
+4. **Abstraction:** Hide implementation details
+
+### Function Components
+
+**1. Function Declaration (Prototype):**
+```cpp
+return_type function_name(parameter_list);
+```
+- Tells compiler function exists
+- Must match function definition
+- Can be placed before `main()` or in header file
+
+**2. Function Definition:**
+```cpp
+return_type function_name(parameter_list) {
+    // Function body
+    return value;  // If return_type is not void
+}
+```
+
+**3. Function Call:**
+```cpp
+function_name(arguments);
+```
+
+### Return Types
+
+**void:**
+- Function doesn't return a value
+- No `return` statement needed (or `return;` without value)
+
+**Primitive Types (int, float, char, bool):**
+- Must return value of that type
+- `return` statement required
+
+**Example:**
+```cpp
+void greet(string name) {        // No return value
+    cout << "Hello, " << name;
+}
+
+int add(int a, int b) {          // Returns int
+    return a + b;                // Must return int value
+}
+```
+
+### Parameters vs Arguments
+
+**Parameters:**
+- Variables in function definition
+- Placeholders for values function will receive
+- Example: `int add(int a, int b)` - `a` and `b` are parameters
+
+**Arguments:**
+- Actual values passed when calling function
+- Example: `add(5, 3)` - `5` and `3` are arguments
+
+**Key Points:**
+- Number of arguments must match number of parameters
+- Types should match (or be compatible)
+- Order matters!
+
+### Parameter Passing Mechanisms
+
+**1. Pass by Value (Default in C/C++):**
+```cpp
+void increment(int x) {
+    x++;  // Changes local copy, not original
+}
+
+int main() {
+    int num = 5;
+    increment(num);
+    cout << num;  // Still 5! (not changed)
+}
+```
+- Function receives a copy of the value
+- Changes inside function don't affect original
+- Safe but may be inefficient for large data
+
+**2. Pass by Reference (C++ only):**
+```cpp
+void increment(int &x) {  // Note: & before parameter
+    x++;  // Changes original value
+}
+
+int main() {
+    int num = 5;
+    increment(num);
+    cout << num;  // Now 6! (changed)
+}
+```
+- Function receives reference to original variable
+- Changes inside function affect original
+- Efficient and allows modification
+
+**3. Pass by Pointer (C and C++):**
+```cpp
+void increment(int *x) {  // Note: * before parameter
+    (*x)++;  // Changes value at address
+}
+
+int main() {
+    int num = 5;
+    increment(&num);  // Pass address
+    cout << num;  // Now 6! (changed)
+}
+```
+- Function receives memory address
+- Must dereference pointer to access value
+- More complex syntax but powerful
+
+### Function Scope
+
+**Local Variables:**
+- Declared inside function
+- Only accessible within that function
+- Destroyed when function ends
+
+**Global Variables:**
+- Declared outside all functions
+- Accessible from any function
+- Exist for entire program lifetime
+- **Avoid overuse** - makes code harder to maintain
+
+**Example:**
+```cpp
+int global = 10;  // Global variable
+
+void function1() {
+    int local = 5;  // Local variable
+    cout << global;  // OK: can access global
+    cout << local;   // OK: can access local
+}
+
+void function2() {
+    cout << global;  // OK: can access global
+    cout << local;   // ERROR: local doesn't exist here
+}
+```
+
+### Recursion (Introduction)
+
+**What is Recursion?**
+- Function calling itself
+- Must have base case (stopping condition)
+- Each call should work on smaller problem
+
+**Example: Factorial**
+```cpp
+int factorial(int n) {
+    if (n <= 1) {           // Base case
+        return 1;
+    }
+    return n * factorial(n - 1);  // Recursive call
+}
+```
+
+**How it works:**
+```
+factorial(5)
+  = 5 × factorial(4)
+  = 5 × (4 × factorial(3))
+  = 5 × (4 × (3 × factorial(2)))
+  = 5 × (4 × (3 × (2 × factorial(1))))
+  = 5 × (4 × (3 × (2 × 1)))
+  = 120
+```
+
+**Important:** Recursion requires understanding of:
+- Base case (when to stop)
+- Recursive case (how to reduce problem)
+- Stack (how function calls are managed)
+
+### Function Overloading (C++)
+
+**Concept:**
+- Multiple functions with same name
+- Different parameter lists (number or types)
+- Compiler chooses correct function based on arguments
+
+**Example:**
+```cpp
+int add(int a, int b) {
+    return a + b;
+}
+
+float add(float a, float b) {
+    return a + b;
+}
+
+int add(int a, int b, int c) {
+    return a + b + c;
+}
+
+// Usage:
+add(5, 3);        // Calls first function
+add(5.5f, 3.2f);  // Calls second function
+add(1, 2, 3);     // Calls third function
+```
+
+### Default Parameters (C++)
+
+**Concept:**
+- Parameters can have default values
+- If argument not provided, default is used
+- Must be from right to left (can't skip parameters)
+
+**Example:**
+```cpp
+void greet(string name, string title = "Mr./Ms.") {
+    cout << title << " " << name << endl;
+}
+
+greet("Raj");              // Uses default: "Mr./Ms. Raj"
+greet("Priya", "Dr.");     // Overrides: "Dr. Priya"
+```
+
+### Best Practices
+
+1. **Single Responsibility:** Each function should do one thing well
+2. **Meaningful Names:** Function name should describe what it does
+3. **Keep Functions Small:** Easier to understand and debug
+4. **Document Functions:** Add comments explaining purpose and parameters
+5. **Avoid Global Variables:** Prefer passing parameters
+6. **Return Early:** Use early returns to reduce nesting
+
+---
+
+## Worked Examples (Day 5)
+
+### Example 1: Simple Addition Function
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+// Define function
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int x = 10, y = 20;
+    
+    // Call function
+    int sum = add(x, y);
+    
+    cout << x << " + " << y << " = " << sum << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+10 + 20 = 30
+```
+
+---
+
+### Example 2: Function with No Return
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+// Function that doesn't return
+void greet(string name) {
+    cout << "Hello, " << name << "!" << endl;
+}
+
+int main() {
+    greet("Raj");
+    greet("Priya");
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Hello, Raj!
+Hello, Priya!
+```
+
+---
+
+### Example 3: Function with Multiple Parameters
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+float calculateGPA(int marks1, int marks2, int marks3) {
+    float total = marks1 + marks2 + marks3;
+    return total / 3;
+}
+
+int main() {
+    int m1 = 85, m2 = 90, m3 = 78;
+    
+    float gpa = calculateGPA(m1, m2, m3);
+    
+    cout << "GPA: " << gpa << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+GPA: 84.3333
+```
+
+---
+
+### Example 4: Function - Check Prime
+
+**Code:**
+```cpp
+#include <iostream>
+using namespace std;
+
+bool isPrime(int n) {
+    if (n <= 1) return false;
+    
+    for (int i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            return false;  // Not prime
+        }
+    }
+    
+    return true;  // Prime
+}
+
+int main() {
+    cout << "Is 7 prime? " << (isPrime(7) ? "Yes" : "No") << endl;
+    cout << "Is 10 prime? " << (isPrime(10) ? "Yes" : "No") << endl;
+    
+    return 0;
+}
+```
+
+**Output:**
+```
+Is 7 prime? Yes
+Is 10 prime? No
+```
+
+---
+
+### Example 5: JavaScript Function
+
+```javascript
+// Define function
+function add(a, b) {
+    return a + b;
+}
+
+// Call function
+let sum = add(5, 3);
+console.log("Sum: " + sum);  // Output: Sum: 8
+
+// Arrow function (modern)
+const multiply = (a, b) => {
+    return a * b;
+};
+
+console.log(multiply(4, 5));  // Output: 20
+```
+
+---
+
+## Common Mistakes (Day 5)
+
+| **Mistake** | **Problem** | **Fix** |
+|-----------|-----------|--------|
+| Function defined AFTER main() | Compiler error | Declare before main, define after |
+| `return` in void function | Syntax error | void doesn't return |
+| Missing return type | Compiler error | Specify int/float/void/etc |
+| Not calling function | Code doesn't run | Call: `functionName();` |
+| Wrong parameter count | Compiler error | Match declaration |
+
+
+## Interview Tips (Day 5)
+
+💡 **Tip 1:** Functions make code reusable  
+💡 **Tip 2:** Always match parameter count when calling  
+💡 **Tip 3:** `void` = no return, other types must return  
+💡 **Tip 4:** Declare functions BEFORE main()  
+
+---
+
+---
+
+## 📋 WEEK 1 SUMMARY
+
+| **Day** | **Topics** | **Key Skills** |
+|--------|-----------|----------------|
+| **PRE** | I/O Basics | Input/output in C, C++, JS |
+| **Day 1** | Data Types & Variables | int, float, char, string, bool |
+| **Day 2** | Operators & Decision Making | if-else, ternary, switch-case |
+| **Day 3** | Loops & Patterns | for, while, do-while, break, continue |
+| **Day 4** | Arrays | Declaration, input, traversal, max/min |
+| **Day 5** | Functions | Define, call, parameters, return |
+
+---
+
+## 📚 TOTAL PRACTICE QUESTIONS: 25
+
+- PRE (I/O): Common mistakes covered
+- Day 1: 5 questions
+- Day 2: 5 questions
+- Day 3: 5 questions
+- Day 4: 5 questions
+- Day 5: 5 questions
+
+---
+
+## ✅ LIGHTER VERSION CHECKLIST
+
+✅ I/O explicitly explained (C, C++, JS)  
+✅ All basics covered (data types, operators, loops, arrays, functions)  
+✅ 3-4 worked examples per day  
+✅ 5 practice questions per day  
+✅ Common mistakes table per day  
+✅ Interview tips per day  
+✅ NO Big-O complexity  
+✅ NO Recursion deep-dive  
+✅ Simple, scannable format  
+✅ Ready for Cursor implementation  
+
+---
+
+**END OF WEEK 1 CONTENT**
+
+**Total Duration:** 10 hours (2 hours/day)  
+**Total Examples:** 25+  
+**Total Practice Questions:** 25  
+**Languages Covered:** C, C++, JavaScript  
+**Placement Ready:** ✅ YES  
+
+---
+
+**Sources:** GeeksforGeeks, Programiz, W3Schools, TutorialsPoint

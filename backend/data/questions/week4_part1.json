@@ -1,0 +1,828 @@
+[
+    {
+        "problem_id": "Q091",
+        "metadata": {
+            "week": 4,
+            "day": 1,
+            "topic": "Tree",
+            "title": "Binary Tree Inorder Traversal",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Tree Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Given the root of a binary tree, return the inorder traversal of its nodes' values.",
+            "constraints": [
+                "0 <= Nodes <= 100"
+            ],
+            "input_format": "Root node.",
+            "output_format": "List of values.",
+            "example": {
+                "input": "1-null-2-3 (1, null, 2, 3)",
+                "output": "1 3 2",
+                "explanation": "Left, Root, Right."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 3",
+                "expected_output": "2 1 3",
+                "explanation": "Full",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Inorder: Left -> Root -> Right.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use recursion.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Base case: if root is null, return.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Iterative approach uses a Stack.",
+                "hint_type": "interview"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Recursive/Iterative."
+        }
+    },
+    {
+        "problem_id": "Q092",
+        "metadata": {
+            "week": 4,
+            "day": 1,
+            "topic": "Tree",
+            "title": "Level Order Traversal",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "BFS"
+            ]
+        },
+        "problem_statement": {
+            "description": "Return the level order traversal of a binary tree's nodes (i.e., from left to right, level by level).",
+            "constraints": [
+                "0 <= Nodes <= 2000"
+            ],
+            "input_format": "Root node.",
+            "output_format": "List of lists.",
+            "example": {
+                "input": "3 9 20 null null 15 7",
+                "output": "[3], [9,20], [15,7]",
+                "explanation": "Levels."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1",
+                "expected_output": "[1]",
+                "explanation": "Single",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "[]",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 3",
+                "expected_output": "[1], [2,3]",
+                "explanation": "Full",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Use Breadth First Search (BFS).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use a Queue.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Loop while queue not empty. Get size of queue (nodes in current level).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Process 'size' nodes, adding their children to queue.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "BFS with Queue."
+        }
+    },
+    {
+        "problem_id": "Q093",
+        "metadata": {
+            "week": 4,
+            "day": 1,
+            "topic": "Tree",
+            "title": "Maximum Depth of Binary Tree",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "LinkedIn"
+            ],
+            "learning_outcomes": [
+                "Recursion Height"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the maximum depth (height) of a binary tree.",
+            "constraints": [
+                "0 <= Nodes <= 10^4"
+            ],
+            "input_format": "Root.",
+            "output_format": "Integer Depth.",
+            "example": {
+                "input": "3 9 20 null null 15 7",
+                "output": "3",
+                "explanation": "3 levels."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2",
+                "expected_output": "2",
+                "explanation": "Root + Child",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "0",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 3 4",
+                "expected_output": "3",
+                "explanation": "Height 3",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Recursive approach: max(left, right) + 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Base case: if node is null, return 0.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Iterative approach uses BFS (count levels) or DFS.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Recursive is simpler.",
+                "hint_type": "recommendation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Recursion."
+        }
+    },
+    {
+        "problem_id": "Q094",
+        "metadata": {
+            "week": 4,
+            "day": 2,
+            "topic": "Tree",
+            "title": "Symmetric Tree",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Tree Mirror"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a binary tree is a mirror image of itself (symmetric around center).",
+            "constraints": [
+                "0 <= Nodes <= 1000"
+            ],
+            "input_format": "Root.",
+            "output_format": "True or False.",
+            "example": {
+                "input": "1 2 2 3 4 4 3",
+                "output": "True",
+                "explanation": "Symmetric."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2 2 null 3 null 3",
+                "expected_output": "False",
+                "explanation": "Not mirror",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "True",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 2",
+                "expected_output": "True",
+                "explanation": "Simple",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Compare left subtree with right subtree.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Helper function(node1, node2).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Check: node1.val == node2.val AND mirror(n1.left, n2.right) AND mirror(n1.right, n2.left).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Both null is true. One null is false.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Recursive Mirror."
+        }
+    },
+    {
+        "problem_id": "Q095",
+        "metadata": {
+            "week": 4,
+            "day": 2,
+            "topic": "Tree",
+            "title": "Invert Binary Tree",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Homebrew"
+            ],
+            "learning_outcomes": [
+                "Tree Modification"
+            ]
+        },
+        "problem_statement": {
+            "description": "Invert a binary tree (mirror it).",
+            "constraints": [
+                "0 <= Nodes <= 100"
+            ],
+            "input_format": "Root.",
+            "output_format": "Root of inverted tree.",
+            "example": {
+                "input": "4 2 7 1 3 6 9",
+                "output": "4 7 2 9 6 3 1",
+                "explanation": "Swapped."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 1 3",
+                "expected_output": "2 3 1",
+                "explanation": "Swapped",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "",
+                "expected_output": "",
+                "explanation": "Empty",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2",
+                "expected_output": "1 null 2",
+                "explanation": "Left becomes right",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Recursive approach.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Swap left and right children for current node.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Recursively call invert on new left and new right.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return root.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Post-order Inversion."
+        }
+    },
+    {
+        "problem_id": "Q096",
+        "metadata": {
+            "week": 4,
+            "day": 2,
+            "topic": "Tree",
+            "title": "Validate Binary Search Tree",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "BST Properties"
+            ]
+        },
+        "problem_statement": {
+            "description": "Determine if a binary tree is a valid Binary Search Tree (BST).",
+            "constraints": [
+                "Nodes <= 10^4"
+            ],
+            "input_format": "Root.",
+            "output_format": "True or False.",
+            "example": {
+                "input": "2 1 3",
+                "output": "True",
+                "explanation": "Valid."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 1 4",
+                "expected_output": "False",
+                "explanation": "4 on right is < 5, but its children might be wrong",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 2 2",
+                "expected_output": "False",
+                "explanation": "Duplicates not allowed (strict inequality)",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5 1 6 3 4",
+                "expected_output": "False",
+                "explanation": "3 is in right subtree of 5 but is < 5 (BST prop violated)",
+                "category": "complex"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Inorder traversal of BST should be sorted.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Alternatively pass range (min, max) to recursion.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Left child must be in (min, parent). Right child in (parent, max).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use Long or Null for infinite boundaries initially.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Range Validation."
+        }
+    },
+    {
+        "problem_id": "Q097",
+        "metadata": {
+            "week": 4,
+            "day": 3,
+            "topic": "Tree",
+            "title": "Search in a Binary Search Tree",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "BST Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the node in the BST that equals the given value.",
+            "constraints": [
+                "BST structure"
+            ],
+            "input_format": "Root, Value.",
+            "output_format": "Subtree rooted at node or null.",
+            "example": {
+                "input": "4 2 7 1 3, 2",
+                "output": "2 1 3",
+                "explanation": "Found 2."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "4 2 7 1 3, 5",
+                "expected_output": "null",
+                "explanation": "Not found",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "4, 4",
+                "expected_output": "4",
+                "explanation": "Root",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4 2 7, 7",
+                "expected_output": "7",
+                "explanation": "Leaf",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "If val < root.val, go left.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If val > root.val, go right.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Else return root.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If null, not found.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(H) or O(log N)",
+            "space_complexity": "O(1) iterative",
+            "optimal_approach": "Binary Search Logic."
+        }
+    },
+    {
+        "problem_id": "Q098",
+        "metadata": {
+            "week": 4,
+            "day": 3,
+            "topic": "Tree",
+            "title": "Lowest Common Ancestor of a BST",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "BST Properties",
+                "LCA"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find LCA of two nodes P and Q in a BST.",
+            "constraints": [
+                "All unique values"
+            ],
+            "input_format": "Root, P, Q.",
+            "output_format": "LCA Node.",
+            "example": {
+                "input": "6 2 8 0 4 7 9..., 2, 8",
+                "output": "6",
+                "explanation": "Split occurs at 6."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "6 2 8 0 4 7 9, 2, 4",
+                "expected_output": "2",
+                "explanation": "2 is parent of 4",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 1, 1, 2",
+                "expected_output": "2",
+                "explanation": "Root",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5 3 6, 3, 6",
+                "expected_output": "5",
+                "explanation": "Split",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "In BST, LCA is the separation point.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If both P and Q are smaller than root, go left.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If both are larger, go right.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Else, root is the LCA (split point).",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(H)",
+            "space_complexity": "O(1) iterative",
+            "optimal_approach": "BST Split Logic."
+        }
+    },
+    {
+        "problem_id": "Q099",
+        "metadata": {
+            "week": 4,
+            "day": 3,
+            "topic": "Tree",
+            "title": "Kth Smallest Element in a BST",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Uber",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Inorder Traversal"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the Kth smallest element in a BST.",
+            "constraints": [
+                "1 <= K <= N"
+            ],
+            "input_format": "Root, K.",
+            "output_format": "Integer Value.",
+            "example": {
+                "input": "3 1 4 null 2, 1",
+                "output": "1",
+                "explanation": "1 is smallest."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 3 6 2 4 null null 1, 3",
+                "expected_output": "3",
+                "explanation": "Sorted: 1,2,3,4,5,6",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1, 1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2 1, 2",
+                "expected_output": "2",
+                "explanation": "Max",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Inorder traversal visits nodes in sorted order.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Traverse Inorder and decrement K.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "When K reaches 0, current node is result.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Stop traversal after finding result.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N) (or O(H+K))",
+            "space_complexity": "O(H)",
+            "optimal_approach": "Inorder Traversal."
+        }
+    },
+    {
+        "problem_id": "Q100",
+        "metadata": {
+            "week": 4,
+            "day": 3,
+            "topic": "Tree",
+            "title": "Construct BST from Preorder Traversal",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook"
+            ],
+            "learning_outcomes": [
+                "Tree Construction"
+            ]
+        },
+        "problem_statement": {
+            "description": "Construct a BST from an array representing its preorder traversal.",
+            "constraints": [
+                "1 <= N <= 100"
+            ],
+            "input_format": "Preorder Array.",
+            "output_format": "Root of BST.",
+            "example": {
+                "input": "8 5 1 7 10 12",
+                "output": "8 5 10 1 7 null 12",
+                "explanation": "BST formed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 3",
+                "expected_output": "1 null 3",
+                "explanation": "Root 1, Right 3",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "8",
+                "expected_output": "8",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "8 5 7 10",
+                "expected_output": "8 5 10 null 7",
+                "explanation": "Nested",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "First element is root.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Next elements smaller than root go to left.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Elements larger go to right.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use recursion with bounds (min, max).",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Bound Recursion."
+        }
+    }
+]

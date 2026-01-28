@@ -1,0 +1,833 @@
+[
+    {
+        "problem_id": "Q121",
+        "metadata": {
+            "week": 5,
+            "day": 1,
+            "topic": "Dynamic Programming",
+            "title": "Climbing Stairs",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "DP Basics",
+                "Fibonacci"
+            ]
+        },
+        "problem_statement": {
+            "description": "Ways to climb N stairs taking 1 or 2 steps at a time.",
+            "constraints": [
+                "1 <= N <= 45"
+            ],
+            "input_format": "Integer N.",
+            "output_format": "Integer Ways.",
+            "example": {
+                "input": "3",
+                "output": "3",
+                "explanation": "1+1+1, 1+2, 2+1."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2",
+                "expected_output": "2",
+                "explanation": "2 ways",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "1 way",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4",
+                "expected_output": "5",
+                "explanation": "Ways",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i] = dp[i-1] + dp[i-2].",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Base cases: dp[1]=1, dp[2]=2.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Optimize space to O(1) using two variables.",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "It's essentially Fibonacci sequence.",
+                "hint_type": "conceptual"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Iterative."
+        }
+    },
+    {
+        "problem_id": "Q122",
+        "metadata": {
+            "week": 5,
+            "day": 1,
+            "topic": "Dynamic Programming",
+            "title": "House Robber",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "LinkedIn"
+            ],
+            "learning_outcomes": [
+                "1D DP"
+            ]
+        },
+        "problem_statement": {
+            "description": "Max amount you can rob without robbing adjacent houses.",
+            "constraints": [
+                "N <= 100"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Max Amount.",
+            "example": {
+                "input": "1 2 3 1",
+                "output": "4",
+                "explanation": "1 + 3 = 4."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2 7 9 3 1",
+                "expected_output": "12",
+                "explanation": "2+9+1",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 1",
+                "expected_output": "1",
+                "explanation": "Max of two",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Decide for house i: rob or skip.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "dp[i] = max(dp[i-1], nums[i] + dp[i-2]).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Handle base cases for i=0, i=1.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Space optimization possible.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Iterative DP."
+        }
+    },
+    {
+        "problem_id": "Q123",
+        "metadata": {
+            "week": 5,
+            "day": 1,
+            "topic": "Dynamic Programming",
+            "title": "Longest Increasing Subsequence",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "LIS Pattern"
+            ]
+        },
+        "problem_statement": {
+            "description": "Length of longest strictly increasing subsequence.",
+            "constraints": [
+                "N <= 2500"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Integer length.",
+            "example": {
+                "input": "10 9 2 5 3 7 101 18",
+                "output": "4",
+                "explanation": "2 3 7 101 or 2 3 7 18."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "0 1 0 3 2 3",
+                "expected_output": "4",
+                "explanation": "0 1 2 3",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "5 5 5",
+                "expected_output": "1",
+                "explanation": "Strict increasing",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 3",
+                "expected_output": "3",
+                "explanation": "Full array",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i] = max length ending at index i.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "For j < i, if nums[i] > nums[j], dp[i] = max(dp[i], dp[j]+1).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "O(N^2) solution.",
+                "hint_type": "complexity"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "O(N log N) solution using Binary Search exists.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2) or O(N log N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Binary Search Patience Sort."
+        }
+    },
+    {
+        "problem_id": "Q124",
+        "metadata": {
+            "week": 5,
+            "day": 2,
+            "topic": "Dynamic Programming",
+            "title": "Longest Common Subsequence",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "2D DP"
+            ]
+        },
+        "problem_statement": {
+            "description": "Length of longest common subsequence of two strings.",
+            "constraints": [
+                "Length <= 1000"
+            ],
+            "input_format": "String text1, String text2.",
+            "output_format": "Integer length.",
+            "example": {
+                "input": "abcde, ace",
+                "output": "3",
+                "explanation": "ace."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "abc, abc",
+                "expected_output": "3",
+                "explanation": "Same",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "abc, def",
+                "expected_output": "0",
+                "explanation": "None",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "bl, yby",
+                "expected_output": "1",
+                "explanation": "b",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i][j] represents LCS of text1[0..i] and text2[0..j].",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If chars match: 1 + dp[i-1][j-1].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Else: max(dp[i-1][j], dp[i][j-1]).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Grid approach.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N*M)",
+            "space_complexity": "O(N*M)",
+            "optimal_approach": "2D DP."
+        }
+    },
+    {
+        "problem_id": "Q125",
+        "metadata": {
+            "week": 5,
+            "day": 2,
+            "topic": "Dynamic Programming",
+            "title": "Coin Change",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Uber"
+            ],
+            "learning_outcomes": [
+                "Unbounded Knapsack"
+            ]
+        },
+        "problem_statement": {
+            "description": "Fewest number of coins to make up amount using given coins.",
+            "constraints": [
+                "Coins <= 12",
+                "Amount <= 10000"
+            ],
+            "input_format": "Coins array, Amount.",
+            "output_format": "Count or -1.",
+            "example": {
+                "input": "1 2 5, 11",
+                "output": "3",
+                "explanation": "5+5+1."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "2, 3",
+                "expected_output": "-1",
+                "explanation": "Impossible",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1, 0",
+                "expected_output": "0",
+                "explanation": "Zero",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1, 2",
+                "expected_output": "2",
+                "explanation": "1+1",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i] = min coins for amount i.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Initialize dp array with infinity (amount+1). dp[0]=0.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "For each coin c, dp[i] = min(dp[i], dp[i-c] + 1).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If dp[amount] > amount, return -1.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(Amount * Coins)",
+            "space_complexity": "O(Amount)",
+            "optimal_approach": "Bottom-up DP."
+        }
+    },
+    {
+        "problem_id": "Q126",
+        "metadata": {
+            "week": 5,
+            "day": 2,
+            "topic": "Array",
+            "title": "Maximum Subarray (Kadane's Algorithm)",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Classic"
+            ],
+            "learning_outcomes": [
+                "Kadane's Algo"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find contiguous subarray with largest sum.",
+            "constraints": [
+                "N <= 10^5"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Max Sum.",
+            "example": {
+                "input": "-2 1 -3 4 -1 2 1 -5 4",
+                "output": "6",
+                "explanation": "4 -1 2 1."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1",
+                "expected_output": "1",
+                "explanation": "Single",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "5 4 -1 7 8",
+                "expected_output": "23",
+                "explanation": "All positive involved",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "-1 -2",
+                "expected_output": "-1",
+                "explanation": "Max is max single element if all negative",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Accumulate sum. If sum < 0, reset to 0.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Track global max.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Handle all negative numbers case (max is single max element).",
+                "hint_type": "common_mistake"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "One pass O(N).",
+                "hint_type": "complexity"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Kadane's."
+        }
+    },
+    {
+        "problem_id": "Q127",
+        "metadata": {
+            "week": 5,
+            "day": 3,
+            "topic": "Dynamic Programming",
+            "title": "Edit Distance",
+            "difficulty_level": "HARD",
+            "difficulty_stars": 4,
+            "estimated_time_minutes": 30,
+            "category": "DSA",
+            "company_tags": [
+                "Google"
+            ],
+            "learning_outcomes": [
+                "String Transformation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Min operations (insert, delete, replace) to convert word1 to word2.",
+            "constraints": [
+                "Lengths <= 500"
+            ],
+            "input_format": "Word1, Word2.",
+            "output_format": "Ops count.",
+            "example": {
+                "input": "horse, ros",
+                "output": "3",
+                "explanation": "h->r, remove r, remove e... or replace."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "intention, execution",
+                "expected_output": "5",
+                "explanation": "Complex",
+                "category": "complex"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "a, a",
+                "expected_output": "0",
+                "explanation": "Same",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "a, ",
+                "expected_output": "1",
+                "explanation": "Delete",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i][j] is dist between word1[0..i] and word2[0..j].",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "If chars match: dp[i-1][j-1].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Else: 1 + min(insert, delete, replace).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Base cases (empty strings).",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(M*N)",
+            "space_complexity": "O(M*N)",
+            "optimal_approach": "2D DP."
+        }
+    },
+    {
+        "problem_id": "Q128",
+        "metadata": {
+            "week": 5,
+            "day": 3,
+            "topic": "Dynamic Programming",
+            "title": "0/1 Knapsack Problem",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Classic"
+            ],
+            "learning_outcomes": [
+                "Knapsack Pattern"
+            ]
+        },
+        "problem_statement": {
+            "description": "Max value with weight capacity W.",
+            "constraints": [
+                "N <= 100",
+                "W <= 1000"
+            ],
+            "input_format": "Weights, Values, Capacity.",
+            "output_format": "Max Value.",
+            "example": {
+                "input": "10 20 30, 60 100 120, 50",
+                "output": "220",
+                "explanation": "20+30 weights -> 100+120 val."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1, 1, 1",
+                "expected_output": "1",
+                "explanation": "Fits",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "10, 10, 5",
+                "expected_output": "0",
+                "explanation": "Doesn't fit",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5 10, 10 20, 15",
+                "expected_output": "30",
+                "explanation": "Both fit",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i][w] = max value using first i items with capacity w.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Include item: val[i] + dp[i-1][w-wt[i]].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Exclude item: dp[i-1][w].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Take max of include/exclude.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N*W)",
+            "space_complexity": "O(N*W)",
+            "optimal_approach": "2D DP."
+        }
+    },
+    {
+        "problem_id": "Q129",
+        "metadata": {
+            "week": 5,
+            "day": 3,
+            "topic": "Dynamic Programming",
+            "title": "Partition Equal Subset Sum",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Subset Sum"
+            ]
+        },
+        "problem_statement": {
+            "description": "Determine if array can be partitioned into two subsets with equal sum.",
+            "constraints": [
+                "N <= 200",
+                "Sum <= 20000"
+            ],
+            "input_format": "Array nums.",
+            "output_format": "Boolean.",
+            "example": {
+                "input": "1 5 11 5",
+                "output": "True",
+                "explanation": "11 and 1+5+5."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "1 2 3 5",
+                "expected_output": "False",
+                "explanation": "Odd sum",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2 2",
+                "expected_output": "True",
+                "explanation": "Equal",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 2 5",
+                "expected_output": "False",
+                "explanation": "Sum 8, need 4. Impossible",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Total sum must be even. Goal is to find subset with sum = Total/2.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Subset Sum problem (variation of Knapsack).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "dp[i] = true if sum i is achievable.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Iterate nums and update dp array from back to front.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N*Sum)",
+            "space_complexity": "O(Sum)",
+            "optimal_approach": "1D DP."
+        }
+    },
+    {
+        "problem_id": "Q130",
+        "metadata": {
+            "week": 5,
+            "day": 3,
+            "topic": "Dynamic Programming",
+            "title": "Word Break",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 25,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "String Dictionary"
+            ]
+        },
+        "problem_statement": {
+            "description": "Determined if string s can be segmented into dictionary words.",
+            "constraints": [
+                "Length <= 300",
+                "Dict <= 1000"
+            ],
+            "input_format": "String s, List wordDict.",
+            "output_format": "Boolean.",
+            "example": {
+                "input": "leetcode, [leet, code]",
+                "output": "True",
+                "explanation": "Segmented."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "applepenapple, [apple, pen]",
+                "expected_output": "True",
+                "explanation": "Used twice",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "catsandog, [cats, dog, sand, and, cat]",
+                "expected_output": "False",
+                "explanation": "Mismatch",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "a, [a]",
+                "expected_output": "True",
+                "explanation": "Single",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "dp[i] = true if s[0..i] is valid.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Check all split points j < i.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If dp[j] is true AND s[j..i] in dict, then dp[i] is true.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Use Hash Set for dictionary lookups.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "DP."
+        }
+    }
+]

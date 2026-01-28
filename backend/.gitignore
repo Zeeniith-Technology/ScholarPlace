@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+.nyc_output
+
+# Build outputs
+dist/
+build/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.history/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.sql.gz
+dumps/
+
+# Test files
+test-results/
+screenshots/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# MongoDB specific
+data/db/
+
+# PM2
+.pm2/

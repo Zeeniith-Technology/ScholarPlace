@@ -1,0 +1,844 @@
+[
+    {
+        "test_id": "WT002",
+        "week": 2,
+        "name": "Week 2 Aptitude Test",
+        "duration_minutes": 60,
+        "total_questions": 50,
+        "difficulty_distribution": {
+            "easy": 20,
+            "medium": 25,
+            "hard": 5
+        },
+        "composition": {
+            "current_week": "80%",
+            "previous_weeks": "20%"
+        },
+        "questions": [
+            {
+                "q_id": "WT002Q001",
+                "question_number": 1,
+                "question": "A number is increased by 20% and then decreased by 20%. The final number is?",
+                "options": [
+                    "Same as original",
+                    "0.4% less",
+                    "4% less",
+                    "4% more"
+                ],
+                "answer": "4% less",
+                "explanation": "Net change = +20 - 20 - (20*20)/100 = -4%. Decrease of 4%.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q002",
+                "question_number": 2,
+                "question": "Price of sugar rises by 25%. By how much percent should a family reduce consumption to keep budget same?",
+                "options": [
+                    "20%",
+                    "25%",
+                    "30%",
+                    "15%"
+                ],
+                "answer": "20%",
+                "explanation": "Reduction = (R / (100+R)) * 100 = (25/125)*100 = 20%.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q003",
+                "question_number": 3,
+                "question": "An item is marked 20% above CP and then allowed 10% discount. Profit % is?",
+                "options": [
+                    "10%",
+                    "8%",
+                    "12%",
+                    "15%"
+                ],
+                "answer": "8%",
+                "explanation": "Net = +20 - 10 - (20*10)/100 = 10 - 2 = 8%.",
+                "topic": "Discount",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q004",
+                "question_number": 4,
+                "question": "Successive discounts of 20% and 10% are equivalent to a single discount of:",
+                "options": [
+                    "30%",
+                    "28%",
+                    "25%",
+                    "18%"
+                ],
+                "answer": "28%",
+                "explanation": "-20 - 10 + (200/100) = -30 + 2 = -28%. Discount is 28%.",
+                "topic": "Discount",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q005",
+                "question_number": 5,
+                "question": "A trader gives 2 free items on purchase of 8. What is the effective discount %?",
+                "options": [
+                    "20%",
+                    "25%",
+                    "15%",
+                    "10%"
+                ],
+                "answer": "20%",
+                "explanation": "Effective Discount = (Free / Total) * 100 = (2 / 10) * 100 = 20%.",
+                "topic": "Discount",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q006",
+                "question_number": 6,
+                "question": "A shopkeeper sells 1 kg rice but uses a 900g weight. His gain % is:",
+                "options": [
+                    "10%",
+                    "11.11%",
+                    "9.09%",
+                    "12%"
+                ],
+                "answer": "11.11%",
+                "explanation": "(Error/True-Error)*100 = (100/900)*100 = 11.11%.",
+                "topic": "Profit-Loss: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q007",
+                "question_number": 7,
+                "question": "If 4, 9, 16, 25, 36, ?, 64.",
+                "options": [
+                    "49",
+                    "45",
+                    "48",
+                    "50"
+                ],
+                "answer": "49",
+                "explanation": "Squares: 2^2, 3^2... 7^2=49.",
+                "topic": "Logic: Series",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q008",
+                "question_number": 8,
+                "question": "Synonym of 'ABATE'?",
+                "options": [
+                    "Increase",
+                    "Reduce",
+                    "Assist",
+                    "Hate"
+                ],
+                "answer": "Reduce",
+                "explanation": "Abate means to become less intense or widespread.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q009",
+                "question_number": 9,
+                "question": "In an exam, 65% passed in Maths, 48% in Physics, 30% in both. % failed in both?",
+                "options": [
+                    "17%",
+                    "20%",
+                    "35%",
+                    "15%"
+                ],
+                "answer": "17%",
+                "explanation": "Passed in at least one = 65+48-30 = 83%. Failed in both = 100-83 = 17%.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q010",
+                "question_number": 10,
+                "question": "Find 20% of 50% of 80% of 500.",
+                "options": [
+                    "40",
+                    "45",
+                    "50",
+                    "20"
+                ],
+                "answer": "40",
+                "explanation": "0.2 * 0.5 * 0.8 * 500 = 0.08 * 500 = 40.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q011",
+                "question_number": 11,
+                "question": "Buy 3 Get 1 Free is equivalent to what discount %?",
+                "options": [
+                    "33%",
+                    "25%",
+                    "20%",
+                    "30%"
+                ],
+                "answer": "25%",
+                "explanation": "1 free out of 4 total. 1/4 = 25%.",
+                "topic": "Discount",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q012",
+                "question_number": 12,
+                "question": "Marked price is 40% above cost. Discount is 20%. Profit %?",
+                "options": [
+                    "12%",
+                    "10%",
+                    "20%",
+                    "8%"
+                ],
+                "answer": "12%",
+                "explanation": "Net = 40 - 20 - 8 = 12%.",
+                "topic": "Profit-Loss: Advanced",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q013",
+                "question_number": 13,
+                "question": "A man sells two pipes at $12 each. One at 20% gain, other at 20% loss. Whole transaction result?",
+                "options": [
+                    "No Loss No Gain",
+                    "1% Loss",
+                    "4% Loss",
+                    "4% Gain"
+                ],
+                "answer": "4% Loss",
+                "explanation": "Always loss of (x^2)/100 %. (20^2)/100 = 4% Loss.",
+                "topic": "Profit-Loss: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q014",
+                "question_number": 14,
+                "question": "Salary increased 10%, then 10%, then decreased 20%. Net change?",
+                "options": [
+                    "No change",
+                    "2% decrease",
+                    "3.2% decrease",
+                    "3.2% increase"
+                ],
+                "answer": "3.2% decrease",
+                "explanation": "100 -> 110 -> 121 -> 121 * 0.8 = 96.8. Decrease = 100 - 96.8 = 3.2%.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q015",
+                "question_number": 15,
+                "question": "Next number: 10, 18, 28, 40, 54, ?",
+                "options": [
+                    "70",
+                    "72",
+                    "68",
+                    "66"
+                ],
+                "answer": "70",
+                "explanation": "Differences: +8, +10, +12, +14. Next +16. 54+16=70.",
+                "topic": "Logic: Series",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q016",
+                "question_number": 16,
+                "question": "Antonym of 'BENEVOLENT'?",
+                "options": [
+                    "Kind",
+                    "Cruel",
+                    "Generous",
+                    "Helpful"
+                ],
+                "answer": "Cruel",
+                "explanation": "Benevolent means kind/charitable. Antonym is Cruel.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q017",
+                "question_number": 17,
+                "question": "By selling an article for $240, a man incurs loss of 10%. At what price should he sell it to gain 10%?",
+                "options": [
+                    "$360",
+                    "$280",
+                    "$300",
+                    "$293"
+                ],
+                "answer": "Recap: $293.33 -> $293 approx? Wait, numbers. CP = 240/0.9 = 266.66. SP = 266.66*1.1 = 293.33.",
+                "question_corrected": "By selling for $270, loss is 10%. Find SP for 10% gain.",
+                "options_corrected": [
+                    "$300",
+                    "$330",
+                    "$340",
+                    "$320"
+                ],
+                "answer_corrected": "$330",
+                "explanation_corrected": "CP = 270/0.9 = 300. New SP = 300*1.1 = 330.",
+                "topic": "Recap: Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q017_ACTUAL",
+                "question_number": 17,
+                "question": "By selling an article for $270, a loss of 10% is incurred. Find the selling price for 10% gain.",
+                "options": [
+                    "$300",
+                    "$330",
+                    "$340",
+                    "$320"
+                ],
+                "answer": "$330",
+                "explanation": "CP = 270/0.9 = 300. New SP = 300*1.1 = 330.",
+                "topic": "Recap: Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q018",
+                "question_number": 18,
+                "question": "If A = 30% of B, and B = 20% of C, what % of C is A?",
+                "options": [
+                    "6%",
+                    "5%",
+                    "10%",
+                    "50%"
+                ],
+                "answer": "6%",
+                "explanation": "A = 0.3B = 0.3(0.2C) = 0.06C. So 6%.",
+                "topic": "Recap: Simple Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q019",
+                "question_number": 19,
+                "question": "Rate of interest for $2000 to become $2400 in 4 years (SI)?",
+                "options": [
+                    "4%",
+                    "5%",
+                    "6%",
+                    "3%"
+                ],
+                "answer": "5%",
+                "explanation": "I=400. 400=(2000*R*4)/100. 400=80R. R=5%.",
+                "topic": "Recap: SI Basics",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q020",
+                "question_number": 20,
+                "question": "A, B, C started business. A invests 3 times as much as B, and B invests 2/3 of C. Ratio of capitals?",
+                "options": [
+                    "6:2:3",
+                    "3:2:6",
+                    "2:6:3",
+                    "1:2:3"
+                ],
+                "answer": "6:2:3",
+                "explanation": "Let C=3x. B=2x. A=6x. Ratio 6:2:3.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q021",
+                "question_number": 21,
+                "question": "Discount series 10%, 20%, 50% is equal to single discount of:",
+                "options": [
+                    "60%",
+                    "64%",
+                    "80%",
+                    "56%"
+                ],
+                "answer": "64%",
+                "explanation": "100 -> 90 -> 72 -> 36. 100-36 = 64%.",
+                "topic": "Discount",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q022",
+                "question_number": 22,
+                "question": "Find odd one: 1, 8, 27, 64, 125, 196.",
+                "options": [
+                    "64",
+                    "196",
+                    "125",
+                    "1"
+                ],
+                "answer": "196",
+                "explanation": "Others are perfect cubes. 196 is 14^2 (square but not cube). Note: 64 is both but fits cube pattern. 196 breaks cube sequence 6^3=216.",
+                "topic": "Logic: Series",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q023",
+                "question_number": 23,
+                "question": "Synonym of 'INEVITABLE'?",
+                "options": [
+                    "Unavoidable",
+                    "Uncertain",
+                    "Mistaken",
+                    "Doubtful"
+                ],
+                "answer": "Unavoidable",
+                "explanation": "Inevitable means certain to happen.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q024",
+                "question_number": 24,
+                "question": "If CP is 96% of SP, profit percentage is:",
+                "options": [
+                    "4%",
+                    "4.17%",
+                    "5%",
+                    "3.8%"
+                ],
+                "answer": "4.17%",
+                "explanation": "CP = 0.96SP. Profit = SP - 0.96SP = 0.04SP. % = (0.04/0.96)*100 = 400/96 = 4.166%.",
+                "topic": "Profit-Loss: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q025",
+                "question_number": 25,
+                "question": "Population decreases by 20% every year. In 2 years, total decrease is?",
+                "options": [
+                    "40%",
+                    "36%",
+                    "44%",
+                    "32%"
+                ],
+                "answer": "36%",
+                "explanation": "100 -> 80 -> 64. Decrease = 36.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q026",
+                "question_number": 26,
+                "question": "The marked price is 10% higher than cost price. A discount of 10% is given on marked price. In this kind of sale, the seller:",
+                "options": [
+                    "Bears no loss, no gain",
+                    "Gains 1%",
+                    "Loses 1%",
+                    "Loses 2%"
+                ],
+                "answer": "Loses 1%",
+                "explanation": "Typical x% increase then x% decrease -> Loss of x^2/100 %. 100/100 = 1% Loss.",
+                "topic": "Discount",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q027",
+                "question_number": 27,
+                "question": "Complete: AZ, CX, EV, GT, ?",
+                "options": [
+                    "IR",
+                    "HS",
+                    "JS",
+                    "IS"
+                ],
+                "answer": "IR",
+                "explanation": "First letter +2: A, C, E, G, I. Second letter -2: Z, X, V, T, R. Pair IR.",
+                "topic": "Logic: Patterns",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q028",
+                "question_number": 28,
+                "question": "A sells a bicycle to B at a profit of 20%. B sells it to C at a profit of 25%. If C pays $225, what did A pay?",
+                "options": [
+                    "$150",
+                    "$175",
+                    "$180",
+                    "$120"
+                ],
+                "answer": "$150",
+                "explanation": "A * 1.2 * 1.25 = 225. A * 1.5 = 225. A = 150.",
+                "topic": "Profit-Loss: Advanced",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q029",
+                "question_number": 29,
+                "question": "Fresh grapes contain 80% water while dry grapes contain 10% water. If dry grapes weight is 250kg, what was total fresh weight?",
+                "options": [
+                    "1125 kg",
+                    "1100 kg",
+                    "1000 kg",
+                    "900 kg"
+                ],
+                "answer": "1125 kg",
+                "explanation": "Pulp = 90% of 250 = 225. In fresh, pulp is 20%. 20% of Fresh = 225. Fresh = 225/0.2 = 1125.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q030",
+                "question_number": 30,
+                "question": "Recap: Convert 3/8 to percentage.",
+                "options": [
+                    "30%",
+                    "37.5%",
+                    "25%",
+                    "40%"
+                ],
+                "answer": "37.5%",
+                "explanation": "3/8 * 100 = 300/8 = 37.5%.",
+                "topic": "Recap: Simple Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q031",
+                "question_number": 31,
+                "question": "Meaning of 'AMBIGUOUS'?",
+                "options": [
+                    "Clear",
+                    "Uncertain",
+                    "Large",
+                    "Bright"
+                ],
+                "answer": "Uncertain",
+                "explanation": "Ambiguous means open to more than one interpretation; unclear or uncertain.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q032",
+                "question_number": 32,
+                "question": "If 111 -> 3, 112 -> 4, 113 -> 5, then 117 -> ?",
+                "options": [
+                    "8",
+                    "9",
+                    "7",
+                    "6"
+                ],
+                "answer": "9",
+                "explanation": "Sum of digits. 1+1+7 = 9.",
+                "topic": "Logic: Patterns",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q033",
+                "question_number": 33,
+                "question": "Recap: Cost price $500, Profit 15%. SP?",
+                "options": [
+                    "$560",
+                    "$575",
+                    "$580",
+                    "$550"
+                ],
+                "answer": "$575",
+                "explanation": "500 * 1.15 = 575.",
+                "topic": "Recap: Basic Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q034",
+                "question_number": 34,
+                "question": "Dealer marks goods 20% above CP and allows 15% discount. Gain %?",
+                "options": [
+                    "1%",
+                    "2%",
+                    "5%",
+                    "4%"
+                ],
+                "answer": "2%",
+                "explanation": "100 -> 120 -> 120 * 0.85 = 102. Gain 2%.",
+                "topic": "Discount",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q035",
+                "question_number": 35,
+                "question": "Find missing: 5, 11, 23, 47, ?",
+                "options": [
+                    "95",
+                    "96",
+                    "94",
+                    "90"
+                ],
+                "answer": "95",
+                "explanation": "x2 + 1 pattern. 47*2+1 = 95.",
+                "topic": "Logic: Series",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q036",
+                "question_number": 36,
+                "question": "A reduction of 20% in price of apples enables a man to buy 10 more for $54. Reduced price per dozen?",
+                "options": [
+                    "$12.96",
+                    "$13.00",
+                    "$10.80",
+                    "$14.40"
+                ],
+                "answer": "$12.96",
+                "explanation": "20% of 54 = 10.8. Price of 10 apples = 10.8. Price of 1 = 1.08. Price of 12 (dozen) = 12.96.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q037",
+                "question_number": 37,
+                "question": "If 'WATER' is written as 'XBUFS', how is 'FIRE' written?",
+                "options": [
+                    "GJSF",
+                    "GJSF",
+                    "GJSE",
+                    "HKSF"
+                ],
+                "answer": "GJSF",
+                "explanation": "+1 shift. F->G, I->J, R->S, E->F.",
+                "topic": "Logic: Patterns",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q038",
+                "question_number": 38,
+                "question": "Recap: 60% of a number is 30. Number is?",
+                "options": [
+                    "50",
+                    "60",
+                    "45",
+                    "100"
+                ],
+                "answer": "50",
+                "explanation": "0.6x = 30 => x=50.",
+                "topic": "Recap: Simple Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q039",
+                "question_number": 39,
+                "question": "Man bought commodity for $1600. Sold it at 10% profit. Spends 5% of SP on transport. Net profit?",
+                "options": [
+                    "$88",
+                    "$72",
+                    "$80",
+                    "$90"
+                ],
+                "answer": "$72",
+                "explanation": "SP = 1760. Profit = 160. Transport = 0.05*1760 = 88. Net = 160 - 88 = 72.",
+                "topic": "Profit-Loss: Advanced",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q040",
+                "question_number": 40,
+                "question": "Two numbers are 20% and 50% more than a third number respectively. The ratio of the two numbers is:",
+                "options": [
+                    "2:5",
+                    "3:5",
+                    "4:5",
+                    "6:7"
+                ],
+                "answer": "4:5",
+                "explanation": "3rd = 100. 1st = 120. 2nd = 150. Ratio 120:150 = 4:5.",
+                "topic": "Percentage: Advanced",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q041",
+                "question_number": 41,
+                "question": "Recap: At what rate percent per annum simple interest will a sum double itself in 10 years?",
+                "options": [
+                    "10%",
+                    "8%",
+                    "12%",
+                    "5%"
+                ],
+                "answer": "10%",
+                "explanation": "P->2P => Interest=P. 100/10 = 10%.",
+                "topic": "Recap: SI Basics",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q042",
+                "question_number": 42,
+                "question": "A shopkeeper sells an article at 15% discount on Marked Price and gains 19% on CP. If CP is 340, find MP.",
+                "options": [
+                    "476",
+                    "480",
+                    "500",
+                    "450"
+                ],
+                "answer": "476",
+                "explanation": "SP = CP*1.19 = 340*1.19 = 404.6. MP*(1-0.15) = 404.6. 0.85MP = 404.6. MP = 476.",
+                "topic": "Discount",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q043",
+                "question_number": 43,
+                "question": "Recap: 35% of ? = 175",
+                "options": [
+                    "400",
+                    "500",
+                    "600",
+                    "350"
+                ],
+                "answer": "500",
+                "explanation": "0.35x = 175. x = 500.",
+                "topic": "Recap: Simple Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q044",
+                "question_number": 44,
+                "question": "Recap: A pen bought for $10 sold for $13. Profit %?",
+                "options": [
+                    "30%",
+                    "25%",
+                    "33%",
+                    "10%"
+                ],
+                "answer": "30%",
+                "explanation": "3/10 * 100 = 30%.",
+                "topic": "Recap: Basic Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q045",
+                "question_number": 45,
+                "question": "1, 2, 6, 24, ?",
+                "options": [
+                    "100",
+                    "120",
+                    "96",
+                    "48"
+                ],
+                "answer": "120",
+                "explanation": "x2, x3, x4, x5. 24*5 = 120.",
+                "topic": "Logic: Series",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q046",
+                "question_number": 46,
+                "question": "Recap: 25% of 60 is same as 30% of?",
+                "options": [
+                    "50",
+                    "45",
+                    "40",
+                    "55"
+                ],
+                "answer": "50",
+                "explanation": "15 = 0.3x. x = 50.",
+                "topic": "Recap: Simple Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q047",
+                "question_number": 47,
+                "question": "A tradesman marks his goods at 25% above cost. He allows a discount of 12.5% for cash payment. His profit % is:",
+                "options": [
+                    "9.375%",
+                    "10%",
+                    "12.5%",
+                    "8%"
+                ],
+                "answer": "9.375%",
+                "explanation": "100 -> 125 -> 125*0.875 = 109.375. Profit 9.375%.",
+                "topic": "Discount",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q048",
+                "question_number": 48,
+                "question": "Antonym of 'PROFICIENT'?",
+                "options": [
+                    "Skilled",
+                    "Incompetent",
+                    "Expert",
+                    "Efficient"
+                ],
+                "answer": "Incompetent",
+                "explanation": "Proficient means skilled. Incompetent is antonym.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q049",
+                "question_number": 49,
+                "question": "If 1st Jan 2004 was Thursday, what day is 1st Jan 2005?",
+                "options": [
+                    "Friday",
+                    "Saturday",
+                    "Sunday",
+                    "Thursday"
+                ],
+                "answer": "Saturday",
+                "explanation": "2004 is leap year (366 days). +2 odd days. Thursday + 2 = Saturday.",
+                "topic": "Logic: Patterns/Calendar",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT002Q050",
+                "question_number": 50,
+                "question": "Find the single discount equivalent to 10%, 15%, 20%.",
+                "options": [
+                    "35%",
+                    "38.8%",
+                    "40%",
+                    "36.2%"
+                ],
+                "answer": "38.8%",
+                "explanation": "100 -> 90 -> 76.5 -> 61.2. Discount = 100-61.2 = 38.8%.",
+                "topic": "Discount",
+                "difficulty": "HARD",
+                "unique": true
+            }
+        ]
+    }
+]

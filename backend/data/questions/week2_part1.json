@@ -1,0 +1,841 @@
+[
+    {
+        "problem_id": "Q031",
+        "metadata": {
+            "week": 2,
+            "day": 1,
+            "topic": "Arrays",
+            "title": "Second Largest Element",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "GeeksforGeeks",
+                "Samsung"
+            ],
+            "learning_outcomes": [
+                "Traversal",
+                "Conditional Logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the second largest distinct element in an array.",
+            "constraints": [
+                "2 <= N <= 1000",
+                "0 <= Elements <= 10^4"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Second largest element, or -1 if not exists.",
+            "example": {
+                "input": "5\n10 5 10 2 9",
+                "output": "9",
+                "explanation": "Largest 10, Second Largest 9."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n10 20 5",
+                "expected_output": "10",
+                "explanation": "20 is largest, 10 is second",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2\n10 10",
+                "expected_output": "-1",
+                "explanation": "No distinct second element",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5\n1 2 3 4 5",
+                "expected_output": "4",
+                "explanation": "Sorted",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Sort and pick second last? O(N log N). Can we do O(N)?",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Maintain two variables: largest AND second_largest.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Update largest if curr > largest. Then old largest becomes second largest.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Also check if curr > second_largest but < largest.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "One pass traversal."
+        }
+    },
+    {
+        "problem_id": "Q032",
+        "metadata": {
+            "week": 2,
+            "day": 1,
+            "topic": "Arrays",
+            "title": "Left Rotate Array by One",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Array Manipulation"
+            ]
+        },
+        "problem_statement": {
+            "description": "Left rotate an array by one position. First element moves to last.",
+            "constraints": [
+                "1 <= N <= 1000"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Modified array.",
+            "example": {
+                "input": "5\n1 2 3 4 5",
+                "output": "2 3 4 5 1",
+                "explanation": "1 moved to end."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n10 20 30",
+                "expected_output": "20 30 10",
+                "explanation": "Standard rotation",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1\n5",
+                "expected_output": "5",
+                "explanation": "Single element stays",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "2\n1 2",
+                "expected_output": "2 1",
+                "explanation": "Swap",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Store first element in temp.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Shift all other elements one step left (arr[i] = arr[i+1]).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Place temp at last index.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Loop from 0 to N-2.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "One pass."
+        }
+    },
+    {
+        "problem_id": "Q033",
+        "metadata": {
+            "week": 2,
+            "day": 1,
+            "topic": "Arrays",
+            "title": "Rotate Array by K",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Array Reversal",
+                "Modulo Arithmetic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Rotate an array to the left by K positions.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "0 <= K <= 1000"
+            ],
+            "input_format": "N, K, then N integers.",
+            "output_format": "Rotated array.",
+            "example": {
+                "input": "5 2\n1 2 3 4 5",
+                "output": "3 4 5 1 2",
+                "explanation": "Rotated twice."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 1\n1 2 3",
+                "expected_output": "2 3 1",
+                "explanation": "Rotate 1",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3 4\n1 2 3",
+                "expected_output": "2 3 1",
+                "explanation": "K > N, effective 1",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3 3\n1 2 3",
+                "expected_output": "1 2 3",
+                "explanation": "Rotate N times same array",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "K could be > N. Use K = K % N.",
+                "hint_type": "edge_case"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Naive: Rotate by 1, K times. O(N*K). Too slow.",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Better: Use temp array for first K elements.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Optimal: Reversal Algorithm. Reverse(0, K-1), Reverse(K, N-1), Reverse(0, N-1).",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1) with reversal algorithm",
+            "optimal_approach": "Reversal Algorithm."
+        }
+    },
+    {
+        "problem_id": "Q034",
+        "metadata": {
+            "week": 2,
+            "day": 1,
+            "topic": "Arrays",
+            "title": "Move Zeros to End",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Facebook",
+                "Paytm"
+            ],
+            "learning_outcomes": [
+                "Two Pointer",
+                "Partition"
+            ]
+        },
+        "problem_statement": {
+            "description": "Move all zeros to the end of the array while maintaining the relative order of non-zero elements.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "Elements can be 0"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Modified array.",
+            "example": {
+                "input": "5\n0 1 0 3 12",
+                "output": "1 3 12 0 0",
+                "explanation": "Zeros moved to back."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n0 0 1",
+                "expected_output": "1 0 0",
+                "explanation": "Shift front",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "4\n1 2 3 4",
+                "expected_output": "1 2 3 4",
+                "explanation": "No zeros",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "3\n0 0 0",
+                "expected_output": "0 0 0",
+                "explanation": "All zeros",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Create a new array? Requires O(N) space. Try in-place.",
+                "hint_type": "trade_off"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Keep a pointer 'count' for non-zero position.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Iterate, if non-zero found, place at 'count' and increment count.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "After loop, fill remaining from 'count' to end with zeros.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Two pointer traversal."
+        }
+    },
+    {
+        "problem_id": "Q035",
+        "metadata": {
+            "week": 2,
+            "day": 2,
+            "topic": "Arrays",
+            "title": "Remove Duplicates from Sorted Array",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Two Pointer",
+                "Sorted Array Property"
+            ]
+        },
+        "problem_statement": {
+            "description": "Remove duplicates from a sorted array in-place. Return the new length and print the unique elements.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "Sorted Non-Decreasing"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Length, then space separated unique elements.",
+            "example": {
+                "input": "5\n1 1 2 2 3",
+                "output": "3\n1 2 3",
+                "explanation": "Unique elements 1, 2, 3. Length 3."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n1 1 1",
+                "expected_output": "1\n1",
+                "explanation": "All duplicate",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3\n1 2 3",
+                "expected_output": "3\n1 2 3",
+                "explanation": "No duplicates",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "6\n1 1 2 3 3 4",
+                "expected_output": "4\n1 2 3 4",
+                "explanation": "Mixed",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Since sorted, duplicates are adjacent.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use a pointer 'j' to track unique position.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If arr[i] != arr[i-1], add to arr[j].",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return j.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Two pointer pass."
+        }
+    },
+    {
+        "problem_id": "Q036",
+        "metadata": {
+            "week": 2,
+            "day": 2,
+            "topic": "Arrays",
+            "title": "Linear Search - All Occurrences",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Traversal",
+                "Index Tracking"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find indices of all occurrences of element K in the array.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "0-based indexing"
+            ],
+            "input_format": "N, K, then N integers.",
+            "output_format": "Space separated indices, or -1 if none.",
+            "example": {
+                "input": "5 2\n1 2 3 2 4",
+                "output": "1 3",
+                "explanation": "2 found at index 1 and 3."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 5\n1 2 3",
+                "expected_output": "-1",
+                "explanation": "Not found",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "4 1\n1 1 1 1",
+                "expected_output": "0 1 2 3",
+                "explanation": "All indices",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1 10\n10",
+                "expected_output": "0",
+                "explanation": "Single index",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Iterate and check each element.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Store or print indices immediately.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Use a flag to check if found at least once.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If flag is false after loop, print -1.",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Linear scan."
+        }
+    },
+    {
+        "problem_id": "Q037",
+        "metadata": {
+            "week": 2,
+            "day": 3,
+            "topic": "Searching",
+            "title": "Binary Search (Iterative)",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Most Companies"
+            ],
+            "learning_outcomes": [
+                "Binary Search",
+                "Divide & Conquer"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Binary Search to find K in a sorted array. Return index or -1.",
+            "constraints": [
+                "1 <= N <= 10^4",
+                "Sorted Array"
+            ],
+            "input_format": "N, K, then N integers.",
+            "output_format": "Index of K.",
+            "example": {
+                "input": "5 4\n1 2 4 5 6",
+                "output": "2",
+                "explanation": "4 is at index 2."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3 1\n2 3 4",
+                "expected_output": "-1",
+                "explanation": "Not found",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "5 6\n1 2 4 5 6",
+                "expected_output": "4",
+                "explanation": "Last element",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5 1\n1 2 4 5 6",
+                "expected_output": "0",
+                "explanation": "First element",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Array is sorted. Don't use linear search.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Start low=0, high=N-1.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "mid = low + (high - low) / 2.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "If arr[mid] < K, ignore left half (low = mid + 1).",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Binary Search."
+        }
+    },
+    {
+        "problem_id": "Q038",
+        "metadata": {
+            "week": 2,
+            "day": 3,
+            "topic": "Searching",
+            "title": "Binary Search (Recursive)",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Recursion",
+                "Binary Search"
+            ]
+        },
+        "problem_statement": {
+            "description": "Implement Recursive Binary Search.",
+            "constraints": [
+                "1 <= N <= 10^4"
+            ],
+            "input_format": "N, K, then N integers.",
+            "output_format": "Index of K.",
+            "example": {
+                "input": "3 2\n1 2 3",
+                "output": "1",
+                "explanation": "At index 1."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "5 10\n1 3 5 7 9",
+                "expected_output": "-1",
+                "explanation": "Not found",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "1 5\n5",
+                "expected_output": "0",
+                "explanation": "Single match",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "4 4\n1 2 3 4",
+                "expected_output": "3",
+                "explanation": "Found",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Function signature: search(arr, low, high, key).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Base case: low > high return -1.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Compute mid.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Call recursively based on comparison.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(log N)",
+            "space_complexity": "O(log N) stack",
+            "optimal_approach": "Recursive Binary Search."
+        }
+    },
+    {
+        "problem_id": "Q039",
+        "metadata": {
+            "week": 2,
+            "day": 3,
+            "topic": "Sorting",
+            "title": "Bubble Sort",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Sorting Algorithms",
+                "Swapping"
+            ]
+        },
+        "problem_statement": {
+            "description": "Sort an array using Bubble Sort algorithm.",
+            "constraints": [
+                "1 <= N <= 1000"
+            ],
+            "input_format": "N followed by N integers.",
+            "output_format": "Sorted array.",
+            "example": {
+                "input": "4\n4 1 3 2",
+                "output": "1 2 3 4",
+                "explanation": "Sorted."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n3 2 1",
+                "expected_output": "1 2 3",
+                "explanation": "Reverse sorted",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3\n1 2 3",
+                "expected_output": "1 2 3",
+                "explanation": "Already sorted",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "5\n5 1 4 2 8",
+                "expected_output": "1 2 4 5 8",
+                "explanation": "Unsorted",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Repeatedly swap adjacent elements if they are in wrong order.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Largest element 'bubbles' to the end in first pass.",
+                "hint_type": "visual"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Inner loop range decreases by 1 each time.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Optimization: Check if any swap happened in a pass.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N^2)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Bubble Sort (for learning)."
+        }
+    },
+    {
+        "problem_id": "Q040",
+        "metadata": {
+            "week": 2,
+            "day": 3,
+            "topic": "Arrays",
+            "title": "Insert Element at Index",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Array Shifting"
+            ]
+        },
+        "problem_statement": {
+            "description": "Insert an element X at a specific index I in an array, shifting other elements.",
+            "constraints": [
+                "1 <= N <= 1000",
+                "0 <= I <= N"
+            ],
+            "input_format": "N, Array, then X and I.",
+            "output_format": "Modified array.",
+            "example": {
+                "input": "5\n1 2 3 4 5\n10 2",
+                "output": "1 2 10 3 4 5",
+                "explanation": "10 inserted at index 2."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\n1 2 3\n5 0",
+                "expected_output": "5 1 2 3",
+                "explanation": "Insert at beginning",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "3\n1 2 3\n5 3",
+                "expected_output": "1 2 3 5",
+                "explanation": "Insert at end",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "0\n\n5 0",
+                "expected_output": "5",
+                "explanation": "Empty array",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Array size increases by 1.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Shift elements from index I to end one step right.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Start shifting from the back to avoid overwriting.",
+                "hint_type": "implementation"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Place X at index I.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1) (assuming capacity)",
+            "optimal_approach": "Shifting."
+        }
+    }
+]

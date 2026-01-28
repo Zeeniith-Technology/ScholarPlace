@@ -1,0 +1,389 @@
+import { executeData, fetchData } from '../methods.js';
+import syllabusSchema from '../schema/syllabus.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+export default class syllabuscontroller {
+
+    async listsyllabus(req, res, next) {
+        try {
+            const { projection, filter, options } = req.body;
+            
+            const fetchOptions = {
+                ...(options || {}),
+                ...(req ? { req: req } : {})
+            };
+            
+            const response = await fetchData(
+                'tblSyllabus',
+                projection || {},
+                filter || {},
+                fetchOptions
+            );
+            
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Syllabus data fetched successfully',
+                data: response.data
+            };
+            next();
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Fetch failed',
+                error: error.message
+            };
+            next();
+        }
+    }
+    
+    async insertsyllabus(req, res, next) {
+        try {
+            const syllabusData = req.body;
+            
+            const response = await executeData(
+                'tblSyllabus',
+                syllabusData,
+                'i',
+                syllabusSchema
+            );
+            
+            res.locals.responseData = {
+                success: true,
+                status: 201,
+                message: 'Syllabus data inserted successfully',
+                data: response.data
+            };
+            next();
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Insert failed',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    async updatesyllabus(req, res, next) {
+        try {
+            const { filter, data } = req.body;
+            
+            if (!filter) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'Filter is required for update',
+                    error: 'Missing filter parameter'
+                };
+                return next();
+            }
+            
+            const response = await executeData(
+                'tblSyllabus',
+                data,
+                'u',
+                syllabusSchema,
+                filter
+            );
+            
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Syllabus data updated successfully',
+                data: response.data
+            };
+            next();
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Update failed',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    async deletesyllabus(req, res, next) {
+        try {
+            const { filter } = req.body;
+            
+            if (!filter) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'Filter is required for delete',
+                    error: 'Missing filter parameter'
+                };
+                return next();
+            }
+            
+            const response = await executeData(
+                'tblSyllabus',
+                null,
+                'd',
+                null,
+                filter
+            );
+            
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Syllabus data deleted successfully',
+                data: response.data
+            };
+            next();
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Delete failed',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    async getWeek1Content(req, res, next) {
+        try {
+            const day = req.query.day || 'pre-week'
+            
+            const __filename = fileURLToPath(import.meta.url)
+            const __dirname = path.dirname(__filename)
+            
+            const filePath = path.join(__dirname, '../../Product_Syllabus/Week-1-Complete-Lighter-Version')
+            
+            if (!fs.existsSync(filePath)) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 404,
+                    message: 'Week 1 content file not found',
+                    error: 'File not found'
+                }
+                return next()
+            }
+
+            const fileContent = fs.readFileSync(filePath, 'utf-8')
+            const content = parseDayContent(fileContent, day)
+            
+            // Debug logging
+            console.log(`Parsed content for ${day}:`, {
+                title: content.title,
+                contentLength: content.content?.length || 0,
+                learningOutcomes: content.learning_outcomes?.length || 0,
+                topics: content.topics?.length || 0
+            })
+            
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Week 1 content fetched successfully',
+                data: content  // Changed from 'content' to 'data' to match responsedata middleware
+            }
+            next()
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Failed to fetch content',
+                error: error.message
+            }
+            next()
+        }
+    }
+}
+
+/**
+ * Parse day-specific content from Week 1 file
+ */
+function parseDayContent(fileContent, day) {
+    const lines = fileContent.split('\n')
+    const dayMap = {
+        'pre-week': { 
+            patterns: ['# 🟢 PRE-WEEK:', 'PRE-WEEK:', 'I/O (INPUT/OUTPUT)', 'PRE-WEEK: I/O'], 
+            title: 'I/O (Input/Output) - Essential Basics' 
+        },
+        'day-1': { 
+            patterns: ['# 🟢 DAY 1', 'DAY 1 – DATA TYPES'], 
+            title: 'Data Types & Variables' 
+        },
+        'day-2': { 
+            patterns: ['# 🟢 DAY 2', 'DAY 2 – OPERATORS'], 
+            title: 'Operators & Decision Making' 
+        },
+        'day-3': { 
+            patterns: ['# 🟢 DAY 3', 'DAY 3 – LOOPS'], 
+            title: 'Loops & Patterns' 
+        },
+        'day-4': { 
+            patterns: ['# 🟢 DAY 4', 'DAY 4 – ARRAYS'], 
+            title: 'Arrays (DSA Foundation)' 
+        },
+        'day-5': { 
+            patterns: ['# 🟢 DAY 5', 'DAY 5 – FUNCTIONS'], 
+            title: 'Functions (Basics)' 
+        },
+    }
+
+    const dayInfo = dayMap[day] || dayMap['pre-week']
+    let inDay = false
+    let dayContent = []
+    let learningOutcomes = []
+    let topics = []
+    let currentSection = null
+    let skippedSummary = false
+
+    console.log(`Parsing content for day: ${day}, looking for patterns:`, dayInfo.patterns)
+
+    // Find the actual content start - skip summary section (first 41 lines)
+    // The actual content starts after multiple empty lines around line 42
+    let contentStartIndex = 0
+    for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim()
+        // Look for the first "# 🟢 PRE-WEEK:" that appears after line 40 (after summary)
+        if (i > 40 && trimmed.startsWith('# 🟢 PRE-WEEK:') && trimmed.includes('ESSENTIAL BASICS')) {
+            contentStartIndex = i
+            console.log(`Found actual content start at line ${i}`)
+            break
+        }
+    }
+
+    for (let i = contentStartIndex; i < lines.length; i++) {
+        const line = lines[i]
+        const trimmedLine = line.trim()
+        
+        // Check if we've reached the target day - MUST start with # 🟢 to be a real section
+        let foundDay = false
+        
+        if (trimmedLine.startsWith('# 🟢')) {
+            // For PRE-WEEK, check for PRE-WEEK: pattern with ESSENTIAL BASICS (actual content)
+            if (day === 'pre-week') {
+                foundDay = trimmedLine.includes('PRE-WEEK:') && trimmedLine.includes('ESSENTIAL BASICS')
+            }
+            // For DAY sections, check for DAY X pattern with full title (actual content headers)
+            else if (day.startsWith('day-')) {
+                const dayNum = day.replace('day-', '')
+                // Match actual content headers - they have "–" (em dash) and full titles
+                // Like "# 🟢 DAY 1 – DATA TYPES & VARIABLES" (not just "DAY 1")
+                foundDay = trimmedLine.includes(`DAY ${dayNum} –`) || trimmedLine.includes(`DAY ${dayNum} -`)
+            }
+        }
+        
+        if (foundDay && !inDay) {
+            console.log(`Found day section at line ${i}: ${trimmedLine}`)
+            inDay = true
+            // Don't include the day header itself, start collecting from next line
+            continue
+        }
+
+        // If we're in a day section, collect content
+        if (inDay) {
+            // First check if we should stop (next day or summary)
+            const isNextDay = dayInfo.patterns.every(pattern => {
+                const patternLower = pattern.toLowerCase()
+                const lineLower = trimmedLine.toLowerCase()
+                return !lineLower.includes(patternLower) && !trimmedLine.includes(pattern)
+            }) && (trimmedLine.startsWith('# 🟢 DAY') || trimmedLine.startsWith('# 🟢 PRE-WEEK:'))
+            
+            if (isNextDay || trimmedLine.startsWith('## 📋 WEEK 1 SUMMARY') || 
+                trimmedLine.includes('WEEK 1 SUMMARY') || trimmedLine.includes('# 📘 WEEK 2')) {
+                console.log(`Stopping at line ${i}: ${trimmedLine}`)
+                break
+            }
+            
+            // Extract learning outcomes
+            if (trimmedLine.includes('## Learning Outcomes') || (trimmedLine.includes('Learning Outcomes') && trimmedLine.includes('##'))) {
+                currentSection = 'learning_outcomes'
+                dayContent.push(line) // Include the header
+                continue
+            }
+
+            if (currentSection === 'learning_outcomes' && (trimmedLine.startsWith('✅') || trimmedLine.startsWith('- ') || trimmedLine.startsWith('By the end'))) {
+                if (trimmedLine.startsWith('✅') || trimmedLine.startsWith('- ')) {
+                    const outcome = trimmedLine.replace(/^[✅\-\*]\s*/, '').trim()
+                    if (outcome && outcome.length > 5) {
+                        learningOutcomes.push(outcome)
+                    }
+                }
+                dayContent.push(line) // Include in content
+                continue
+            }
+
+            // Stop learning outcomes section when we hit a new heading (but not the first one)
+            if (trimmedLine.startsWith('##') && !trimmedLine.includes('Learning Outcomes') && currentSection === 'learning_outcomes') {
+                currentSection = null
+            }
+
+            // Collect ALL content lines (including empty lines for formatting)
+            dayContent.push(line)
+        }
+    }
+
+    // Extract topics from content
+    const topicKeywords = [
+        'Data Types', 'Variables', 'Operators', 'Decision Making', 'Loops', 'Patterns',
+        'Arrays', 'Functions', 'I/O', 'Input/Output', 'printf', 'scanf', 'cout', 'cin',
+        'if-else', 'switch-case', 'ternary', 'for loop', 'while loop', 'do-while',
+        'break', 'continue', '2D Array', 'Matrix', 'Parameters', 'Return'
+    ]
+
+    topicKeywords.forEach(keyword => {
+        if (dayContent.join('\n').includes(keyword) && !topics.includes(keyword)) {
+            topics.push(keyword)
+        }
+    })
+
+    // Clean up and format content
+    let cleanedContent = dayContent.join('\n').trim()
+    
+    console.log(`Content collection summary for ${day}:`, {
+        linesCollected: dayContent.length,
+        contentLength: cleanedContent.length,
+        learningOutcomes: learningOutcomes.length,
+        topics: topics.length
+    })
+    
+    // If no content was collected, try to get it from the file differently
+    if (!cleanedContent || cleanedContent.length < 50) {
+        console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
+        console.log(`First few lines collected:`, dayContent.slice(0, 5))
+    }
+
+    return {
+        day: day === 'pre-week' ? 'PRE-WEEK' : `Day ${day.replace('day-', '')}`,
+        title: dayInfo.title,
+        learning_outcomes: learningOutcomes.length > 0 ? learningOutcomes : [],
+        topics: topics.length > 0 ? topics : [],
+        content: cleanedContent || `Content for ${dayInfo.title} is being loaded...`,
+        key_concepts: extractKeyConcepts(cleanedContent)
+    }
+}
+
+/**
+ * Extract key concepts from content
+ */
+function extractKeyConcepts(content) {
+    const concepts = []
+    const conceptPatterns = [
+        /## What is (a |an )?([^?]+)\?/gi,
+        /## ([^#]+)/g
+    ]
+
+    conceptPatterns.forEach(pattern => {
+        const matches = content.matchAll(pattern)
+        for (const match of matches) {
+            const concept = match[2] || match[1]
+            if (concept && concept.length > 3 && concept.length < 50) {
+                concepts.push(concept.trim())
+            }
+        }
+    })
+
+    return [...new Set(concepts)].slice(0, 10)
+}
+

@@ -1,0 +1,833 @@
+[
+    {
+        "problem_id": "Q041",
+        "metadata": {
+            "week": 2,
+            "day": 4,
+            "topic": "Strings",
+            "title": "Reverse a String",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "String Traversal",
+                "In-place"
+            ]
+        },
+        "problem_statement": {
+            "description": "Reverse a given string.",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "A string S.",
+            "output_format": "Reversed string.",
+            "example": {
+                "input": "hello",
+                "output": "olleh",
+                "explanation": "Reversed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "abcd",
+                "expected_output": "dcba",
+                "explanation": "Standard",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "a",
+                "expected_output": "a",
+                "explanation": "Single char",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "madam",
+                "expected_output": "madam",
+                "explanation": "Palindrome",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Strings can be treated as array of characters.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Use two pointers: start=0, end=len-1.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Swap chars at start and end.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Strings might be immutable in Java/Python, convert to char array first.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N) if immutable, else O(1)",
+            "optimal_approach": "Two pointer swap."
+        }
+    },
+    {
+        "problem_id": "Q042",
+        "metadata": {
+            "week": 2,
+            "day": 4,
+            "topic": "Strings",
+            "title": "Palindrome String",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "TCS"
+            ],
+            "learning_outcomes": [
+                "Two Pointer"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if a string is a palindrome.",
+            "constraints": [
+                "1 <= Length <= 1000",
+                "English letters"
+            ],
+            "input_format": "String S.",
+            "output_format": "Print 'Yes' or 'No'.",
+            "example": {
+                "input": "level",
+                "output": "Yes",
+                "explanation": "Reads same forward and backward."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "hello",
+                "expected_output": "No",
+                "explanation": "olleh != hello",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "racecar",
+                "expected_output": "Yes",
+                "explanation": "Palindrome",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "a",
+                "expected_output": "Yes",
+                "explanation": "Single char",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Compare first and last characters.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Move inwards as long as characters match.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If mismatch found, return No.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Handle case sensitivity if needed (problem implies lowercase).",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Two pointer comparison."
+        }
+    },
+    {
+        "problem_id": "Q043",
+        "metadata": {
+            "week": 2,
+            "day": 4,
+            "topic": "Strings",
+            "title": "Count Vowels and Consonants",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "Character Checks"
+            ]
+        },
+        "problem_statement": {
+            "description": "Count the number of vowels and consonants in a string.",
+            "constraints": [
+                "1 <= Length <= 1000",
+                "Alphabets only"
+            ],
+            "input_format": "String S.",
+            "output_format": "Vowels Consonants",
+            "example": {
+                "input": "hello",
+                "output": "2 3",
+                "explanation": "e, o are vowels. h, l, l are consonants."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "aeiou",
+                "expected_output": "5 0",
+                "explanation": "All vowels",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "bcd",
+                "expected_output": "0 3",
+                "explanation": "All consonants",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "Apple",
+                "expected_output": "2 3",
+                "explanation": "Mixed case, check both",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Vowels are a, e, i, o, u (both cases).",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Iterate through string.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If char is vowel, v_count++, else if letter, c_count++.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Ignore spaces/digits if present (constraints say alphabets only).",
+                "hint_type": "edge_case"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Linear scan."
+        }
+    },
+    {
+        "problem_id": "Q044",
+        "metadata": {
+            "week": 2,
+            "day": 4,
+            "topic": "Strings",
+            "title": "Anagram Check",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Google",
+                "Amazon"
+            ],
+            "learning_outcomes": [
+                "Hashing",
+                "Sorting"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if two strings are anagrams (contain same characters with same frequency).",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "Two strings S1 and S2.",
+            "output_format": "Yes or No.",
+            "example": {
+                "input": "listen silent",
+                "output": "Yes",
+                "explanation": "Same letters."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "cat rat",
+                "expected_output": "No",
+                "explanation": "Different chars",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "abc cab",
+                "expected_output": "Yes",
+                "explanation": "Anagram",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "a aa",
+                "expected_output": "No",
+                "explanation": "Different frequencies",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Method 1: Sort both strings and compare. O(N log N).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Method 2: Use frequency array (size 26) or hash map. O(N).",
+                "hint_type": "optimization"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Increment count for S1, decrement for S2.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Check if all counts are zero at end.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1) (fixed size 26)",
+            "optimal_approach": "Frequency Counter."
+        }
+    },
+    {
+        "problem_id": "Q045",
+        "metadata": {
+            "week": 2,
+            "day": 4,
+            "topic": "Strings",
+            "title": "Remove Spaces",
+            "difficulty_level": "EASY",
+            "difficulty_stars": 1,
+            "estimated_time_minutes": 10,
+            "category": "DSA",
+            "company_tags": [
+                "Basic"
+            ],
+            "learning_outcomes": [
+                "String Modification"
+            ]
+        },
+        "problem_statement": {
+            "description": "Remove all spaces from a given string.",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "String S (may contain spaces).",
+            "output_format": "String without spaces.",
+            "example": {
+                "input": "hello world",
+                "output": "helloworld",
+                "explanation": "Space removed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "a b c",
+                "expected_output": "abc",
+                "explanation": "Multiple spaces",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "  a  ",
+                "expected_output": "a",
+                "explanation": "Leading/Trailing",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "nospace",
+                "expected_output": "nospace",
+                "explanation": "No change",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Iterate through string.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Append non-space characters to new buffer/string.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "If char != ' ', add it.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Print the result.",
+                "hint_type": "implementation"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N) for result",
+            "optimal_approach": "Builder pattern."
+        }
+    },
+    {
+        "problem_id": "Q046",
+        "metadata": {
+            "week": 2,
+            "day": 5,
+            "topic": "Strings",
+            "title": "First Non-Repeating Character",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Google"
+            ],
+            "learning_outcomes": [
+                "Hashing",
+                "Frequency Map"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the first non-repeating character in a string and return its character.",
+            "constraints": [
+                "1 <= Length <= 1000",
+                "Lowercase English"
+            ],
+            "input_format": "String S.",
+            "output_format": "Char (or specific message if none, say -1 or None). Let's print the Char.",
+            "example": {
+                "input": "leetcode",
+                "output": "l",
+                "explanation": "l appears once."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "loveleetcode",
+                "expected_output": "v",
+                "explanation": "l, o, e repeated. v is first unique.",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "aabb",
+                "expected_output": "-1",
+                "explanation": "All repeat",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "z",
+                "expected_output": "z",
+                "explanation": "Single char",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Need to know counts of all chars completely first?",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Step 1: Count frequency of each char (Hash Map or Array).",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Step 2: Iterate string again.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Return the first char with count == 1.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(1) (26 chars)",
+            "optimal_approach": "Two pass with frequency array."
+        }
+    },
+    {
+        "problem_id": "Q047",
+        "metadata": {
+            "week": 2,
+            "day": 5,
+            "topic": "Strings",
+            "title": "String Compression",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "Run Length Encoding"
+            ]
+        },
+        "problem_statement": {
+            "description": "Compress a string by replacing consecutive repeating characters with count (e.g., aabcccccaaa -> a2b1c5a3).",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "String S.",
+            "output_format": "Compressed String.",
+            "example": {
+                "input": "aabcccccaaa",
+                "output": "a2b1c5a3",
+                "explanation": "Compressed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "abc",
+                "expected_output": "a1b1c1",
+                "explanation": "No repeats",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "aaaaa",
+                "expected_output": "a5",
+                "explanation": "Single run",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "a",
+                "expected_output": "a1",
+                "explanation": "Single char",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Traverse the string.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Keep count of consecutive characters.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "When char changes, append prev char + count to result.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Don't forget the last group after loop ends.",
+                "hint_type": "common_mistake"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Linear scan."
+        }
+    },
+    {
+        "problem_id": "Q048",
+        "metadata": {
+            "week": 2,
+            "day": 5,
+            "topic": "Strings",
+            "title": "Longest Common Prefix",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Google"
+            ],
+            "learning_outcomes": [
+                "String Algorithms"
+            ]
+        },
+        "problem_statement": {
+            "description": "Find the longest common prefix string amongst an array of strings.",
+            "constraints": [
+                "1 <= N strings <= 200",
+                "0 <= String Length <= 200"
+            ],
+            "input_format": "N followed by N strings.",
+            "output_format": "LCP String or empty.",
+            "example": {
+                "input": "3\nflower flow flight",
+                "output": "fl",
+                "explanation": "fl is common."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "3\ndog racecar car",
+                "expected_output": "",
+                "explanation": "No common prefix",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "2\nab a",
+                "expected_output": "a",
+                "explanation": "Shortest string limit",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "1\nalone",
+                "expected_output": "alone",
+                "explanation": "Single string LCP is itself",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "LCP is at most the length of shortest string.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Take first string as initial prefix.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Compare with next string, shorten prefix until it matches.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Repeat for all strings.",
+                "hint_type": "algorithm"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(S) where S is sum of all chars",
+            "space_complexity": "O(1)",
+            "optimal_approach": "Horizontal scanning."
+        }
+    },
+    {
+        "problem_id": "Q049",
+        "metadata": {
+            "week": 2,
+            "day": 5,
+            "topic": "Strings",
+            "title": "Reverse Words in a String",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 3,
+            "estimated_time_minutes": 20,
+            "category": "DSA",
+            "company_tags": [
+                "Amazon",
+                "Microsoft"
+            ],
+            "learning_outcomes": [
+                "String Parsing"
+            ]
+        },
+        "problem_statement": {
+            "description": "Reverse the order of words in a given string. Words are separated by space.",
+            "constraints": [
+                "1 <= Length <= 1000",
+                "Single spaces between words"
+            ],
+            "input_format": "String S.",
+            "output_format": "Reversed words string.",
+            "example": {
+                "input": "the sky is blue",
+                "output": "blue is sky the",
+                "explanation": "Words reversed."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "hello world",
+                "expected_output": "world hello",
+                "explanation": "Swapped",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "a",
+                "expected_output": "a",
+                "explanation": "Single word",
+                "category": "edge"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "a b c",
+                "expected_output": "c b a",
+                "explanation": "Three words",
+                "category": "basic"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Split string by space.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "You get a list of words. Reverse the list.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Join them back with spaces.",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "Without split (in-place): Reverse whole string, then reverse individual words.",
+                "hint_type": "optimization"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Split and Reverse."
+        }
+    },
+    {
+        "problem_id": "Q050",
+        "metadata": {
+            "week": 2,
+            "day": 5,
+            "topic": "Strings",
+            "title": "String Rotation Check",
+            "difficulty_level": "MEDIUM",
+            "difficulty_stars": 2,
+            "estimated_time_minutes": 15,
+            "category": "DSA",
+            "company_tags": [
+                "TCS"
+            ],
+            "learning_outcomes": [
+                "Rotation Logic"
+            ]
+        },
+        "problem_statement": {
+            "description": "Check if one string is a rotation of another.",
+            "constraints": [
+                "1 <= Length <= 1000"
+            ],
+            "input_format": "Two strings S1 and S2.",
+            "output_format": "Yes or No.",
+            "example": {
+                "input": "waterbottle erbottlewat",
+                "output": "Yes",
+                "explanation": "Rotation."
+            }
+        },
+        "test_cases": [
+            {
+                "tc_id": "TC001",
+                "input": "abc bca",
+                "expected_output": "Yes",
+                "explanation": "abc -> bca",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC002",
+                "input": "abc acb",
+                "expected_output": "No",
+                "explanation": "Not rotation",
+                "category": "basic"
+            },
+            {
+                "tc_id": "TC003",
+                "input": "aa aa",
+                "expected_output": "Yes",
+                "explanation": "Identical",
+                "category": "edge"
+            }
+        ],
+        "hints": [
+            {
+                "hint_level": 1,
+                "hint_text": "Length must be equal.",
+                "hint_type": "conceptual"
+            },
+            {
+                "hint_level": 2,
+                "hint_text": "Concatenate S1 with itself: S1 + S1.",
+                "hint_type": "approach"
+            },
+            {
+                "hint_level": 3,
+                "hint_text": "Check if S2 is a substring of (S1 + S1).",
+                "hint_type": "algorithm"
+            },
+            {
+                "hint_level": 4,
+                "hint_text": "waterbottlewaterbottle contains erbottlewat.",
+                "hint_type": "visual"
+            }
+        ],
+        "complexity_guidance": {
+            "time_complexity": "O(N)",
+            "space_complexity": "O(N)",
+            "optimal_approach": "Concatenation trick."
+        }
+    }
+]

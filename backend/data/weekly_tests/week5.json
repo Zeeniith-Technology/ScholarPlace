@@ -1,0 +1,870 @@
+[
+    {
+        "test_id": "WT005",
+        "week": 5,
+        "name": "Week 5 Aptitude Test",
+        "duration_minutes": 60,
+        "total_questions": 50,
+        "difficulty_distribution": {
+            "easy": 8,
+            "medium": 28,
+            "hard": 14
+        },
+        "composition": {
+            "current_week": "70%",
+            "previous_weeks": "30%"
+        },
+        "questions": [
+            {
+                "q_id": "WT005Q001",
+                "question_number": 1,
+                "question": "A can do a work in 15 days, B in 20 days. If they work together on it for 4 days, then fraction of work that is left is:",
+                "options": [
+                    "1/4",
+                    "1/10",
+                    "7/15",
+                    "8/15"
+                ],
+                "answer": "8/15",
+                "explanation": "A+B 1 day = 1/15 + 1/20 = 7/60. 4 days = 28/60 = 7/15. Left = 1 - 7/15 = 8/15.",
+                "topic": "Time & Work",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q002",
+                "question_number": 2,
+                "question": "A is thrice as good a workman as B and takes 10 days less to do a piece of work than B takes. B alone can do it in:",
+                "options": [
+                    "15 days",
+                    "12 days",
+                    "30 days",
+                    "10 days"
+                ],
+                "answer": "15 days",
+                "explanation": "Time ratio 1:3. Diff 2 units = 10 days. 1 unit = 5 days. A=5, B=15.",
+                "topic": "Time & Work",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q003",
+                "question_number": 3,
+                "question": "Compound Interest on $2000 at 10% per annum for 2 years is:",
+                "options": [
+                    "$400",
+                    "$420",
+                    "$440",
+                    "$410"
+                ],
+                "answer": "$420",
+                "explanation": "2000 * 1.1 * 1.1 = 2000 * 1.21 = 2420. CI = 420.",
+                "topic": "Compound Interest",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q004",
+                "question_number": 4,
+                "question": "Difference between CI and SI on a sum for 2 years at 5% is $1.50. The sum is:",
+                "options": [
+                    "$600",
+                    "$500",
+                    "$400",
+                    "$300"
+                ],
+                "answer": "$600",
+                "explanation": "Diff = P(r/100)^2. 1.5 = P(1/400). P = 600.",
+                "topic": "Compound Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q005",
+                "question_number": 5,
+                "question": "A does a work in 10 days, B in 15 days. They work together for 5 days. Rest done by C in 2 days. Wages $450. C's share?",
+                "options": [
+                    "$50",
+                    "$75",
+                    "$90",
+                    "$150"
+                ],
+                "answer": "$75",
+                "explanation": "A+B in 5 days = 5(1/10+1/15) = 5(5/30) = 25/30 = 5/6. Rest 1/6 by C. Share proportional to work. C gets 1/6 of 450 = 75.",
+                "topic": "Time & Work",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q006",
+                "question_number": 6,
+                "question": "A sum at CI doubles itself in 4 years. In how many years will it become 8 times?",
+                "options": [
+                    "12 years",
+                    "16 years",
+                    "8 years",
+                    "24 years"
+                ],
+                "answer": "12 years",
+                "explanation": "2^1 in 4. 2^3 (8) in 4*3 = 12 years.",
+                "topic": "Compound Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q007",
+                "question_number": 7,
+                "question": "P is the brother of Q and R. S is R's mother. T is P's father. Which statement is definitely true?",
+                "options": [
+                    "T is Q's father",
+                    "S and P are siblings",
+                    "Q is T's son",
+                    "Q is T's father"
+                ],
+                "answer": "T is Q's father",
+                "explanation": "T is father of P. P is brother of Q. So T is father of Q. (Gender of Q unknown, but relationship is Parent-Child).",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q008",
+                "question_number": 8,
+                "question": "Pointing to a photograph, a man said 'I have no brother or sister but that man's father is my father's son.' Whose photo is it?",
+                "options": [
+                    "His son",
+                    "Himself",
+                    "His father",
+                    "His nephew"
+                ],
+                "answer": "His son",
+                "explanation": "'My father's son' with no siblings = Me (Speaker). 'That man's father is Me'. So That Man is my son.",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q009",
+                "question_number": 9,
+                "question": "Statements: All huts are bungalows. All bungalows are churches. Conclusion?",
+                "options": [
+                    "Some churches are huts",
+                    "Some huts are not churches",
+                    "No hut is church",
+                    "All churches bungalows"
+                ],
+                "answer": "Some churches are huts",
+                "explanation": "All H inside B inside C. So All H are C. Implies Some C are H.",
+                "topic": "Logic: Syllogism",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q010",
+                "question_number": 10,
+                "question": "Recap: Train 100m at 30km/h crosses man at 4km/h in same direction. Time?",
+                "options": [
+                    "13.84s",
+                    "14s",
+                    "15s",
+                    "12s"
+                ],
+                "answer": "13.84s",
+                "explanation": "Rel S = 26km/h = 7.22m/s. T = 100/7.22 = 13.84s.",
+                "topic": "Recap: TSD",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q011",
+                "question_number": 11,
+                "question": "A works twice as fast as B. If B can complete a work in 12 days independently, the number of days in which A and B can together finish the work is:",
+                "options": [
+                    "4 days",
+                    "6 days",
+                    "8 days",
+                    "3 days"
+                ],
+                "answer": "4 days",
+                "explanation": "B=12. A=6. Together = (12*6)/(18) = 4.",
+                "topic": "Time & Work",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q012",
+                "question_number": 12,
+                "question": "At what rate % per annum will $2304 amount to $2500 in 2 years at compound interest?",
+                "options": [
+                    "4.25%",
+                    "4.16%",
+                    "5%",
+                    "4.5%"
+                ],
+                "answer": "4.16%",
+                "explanation": "2500/2304 = (1+r)^2. 2500/2304 = 625/576 = (25/24)^2. 1+r = 25/24. r = 1/24. Rate = 100/24 = 4.16%.",
+                "topic": "Compound Interest",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q013",
+                "question_number": 13,
+                "question": "Recap: If A:B=2:3, B:C=4:5, C:D=6:7, find A:D.",
+                "options": [
+                    "16:35",
+                    "16:45",
+                    "18:35",
+                    "8:35"
+                ],
+                "answer": "16:35",
+                "explanation": "A/D = 2/3 * 4/5 * 6/7 = 48/105 = 16/35.",
+                "topic": "Recap: Ratio",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q014",
+                "question_number": 14,
+                "question": "Recap: A person sells an article for $75 and gains as much percent as the cost price of the article. The cost price of the article is:",
+                "options": [
+                    "$40",
+                    "$50",
+                    "$60",
+                    "$80"
+                ],
+                "answer": "$50",
+                "explanation": "x(1 + x/100) = 75. Try options. 50(1.5) = 75. Correct.",
+                "topic": "Recap: Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q015",
+                "question_number": 15,
+                "question": "Passage: 'Corporate social responsibility (CSR) is no longer a choice but a necessity for brand reputation.' Main Idea?",
+                "options": [
+                    "CSR is optional",
+                    "CSR builds reputation",
+                    "CSR is expensive",
+                    "Brands ignore CSR"
+                ],
+                "answer": "CSR builds reputation",
+                "explanation": "Passage links CSR necessity to reputation.",
+                "topic": "Verbal: Reading Comp",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q016",
+                "question_number": 16,
+                "question": "A can build a wall in 30 days, B in 40 days. If they build it together and get payment of $7000, B's share?",
+                "options": [
+                    "$3000",
+                    "$4000",
+                    "$3500",
+                    "$2500"
+                ],
+                "answer": "$3000",
+                "explanation": "Ratio of work = 1/30 : 1/40 = 4:3. B's share = 3/7 * 7000 = 3000.",
+                "topic": "Time & Work",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q017",
+                "question_number": 17,
+                "question": "If CI on a certain sum for 2 years at 5% is $328, what is SI?",
+                "options": [
+                    "$320",
+                    "$300",
+                    "$310",
+                    "$325"
+                ],
+                "answer": "$320",
+                "explanation": "CI = P[(1.05)^2 - 1] = 0.1025P = 328. P = 3200. SI = 3200*0.10 = 320.",
+                "topic": "Compound Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q018",
+                "question_number": 18,
+                "question": "Statements: Some actors are singers. All singers are dancers. Conclusion?",
+                "options": [
+                    "Some actors are dancers",
+                    "No singer is actor",
+                    "Some dancers are singers",
+                    "Both 1 and 3"
+                ],
+                "answer": "Both 1 and 3",
+                "explanation": "If some A are S, and All S are D, then Some A are D. Converse of All S are D is Some D are S.",
+                "topic": "Logic: Syllogism",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q019",
+                "question_number": 19,
+                "question": "Recap: Speed 10m/s is equal to ___ km/h.",
+                "options": [
+                    "18",
+                    "36",
+                    "40",
+                    "20"
+                ],
+                "answer": "36",
+                "explanation": "10 * 18/5 = 36.",
+                "topic": "Recap: TSD",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q020",
+                "question_number": 20,
+                "question": "A is B's sister. C is B's mother. D is C's father. E is D's mother. Then A is the ____ of D?",
+                "options": [
+                    "Granddaughter",
+                    "Grandmother",
+                    "Daughter",
+                    "Aunt"
+                ],
+                "answer": "Granddaughter",
+                "explanation": "A is sister of B(child of C). So A is daughter of C. D is father of C. So A is granddaughter of D.",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q021",
+                "question_number": 21,
+                "question": "12 men complete a work in 18 days. In how many days will 8 men complete it similar to:",
+                "options": [
+                    "27",
+                    "24",
+                    "36",
+                    "20"
+                ],
+                "answer": "27",
+                "explanation": "M1D1 = M2D2. 12*18 = 8*x. x = (12*18)/8 = 3*9 = 27.",
+                "topic": "Time & Work",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q022",
+                "question_number": 22,
+                "question": "Value of machine depreciates 10% annually. Present value $8100. Value 2 years ago?",
+                "options": [
+                    "$10000",
+                    "$9000",
+                    "$9500",
+                    "$11000"
+                ],
+                "answer": "$10000",
+                "explanation": "P(0.9)^2 = 8100. P(0.81) = 8100. P = 10000.",
+                "topic": "Compound Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q023",
+                "question_number": 23,
+                "question": "Recap: What is 20% of 25% of 300?",
+                "options": [
+                    "15",
+                    "20",
+                    "10",
+                    "25"
+                ],
+                "answer": "15",
+                "explanation": "0.2 * 0.25 * 300 = 0.05 * 300 = 15.",
+                "topic": "Recap: Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q024",
+                "question_number": 24,
+                "question": "5 Men or 9 Women can do a piece of work in 19 days. In how many days will 3 Men and 6 Women do it?",
+                "options": [
+                    "10",
+                    "15",
+                    "12",
+                    "18"
+                ],
+                "answer": "15",
+                "explanation": "5M = 9W => M = 1.8W. 3M+6W = 5.4W+6W = 11.4W. 9W * 19 = 11.4W * D. D = 171/11.4 = 15.",
+                "topic": "Time & Work",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q025",
+                "question_number": 25,
+                "question": "Recap: A boat goes 10km upstream in 2 hrs. Stream speed 1km/h. Speed of boat?",
+                "options": [
+                    "6",
+                    "4",
+                    "5",
+                    "7"
+                ],
+                "answer": "6",
+                "explanation": "U=5. B-S=5. B-1=5. B=6.",
+                "topic": "Recap: Boats",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q026",
+                "question_number": 26,
+                "question": "Passage: 'Tech adaptation is primarily driven by ease of use rather than advanced features.' What drives tech adaptation?",
+                "options": [
+                    "Price",
+                    "Ease of Use",
+                    "Advanced Features",
+                    "Marketing"
+                ],
+                "answer": "Ease of Use",
+                "explanation": "Explicitly stated.",
+                "topic": "Verbal: Reading Comp",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q027",
+                "question_number": 27,
+                "question": "Statements: No door is dog. All dogs are cats. Conclusion?",
+                "options": [
+                    "No door is cat",
+                    "No cat is door",
+                    "Some cats are dogs",
+                    "All cats are dogs"
+                ],
+                "answer": "Some cats are dogs",
+                "explanation": "Standard inference from All D are C.",
+                "topic": "Logic: Syllogism",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q028",
+                "question_number": 28,
+                "question": "Recap: 10 men do work in 10 days. 5 men in?",
+                "options": [
+                    "20",
+                    "5",
+                    "15",
+                    "25"
+                ],
+                "answer": "20",
+                "explanation": "Half men => Double time.",
+                "topic": "Recap: Work",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q029",
+                "question_number": 29,
+                "question": "Recap: A:B = 3:4. B:C = 8:9. A:C?",
+                "options": [
+                    "2:3",
+                    "3:2",
+                    "1:2",
+                    "1:3"
+                ],
+                "answer": "2:3",
+                "explanation": "3/4 * 8/9 = 2/3.",
+                "topic": "Recap: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q030",
+                "question_number": 30,
+                "question": "A sum of money amounts to $6690 after 3 years and to $10035 after 6 years on compound interest. The sum is:",
+                "options": [
+                    "$4400",
+                    "$4460",
+                    "$4500",
+                    "$4520"
+                ],
+                "answer": "$4460",
+                "explanation": "A3 = P(R)^3 = 6690. A6 = P(R)^6 = 10035. (A6/A3) = R^3 = 10035/6690 = 1.5. P(1.5) = 6690. P = 4460.",
+                "topic": "Compound Interest",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q031",
+                "question_number": 31,
+                "question": "A contractor undertook to do a work in 60 days. Engaged 40 men. After 40 days, only half work done. How many extra men needed to finish in time?",
+                "options": [
+                    "40",
+                    "20",
+                    "30",
+                    "35"
+                ],
+                "answer": "40",
+                "explanation": "40M * 40D = 0.5 Work. Remaining: 0.5 Work, 20 Days. M * 20 = 40*40. M = 80. Needed 80. Has 40. Extra 40.",
+                "topic": "Time & Work",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q032",
+                "question_number": 32,
+                "question": "Showing a lady in the park, Vineet said 'She is the daughter of my grandfather's only son'. How is Vineet related to that lady?",
+                "options": [
+                    "Brother",
+                    "Cousin",
+                    "Father",
+                    "Uncle"
+                ],
+                "answer": "Brother",
+                "explanation": "Grandfather's only son = Father. Daughter of Father = Sister. Vineet is her Brother.",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q033",
+                "question_number": 33,
+                "question": "Recap: CP $10. Loss $2. SP?",
+                "options": [
+                    "$8",
+                    "$12",
+                    "$5",
+                    "$10"
+                ],
+                "answer": "$8",
+                "explanation": "8.",
+                "topic": "Recap: Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q034",
+                "question_number": 34,
+                "question": "A and B can do a work in 12 days, B and C in 15 days, C and A in 20 days. A alone?",
+                "options": [
+                    "20",
+                    "30",
+                    "40",
+                    "60"
+                ],
+                "answer": "30",
+                "explanation": "2(A+B+C) = 1/12+1/15+1/20 = 12/60 = 1/5. A+B+C = 1/10. A = (A+B+C) - (B+C) = 1/10 - 1/15 = 1/30. A takes 30 days.",
+                "topic": "Time & Work",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q035",
+                "question_number": 35,
+                "question": "Recap: A train 150m long passes a tree in 15 sec. Speed?",
+                "options": [
+                    "10 m/s",
+                    "15 m/s",
+                    "20 m/s",
+                    "5 m/s"
+                ],
+                "answer": "10 m/s",
+                "explanation": "10.",
+                "topic": "Recap: TSD",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q036",
+                "question_number": 36,
+                "question": "Simple interest on a sum for 8 years is 40% of the sum. Rate?",
+                "options": [
+                    "5%",
+                    "6%",
+                    "8%",
+                    "4%"
+                ],
+                "answer": "5%",
+                "explanation": "40 = R*8. R=5.",
+                "topic": "Simple Interest",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q037",
+                "question_number": 37,
+                "question": "Passage: 'The economy contracted by 2% due to low global demand.' Reason for contraction?",
+                "options": [
+                    "High taxes",
+                    "Low global demand",
+                    "Inflation",
+                    "War"
+                ],
+                "answer": "Low global demand",
+                "explanation": "Explicit.",
+                "topic": "Verbal: Reading Comp",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q038",
+                "question_number": 38,
+                "question": "Recap: 25% of 80 is?",
+                "options": [
+                    "20",
+                    "25",
+                    "30",
+                    "35"
+                ],
+                "answer": "20",
+                "explanation": "20.",
+                "topic": "Recap: Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q039",
+                "question_number": 39,
+                "question": "Statement: Some papers are pens. All pens are scales. No scale is a marker. Conclusion: Some markers are papers?",
+                "options": [
+                    "Follows",
+                    "Doesn't Follow",
+                    "Maybe",
+                    "None"
+                ],
+                "answer": "Doesn't Follow",
+                "explanation": "Papers overlap Pens inside Scales. Markers disjoint Scales. Markers distinct from Pens. Markers can assume any relation with Papers (overlap or disjoint). Does not follow necessarily.",
+                "topic": "Logic: Syllogism",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q040",
+                "question_number": 40,
+                "question": "Invested at 5% SI for 2 years. If invested at 5% CI, would earn $15 more. Sum?",
+                "options": [
+                    "$6000",
+                    "$6500",
+                    "$5000",
+                    "$4000"
+                ],
+                "answer": "$6000",
+                "explanation": "Diff = P(R/100)^2. 15 = P(25/10000). P = 15 * 400 = 6000.",
+                "topic": "Compound Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q041",
+                "question_number": 41,
+                "question": "Recap: Which is greater 2:3 or 4:5?",
+                "options": [
+                    "2:3",
+                    "4:5",
+                    "Equal",
+                    "Cannot say"
+                ],
+                "answer": "4:5",
+                "explanation": "0.66 vs 0.8.",
+                "topic": "Recap: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q042",
+                "question_number": 42,
+                "question": "A is B's brother. C is A's father. D is C's sister. E is D's mother. How is B related to E?",
+                "options": [
+                    "Granddaughter",
+                    "Grandson",
+                    "Grandson or Granddaughter",
+                    "Daughter"
+                ],
+                "answer": "Grandson or Granddaughter",
+                "explanation": "B's gender not given. Child of Son.",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q043",
+                "question_number": 43,
+                "question": "If 12 carpenters work 6 hours a day to make 460 chairs in 240 days, then 18 carpenters 8 hrs a day... (MDT formula)",
+                "options": [
+                    "1380",
+                    "1260",
+                    "920",
+                    "1100"
+                ],
+                "answer": "1380",
+                "explanation": "M1D1T1 / W1 = M2D2T2 / W2. (12*240*6)/460 = (18*??*8)/W2. Q incomplete: 'In how many days... to make X chairs?'. Assuming typical 'How many chairs in 360 days?'. Let D2=360. (12*240*6)/460 = (18*360*8)/X. 17280/460 = 51840/X. X = (460/17280)*51840 = 460*3 = 1380.",
+                "question_corrected": "12 men, 6hr/day, 240 days -> 460 chairs. Chairs by 18 men, 8hr/day, 360 days?",
+                "options_corrected": [
+                    "1000",
+                    "1380",
+                    "1500",
+                    "1200"
+                ],
+                "answer_corrected": "1380",
+                "explanation_corrected": "Ratio = (18/12)*(8/6)*(360/240) = 1.5 * 1.33 * 1.5 = 3. 460*3=1380.",
+                "topic": "Time & Work",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q043_ACTUAL",
+                "question_number": 43,
+                "question": "12 men working 6 hrs/day complete 460 chairs in 240 days. How many chairs will 18 men working 8 hrs/day complete in 360 days?",
+                "options": [
+                    "1380",
+                    "1260",
+                    "920",
+                    "1100"
+                ],
+                "answer": "1380",
+                "explanation": "Work ratio = (18*8*360)/(12*6*240) = 3. 460*3 = 1380.",
+                "topic": "Time & Work",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q044",
+                "question_number": 44,
+                "question": "A sum of $12000 deposited at CI doubles in 5 years. Amount after 20 years?",
+                "options": [
+                    "$192000",
+                    "$96000",
+                    "$120000",
+                    "$144000"
+                ],
+                "answer": "$192000",
+                "explanation": "20 years = 4 cycles of 5 years. 2^4 = 16 times. 12000 * 16 = 192000.",
+                "topic": "Compound Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q045",
+                "question_number": 45,
+                "question": "Recap: Find the odd man out: 21, 27, 31, 33, 9.",
+                "options": [
+                    "31",
+                    "33",
+                    "27",
+                    "21"
+                ],
+                "answer": "31",
+                "explanation": "31 is Prime. Others divisible by 3.",
+                "topic": "Recap: Logic",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q046",
+                "question_number": 46,
+                "question": "P can complete a work in 12 days working 8 hours a day. Q in 8 days working 10 hours a day. Together working 8 hours a day?",
+                "options": [
+                    "60/11 days",
+                    "5 days",
+                    "6 days",
+                    "5.5 days"
+                ],
+                "answer": "60/11 days",
+                "explanation": "P Total Hrs = 96. Q Total Hrs = 80. Together Rate = 1/96 + 1/80 = 11/480 per hr. Total Hrs Needed = 480/11. Days (8hr) = (480/11)/8 = 60/11.",
+                "topic": "Time & Work",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q047",
+                "question_number": 47,
+                "question": "Relationship: X says to Y, 'Though I am result of your father's only son, you are not my father.' Then Y is ___ of X.",
+                "options": [
+                    "Mother",
+                    "Uncle",
+                    "Aunt",
+                    "Sister"
+                ],
+                "answer": "Mother",
+                "explanation": "Y's father's only son is Y's brother (if Y female) or Y himself (if Y male). Result(Child) of Only Son = X. If Y is male, Y is father. But 'You are NOT my father'. So Y must be female. Y is sister of Father. Wait. 'Y's father's only son'. If Y is female, this is Y's brother. X is child of Y's brother. Y is Aunt. If Y is male, it's him, but contradiction. So Y is Aunt? Wait options. Mother? Let's trace. X is child of (Y's father's son). If Y is female, Son is Brother. X is Brother's child. Y is Aunt. If Y is male, Son is Y. X is Y's child. Y is father (Contradiction). So Y is Aunt. BUT, could Y be the Only Son? No, Y female. IF 'Your father's only son' refers to Y's HUSBAND? No. Let's assume 'I am child of your father's only son'. Y is female. Father's only son is her brother. X is child. Y is Aunt. Option Check: Aunt is valid. But what if Y is Mother? Father's only son = Maternal Uncle. Child = Cousin. No. Aunt is best fit.",
+                "question_corrected": "Pointing to man, woman says 'His mother is the only daughter of my mother'. How is woman related to man?",
+                "options_corrected": [
+                    "Mother",
+                    "Sister",
+                    "Aunt",
+                    "Grandmother"
+                ],
+                "answer_corrected": "Mother",
+                "explanation_corrected": "My mother's only daughter = Me (Woman). So 'His mother is Me'. Woman is Mother.",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q047_ACTUAL",
+                "question_number": 47,
+                "question": "Pointing to a man, a woman said, 'His mother is the only daughter of my mother.' How is the woman related to the man?",
+                "options": [
+                    "Mother",
+                    "Sister",
+                    "Aunt",
+                    "Daughter"
+                ],
+                "answer": "Mother",
+                "explanation": "Only daughter of my mother is Myself. So His mother is Myself.",
+                "topic": "Logic: Blood Relation",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q048",
+                "question_number": 48,
+                "question": "Recap: Correct Sentence: 'He did not ____ the letter yet.'",
+                "options": [
+                    "wrote",
+                    "write",
+                    "written",
+                    "writing"
+                ],
+                "answer": "write",
+                "explanation": "Did not write.",
+                "topic": "Recap: Verbal",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q049",
+                "question_number": 49,
+                "question": "Statements: All cars are cats. All fans are cats. Conclusion?",
+                "options": [
+                    "All cars are fans",
+                    "Some fans are cars",
+                    "No relation",
+                    "Some cats are cars"
+                ],
+                "answer": "Some cats are cars",
+                "explanation": "All Cars -> Cats. So Some Cats are Cars.",
+                "topic": "Logic: Syllogism",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT005Q050",
+                "question_number": 50,
+                "question": "Recap: 50% of x = 10% of y. x:y?",
+                "options": [
+                    "1:5",
+                    "5:1",
+                    "1:2",
+                    "2:1"
+                ],
+                "answer": "1:5",
+                "explanation": "x/y = 10/50 = 1/5.",
+                "topic": "Recap: Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            }
+        ]
+    }
+]

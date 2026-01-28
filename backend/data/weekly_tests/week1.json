@@ -1,0 +1,845 @@
+[
+    {
+        "test_id": "WT001",
+        "week": 1,
+        "name": "Week 1 Aptitude Test",
+        "duration_minutes": 60,
+        "total_questions": 50,
+        "difficulty_distribution": {
+            "easy": 25,
+            "medium": 20,
+            "hard": 5
+        },
+        "composition": {
+            "current_week": "100%",
+            "previous_weeks": "0%"
+        },
+        "questions": [
+            {
+                "q_id": "WT001Q001",
+                "question_number": 1,
+                "question": "If 35% of a number is 105, what is 80% of that number?",
+                "options": [
+                    "240",
+                    "200",
+                    "300",
+                    "280"
+                ],
+                "answer": "240",
+                "explanation": "Let the number be x. 0.35x = 105 => x = 105/0.35 = 300. Then 80% of 300 = 0.8 * 300 = 240.",
+                "topic": "Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q002",
+                "question_number": 2,
+                "question": "A student scored 320 marks out of 500. What percentage did they score?",
+                "options": [
+                    "60%",
+                    "62%",
+                    "64%",
+                    "65%"
+                ],
+                "answer": "64%",
+                "explanation": "(320/500) * 100 = 64%.",
+                "topic": "Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q003",
+                "question_number": 3,
+                "question": "The price of a book increased from $20 to $25. What is the percentage increase?",
+                "options": [
+                    "20%",
+                    "25%",
+                    "30%",
+                    "15%"
+                ],
+                "answer": "25%",
+                "explanation": "Increase = 25 - 20 = 5. % Increase = (5/20) * 100 = 25%.",
+                "topic": "Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q004",
+                "question_number": 4,
+                "question": "If A's income is 25% more than B's, by what percentage is B's income less than A's?",
+                "options": [
+                    "20%",
+                    "25%",
+                    "15%",
+                    "10%"
+                ],
+                "answer": "20%",
+                "explanation": "Let B = 100, then A = 125. Difference = 25. % Less = (25/125) * 100 = 20%.",
+                "topic": "Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q005",
+                "question_number": 5,
+                "question": "A shopkeeper sells an article for $450 gaining 20% profit. What is the cost price?",
+                "options": [
+                    "$360",
+                    "$375",
+                    "$380",
+                    "$400"
+                ],
+                "answer": "$375",
+                "explanation": "SP = CP * (1 + Profit%). 450 = CP * 1.2. CP = 450/1.2 = 375.",
+                "topic": "Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q006",
+                "question_number": 6,
+                "question": "By selling a watch for $1440, a man loses 10%. At what price should he sell it to gain 10%?",
+                "options": [
+                    "$1600",
+                    "$1760",
+                    "$1800",
+                    "$1584"
+                ],
+                "answer": "$1760",
+                "explanation": "CP = 1440/0.9 = 1600. New SP = 1600 * 1.1 = 1760.",
+                "topic": "Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q007",
+                "question_number": 7,
+                "question": "Simple Interest on $5000 for 2 years is $500. What is the rate of interest?",
+                "options": [
+                    "5%",
+                    "4%",
+                    "6%",
+                    "2.5%"
+                ],
+                "answer": "5%",
+                "explanation": "SI = (P*R*T)/100. 500 = (5000*R*2)/100. 500 = 100R. R = 5%.",
+                "topic": "Simple Interest",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q008",
+                "question_number": 8,
+                "question": "In what time will $1200 amount to $1560 at 6% simple interest per annum?",
+                "options": [
+                    "3 years",
+                    "4 years",
+                    "5 years",
+                    "2 years"
+                ],
+                "answer": "5 years",
+                "explanation": "Interest = 1560 - 1200 = 360. 360 = (1200*6*T)/100. 360 = 72T. T = 5.",
+                "topic": "Simple Interest",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q009",
+                "question_number": 9,
+                "question": "Find the odd one out in the series: 3, 5, 7, 9, 11, 13.",
+                "options": [
+                    "9",
+                    "11",
+                    "7",
+                    "3"
+                ],
+                "answer": "9",
+                "explanation": "All numbers except 9 are prime numbers. 9 is composite (3*3).",
+                "topic": "Logic: Series",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q010",
+                "question_number": 10,
+                "question": "Complete the series: 2, 6, 12, 20, 30, ?",
+                "options": [
+                    "40",
+                    "42",
+                    "44",
+                    "46"
+                ],
+                "answer": "42",
+                "explanation": "Differences are increasing even numbers: +4, +6, +8, +10. Next is +12. 30 + 12 = 42.",
+                "topic": "Logic: Patterns",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q011",
+                "question_number": 11,
+                "question": "If 45% of 600 is equal to 30% of X, find X.",
+                "options": [
+                    "900",
+                    "800",
+                    "600",
+                    "1000"
+                ],
+                "answer": "900",
+                "explanation": "0.45 * 600 = 270. 270 = 0.3 * X. X = 270/0.3 = 900.",
+                "topic": "Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q012",
+                "question_number": 12,
+                "question": "A fruit seller had some apples. He sells 40% apples and still has 420 apples. Originally, he had:",
+                "options": [
+                    "600 apples",
+                    "700 apples",
+                    "800 apples",
+                    "650 apples"
+                ],
+                "answer": "700 apples",
+                "explanation": "Remaining % = 100 - 40 = 60%. 60% of Total = 420. Total = 420/0.6 = 700.",
+                "topic": "Percentage",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q013",
+                "question_number": 13,
+                "question": "A trader mixes 26 kg of rice at $20 per kg with 30 kg of rice of other variety at $36 per kg and sells the mixture at $30 per kg. His profit percent is:",
+                "options": [
+                    "No Profit, No Loss",
+                    "5%",
+                    "8%",
+                    "10%"
+                ],
+                "answer": "5%",
+                "explanation": "Total CP = (26*20) + (30*36) = 520 + 1080 = 1600. Total SP = (26+30)*30 = 56*30 = 1680. Profit = 80. % = (80/1600)*100 = 5%.",
+                "topic": "Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q014",
+                "question_number": 14,
+                "question": "A sum of money doubles itself in 10 years at simple interest. What is the rate of interest?",
+                "options": [
+                    "5%",
+                    "10%",
+                    "8%",
+                    "12%"
+                ],
+                "answer": "10%",
+                "explanation": "Let Sum=P. Amount=2P. Interest=P. T=10. P = (P*R*10)/100. 1 = 10R/100. R = 10%.",
+                "topic": "Simple Interest",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q015",
+                "question_number": 15,
+                "question": "Reading Comprehension: 'The rapid expansion of the internet has democratized information but also created echo chambers.' What is the main downside mentioned?",
+                "options": [
+                    "Too much information",
+                    "Slow speed",
+                    "Creation of echo chambers",
+                    "Lack of democracy"
+                ],
+                "answer": "Creation of echo chambers",
+                "explanation": "The text explicitly states that while it democratized information, it 'also created echo chambers' as a negative side effect.",
+                "topic": "Verbal: Reading Comp",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q016",
+                "question_number": 16,
+                "question": "Choose the synonym of 'CANDID'.",
+                "options": [
+                    "Secretive",
+                    "Frank",
+                    "Rude",
+                    "Shy"
+                ],
+                "answer": "Frank",
+                "explanation": "Candid means truthful and straightforward; frank.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q017",
+                "question_number": 17,
+                "question": "Find the missing number: 7, 10, 8, 11, 9, 12, ?",
+                "options": [
+                    "7",
+                    "10",
+                    "12",
+                    "13"
+                ],
+                "answer": "10",
+                "explanation": "Two alternating series: 7->8->9->10 and 10->11->12. The missing term belongs to the first series (7,8,9,?), so 10.",
+                "topic": "Logic: Series",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q018",
+                "question_number": 18,
+                "question": "If 'CAT' is coded as '3120', how is 'DOG' coded?",
+                "options": [
+                    "4157",
+                    "4158",
+                    "3157",
+                    "4147"
+                ],
+                "answer": "4157",
+                "explanation": "C=3, A=1, T=20. D=4, O=15, G=7. So 4157.",
+                "topic": "Logic: Patterns",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q019",
+                "question_number": 19,
+                "question": "Population of a town increases by 5% annually. If present population is 8000, what will it be after 2 years?",
+                "options": [
+                    "8800",
+                    "8820",
+                    "8400",
+                    "9000"
+                ],
+                "answer": "8820",
+                "explanation": "Year 1: 8000 * 1.05 = 8400. Year 2: 8400 * 1.05 = 8820.",
+                "topic": "Percentage",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q020",
+                "question_number": 20,
+                "question": "A man buys a cycle for $1400 and sells it at a loss of 15%. What is the selling price?",
+                "options": [
+                    "$1200",
+                    "$1190",
+                    "$1160",
+                    "$1202"
+                ],
+                "answer": "$1190",
+                "explanation": "Loss = 15% of 1400 = 210. SP = 1400 - 210 = 1190.",
+                "topic": "Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q021",
+                "question_number": 21,
+                "question": "The difference between SI and CI on a certain sum at 10% per annum for 2 years is $25. Find the sum.",
+                "options": [
+                    "$2000",
+                    "$2500",
+                    "$3000",
+                    "$1500"
+                ],
+                "answer": "$2500",
+                "explanation": "Diff = P(R/100)^2. 25 = P(10/100)^2. 25 = P/100. P = 2500. NOTE: This is technically CI but often covered in SI/CI basics. Strictly SI Q could be: Different rates.",
+                "topic": "Simple Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q022",
+                "question_number": 22,
+                "question": "If 15% of A is equal to 20% of B, then A:B is?",
+                "options": [
+                    "3:4",
+                    "4:3",
+                    "2:3",
+                    "3:2"
+                ],
+                "answer": "4:3",
+                "explanation": "15A = 20B => A/B = 20/15 = 4/3.",
+                "topic": "Percentage: Ratio",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q023",
+                "question_number": 23,
+                "question": "Cost Price of 20 articles is the same as Selling Price of x articles. If the profit is 25%, then the value of x is:",
+                "options": [
+                    "15",
+                    "16",
+                    "18",
+                    "25"
+                ],
+                "answer": "16",
+                "explanation": "CP of 20 = SP of x. Profit% = (20-x)/x * 100 = 25. 20-x = 0.25x. 1.25x = 20. x = 16.",
+                "topic": "Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q024",
+                "question_number": 24,
+                "question": "A sum at simple interest amounts to $900 in 3 years and to $1000 in 4 years. The sum is:",
+                "options": [
+                    "$600",
+                    "$500",
+                    "$700",
+                    "$800"
+                ],
+                "answer": "$600",
+                "explanation": "Interest for 1 year = 1000 - 900 = 100. Interest for 3 years = 300. P = 900 - 300 = 600.",
+                "topic": "Simple Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q025",
+                "question_number": 25,
+                "question": "Antonym of 'OBSCURE'?",
+                "options": [
+                    "Hidden",
+                    "Clear",
+                    "Vague",
+                    "Dark"
+                ],
+                "answer": "Clear",
+                "explanation": "Obscure means unclear or hard to see. Antonym is Clear.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q026",
+                "question_number": 26,
+                "question": "Two numbers are in ratio 5:4. If 40% of the first number is 12, what is 50% of the second number?",
+                "options": [
+                    "12",
+                    "24",
+                    "18",
+                    "20"
+                ],
+                "answer": "12",
+                "explanation": "Let numbers be 5x and 4x. 0.40 * 5x = 12 => 2x = 12 => x = 6. Second number = 4*6 = 24. 50% of 24 = 12.",
+                "topic": "Percentage",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q027",
+                "question_number": 27,
+                "question": "A vendor sells lemons at 5 for a dollar gaining 40%. How many did he buy for a dollar?",
+                "options": [
+                    "6",
+                    "7",
+                    "8",
+                    "4"
+                ],
+                "answer": "7",
+                "explanation": "SP of 1 lemon = $0.20. Gain = 40%. CP = 0.20/1.4 = 1/7. So he bought 7 for $1.",
+                "topic": "Profit-Loss",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q028",
+                "question_number": 28,
+                "question": "Look at this series: 22, 21, 23, 22, 24, 23, ... What number comes next?",
+                "options": [
+                    "22",
+                    "24",
+                    "25",
+                    "26"
+                ],
+                "answer": "25",
+                "explanation": "Pattern: -1, +2, -1, +2, -1. Next is +2. 23 + 2 = 25.",
+                "topic": "Logic: Series",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q029",
+                "question_number": 29,
+                "question": "In a certain code, 'ROAD' is written as 'URDG'. How is 'SWAN' written in that code?",
+                "options": [
+                    "VXDQ",
+                    "VZDQ",
+                    "VXDQ",
+                    "UZCQ"
+                ],
+                "answer": "VZDQ",
+                "explanation": "Each letter is shifted +3. S->V, W->Z, A->D, N->Q.",
+                "topic": "Logic: Patterns",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q030",
+                "question_number": 30,
+                "question": "Which word does not belong? [Apple, Banana, Carrot, Date]",
+                "options": [
+                    "Apple",
+                    "Banana",
+                    "Carrot",
+                    "Date"
+                ],
+                "answer": "Carrot",
+                "explanation": "Carrot is a root vegetable; others are fruits.",
+                "topic": "Logic: Puzzles",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q031",
+                "question_number": 31,
+                "question": "Calculate the principal if the simple interest for 3 years at 4% is $96 less than the simple interest for 4 years at 3%.",
+                "options": [
+                    "$2000",
+                    "$4000",
+                    "Data Inadequate",
+                    "No such principal"
+                ],
+                "answer": "No such principal",
+                "explanation": "SI1 = P*3*4/100 = 0.12P. SI2 = P*4*3/100 = 0.12P. Difference is 0. But it says 96. So strictly speaking, impossible. HOWEVER, re-reading question: usually implies rates swapped or times changed. Let's assume standard wording error check: 4y at 5% vs 3y at 4%? Or maybe 3y @ 5% vs 4y @ 4%? Given standard trick: 0.12P - 0.12P = 0 != 96. Let's replace with valid: '...SI for 5 years at 4% is $48 more than SI for 3 years at 5%'. New Q: P*5*4/100 - P*3*5/100 = 48 => 0.2P - 0.15P = 48 => 0.05P = 48 => P=960. Let's use this valid one.",
+                "question_corrected": "Calculate sum if SI for 5 years at 4% is $80 more than SI for 3 years at 5%.",
+                "options_corrected": [
+                    "$1200",
+                    "$1600",
+                    "$1500",
+                    "$1000"
+                ],
+                "answer_corrected": "$1600",
+                "explanation_corrected": "0.20P - 0.15P = 80 => 0.05P = 80 => P = 1600.",
+                "topic": "Simple Interest",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q031_ACTUAL",
+                "question_number": 31,
+                "question": "Find the sum if Simple Interest for 5 years at 4% is $80 more than Simple Interest for 3 years at 5%.",
+                "options": [
+                    "$1200",
+                    "$1600",
+                    "$1500",
+                    "$1000"
+                ],
+                "answer": "$1600",
+                "explanation": "SI1 = P*5*4/100 = 0.20P. SI2 = P*3*5/100 = 0.15P. 0.20P - 0.15P = 80. 0.05P = 80. P = 1600.",
+                "topic": "Simple Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q032",
+                "question_number": 32,
+                "question": "A grocer purchased 80 kg of sugar at $13.50 per kg and mixed it with 120 kg sugar at $16 per kg. At what rate should he sell the mixture to gain 16%?",
+                "options": [
+                    "$16",
+                    "$15",
+                    "$17.40",
+                    "$18"
+                ],
+                "answer": "$17.40",
+                "explanation": "Total Cost = 80*13.5 + 120*16 = 1080 + 1920 = 3000. Total Kg = 200. CP/kg = 15. Gain 16% => SP = 15 * 1.16 = 17.40.",
+                "topic": "Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q033",
+                "question_number": 33,
+                "question": "The fresh fruit contains 68% water and dry fruit contains 20% water. How much dry fruit can be obtained from 100kg of fresh fruits?",
+                "options": [
+                    "32 kg",
+                    "40 kg",
+                    "52 kg",
+                    "80 kg"
+                ],
+                "answer": "40 kg",
+                "explanation": "Pulp in fresh = 32% of 100 = 32kg. This 32kg is 80% of dry fruit weight. 32 = 0.8 * DryWeight. DryWeight = 32/0.8 = 40kg.",
+                "topic": "Percentage",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q034",
+                "question_number": 34,
+                "question": "A dishonest dealer professes to sell his goods at cost price but uses a weight of 960 g for a kg weight. Find his gain percent.",
+                "options": [
+                    "4%",
+                    "4.16%",
+                    "5%",
+                    "5.26%"
+                ],
+                "answer": "4.16%",
+                "explanation": "Gain% = (Error / True Value - Error) * 100 = (40 / 960) * 100 = 1/24 * 100 = 4.166%.",
+                "topic": "Profit-Loss",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q035",
+                "question_number": 35,
+                "question": "At what rate percent per annum will a sum of money double in 8 years at Simple Interest?",
+                "options": [
+                    "12.5%",
+                    "12%",
+                    "15%",
+                    "10%"
+                ],
+                "answer": "12.5%",
+                "explanation": "P becomes 2P, so SI = P. P = (P*R*8)/100. 1 = 8R/100. R = 100/8 = 12.5%.",
+                "topic": "Simple Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q036",
+                "question_number": 36,
+                "question": "If X is 80% of Y, what percent of X is Y?",
+                "options": [
+                    "75%",
+                    "80%",
+                    "100%",
+                    "125%"
+                ],
+                "answer": "125%",
+                "explanation": "X = 0.8Y. Y/X = 1/0.8 = 1.25. So Y is 125% of X.",
+                "topic": "Percentage",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q037",
+                "question_number": 37,
+                "question": "SCD, TEF, UGH, ____, WKL. Find missing.",
+                "options": [
+                    "CMN",
+                    "VIJ",
+                    "UJI",
+                    "IJT"
+                ],
+                "answer": "VIJ",
+                "explanation": "First letters: S, T, U, V, W. Second: C, E, G, I, K (+2). Third: D, F, H, J, L (+2). So VIJ.",
+                "topic": "Logic: Series",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q038",
+                "question_number": 38,
+                "question": "Sarah introduces a man as the son of the brother of her mother. How is the man related to Sarah?",
+                "options": [
+                    "Nephew",
+                    "Uncle",
+                    "Cousin",
+                    "Brother"
+                ],
+                "answer": "Cousin",
+                "explanation": "Brother of mother = Uncle. Son of Uncle = Cousin.",
+                "topic": "Logic: Reasoning",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q039",
+                "question_number": 39,
+                "question": "Reading Comprehension: 'Sustainable energy often requires high initial investment, deterring quick adoption despite long-term savings.' What prevents adoption?",
+                "options": [
+                    "Lack of technology",
+                    "High initial cost",
+                    "Low savings",
+                    "Government policy"
+                ],
+                "answer": "High initial cost",
+                "explanation": "The text directly cites 'high initial investment' as the deterrent.",
+                "topic": "Verbal: Reading Comp",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q040",
+                "question_number": 40,
+                "question": "A sum of $800 amounts to $920 in 3 years at simple interest. If the interest rate is increased by 3%, what would it amount to?",
+                "options": [
+                    "$992",
+                    "$960",
+                    "$1000",
+                    "$980"
+                ],
+                "answer": "$992",
+                "explanation": "Increase in rate = 3%. Extra interest = (800*3*3)/100 = 72. New Amount = 920 + 72 = 992.",
+                "topic": "Simple Interest",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q041",
+                "question_number": 41,
+                "question": "A table is bought for $950 and sold at $1140. Find the gain percentage.",
+                "options": [
+                    "15%",
+                    "20%",
+                    "25%",
+                    "10%"
+                ],
+                "answer": "20%",
+                "explanation": "Gain = 1140 - 950 = 190. % = (190/950)*100 = 20%.",
+                "topic": "Profit-Loss",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q042",
+                "question_number": 42,
+                "question": "Two numbers A and B are such that the sum of 5% of A and 4% of B is two-third of the sum of 6% of A and 8% of B. Find the ratio A:B.",
+                "options": [
+                    "2:3",
+                    "4:3",
+                    "1:1",
+                    "3:4"
+                ],
+                "answer": "4:3",
+                "explanation": "0.05A + 0.04B = (2/3)(0.06A + 0.08B). 0.15A + 0.12B = 0.12A + 0.16B. 0.03A = 0.04B. A/B = 4/3.",
+                "topic": "Percentage",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q043",
+                "question_number": 43,
+                "question": "Find the simple interest on $7300 from 11 May 1987 to 10 September 1987 (both days included) at 5% per annum.",
+                "options": [
+                    "$123",
+                    "$100",
+                    "$120",
+                    "$200"
+                ],
+                "answer": "$123",
+                "explanation": "Days: May(21)+Jun(30)+Jul(31)+Aug(31)+Sep(10) = 123 days. T = 123/365. SI = (7300*5*123/365)/100. 7300/365=20. SI = 20*5*123/100 = 123.",
+                "topic": "Simple Interest",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q044",
+                "question_number": 44,
+                "question": "If selling price is doubled, the profit triples. Find the profit percent.",
+                "options": [
+                    "66.66%",
+                    "100%",
+                    "50%",
+                    "120%"
+                ],
+                "answer": "100%",
+                "explanation": "Let CP=x, SP=y. Profit=y-x. New SP=2y. New Profit=2y-x. Given 2y-x = 3(y-x) => 2y-x = 3y-3x => y=2x. SP is double CP. So 100% profit.",
+                "topic": "Profit-Loss",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q045",
+                "question_number": 45,
+                "question": "In an election between two candidates, one got 55% of the total valid votes, 20% of the votes were invalid. If the total number of votes was 7500, the number of valid votes that the other candidate got was:",
+                "options": [
+                    "2700",
+                    "2900",
+                    "3000",
+                    "3100"
+                ],
+                "answer": "2700",
+                "explanation": "Valid Votes = 80% of 7500 = 6000. Other candidate got 45% of 6000 = 2700.",
+                "topic": "Percentage",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q046",
+                "question_number": 46,
+                "question": "Identify the next shape in sequence: Triangle, Square, Pentagon, ?",
+                "options": [
+                    "Circle",
+                    "Hexagon",
+                    "Heptagon",
+                    "Cube"
+                ],
+                "answer": "Hexagon",
+                "explanation": "Sides increasing: 3, 4, 5. Next is 6 sided (Hexagon).",
+                "topic": "Logic: Patterns",
+                "difficulty": "EASY",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q047",
+                "question_number": 47,
+                "question": "Synonym of 'DILEMMA'?",
+                "options": [
+                    "Solution",
+                    "Choice",
+                    "Predicament",
+                    "Benefit"
+                ],
+                "answer": "Predicament",
+                "explanation": "Dilemma often refers to a difficult situation or predicament.",
+                "topic": "Verbal: Vocabulary",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q048",
+                "question_number": 48,
+                "question": "1, 9, 25, 49, ?, 121",
+                "options": [
+                    "64",
+                    "81",
+                    "91",
+                    "100"
+                ],
+                "answer": "81",
+                "explanation": "Squares of odd numbers: 1^2, 3^2, 5^2, 7^2. Next is 9^2 = 81.",
+                "topic": "Logic: Series",
+                "difficulty": "MEDIUM",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q049",
+                "question_number": 49,
+                "question": "A sum was put at simple interest at a certain rate for 3 years. Had it been put at 2% higher rate, it would have fetched $360 more. Find the sum.",
+                "options": [
+                    "$6000",
+                    "$5000",
+                    "$4000",
+                    "$7200"
+                ],
+                "answer": "$6000",
+                "explanation": "Extra Interest = P * ExtraRate * Time / 100. 360 = P*2*3/100. 360 = 0.06P. P = 6000.",
+                "topic": "Simple Interest",
+                "difficulty": "HARD",
+                "unique": true
+            },
+            {
+                "q_id": "WT001Q050",
+                "question_number": 50,
+                "question": "The population of a town increased from 1,75,000 to 2,62,500 in a decade. The average percent increase of population per year is:",
+                "options": [
+                    "4.37%",
+                    "5%",
+                    "6%",
+                    "7.5%"
+                ],
+                "answer": "5%",
+                "explanation": "Total Increase = 87500. % Increase = (87500/175000)*100 = 50% in 10 years. Avg per year = 50%/10 = 5%.",
+                "topic": "Percentage",
+                "difficulty": "MEDIUM",
+                "unique": true
+            }
+        ]
+    }
+]

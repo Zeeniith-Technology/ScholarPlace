@@ -1,0 +1,155 @@
+/**
+ * AI Interaction Schema
+ * Tracks all AI interactions for learning and improvement
+ */
+
+export default {
+    student_id: {
+        type: String,
+        required: true
+    },
+    interaction_type: {
+        type: String,
+        required: true,
+        enum: ['code-review', 'hint', 'question-answer', 'learning-path', 'performance-analysis', 'question-generation']
+    },
+    week: {
+        type: Number,
+        required: false
+    },
+    day: {
+        type: String,
+        required: false
+    },
+    problem_id: {
+        type: String,
+        required: false
+    },
+    // For hints - track hint number
+    hint_number: {
+        type: Number,
+        required: false,
+        min: 1,
+        max: 3
+    },
+    // Input data
+    input_data: {
+        type: Object,
+        required: false
+        // Can contain: code, question, performance data, etc.
+    },
+    // AI response
+    ai_response: {
+        type: String,
+        required: true
+    },
+    // Parsed response (if JSON)
+    parsed_response: {
+        type: Object,
+        required: false
+    },
+    // Scope check result
+    was_out_of_scope: {
+        type: Boolean,
+        required: false,
+        default: false
+    },
+    // Provider used
+    ai_provider: {
+        type: String,
+        required: false,
+        default: 'gemini',
+        enum: ['gemini', 'openai']
+    },
+    // Cost tracking (for future)
+    tokens_used: {
+        type: Number,
+        required: false
+    },
+    cost: {
+        type: Number,
+        required: false
+    },
+    created_at: {
+        type: Date,
+        required: false,
+        default: Date.now
+    }
+};
+export default {
+    student_id: {
+        type: String,
+        required: true
+    },
+    interaction_type: {
+        type: String,
+        required: true,
+        enum: ['code-review', 'hint', 'question-answer', 'learning-path', 'performance-analysis', 'question-generation']
+    },
+    week: {
+        type: Number,
+        required: false
+    },
+    day: {
+        type: String,
+        required: false
+    },
+    problem_id: {
+        type: String,
+        required: false
+    },
+    // For hints - track hint number
+    hint_number: {
+        type: Number,
+        required: false,
+        min: 1,
+        max: 3
+    },
+    // Input data
+    input_data: {
+        type: Object,
+        required: false
+        // Can contain: code, question, performance data, etc.
+    },
+    // AI response
+    ai_response: {
+        type: String,
+        required: true
+    },
+    // Parsed response (if JSON)
+    parsed_response: {
+        type: Object,
+        required: false
+    },
+    // Scope check result
+    was_out_of_scope: {
+        type: Boolean,
+        required: false,
+        default: false
+    },
+    // Provider used
+    ai_provider: {
+        type: String,
+        required: false,
+        default: 'gemini',
+        enum: ['gemini', 'openai']
+    },
+    // Cost tracking (for future)
+    tokens_used: {
+        type: Number,
+        required: false
+    },
+    cost: {
+        type: Number,
+        required: false
+    },
+    created_at: {
+        type: Date,
+        required: false,
+        default: Date.now
+    }
+};
+
+
+
+
