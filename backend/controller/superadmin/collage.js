@@ -13,11 +13,11 @@ export default class collagecontroller {
     async listcollage(req, res, next) {
         try {
             const { projection, filter, options } = req.body;
-            
+
             // For public signup access, only return active colleges with active subscriptions
             // For authenticated Superadmin, return all colleges based on filter
             let finalFilter = filter || {};
-            
+
             // If no authentication (public signup), only show active colleges
             if (!req.user || !req.user.role || req.user.role.toLowerCase() !== 'superadmin') {
                 finalFilter = {
@@ -27,19 +27,19 @@ export default class collagecontroller {
                     collage_subscription_status: 'active'
                 };
             }
-            
+
             const fetchOptions = {
                 ...(options || {}),
                 ...(req ? { req: req } : {})
             };
-            
+
             const response = await fetchData(
                 tablename,
                 projection || {},
                 finalFilter,
                 fetchOptions
             );
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -57,11 +57,11 @@ export default class collagecontroller {
             next();
         }
     }
-    
+
     async insertcollage(req, res, next) {
         try {
             const data = req.body;
-            
+
             // Convert collage_name to uppercase if provided
             if (data.collage_name) {
                 data.collage_name = data.collage_name.toUpperCase();
@@ -85,7 +85,7 @@ export default class collagecontroller {
                     }
                 );
 
-                if (!departmentsResponse.success || !departmentsResponse.data || 
+                if (!departmentsResponse.success || !departmentsResponse.data ||
                     departmentsResponse.data.length !== data.collage_departments.length) {
                     res.locals.responseData = {
                         success: false,
@@ -98,27 +98,27 @@ export default class collagecontroller {
             } else {
                 data.collage_departments = [];
             }
-            
+
             // Extract TPC account creation data and prepare college data
-            const { 
-                create_tpc_account, 
-                collage_tpc_email, 
-                collage_tpc_password, 
+            const {
+                create_tpc_account,
+                collage_tpc_email,
+                collage_tpc_password,
                 collage_tpc_contact,
                 collage_tpc_person,
-                ...collegeData 
+                ...collegeData
             } = data;
-            
+
             // Initialize arrays for new structure
             collegeData.tpc_users = [];
             collegeData.departments = [];
-            
+
             // Create College TPC user if requested (using PersonMaster as single source of truth)
             let tpcPersonId = null;
             if (create_tpc_account && collage_tpc_email && collage_tpc_password && collage_tpc_person) {
                 try {
                     const normalizedEmail = collage_tpc_email.toLowerCase().trim();
-                    
+
                     // Check if TPC email already exists in PersonMaster
                     const existingUser = await fetchData(
                         personTable,
@@ -157,7 +157,7 @@ export default class collagecontroller {
                     };
 
                     const tpcResponse = await executeData(personTable, tpcUserData, 'i', personMasterSchema);
-                    
+
                     if (!tpcResponse.success) {
                         res.locals.responseData = {
                             success: false,
@@ -170,7 +170,7 @@ export default class collagecontroller {
 
                     // Get the PersonMaster._id (this is the PRIMARY ID used everywhere)
                     tpcPersonId = tpcResponse.data?.insertedId || tpcResponse.data?._id;
-                    
+
                     // Create TPC user reference to add to college document (just person_id, no duplicate data)
                     const tpcUserReference = {
                         person_id: tpcPersonId, // Reference to tblPersonMaster._id
@@ -189,10 +189,10 @@ export default class collagecontroller {
                     return next();
                 }
             }
-            
+
             // Insert college with TPC user references
             const response = await executeData(tablename, collegeData, 'i', collageSchema);
-            
+
             if (!response.success) {
                 // Rollback: Delete TPC user from PersonMaster if college creation fails
                 if (tpcPersonId) {
@@ -202,7 +202,7 @@ export default class collagecontroller {
                         console.error('Error rolling back TPC user creation:', rollbackError.message);
                     }
                 }
-                
+
                 res.locals.responseData = {
                     success: false,
                     status: 500,
@@ -213,7 +213,7 @@ export default class collagecontroller {
             }
 
             const collegeId = response.data?.insertedId || response.data?._id;
-            
+
             // Update TPC user's person_collage_id now that college is created
             if (tpcPersonId) {
                 try {
@@ -229,14 +229,14 @@ export default class collagecontroller {
                     // Non-critical, continue
                 }
             }
-            
+
             // Insert roles for this college (excluding superadmin)
             const rolesData = [
                 { role_name: "DeptTPC" },
                 { role_name: "TPC" },
                 { role_name: "Student" },
             ];
-            
+
             // Check if roles already exist, if not insert them
             // Note: Roles are global, so no role-based filtering needed here
             const existingRoles = await fetchData(
@@ -245,23 +245,23 @@ export default class collagecontroller {
                 { role_name: { $in: rolesData.map(r => r.role_name) } },
                 {} // No user context needed for roles (global data)
             );
-            
+
             // Only insert roles that don't exist
             const rolesToInsert = rolesData.filter(role => {
-                return !existingRoles.data.some(existing => 
+                return !existingRoles.data.some(existing =>
                     existing.role_name.toLowerCase() === role.role_name.toLowerCase()
                 );
             });
-            
+
             if (rolesToInsert.length > 0) {
                 await executeData(rolesTable, rolesToInsert, 'i', rolesSchema);
             }
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
-                message: create_tpc_account && tpcPersonId 
-                    ? 'College and TPC account created successfully' 
+                message: create_tpc_account && tpcPersonId
+                    ? 'College and TPC account created successfully'
                     : 'College created successfully',
                 data: {
                     college: response.data,
@@ -283,7 +283,7 @@ export default class collagecontroller {
     async updatecollage(req, res, next) {
         try {
             const { filter, data, options } = req.body;
-            
+
             if (!filter || !data) {
                 res.locals.responseData = {
                     success: false,
@@ -296,13 +296,13 @@ export default class collagecontroller {
 
             // Extract TPC account flags and password (password should not be stored in college record)
             // Keep TPC fields in collegeData for storing in college record
-            const { 
-                create_tpc_account, 
-                update_tpc_account, 
+            const {
+                create_tpc_account,
+                update_tpc_account,
                 collage_tpc_password,  // Don't store password in college record
-                ...collegeData 
+                ...collegeData
             } = data;
-            
+
             // Extract TPC fields for account creation/update (these will be stored in college record AND used for user account)
             const collage_tpc_email = data.collage_tpc_email;
             const collage_tpc_contact = data.collage_tpc_contact;
@@ -318,17 +318,24 @@ export default class collagecontroller {
             if (collegeData.collage_name) {
                 collegeData.collage_name = collegeData.collage_name.toUpperCase();
             }
-            
+
             // Remove undefined/null values from collegeData
             Object.keys(collegeData).forEach(key => {
                 if (collegeData[key] === undefined || collegeData[key] === null) {
                     delete collegeData[key];
                 }
             });
-            
+
+            // CRITICAL: Remove `tpc_users` and `departments` from collegeData to prevent
+            // overwriting them with empty arrays if the frontend sends them.
+            // These arrays should only be modified via specific $push/$pull operations
+            // or the dedicated TPC management methods.
+            delete collegeData.tpc_users;
+            delete collegeData.departments;
+
             // If collegeData is empty and we're only creating TPC account, skip college update
             const shouldUpdateCollege = Object.keys(collegeData).length > 0;
-            
+
             // Debug logging (can be removed in production)
             console.log('Update College Debug:', {
                 shouldUpdateCollege,
@@ -361,7 +368,7 @@ export default class collagecontroller {
                     }
                 );
 
-                if (!departmentsResponse.success || !departmentsResponse.data || 
+                if (!departmentsResponse.success || !departmentsResponse.data ||
                     departmentsResponse.data.length !== collegeData.collage_departments.length) {
                     console.error('Department validation failed:', {
                         requested: collegeData.collage_departments,
@@ -415,7 +422,7 @@ export default class collagecontroller {
                 { _id: 1, collage_name: 1 },
                 processedFilter
             );
-            
+
             if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
                 console.error('College not found with filter:', processedFilter);
                 res.locals.responseData = {
@@ -435,7 +442,7 @@ export default class collagecontroller {
             // Ensure _id is ObjectId format - college._id from fetchData should already be ObjectId
             // Use only _id for update filter since we already verified college exists and is not deleted
             // The deleted check was done in the collegeCheck query above
-            const updateFilter = { 
+            const updateFilter = {
                 _id: college._id  // Use directly from fetchData result (already ObjectId)
             };
             console.log('Update filter after processing:', {
@@ -457,7 +464,7 @@ export default class collagecontroller {
                         _idIsObjectId: updateFilter._id instanceof ObjectId,
                         _idString: updateFilter._id?.toString()
                     });
-                    
+
                     // Ensure updateFilter._id is ObjectId (should already be, but double-check)
                     if (!(updateFilter._id instanceof ObjectId)) {
                         if (typeof updateFilter._id === 'string' && /^[0-9a-fA-F]{24}$/.test(updateFilter._id)) {
@@ -467,7 +474,7 @@ export default class collagecontroller {
                             console.error('Invalid _id format in update filter:', updateFilter._id);
                         }
                     }
-                    
+
                     // Pass the filter directly - executeData will handle ObjectId conversion if needed
                     // The _id from fetchData should already be a proper ObjectId
                     console.log('Final update filter before executeData:', {
@@ -475,9 +482,9 @@ export default class collagecontroller {
                         _idIsObjectId: updateFilter._id instanceof ObjectId,
                         _idType: typeof updateFilter._id
                     });
-                    
+
                     response = await executeData(tablename, collegeData, 'u', collageSchema, updateFilter, options || {});
-                    
+
                     if (!response.success) {
                         console.error('College update error:', response.error, response);
                         console.error('Full response:', JSON.stringify(response, null, 2));
@@ -510,7 +517,7 @@ export default class collagecontroller {
                         if (collage_tpc_person) tpcFieldsOnly.collage_tpc_person = collage_tpc_person;
                         if (collage_tpc_email) tpcFieldsOnly.collage_tpc_email = collage_tpc_email;
                         if (collage_tpc_contact) tpcFieldsOnly.collage_tpc_contact = collage_tpc_contact;
-                        
+
                         console.log('Updating college with TPC fields only:', tpcFieldsOnly);
                         try {
                             response = await executeData(tablename, tpcFieldsOnly, 'u', collageSchema, updateFilter, options || {});
@@ -532,7 +539,18 @@ export default class collagecontroller {
             let tpcOperation = null; // 'created' or 'updated'
 
             // CREATE College TPC user account using TPC Management Controller
-            if (create_tpc_account && collage_tpc_email && collage_tpc_password && collage_tpc_person) {
+            if (create_tpc_account) {
+                if (!collage_tpc_email || !collage_tpc_password || !collage_tpc_person) {
+                    // Critical Error: User requested TPC creation but missing fields
+                    res.locals.responseData = {
+                        success: false,
+                        status: 400,
+                        message: 'Missing TPC account details',
+                        error: 'Email, Password, and Contact Person are required to create a TPC account'
+                    };
+                    return next();
+                }
+
                 try {
                     // Use college from the check above (already verified)
                     const collegeId = college._id.toString();
@@ -608,7 +626,7 @@ export default class collagecontroller {
                     return next();
                 }
             }
-            
+
             let successMessage = 'College updated successfully';
             if (tpcOperation === 'created') {
                 successMessage = 'College updated and TPC account created successfully';
@@ -641,7 +659,7 @@ export default class collagecontroller {
     async deletecollage(req, res, next) {
         try {
             const { filter, hardDelete, options } = req.body;
-            
+
             if (!filter) {
                 res.locals.responseData = {
                     success: false,
@@ -658,7 +676,7 @@ export default class collagecontroller {
             };
 
             const response = await executeData(tablename, null, 'd', collageSchema, filter, deleteOptions);
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -684,7 +702,7 @@ export default class collagecontroller {
     async updateSubscription(req, res, next) {
         try {
             const { filter, subscription_status } = req.body;
-            
+
             if (!filter || !subscription_status) {
                 res.locals.responseData = {
                     success: false,
@@ -713,7 +731,7 @@ export default class collagecontroller {
                 filter,
                 {}
             );
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,

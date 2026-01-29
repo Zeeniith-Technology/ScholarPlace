@@ -870,8 +870,8 @@ export default function CollegesManagementPage() {
         {toast && (
           <div
             className={`rounded-md px-4 py-3 text-sm ${toast.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-green-50 text-green-800 border border-green-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
               }`}
           >
             {toast.message}
@@ -1177,20 +1177,28 @@ export default function CollegesManagementPage() {
 
                   <Input
                     label="Country *"
-                    value={formData.collage_country || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, collage_country: e.target.value })
-                    }
-                    required
+                    value="India"
+                    readOnly
+                    className="bg-gray-100 cursor-not-allowed"
                   />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                       label="Contact Number *"
                       value={formData.collage_contact_number || ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, collage_contact_number: e.target.value })
-                      }
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (/^[0-9+]*$/.test(val)) {
+                          if (!val.startsWith('+91')) {
+                            if (val.length > 0 && !val.startsWith('+')) val = '+91' + val;
+                            else if (val === '' || val === '+') val = '+91';
+                          }
+                          setFormData({ ...formData, collage_contact_number: val })
+                        }
+                      }}
+                      onFocus={() => {
+                        if (!formData.collage_contact_number) setFormData({ ...formData, collage_contact_number: '+91' });
+                      }}
                       required
                       type="tel"
                     />
@@ -1231,9 +1239,11 @@ export default function CollegesManagementPage() {
                   <Input
                     label="TPC Person Name *"
                     value={formData.collage_tpc_person || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, collage_tpc_person: e.target.value })
-                    }
+                    onChange={(e) => {
+                      if (/^[a-zA-Z\s]*$/.test(e.target.value)) {
+                        setFormData({ ...formData, collage_tpc_person: e.target.value })
+                      }
+                    }}
                     required
                     placeholder="Name of TPC contact person"
                   />

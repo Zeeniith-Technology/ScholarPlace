@@ -18,12 +18,12 @@ export default class tpcManagementController {
      */
     async createCollegeTpc(req, res, next) {
         try {
-            const { 
-                tpc_name, 
-                tpc_email, 
-                tpc_password, 
-                tpc_contact, 
-                collage_id 
+            const {
+                tpc_name,
+                tpc_email,
+                tpc_password,
+                tpc_contact,
+                collage_id
             } = req.body;
 
             // Validate required fields
@@ -37,18 +37,35 @@ export default class tpcManagementController {
                 return next();
             }
 
-            // Verify college exists
-            const collegeFilter = { _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id) 
-                ? new ObjectId(collage_id) 
-                : collage_id,
-                deleted: false
-            };
-            
-            const collegeCheck = await fetchData(
-                collageTable,
-                { _id: 1, collage_name: 1 },
-                collegeFilter
-            );
+            // Parallelize validation checks and password hashing
+            const normalizedEmail = tpc_email.toLowerCase().trim();
+            const personTable = "tblPersonMaster";
+            const saltRounds = 10;
+
+            const [collegeCheck, existingUserCheck, hashedPassword] = await Promise.all([
+                // 1. Verify college exists
+                fetchData(
+                    collageTable,
+                    { _id: 1, collage_name: 1 },
+                    {
+                        _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id)
+                            ? new ObjectId(collage_id)
+                            : collage_id,
+                        deleted: false
+                    }
+                ),
+                // 2. Check if TPC email already exists in PersonMaster
+                fetchData(
+                    personTable,
+                    { _id: 1, person_email: 1, person_role: 1, person_collage_id: 1 },
+                    {
+                        person_email: normalizedEmail,
+                        person_deleted: false
+                    }
+                ),
+                // 3. Hash password (CPU intensive, run in parallel with I/O)
+                bcrypt.hash(tpc_password, saltRounds)
+            ]);
 
             if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
                 res.locals.responseData = {
@@ -61,18 +78,6 @@ export default class tpcManagementController {
             }
 
             const college = collegeCheck.data[0];
-
-            // Check if TPC email already exists in PersonMaster (single source of truth)
-            const normalizedEmail = tpc_email.toLowerCase().trim();
-            const personTable = "tblPersonMaster";
-            const existingUserCheck = await fetchData(
-                personTable,
-                { _id: 1, person_email: 1, person_role: 1 },
-                {
-                    person_email: normalizedEmail,
-                    person_deleted: false
-                }
-            );
 
             if (existingUserCheck.success && existingUserCheck.data && existingUserCheck.data.length > 0) {
                 const existingUser = existingUserCheck.data[0];
@@ -96,13 +101,9 @@ export default class tpcManagementController {
                 }
             }
 
-            // Hash password
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(tpc_password, saltRounds);
-
             // STEP 1: Create user in tblPersonMaster FIRST (single source of truth)
             const personMasterSchema = (await import('../schema/PersonMaster.js')).default;
-            
+
             const tpcUserData = {
                 person_name: tpc_name.trim(),
                 person_email: normalizedEmail,
@@ -170,7 +171,7 @@ export default class tpcManagementController {
                 } catch (rollbackError) {
                     console.error('Error rolling back TPC user creation:', rollbackError.message);
                 }
-                
+
                 res.locals.responseData = {
                     success: false,
                     status: 500,
@@ -210,11 +211,11 @@ export default class tpcManagementController {
      */
     async updateCollegeTpc(req, res, next) {
         try {
-            const { 
+            const {
                 filter,
-                tpc_name, 
-                tpc_email, 
-                tpc_password, 
+                tpc_name,
+                tpc_email,
+                tpc_password,
                 tpc_contact,
                 tpc_status
             } = req.body;
@@ -336,11 +337,11 @@ export default class tpcManagementController {
      */
     async createDeptTpc(req, res, next) {
         try {
-            const { 
-                dept_tpc_name, 
-                dept_tpc_email, 
-                dept_tpc_password, 
-                dept_tpc_contact, 
+            const {
+                dept_tpc_name,
+                dept_tpc_email,
+                dept_tpc_password,
+                dept_tpc_contact,
                 department_id,
                 collage_id
             } = req.body;
@@ -357,13 +358,13 @@ export default class tpcManagementController {
             }
 
             // Verify department exists
-            const deptFilter = { 
-                _id: typeof department_id === 'string' && /^[0-9a-fA-F]{24}$/.test(department_id) 
-                    ? new ObjectId(department_id) 
+            const deptFilter = {
+                _id: typeof department_id === 'string' && /^[0-9a-fA-F]{24}$/.test(department_id)
+                    ? new ObjectId(department_id)
                     : department_id,
                 deleted: false
             };
-            
+
             const deptCheck = await fetchData(
                 departmentTable,
                 { _id: 1, department_name: 1, department_code: 1, department_college_id: 1 },
@@ -383,13 +384,13 @@ export default class tpcManagementController {
             const department = deptCheck.data[0];
 
             // Verify college exists
-            const collegeFilter = { 
-                _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id) 
-                    ? new ObjectId(collage_id) 
+            const collegeFilter = {
+                _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id)
+                    ? new ObjectId(collage_id)
                     : collage_id,
                 deleted: false
             };
-            
+
             const collegeCheck = await fetchData(
                 collageTable,
                 { _id: 1, collage_name: 1 },
@@ -413,12 +414,12 @@ export default class tpcManagementController {
             // Check if department already has a DeptTPC in college's departments array
             if (college.departments && Array.isArray(college.departments)) {
                 const existingDept = college.departments.find(
-                    dept => (dept.department_id?.toString() === deptObjectId.toString() || 
-                            dept.department_id?.toString() === department_id.toString()) &&
-                            dept.dept_tpc && 
-                            dept.dept_tpc.dept_tpc_status !== 'inactive'
+                    dept => (dept.department_id?.toString() === deptObjectId.toString() ||
+                        dept.department_id?.toString() === department_id.toString()) &&
+                        dept.dept_tpc &&
+                        dept.dept_tpc.dept_tpc_status !== 'inactive'
                 );
-                
+
                 if (existingDept) {
                     res.locals.responseData = {
                         success: false,
@@ -457,7 +458,7 @@ export default class tpcManagementController {
             // STEP 1: Create user in tblPersonMaster FIRST (single source of truth)
             const personTable = "tblPersonMaster";
             const personMasterSchema = (await import('../schema/PersonMaster.js')).default;
-            
+
             const deptTpcUserData = {
                 person_name: dept_tpc_name.trim(),
                 person_email: normalizedEmail,
@@ -500,9 +501,9 @@ export default class tpcManagementController {
             if (college.departments && Array.isArray(college.departments)) {
                 const deptIndex = college.departments.findIndex(
                     dept => dept.department_id?.toString() === deptObjectId.toString() ||
-                            dept.department_id?.toString() === department_id.toString()
+                        dept.department_id?.toString() === department_id.toString()
                 );
-                
+
                 if (deptIndex >= 0) {
                     // Department exists, add dept_tpc reference to it
                     const updateFilter = { _id: collegeFilter._id };
@@ -513,7 +514,7 @@ export default class tpcManagementController {
                             updated_at: new Date().toISOString()
                         }
                     };
-                    
+
                     let updateResponse;
                     try {
                         updateResponse = await executeData(
@@ -539,7 +540,7 @@ export default class tpcManagementController {
                         } catch (rollbackError) {
                             console.error('Error rolling back DeptTPC user creation:', rollbackError.message);
                         }
-                        
+
                         res.locals.responseData = {
                             success: false,
                             status: 500,
@@ -584,7 +585,7 @@ export default class tpcManagementController {
                     } catch (rollbackError) {
                         console.error('Error rolling back DeptTPC user creation:', rollbackError.message);
                     }
-                    
+
                     res.locals.responseData = {
                         success: false,
                         status: 500,
@@ -626,11 +627,11 @@ export default class tpcManagementController {
      */
     async updateDeptTpc(req, res, next) {
         try {
-            const { 
+            const {
                 filter,
-                dept_tpc_name, 
-                dept_tpc_email, 
-                dept_tpc_password, 
+                dept_tpc_name,
+                dept_tpc_email,
+                dept_tpc_password,
                 dept_tpc_contact,
                 dept_tpc_status
             } = req.body;
@@ -753,7 +754,7 @@ export default class tpcManagementController {
     async listCollegeTpc(req, res, next) {
         try {
             const { projection, filter, options } = req.body;
-            
+
             const defaultFilter = { tpc_deleted: false };
             const mergedFilter = { ...defaultFilter, ...(filter || {}) };
 
@@ -789,7 +790,7 @@ export default class tpcManagementController {
     async listDeptTpc(req, res, next) {
         try {
             const { projection, filter, options } = req.body;
-            
+
             const defaultFilter = { dept_tpc_deleted: false };
             const mergedFilter = { ...defaultFilter, ...(filter || {}) };
 
@@ -824,7 +825,7 @@ export default class tpcManagementController {
      */
     async deleteCollegeTpc(req, res, next) {
         try {
-            const { 
+            const {
                 person_id,  // PersonMaster._id (new structure)
                 collage_id,
                 tpc_email
@@ -847,7 +848,7 @@ export default class tpcManagementController {
 
             // Find user in PersonMaster (new structure - single source of truth)
             let userFilter = { person_deleted: false, person_role: 'TPC' };
-            
+
             if (person_id) {
                 userFilter._id = typeof person_id === 'string' && /^[0-9a-fA-F]{24}$/.test(person_id)
                     ? new ObjectId(person_id)
@@ -934,7 +935,7 @@ export default class tpcManagementController {
 
             // Remove person_id reference from college document
             if (collegeId) {
-                const collegeFilter = { 
+                const collegeFilter = {
                     _id: typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
                         ? new ObjectId(collegeId)
                         : collegeId,
@@ -980,7 +981,7 @@ export default class tpcManagementController {
      */
     async deleteDeptTpc(req, res, next) {
         try {
-            const { 
+            const {
                 person_id,  // PersonMaster._id (new structure)
                 department_id,
                 collage_id,
@@ -1005,7 +1006,7 @@ export default class tpcManagementController {
 
             // Find user in PersonMaster (new structure - single source of truth)
             let userFilter = { person_deleted: false, person_role: 'DeptTPC' };
-            
+
             if (person_id) {
                 userFilter._id = typeof person_id === 'string' && /^[0-9a-fA-F]{24}$/.test(person_id)
                     ? new ObjectId(person_id)
@@ -1014,7 +1015,7 @@ export default class tpcManagementController {
                 userFilter.person_email = dept_tpc_email.toLowerCase().trim();
             } else if (department_id) {
                 // Find by department_id - need to check college documents
-                const deptFilter = { 
+                const deptFilter = {
                     _id: typeof department_id === 'string' && /^[0-9a-fA-F]{24}$/.test(department_id)
                         ? new ObjectId(department_id)
                         : department_id,
@@ -1107,7 +1108,7 @@ export default class tpcManagementController {
 
             // Remove person_id reference from college document's department
             if (collegeId && departmentName) {
-                const collegeFilter = { 
+                const collegeFilter = {
                     _id: typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
                         ? new ObjectId(collegeId)
                         : collegeId,
@@ -1125,15 +1126,15 @@ export default class tpcManagementController {
                     const college = collegeResponse.data[0];
                     if (college.departments && Array.isArray(college.departments)) {
                         const deptIndex = college.departments.findIndex(
-                            dept => dept.department_name === departmentName && 
-                                   dept.dept_tpc && 
-                                   dept.dept_tpc.person_id?.toString() === personId.toString()
+                            dept => dept.department_name === departmentName &&
+                                dept.dept_tpc &&
+                                dept.dept_tpc.person_id?.toString() === personId.toString()
                         );
 
                         if (deptIndex >= 0) {
                             const updateResponse = await executeData(
                                 collageTable,
-                                { 
+                                {
                                     $unset: { [`departments.${deptIndex}.dept_tpc`]: "" },
                                     $set: { [`departments.${deptIndex}.updated_at`]: new Date().toISOString() }
                                 },
@@ -1186,13 +1187,13 @@ export default class tpcManagementController {
                 };
             }
 
-            const collegeFilter = { 
-                _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id) 
-                    ? new ObjectId(collage_id) 
+            const collegeFilter = {
+                _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id)
+                    ? new ObjectId(collage_id)
                     : collage_id,
                 deleted: false
             };
-            
+
             const collegeCheck = await fetchData(collageTable, { _id: 1, collage_name: 1 }, collegeFilter);
 
             if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
@@ -1409,13 +1410,13 @@ export default class tpcManagementController {
                 };
             }
 
-            const deptFilter = { 
-                _id: typeof department_id === 'string' && /^[0-9a-fA-F]{24}$/.test(department_id) 
-                    ? new ObjectId(department_id) 
+            const deptFilter = {
+                _id: typeof department_id === 'string' && /^[0-9a-fA-F]{24}$/.test(department_id)
+                    ? new ObjectId(department_id)
                     : department_id,
                 deleted: false
             };
-            
+
             const deptCheck = await fetchData(departmentTable, { _id: 1, department_name: 1, department_code: 1, department_college_id: 1 }, deptFilter);
 
             if (!deptCheck.success || !deptCheck.data || deptCheck.data.length === 0) {
@@ -1429,13 +1430,13 @@ export default class tpcManagementController {
 
             const department = deptCheck.data[0];
 
-            const collegeFilter = { 
-                _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id) 
-                    ? new ObjectId(collage_id) 
+            const collegeFilter = {
+                _id: typeof collage_id === 'string' && /^[0-9a-fA-F]{24}$/.test(collage_id)
+                    ? new ObjectId(collage_id)
                     : collage_id,
                 deleted: false
             };
-            
+
             const collegeCheck = await fetchData(collageTable, { _id: 1, collage_name: 1 }, collegeFilter);
 
             if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
@@ -1454,12 +1455,12 @@ export default class tpcManagementController {
             // Check if department already has a DeptTPC in college's departments array (NEW STRUCTURE)
             if (college.departments && Array.isArray(college.departments)) {
                 const existingDept = college.departments.find(
-                    dept => (dept.department_id?.toString() === deptObjectId.toString() || 
-                            dept.department_id?.toString() === department_id.toString()) &&
-                            dept.dept_tpc && 
-                            dept.dept_tpc.dept_tpc_status !== 'inactive'
+                    dept => (dept.department_id?.toString() === deptObjectId.toString() ||
+                        dept.department_id?.toString() === department_id.toString()) &&
+                        dept.dept_tpc &&
+                        dept.dept_tpc.dept_tpc_status !== 'inactive'
                 );
-                
+
                 if (existingDept) {
                     return {
                         success: false,
@@ -1495,7 +1496,7 @@ export default class tpcManagementController {
             // STEP 1: Create user in tblPersonMaster FIRST (single source of truth)
             const personTable = "tblPersonMaster";
             const personMasterSchema = (await import('../schema/PersonMaster.js')).default;
-            
+
             const deptTpcUserData = {
                 person_name: dept_tpc_name.trim(),
                 person_email: normalizedEmail,
@@ -1534,13 +1535,13 @@ export default class tpcManagementController {
             // Check if department already exists in college's departments array
             let departmentExists = false;
             let deptIndex = -1;
-            
+
             if (college.departments && Array.isArray(college.departments)) {
                 deptIndex = college.departments.findIndex(
                     dept => dept.department_id?.toString() === deptObjectId.toString() ||
-                            dept.department_id?.toString() === department_id.toString()
+                        dept.department_id?.toString() === department_id.toString()
                 );
-                
+
                 if (deptIndex >= 0) {
                     // Department exists, add dept_tpc reference to it
                     const updateFilter = { _id: collegeFilter._id };
@@ -1551,7 +1552,7 @@ export default class tpcManagementController {
                             updated_at: new Date().toISOString()
                         }
                     };
-                    
+
                     const response = await executeData(
                         collageTable,
                         updateData,
@@ -1567,7 +1568,7 @@ export default class tpcManagementController {
                         } catch (rollbackError) {
                             console.error('Error rolling back DeptTPC user creation:', rollbackError.message);
                         }
-                        
+
                         return {
                             success: false,
                             status: 500,
@@ -1611,7 +1612,7 @@ export default class tpcManagementController {
                     } catch (rollbackError) {
                         console.error('Error rolling back DeptTPC user creation:', rollbackError.message);
                     }
-                    
+
                     return {
                         success: false,
                         status: 500,

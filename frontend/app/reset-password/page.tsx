@@ -76,7 +76,7 @@ function ResetPasswordContent() {
                 setSuccess(true)
                 // Redirect to login after 3 seconds
                 setTimeout(() => {
-                    router.push('/login')
+                    router.push('/auth/login')
                 }, 3000)
             } else {
                 setError(result.message || 'Failed to reset password')
@@ -224,7 +224,7 @@ function ResetPasswordContent() {
 
                     {/* Footer */}
                     <div className="mt-6 text-center">
-                        <Link href="/login" className="text-sm text-primary hover:underline font-medium">
+                        <Link href="/auth/login" className="text-sm text-primary hover:underline font-medium">
                             Back to Login
                         </Link>
                     </div>

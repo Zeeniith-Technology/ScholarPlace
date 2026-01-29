@@ -46,7 +46,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setGeneralError('')
-    
+
     if (!validate()) {
       return
     }
@@ -55,7 +55,7 @@ export default function LoginPage() {
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      
+
       const response = await fetch(`${apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: {
@@ -73,9 +73,9 @@ export default function LoginPage() {
       }
 
       const data = await response.json()
-      
-      console.log('[Login] Response data:', { 
-        success: data.success, 
+
+      console.log('[Login] Response data:', {
+        success: data.success,
         hasUser: !!data.data?.user,
         hasToken: !!data.data?.token,
         role: data.data?.user?.role,
@@ -103,27 +103,27 @@ export default function LoginPage() {
         // Store JWT token and user info using auth utility
         const userRole = data.data.user?.role || 'Student'
         console.log('[Login] Storing token for role:', userRole)
-        
+
         setToken(token, {
           email: data.data.user.email,
           role: userRole,
         })
-        
+
         // Verify token was stored
         const storedToken = getToken()
-        console.log('[Login] Token stored:', { 
+        console.log('[Login] Token stored:', {
           hasStoredToken: !!storedToken,
           tokenLength: token.length,
           role: userRole
         })
-        
+
         if (!storedToken) {
           setGeneralError('Failed to store authentication token. Please try again.')
           showToast('Login failed: Token storage error', 'error')
           setIsLoading(false)
           return
         }
-        
+
         // Force localStorage to be written (localStorage is synchronous, but ensure it's flushed)
         // Use requestAnimationFrame to ensure DOM updates complete before redirect
         requestAnimationFrame(() => {
@@ -135,12 +135,12 @@ export default function LoginPage() {
             setIsLoading(false)
             return
           }
-          
+
           showToast('Login successful! Redirecting...', 'success')
-          
+
           // Redirect based on role (handle exact role names from backend)
           const normalizedRole = userRole.toLowerCase()
-          
+
           // After login, use full reload to ensure clean state
           // This is acceptable UX trade-off for guaranteed authentication state
           // Handle exact role names: Student, TPC, DeptTPC, Superadmin
@@ -252,7 +252,7 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-end">
             <Link
-              href="/auth/forgot-password"
+              href="/forgot-password"
               className="text-sm text-primary hover:underline font-medium transition-colors"
             >
               Forgot password?
@@ -281,8 +281,8 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-sm text-neutral-dark">
-            <Link 
-              href="/auth/signup" 
+            <Link
+              href="/auth/signup"
               className="text-primary hover:underline font-medium transition-colors"
             >
               Create an account

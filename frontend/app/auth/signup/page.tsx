@@ -10,8 +10,8 @@ import { Toast, useToast } from '@/components/ui/Toast'
 
 const roleOptions = [
   { value: 'student', label: 'Student' },
-  { value: 'depttpc', label: 'Department TPC' },
-  { value: 'tpc', label: 'TPC' },
+  // { value: 'depttpc', label: 'Department TPC' }, // TPCs are now created by Admins
+  // { value: 'tpc', label: 'TPC' },
 ]
 
 /**
@@ -70,13 +70,13 @@ export default function SignupPage() {
 
       const data = await response.json()
       console.log('[Signup] Colleges API response:', data)
-      
+
       if (data.success && data.data) {
         const collegeList = Array.isArray(data.data) ? data.data : []
         // Backend already filters active colleges for public access, but double-check
         const collegeOptions = collegeList
-          .filter((college: any) => 
-            (college.collage_status === 1 || college.collage_status === undefined) && 
+          .filter((college: any) =>
+            (college.collage_status === 1 || college.collage_status === undefined) &&
             (college.collage_subscription_status === 'active' || college.collage_subscription_status === undefined) &&
             !college.deleted
           )
@@ -105,10 +105,10 @@ export default function SignupPage() {
         setDepartments([])
         return
       }
-      
+
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       console.log('[Signup] Fetching departments for college:', collegeId)
-      
+
       const response = await fetch(`${apiBaseUrl}/department/list`, {
         method: 'POST',
         headers: {
@@ -119,7 +119,7 @@ export default function SignupPage() {
 
       const data = await response.json()
       console.log('[Signup] Department API response:', data)
-      
+
       if (data.success && data.data) {
         const deptList = Array.isArray(data.data) ? data.data : []
         const deptOptions = deptList
@@ -186,27 +186,27 @@ export default function SignupPage() {
       newErrors.password = 'Password is required'
     } else {
       const passwordErrors: string[] = []
-      
+
       if (formData.password.length < 8) {
         passwordErrors.push('at least 8 characters')
       }
-      
+
       if (!/[A-Z]/.test(formData.password)) {
         passwordErrors.push('one capital letter')
       }
-      
+
       if (!/[a-z]/.test(formData.password)) {
         passwordErrors.push('one lowercase letter')
       }
-      
+
       if (!/[0-9]/.test(formData.password)) {
         passwordErrors.push('one number')
       }
-      
+
       if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) {
         passwordErrors.push('one special character')
       }
-      
+
       if (passwordErrors.length > 0) {
         newErrors.password = `Password must contain ${passwordErrors.join(', ')}`
       }
@@ -226,7 +226,7 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validate()) {
       return
     }
@@ -235,7 +235,7 @@ export default function SignupPage() {
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      
+
       const response = await fetch(`${apiBaseUrl}/auth/signup`, {
         method: 'POST',
         headers: {
@@ -274,8 +274,8 @@ export default function SignupPage() {
       }
     } catch (error: any) {
       console.error('Signup error:', error)
-      setErrors({ 
-        submit: error.message || 'Network error. Please check your connection and try again.' 
+      setErrors({
+        submit: error.message || 'Network error. Please check your connection and try again.'
       })
     } finally {
       setIsLoading(false)
@@ -305,12 +305,16 @@ export default function SignupPage() {
             <Input
               label="Full Name"
               type="text"
-              placeholder="John Doe"
+              placeholder="First Name Last Name"
+              maxLength={30}
               value={formData.fullName}
               onChange={(e) => {
-                setFormData({ ...formData, fullName: e.target.value })
-                if (errors.fullName) {
-                  setErrors({ ...errors, fullName: '' })
+                // Allow only letters and spaces
+                if (/^[a-zA-Z\s]*$/.test(e.target.value)) {
+                  setFormData({ ...formData, fullName: e.target.value })
+                  if (errors.fullName) {
+                    setErrors({ ...errors, fullName: '' })
+                  }
                 }
               }}
               error={errors.fullName}
@@ -340,8 +344,8 @@ export default function SignupPage() {
                 isLoadingColleges
                   ? [{ value: '', label: 'Loading colleges...' }]
                   : colleges.length === 0
-                  ? [{ value: '', label: 'No active colleges available' }]
-                  : [{ value: '', label: 'Select a college' }, ...colleges]
+                    ? [{ value: '', label: 'No active colleges available' }]
+                    : [{ value: '', label: 'Select a college' }, ...colleges]
               }
               value={formData.collegeId}
               onChange={(e) => {
@@ -394,11 +398,18 @@ export default function SignupPage() {
                   label="Enrollment Number"
                   type="text"
                   placeholder="Enter your enrollment number"
+                  maxLength={16}
                   value={formData.enrollmentNumber}
                   onChange={(e) => {
-                    setFormData({ ...formData, enrollmentNumber: e.target.value })
-                    if (errors.enrollmentNumber) {
-                      setErrors({ ...errors, enrollmentNumber: '' })
+                    const val = e.target.value;
+                    // Only numbers or alphanumeric if needed, typically enrollment is alphanumeric but user said "16 numbers"
+                    // User said "Enrollment number can't consist more than 16 numbers", implying length constraint.
+                    // Assuming alphanumeric is okay as long as length <= 16.
+                    if (val.length <= 16) {
+                      setFormData({ ...formData, enrollmentNumber: val.trim() })
+                      if (errors.enrollmentNumber) {
+                        setErrors({ ...errors, enrollmentNumber: '' })
+                      }
                     }
                   }}
                   error={errors.enrollmentNumber}
@@ -414,10 +425,29 @@ export default function SignupPage() {
               placeholder="+91 1234567890"
               value={formData.contactNumber}
               onChange={(e) => {
-                setFormData({ ...formData, contactNumber: e.target.value })
-                if (errors.contactNumber) {
-                  setErrors({ ...errors, contactNumber: '' })
+                let val = e.target.value;
+
+                // Allow only numbers and plus sign
+                if (/^[0-9+]*$/.test(val)) {
+                  // Force +91 prefix
+                  if (!val.startsWith('+91')) {
+                    // If user deletes +91, add it back if they are typing numbers
+                    if (val.length > 0 && !val.startsWith('+')) {
+                      val = '+91' + val;
+                    } else if (val === '' || val === '+') {
+                      val = '+91';
+                    }
+                  }
+
+                  setFormData({ ...formData, contactNumber: val })
+                  if (errors.contactNumber) {
+                    setErrors({ ...errors, contactNumber: '' })
+                  }
                 }
+              }}
+              // Ensure +91 is set on focus if empty
+              onFocus={() => {
+                if (!formData.contactNumber) setFormData({ ...formData, contactNumber: '+91' });
               }}
               error={errors.contactNumber}
               autoComplete="tel"
@@ -478,74 +508,64 @@ export default function SignupPage() {
                   <div className="mt-2 p-3 rounded-lg bg-background-surface border border-neutral-light/20">
                     <p className="text-xs font-medium text-neutral mb-2">Password must contain:</p>
                     <div className="space-y-1.5">
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${
-                        formData.password.length >= 8 ? 'text-green-600' : 'text-neutral-light'
-                      }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                          formData.password.length >= 8 
-                            ? 'bg-green-600 border-green-600' 
-                            : 'border-neutral-light bg-transparent'
+                      <div className={`flex items-center gap-2 text-xs transition-colors ${formData.password.length >= 8 ? 'text-green-600' : 'text-neutral-light'
                         }`}>
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${formData.password.length >= 8
+                          ? 'bg-green-600 border-green-600'
+                          : 'border-neutral-light bg-transparent'
+                          }`}>
                           {formData.password.length >= 8 && (
                             <span className="text-white text-[10px] font-bold">✓</span>
                           )}
                         </span>
                         <span>At least 8 characters</span>
                       </div>
-                      
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${
-                        /[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
-                      }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                          /[A-Z]/.test(formData.password)
-                            ? 'bg-green-600 border-green-600' 
-                            : 'border-neutral-light bg-transparent'
+
+                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
                         }`}>
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[A-Z]/.test(formData.password)
+                          ? 'bg-green-600 border-green-600'
+                          : 'border-neutral-light bg-transparent'
+                          }`}>
                           {/[A-Z]/.test(formData.password) && (
                             <span className="text-white text-[10px] font-bold">✓</span>
                           )}
                         </span>
                         <span>One capital letter (A-Z)</span>
                       </div>
-                      
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${
-                        /[a-z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
-                      }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                          /[a-z]/.test(formData.password)
-                            ? 'bg-green-600 border-green-600' 
-                            : 'border-neutral-light bg-transparent'
+
+                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
                         }`}>
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[a-z]/.test(formData.password)
+                          ? 'bg-green-600 border-green-600'
+                          : 'border-neutral-light bg-transparent'
+                          }`}>
                           {/[a-z]/.test(formData.password) && (
                             <span className="text-white text-[10px] font-bold">✓</span>
                           )}
                         </span>
                         <span>One lowercase letter (a-z)</span>
                       </div>
-                      
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${
-                        /[0-9]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
-                      }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                          /[0-9]/.test(formData.password)
-                            ? 'bg-green-600 border-green-600' 
-                            : 'border-neutral-light bg-transparent'
+
+                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
                         }`}>
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[0-9]/.test(formData.password)
+                          ? 'bg-green-600 border-green-600'
+                          : 'border-neutral-light bg-transparent'
+                          }`}>
                           {/[0-9]/.test(formData.password) && (
                             <span className="text-white text-[10px] font-bold">✓</span>
                           )}
                         </span>
                         <span>One number (0-9)</span>
                       </div>
-                      
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${
-                        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
-                      }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                          /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)
-                            ? 'bg-green-600 border-green-600' 
-                            : 'border-neutral-light bg-transparent'
+
+                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
                         }`}>
+                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)
+                          ? 'bg-green-600 border-green-600'
+                          : 'border-neutral-light bg-transparent'
+                          }`}>
                           {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) && (
                             <span className="text-white text-[10px] font-bold">✓</span>
                           )}
@@ -611,8 +631,8 @@ export default function SignupPage() {
               />
               <span className="text-sm text-neutral-dark leading-relaxed">
                 I agree to the{' '}
-                <Link 
-                  href="/terms" 
+                <Link
+                  href="/terms"
                   className="text-primary hover:underline font-medium transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -654,8 +674,8 @@ export default function SignupPage() {
           </div>
 
           <p className="text-center text-sm text-neutral-dark">
-            <Link 
-              href="/auth/login" 
+            <Link
+              href="/auth/login"
               className="text-primary hover:underline font-medium transition-colors"
             >
               Login to your account

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/layouts/AuthLayout'
@@ -78,25 +79,25 @@ export default function SuperadminLoginPage() {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
       console.log('[Login] Attempting login with:', { email: formData.email, hasPassword: !!formData.password })
-      
+
       const res = await fetch(`${apiBase}/auth/superadmin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
-      
+
       console.log('[Login] Response status:', res.status, res.statusText)
 
       const contentType = res.headers.get('content-type') || ''
       const isJson = contentType.includes('application/json')
       const result = isJson ? await res.json() : null
-      
+
       if (!isJson) {
         setGeneralError('Unexpected response from server')
         setIsLoading(false)
         return
       }
-      
+
       if (!res.ok || !result.success) {
         const errorMsg = result?.message || result?.error || `Login failed (Status: ${res.status})`
         console.error('Login failed:', { status: res.status, result })
@@ -104,7 +105,7 @@ export default function SuperadminLoginPage() {
         setIsLoading(false)
         return
       }
-      
+
       // Login successful - store JWT token
       const token = result.data?.token
       if (!token) {
@@ -112,30 +113,30 @@ export default function SuperadminLoginPage() {
         setIsLoading(false)
         return
       }
-      
+
       // Store token and user data
       const userRole = result.data?.user?.role || 'superadmin'
       console.log('[Superadmin Login] Storing token for role:', userRole)
-      
+
       setToken(token, {
         email: result.data?.user?.email || formData.email,
         role: userRole,
       })
-      
+
       // Verify token was stored (localStorage is synchronous)
       const storedToken = getToken()
-      console.log('[Superadmin Login] Token stored:', { 
+      console.log('[Superadmin Login] Token stored:', {
         hasStoredToken: !!storedToken,
         tokenLength: token.length,
         role: userRole
       })
-      
+
       if (!storedToken) {
         setGeneralError('Failed to store authentication token. Please try again.')
         setIsLoading(false)
         return
       }
-      
+
       // Use requestAnimationFrame to ensure DOM updates complete before redirect
       requestAnimationFrame(() => {
         // Double-check token is still there
@@ -145,7 +146,7 @@ export default function SuperadminLoginPage() {
           setIsLoading(false)
           return
         }
-        
+
         // Use window.location for a hard redirect to ensure clean state
         window.location.href = '/superadmin/dashboard'
       })
@@ -202,6 +203,15 @@ export default function SuperadminLoginPage() {
           {generalError && (
             <p className="text-sm text-red-600">{generalError}</p>
           )}
+
+          <div className="flex items-center justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-primary hover:underline font-medium transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           <Button
             type="submit"
