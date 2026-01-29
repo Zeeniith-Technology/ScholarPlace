@@ -28,7 +28,9 @@ export async function getCodingProblemsByWeek(req, res) {
 
         const problems = await collection.find({
             week: week,
-            is_capstone: true // Only capstone problems for weekly test
+            is_capstone: true, // Only capstone problems for weekly test
+            deleted: false,
+            status: 'active'
         }).sort({ question_id: 1 }).toArray();
 
         console.log(`[getCodingProblemsByWeek] Week ${week}: Found ${problems.length} capstone problems`);
@@ -80,7 +82,9 @@ export async function getDailyCodingProblems(req, res) {
         const problems = await collection.find({
             week: week,
             day: day,
-            is_capstone: false // Only daily problems, not capstone
+            is_capstone: false, // Only daily problems, not capstone
+            deleted: false,
+            status: 'active'
         }).sort({ question_id: 1 }).toArray();
 
         console.log(`[getDailyCodingProblems] Week ${week}, Day ${day}: Found ${problems.length} daily problems`);
