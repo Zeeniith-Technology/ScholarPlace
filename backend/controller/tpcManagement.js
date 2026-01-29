@@ -139,7 +139,7 @@ export default class tpcManagementController {
             };
 
             // Update college document to add TPC user reference
-            const updateFilter = { _id: collegeFilter._id };
+            const updateFilter = { _id: college._id };
             const updateData = {
                 $push: { tpc_users: tpcUserReference },
                 $set: { updated_at: new Date().toISOString() }
