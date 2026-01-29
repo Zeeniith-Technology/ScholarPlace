@@ -1,4 +1,4 @@
-import { executeData, fetchData } from '../../methods.js';
+import { executeData, fetchData, getDB } from '../../methods.js';
 import collageSchema from '../../schema/superadmin/collage.js';
 import rolesSchema from '../../schema/roles.js';
 import { ObjectId } from 'mongodb';
@@ -670,21 +670,72 @@ export default class collagecontroller {
                 return next();
             }
 
+            // 1. Fetch the college first to identify related data
+            const db = getDB();
+            const college = await db.collection(tablename).findOne(filter); // or fetch via executeData if needed
+
+            if (!college) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 404,
+                    message: 'College not found',
+                    error: 'College not found'
+                };
+                return next();
+            }
+
+            const collegeId = college._id;
+            const collegeIdString = college._id.toString();
+
             const deleteOptions = {
                 hardDelete: hardDelete || false,
                 ...(options || {})
             };
 
+            // 2. Cascade Delete/Soft-Delete Departments
+            // Departments have 'department_college_id' which is usually a string
+            const deptFilter = {
+                $or: [
+                    { department_college_id: collegeIdString },
+                    { department_college_id: collegeId }
+                ]
+            };
+
+            await executeData('tblDepartment', null, 'd', null, deptFilter, {
+                ...deleteOptions,
+                many: true,
+                force: true // Force delete even if filter implies multiple
+            });
+
+
+            // 3. Cascade Delete/Soft-Delete TPC Users (College TPC & Dept TPC)
+            // TPC Users have 'college_id' in tblPersonMaster
+            const tpcFilter = {
+                $or: [
+                    { college_id: collegeIdString },
+                    { college_id: collegeId }
+                ]
+            };
+
+            await executeData('tblPersonMaster', null, 'd', null, tpcFilter, {
+                ...deleteOptions,
+                many: true,
+                force: true
+            });
+
+
+            // 4. Finally Delete the College itself
             const response = await executeData(tablename, null, 'd', collageSchema, filter, deleteOptions);
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
-                message: 'College deleted successfully',
+                message: 'College and its related data (Departments, TPCs) deleted successfully',
                 data: response.data || { deletedCount: response.deletedCount }
             };
             next();
         } catch (error) {
+            console.error('Delete College Error:', error);
             res.locals.responseData = {
                 success: false,
                 status: 500,
