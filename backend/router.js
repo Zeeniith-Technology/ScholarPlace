@@ -19,6 +19,8 @@ import testStateController from './controller/testState.js';
 import testAnalysisController from './controller/testAnalysis.js';
 import tpcController from './controller/tpc.js';
 import tpcManagementController from './controller/tpcManagement.js';
+import errorLogController from './controller/superadmin/errorLogs.js';
+
 import questionController from './controller/questionController.js';
 import PasswordResetController from './controller/passwordReset.js';
 import BulkActionsController from './controller/bulkActions.js';
@@ -54,6 +56,7 @@ const question = new questionController();
 const passwordReset = new PasswordResetController();
 const bulkActions = new BulkActionsController();
 const deptTest = new DeptTestController();
+const errorLogs = new errorLogController();
 
 // Default data routes
 router.post('/defaultdata/insertroles', defaultdata.insertroles, responsedata);
@@ -266,6 +269,7 @@ router.post('/test-state/update', auth, testState.updateTestState.bind(testState
 router.post('/test-state/clear', auth, testState.clearTestState.bind(testState), responsedata);
 
 // Superadmin Analytics Routes (Superadmin only)
+router.post('/superadmin/error-logs/list', auth, requireRole('Superadmin'), errorLogs.listErrorLogs.bind(errorLogs), responsedata);
 router.post('/superadmin/analytics/overview', auth, requireRole('Superadmin'), superadminAnalytics.getPlatformOverview.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/colleges', auth, requireRole('Superadmin'), superadminAnalytics.getCollegeStatistics.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/students', auth, requireRole('Superadmin'), superadminAnalytics.getStudentAnalytics.bind(superadminAnalytics), responsedata);

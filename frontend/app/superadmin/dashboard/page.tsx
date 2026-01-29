@@ -90,15 +90,15 @@ export default function SuperadminDashboardPage() {
   // Verify authentication via API and fetch data from database
   useEffect(() => {
     let isMounted = true
-    
+
     const verifyAuthAndFetchData = async () => {
       try {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-        
+
         // Verify authentication by fetching profile (requires valid JWT token)
         const authHeader = getAuthHeader()
         console.log('[Dashboard] Auth check - Header exists:', !!authHeader)
-        
+
         if (!authHeader) {
           console.log('[Dashboard] No auth token found, redirecting to login')
           clearAuth() // Clear any invalid data
@@ -115,9 +115,9 @@ export default function SuperadminDashboardPage() {
             'Authorization': authHeader,
           },
         })
-        
+
         console.log('[Dashboard] Profile response status:', profileRes.status)
-        
+
         // Only redirect on 401/403 (authentication errors)
         if (profileRes.status === 401 || profileRes.status === 403) {
           console.log('[Dashboard] Authentication failed, clearing token and redirecting to login')
@@ -126,39 +126,39 @@ export default function SuperadminDashboardPage() {
           router.push('/superadmin/login')
           return
         }
-        
+
         if (!profileRes.ok) {
           console.error('[Dashboard] Profile fetch failed with status:', profileRes.status)
           // Don't redirect on other errors, might be temporary network issue
           return
         }
-        
+
         const profileResult = await profileRes.json()
         console.log('[Dashboard] Full profile result:', JSON.stringify(profileResult, null, 2))
-        
+
         // Check role from either 'role' or 'person_role' field
         const userRole = profileResult.data?.role || profileResult.data?.person_role
-        
+
         console.log('[Dashboard] Extracted role:', userRole)
-        
+
         if (!profileResult.success) {
           console.log('[Dashboard] Profile request failed, clearing token and redirecting to login')
           clearAuth() // Clear invalid token
           router.push('/superadmin/login')
           return
         }
-        
+
         if (userRole !== 'superadmin') {
           console.log('[Dashboard] Role mismatch - expected superadmin, got:', userRole, 'clearing token and redirecting to login')
           clearAuth() // Clear token for wrong role
           router.push('/superadmin/login')
           return
         }
-        
+
         console.log('[Dashboard] ✅ Auth verified successfully!')
-        
+
         console.log('[Dashboard] Auth verified, fetching dashboard data...')
-        
+
         // Authentication verified via database, now fetch all dashboard data from database
         await fetchDashboardData()
       } catch (error) {
@@ -172,7 +172,7 @@ export default function SuperadminDashboardPage() {
         // Otherwise, don't redirect - might be a temporary network issue
       }
     }
-    
+
     verifyAuthAndFetchData()
   }, []) // Empty dependency array - only run on mount
 
@@ -228,7 +228,7 @@ export default function SuperadminDashboardPage() {
             collage_status: college.status === 'active' ? 1 : 0,
             collage_subscription_status: college.subscriptionStatus,
             studentCount: college.students?.total || 0,
-            usage: college.students?.total > 0 
+            usage: college.students?.total > 0
               ? Math.round((college.students.withProgress / college.students.total) * 100)
               : 0,
           }))
@@ -330,6 +330,13 @@ export default function SuperadminDashboardPage() {
       color: 'orange',
       action: () => router.push('/superadmin/syllabus'),
     },
+    {
+      title: 'System Error Logs',
+      description: 'View and investigate system error logs',
+      icon: AlertCircle,
+      color: 'red',
+      action: () => router.push('/superadmin/error-logs'),
+    },
   ]
 
   if (isLoading && !stats) {
@@ -416,9 +423,8 @@ export default function SuperadminDashboardPage() {
             return (
               <Card
                 key={stat.label}
-                className={`p-6 border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30 animate-smooth-appear ${
-                  colorClasses[stat.color as keyof typeof colorClasses]
-                }`}
+                className={`p-6 border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30 animate-smooth-appear ${colorClasses[stat.color as keyof typeof colorClasses]
+                  }`}
                 style={{
                   animationDelay: `${index * 100}ms`,
                 }}
@@ -699,9 +705,9 @@ export default function SuperadminDashboardPage() {
               ) : (
                 recentActivity.map((activity) => {
                   const Icon = activity.icon === 'Award' ? Award :
-                              activity.icon === 'FileText' ? FileText :
-                              activity.icon === 'CheckCircle2' ? CheckCircle2 :
-                              activity.icon === 'Code' ? Code : TrendingUp
+                    activity.icon === 'FileText' ? FileText :
+                      activity.icon === 'CheckCircle2' ? CheckCircle2 :
+                        activity.icon === 'Code' ? Code : TrendingUp
                   return (
                     <div key={activity.id} className="flex items-start gap-3 p-3 bg-background-elevated rounded-lg hover:bg-background-surface transition-colors">
                       <div className="p-2 bg-primary/10 rounded-lg">

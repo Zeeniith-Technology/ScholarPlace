@@ -7,11 +7,11 @@ const tablename = "tblPersonMaster";
 export default class signupcontroller {
     async signup(req, res, next) {
         try {
-            const { 
-                fullName, 
-                email, 
+            const {
+                fullName,
+                email,
                 collegeId,  // Changed from collegeName to collegeId
-                role, 
+                role,
                 password,
                 department,
                 semester,
@@ -44,27 +44,27 @@ export default class signupcontroller {
 
             // Password validation - Strong password requirements
             const passwordErrors = [];
-            
+
             if (password.length < 8) {
                 passwordErrors.push('at least 8 characters');
             }
-            
+
             if (!/[A-Z]/.test(password)) {
                 passwordErrors.push('one capital letter');
             }
-            
+
             if (!/[a-z]/.test(password)) {
                 passwordErrors.push('one lowercase letter');
             }
-            
+
             if (!/[0-9]/.test(password)) {
                 passwordErrors.push('one number');
             }
-            
+
             if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
                 passwordErrors.push('one special character');
             }
-            
+
             if (passwordErrors.length > 0) {
                 res.locals.responseData = {
                     success: false,
@@ -79,7 +79,7 @@ export default class signupcontroller {
             const validRoles = ['Student', 'DeptTPC', 'TPC'];
             const normalizedRole = role ? role.charAt(0).toUpperCase() + role.slice(1).toLowerCase() : 'Student';
             const finalRole = normalizedRole === 'Dept-tpc' ? 'DeptTPC' : normalizedRole;
-            
+
             if (!validRoles.includes(finalRole)) {
                 res.locals.responseData = {
                     success: false,
@@ -110,7 +110,7 @@ export default class signupcontroller {
             } else {
                 collegeFilter._id = collegeId;
             }
-            
+
             // Store ObjectId for later use in department validation
             const ObjectIdClass = ObjectId;
 
@@ -179,6 +179,7 @@ export default class signupcontroller {
 
             // Variable to store validated department ID (will be set during validation)
             let validatedDepartmentId = null;
+            let selectedDepartment = null;
 
             // Validate department - Required for Students and DeptTPC
             if (finalRole === 'Student' || finalRole === 'DeptTPC') {
@@ -197,7 +198,7 @@ export default class signupcontroller {
                     department_status: 1,
                     deleted: false
                 };
-                
+
                 // Try to match by _id first (if it's an ObjectId string)
                 if (typeof department === 'string' && /^[0-9a-fA-F]{24}$/.test(department)) {
                     departmentFilter._id = new ObjectIdClass(department);
@@ -211,7 +212,7 @@ export default class signupcontroller {
 
                 const departmentResponse = await fetchData(
                     'tblDepartments',
-                    { _id: 1, department_id: 1, department_name: 1, department_code: 1 },
+                    { _id: 1, department_id: 1, department_name: 1, department_code: 1, collage_id: 1, department_college_id: 1 },
                     departmentFilter
                 );
 
@@ -225,7 +226,7 @@ export default class signupcontroller {
                     return next();
                 }
 
-                const selectedDepartment = departmentResponse.data[0];
+                selectedDepartment = departmentResponse.data[0];
                 const departmentId = selectedDepartment._id?.toString() || selectedDepartment.department_id;
                 const departmentObjectId = selectedDepartment._id;
                 const originalDepartmentId = department; // Store original for comparison
@@ -234,39 +235,39 @@ export default class signupcontroller {
                 // 1. Check legacy collage_departments array
                 // 2. Check new departments array (embedded structure)
                 // 3. Check if department has collage_id or department_college_id matching the college
-                
+
                 let isDepartmentInCollege = false;
-                
+
                 // Method 1: Check legacy collage_departments array
                 const collegeDeptIds = selectedCollege.collage_departments || [];
                 if (collegeDeptIds.length > 0) {
                     isDepartmentInCollege = collegeDeptIds.some(deptId => {
                         const deptIdStr = deptId?.toString();
-                        return deptIdStr === departmentId || 
-                               deptIdStr === originalDepartmentId || 
-                               deptIdStr === selectedDepartment._id?.toString() ||
-                               deptIdStr === selectedDepartment.department_id ||
-                               (departmentObjectId && deptId?.toString() === departmentObjectId.toString());
+                        return deptIdStr === departmentId ||
+                            deptIdStr === originalDepartmentId ||
+                            deptIdStr === selectedDepartment._id?.toString() ||
+                            deptIdStr === selectedDepartment.department_id ||
+                            (departmentObjectId && deptId?.toString() === departmentObjectId.toString());
                     });
                 }
-                
+
                 // Method 2: Check new departments array (embedded structure)
                 if (!isDepartmentInCollege && selectedCollege.departments && Array.isArray(selectedCollege.departments)) {
                     isDepartmentInCollege = selectedCollege.departments.some(dept => {
                         const deptId = dept.department_id?.toString() || dept.department_id;
                         return deptId === departmentId ||
-                               deptId === originalDepartmentId ||
-                               deptId === selectedDepartment._id?.toString() ||
-                               deptId === selectedDepartment.department_id ||
-                               (departmentObjectId && dept.department_id?.toString() === departmentObjectId.toString());
+                            deptId === originalDepartmentId ||
+                            deptId === selectedDepartment._id?.toString() ||
+                            deptId === selectedDepartment.department_id ||
+                            (departmentObjectId && dept.department_id?.toString() === departmentObjectId.toString());
                     });
                 }
-                
+
                 // Method 3: Check if department has collage_id or department_college_id matching the college
                 if (!isDepartmentInCollege) {
                     const collegeIdStr = selectedCollege._id?.toString() || collegeId?.toString();
-                    const departmentCollegeId = selectedDepartment.collage_id?.toString() || 
-                                                selectedDepartment.department_college_id?.toString();
+                    const departmentCollegeId = selectedDepartment.collage_id?.toString() ||
+                        selectedDepartment.department_college_id?.toString();
                     isDepartmentInCollege = departmentCollegeId === collegeIdStr;
                 }
 
@@ -306,18 +307,18 @@ export default class signupcontroller {
             // CRITICAL: Ensure department_id is always the ObjectId string, never the department name
             let finalDepartmentId = null;
             let finalDepartmentName = null;
-            
+
             if ((finalRole === 'Student' || finalRole === 'DeptTPC') && department) {
                 // Use validatedDepartmentId if available (from validation step)
                 if (validatedDepartmentId) {
                     finalDepartmentId = validatedDepartmentId.toString();
                 } else if (selectedDepartment) {
                     // Extract department_id from selectedDepartment
-                    finalDepartmentId = selectedDepartment._id?.toString() || 
-                                       selectedDepartment.department_id?.toString() || 
-                                       selectedDepartment.id?.toString() || 
-                                       null;
-                    
+                    finalDepartmentId = selectedDepartment._id?.toString() ||
+                        selectedDepartment.department_id?.toString() ||
+                        selectedDepartment.id?.toString() ||
+                        null;
+
                     // If department parameter is an ObjectId string, use it directly
                     if (!finalDepartmentId && typeof department === 'string' && /^[0-9a-fA-F]{24}$/.test(department)) {
                         finalDepartmentId = department;
@@ -326,7 +327,7 @@ export default class signupcontroller {
                     // Department parameter is already an ObjectId string
                     finalDepartmentId = department;
                 }
-                
+
                 // Get department name for display
                 if (selectedDepartment) {
                     finalDepartmentName =
@@ -341,7 +342,7 @@ export default class signupcontroller {
                     finalDepartmentName = department; // Use provided value as fallback
                 }
             }
-            
+
             // Store BOTH:
             // - department_id: the department ObjectId string (for reliable filtering/joins) - CRITICAL
             // - department: a human-friendly department value (name/code) used by TPC/DeptTPC UI filters
