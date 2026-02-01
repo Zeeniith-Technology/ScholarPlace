@@ -156,7 +156,7 @@ function AptitudeWeek4Content() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-        body: JSON.stringify({ week: 4 }),
+        body: JSON.stringify({ week: 4, track: 'aptitude' }),
       })
       if (response.ok) {
         const data = await response.json()

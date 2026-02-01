@@ -261,7 +261,7 @@ function AptitudeWeek1Content() {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
         },
-        body: JSON.stringify({ week: 1 }),
+        body: JSON.stringify({ week: 1, track: 'aptitude' }),
       })
 
       if (response.ok) {

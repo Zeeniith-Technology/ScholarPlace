@@ -1171,8 +1171,10 @@ export default class studentProgressController {
             );
 
             // Get all coding problems for this week
-            // Define all days for the week
-            const weekDays = ['pre-week', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
+            // Define required practice-test days: aptitude has no pre-week, only day-1..day-5
+            const weekDays = track === 'aptitude'
+                ? ['day-1', 'day-2', 'day-3', 'day-4', 'day-5']
+                : ['pre-week', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
             const allCodingProblems = [];
 
             // Import coding problems data
