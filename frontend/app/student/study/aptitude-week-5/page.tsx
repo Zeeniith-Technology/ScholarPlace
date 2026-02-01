@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 import {
   ChevronLeft,
   ChevronRight,
@@ -47,6 +48,7 @@ function AptitudeWeek5Content() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeSection, setActiveSection] = useState<string>('')
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false)
 
   const days = [
     { id: 'day-1', label: 'Day 1', title: 'TSD Fundamentals - Speed as Rate & Distance', dayNum: 1 },
@@ -171,7 +173,7 @@ function AptitudeWeek5Content() {
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
         console.log('Development mode: Bypassing eligibility check')
       } else {
-        alert('You must complete all requirements before taking the weekly test:\n• Score ≥70% on all practice tests')
+        setShowRequirementsModal(true)
         return
       }
     }
@@ -611,6 +613,25 @@ function AptitudeWeek5Content() {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showRequirementsModal}
+        onClose={() => setShowRequirementsModal(false)}
+        title="Weekly Test locked"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-neutral-dark">You must complete all requirements before taking the weekly test:</p>
+          <ul className="list-disc list-inside text-neutral-light space-y-1">
+            <li>Score ≥70% on all practice tests</li>
+          </ul>
+          <div className="flex justify-end pt-2">
+            <button type="button" onClick={() => setShowRequirementsModal(false)} className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
+              OK
+            </button>
+          </div>
+        </div>
+      </Modal>
     </StudentLayout>
   )
 }

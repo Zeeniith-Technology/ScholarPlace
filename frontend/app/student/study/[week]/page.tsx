@@ -73,6 +73,7 @@ function WeekStudyContent() {
   const [dailyCodingProblems, setDailyCodingProblems] = useState<any[]>([]) // Daily coding problems for current day
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
   const [showCapstoneUnlockModal, setShowCapstoneUnlockModal] = useState(false)
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false)
   const sessionStartTime = useRef<number | null>(null)
   const progressUpdateInterval = useRef<NodeJS.Timeout | null>(null)
 
@@ -452,13 +453,7 @@ function WeekStudyContent() {
   const handleWeeklyTestClick = () => {
     // Check if eligible first
     if (!weeklyTestEligibility?.eligible) {
-      // Show requirements if not eligible
-      alert('You must complete all requirements before taking the weekly test:\n' +
-        '• Score ≥70% on all practice tests\n' +
-        (weeklyTestEligibility?.coding_problems && !weeklyTestEligibility.coding_problems.eligible
-          ? '• Complete all coding problems'
-          : '')
-      )
+      setShowRequirementsModal(true)
       return
     }
 
@@ -1250,6 +1245,28 @@ function WeekStudyContent() {
                       onClick={() => setShowCapstoneUnlockModal(false)}
                       className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
                     >
+                      OK
+                    </button>
+                  </div>
+                </div>
+              </Modal>
+
+              <Modal
+                isOpen={showRequirementsModal}
+                onClose={() => setShowRequirementsModal(false)}
+                title="Weekly Test locked"
+                size="sm"
+              >
+                <div className="space-y-4">
+                  <p className="text-neutral-dark">You must complete all requirements before taking the weekly test:</p>
+                  <ul className="list-disc list-inside text-neutral-light space-y-1">
+                    <li>Score ≥70% on all practice tests</li>
+                    {weeklyTestEligibility?.coding_problems && !weeklyTestEligibility.coding_problems.eligible && (
+                      <li>Complete all coding problems</li>
+                    )}
+                  </ul>
+                  <div className="flex justify-end pt-2">
+                    <button type="button" onClick={() => setShowRequirementsModal(false)} className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
                       OK
                     </button>
                   </div>
