@@ -57,13 +57,45 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
     const [testStarted, setTestStarted] = useState(false)
     const [questionStartTimes, setQuestionStartTimes] = useState<{ [questionId: string]: number }>({})
     const [showBlockedModal, setShowBlockedModal] = useState(false)
+    const [isBlockedForRetake, setIsBlockedForRetake] = useState(false)
+    const [blockCheckDone, setBlockCheckDone] = useState(false)
     const tabSwitchBlockedRef = useRef(false)
 
-    // Fetch questions on mount
-    useEffect(() => {
-        if (weekId) {
-            fetchQuestions()
+    // Check if student is blocked from retaking (must pass before allowing Start)
+    const checkBlockedRetake = async (): Promise<boolean> => {
+        try {
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+            const authHeader = getAuthHeader()
+            if (!authHeader) {
+                setBlockCheckDone(true)
+                return false
+            }
+            const response = await fetch(`${apiBaseUrl}/student-progress/check-blocked-retake`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                body: JSON.stringify({ week: weekId, test_type: 'weekly' }),
+            })
+            if (response.ok) {
+                const result = await response.json()
+                const data = result.data
+                const blocked = !!(data && data.blocked && !data.approved)
+                if (blocked) setIsBlockedForRetake(true)
+                setBlockCheckDone(true)
+                return blocked
+            }
+        } catch (e) {
+            console.error('Error checking blocked retake:', e)
         }
+        setBlockCheckDone(true)
+        return false
+    }
+
+    // On mount: check blocked status first; if not blocked, fetch questions
+    useEffect(() => {
+        if (!weekId) return
+        checkBlockedRetake().then((blocked) => {
+            if (!blocked) fetchQuestions()
+        })
     }, [weekId])
 
     // Timer logic
@@ -330,6 +362,49 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
         const total = questions.length
         const percentage = total > 0 ? Math.round((correct / total) * 100) : 0
         return { correct, total, percentage }
+    }
+
+    // Still checking blocked status
+    if (!blockCheckDone) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col">
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-neutral-light">Checking access...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // Blocked: require Dept TPC approval before retake
+    if (blockCheckDone && isBlockedForRetake) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col">
+                <div className="flex-1 flex items-center justify-center p-4">
+                    <Card className="max-w-2xl w-full p-12 text-center shadow-xl border-neutral-light/20 border-red-200">
+                        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600">
+                            <AlertCircle className="w-10 h-10" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-neutral mb-3">Test access blocked</h1>
+                        <p className="text-neutral-light text-lg mb-6">
+                            You have been blocked from retaking this test due to a tab/window switch during a previous attempt.
+                        </p>
+                        <p className="text-neutral-dark font-medium mb-10">
+                            Please contact your Department TPC to request approval via <strong>Test Approvals</strong>. You cannot start the test until your retake is approved.
+                        </p>
+                        <Button
+                            onClick={handleExit}
+                            variant="secondary"
+                            className="w-full py-4"
+                        >
+                            Close and Return
+                        </Button>
+                    </Card>
+                </div>
+            </div>
+        )
     }
 
     if (isLoading) {

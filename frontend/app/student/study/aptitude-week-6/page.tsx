@@ -49,6 +49,7 @@ function AptitudeWeek6Content() {
   const [activeSection, setActiveSection] = useState<string>('')
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
   const [showRequirementsModal, setShowRequirementsModal] = useState(false)
+  const [showBlockedModal, setShowBlockedModal] = useState(false)
 
   const days = [
     { id: 'day-1', label: 'Day 1', title: 'Profit & Loss Fundamentals', dayNum: 1 },
@@ -167,15 +168,41 @@ function AptitudeWeek6Content() {
     }
   }
 
-  const handleWeeklyTestClick = () => {
+  const checkBlockedRetake = async (): Promise<boolean> => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      const authHeader = getAuthHeader()
+      if (!authHeader) return false
+      const response = await fetch(`${apiBaseUrl}/student-progress/check-blocked-retake`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ week: 6, test_type: 'weekly' }),
+      })
+      if (response.ok) {
+        const result = await response.json()
+        const data = result.data
+        return !!(data && data.blocked && !data.approved)
+      }
+    } catch (e) {
+      console.error('Error checking blocked retake:', e)
+    }
+    return false
+  }
+
+  const handleWeeklyTestClick = async () => {
     if (!weeklyTestEligibility?.eligible) {
-      // Allow bypass in development mode
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
         console.log('Development mode: Bypassing eligibility check')
       } else {
         setShowRequirementsModal(true)
         return
       }
+    }
+    const blocked = await checkBlockedRetake()
+    if (blocked) {
+      setShowBlockedModal(true)
+      return
     }
     window.open('/student/aptitude/weekly/6', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')
   }
@@ -627,6 +654,24 @@ function AptitudeWeek6Content() {
           </ul>
           <div className="flex justify-end pt-2">
             <button type="button" onClick={() => setShowRequirementsModal(false)} className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
+              OK
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showBlockedModal}
+        onClose={() => setShowBlockedModal(false)}
+        title="Test access blocked"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-neutral-dark">
+            You have been blocked from retaking this test due to a tab/window switch during a previous attempt. You cannot start the test until your Department TPC approves your retake via <strong>Test Approvals</strong>.
+          </p>
+          <div className="flex justify-end pt-2">
+            <button type="button" onClick={() => setShowBlockedModal(false)} className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
               OK
             </button>
           </div>
