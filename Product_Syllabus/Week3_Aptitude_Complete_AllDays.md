@@ -37,7 +37,7 @@ By end of today, you will:
 
 ## PART 1: HISTORICAL & FOUNDATIONAL CONTEXT
 
-### Why Ratio Was Invented (Historical Context)
+### Why Ratio Was Invented 
 
 **Ancient Problem (3000 BCE):**
 
@@ -124,7 +124,7 @@ Connection to percentages from Week 2!
 
 ---
 
-## PART 4: WORKED EXAMPLES (DAY 1)
+## PART 4: WORKED EXAMPLES 
 
 ### Example 1.1: Simple Ratio Simplification
 
@@ -291,7 +291,7 @@ Always simplify first.
 
 ---
 
-## PART 5: COMMON MISTAKES (DAY 1)
+## PART 5: COMMON MISTAKES
 
 ### Mistake 1: Treating Ratio as Absolute Number
 
@@ -326,7 +326,7 @@ Girls are 4/(3+4) = 4/7 ≈ 57.14% of school
 
 ---
 
-## PART 6: INTERVIEW TIPS (DAY 1)
+## PART 6: INTERVIEW TIPS 
 
 💡 **Tip 1: Always simplify ratios first**
 "Let me simplify 48:64:80 to 3:4:5"
@@ -346,8 +346,7 @@ Shows verification habit
 
 ---
 
-## PART 7: PRACTICE QUESTIONS (DAY 1)
-
+## PART 7: PRACTICE QUESTIONS 
 **Q1.1:** Simplify 72:96:108
 **Solution:** GCD = 12, Answer: 6:8:9
 
@@ -679,7 +678,7 @@ After: 50:20 = 5:2 ✓
 
 ---
 
-## PART 4: COMMON MISTAKES (DAY 2)
+## PART 4: COMMON MISTAKES 
 
 ### Mistake 1: Not Making Common Quantity Equal
 
@@ -701,7 +700,7 @@ Always verify: Check A:B and B:C in final answer
 
 ---
 
-## PART 5: INTERVIEW TIPS (DAY 2)
+## PART 5: INTERVIEW TIPS 
 
 💡 **Tip 1: Show LCM calculation clearly**
 "LCM(4,2) = 4, so I'll scale to make both 4"
@@ -721,7 +720,7 @@ Shows careful approach
 
 ---
 
-## PART 6: PRACTICE QUESTIONS (DAY 2)
+## PART 6: PRACTICE QUESTIONS 
 
 **Q2.1:** A:B = 2:3, B:C = 4:5. Find A:B:C
 **Solution:** A:B:C = 8:12:15
@@ -1183,7 +1182,7 @@ t = 1 / (combined rate)
 
 ---
 
-## PART 4: WORKED EXAMPLES (DAY 4)
+## PART 4: WORKED EXAMPLES 
 
 ### Example 4.1: Single Worker - Basic
 
@@ -1397,7 +1396,7 @@ Days: 20/3 ✓
 
 ---
 
-## PART 5: COMMON MISTAKES (DAY 4)
+## PART 5: COMMON MISTAKES 
 
 ### Mistake 1: Confusing Days and Work Units
 
@@ -1419,7 +1418,7 @@ Always find LCM first for clean fractions
 
 ---
 
-## PART 6: INTERVIEW TIPS (DAY 4)
+## PART 6: INTERVIEW TIPS 
 
 💡 **Tip 1: Always convert to "fraction of job per day"**
 "A's rate is 1/12 per day"
@@ -1435,7 +1434,7 @@ Shows careful approach
 
 ---
 
-## PART 7: PRACTICE QUESTIONS (DAY 4)
+## PART 7: PRACTICE QUESTIONS 
 
 **Q4.1:** A completes in 8 days. Work in 3 days?
 **Solution:** 3/8 of job
@@ -1814,7 +1813,7 @@ Or: One job takes 8/1.75 ≈ 4.57 days
 
 ---
 
-## PART 7: COMMON MISTAKES (DAY 5)
+## PART 7: COMMON MISTAKES 
 
 ### Mistake 1: Not Handling Negative Rates for Drains
 
@@ -1848,7 +1847,7 @@ Wages proportional to WORK DONE, not days worked
 
 ---
 
-## PART 8: INTERVIEW TIPS (DAY 5)
+## PART 8: INTERVIEW TIPS
 
 💡 **Tip 1: Use worker-days for variable workforce**
 "Total = 10 × 20 = 200 worker-days"
@@ -1871,7 +1870,7 @@ Shows practical understanding
 
 ---
 
-## PART 9: PRACTICE QUESTIONS (DAY 5)
+## PART 9: PRACTICE QUESTIONS
 
 **Q5.1:** A is 60% more efficient. Together 20d. A alone?
 **Solution:** A = 32.5 days

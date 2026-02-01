@@ -15,11 +15,9 @@ import {
   Target,
   TrendingUp,
   Award,
-  Lock,
   Video,
   Calendar,
   AlertCircle,
-  RefreshCw,
   BarChart3,
   Zap,
   FileText,
@@ -28,7 +26,6 @@ import {
   FileText as FileTextIcon,
   Calendar as CalendarIcon,
   ChevronRight,
-  Play,
 } from 'lucide-react'
 
 /**
@@ -122,7 +119,7 @@ const FULL_SYLLABUS: Array<{
   {
     week: 5,
     title: "Stacks & Queues",
-    track: "DSA",
+    track: "DSA & Aptitude",
     modules: ["Data Structures III", "LIFO & FIFO"],
     topics: ["Stack Implementation", "Queue Implementation", "Monotonic Stack", "Priority Queue Basics", "Circular Queue", "Applications of Stack"],
     assignments: 7,
@@ -187,8 +184,7 @@ export default function StudentSyllabusPage() {
     totalModules: 12, // 12 Modules total
   })
   const [studentProgressByWeek, setStudentProgressByWeek] = useState<{ [week: number]: any }>({})
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -197,34 +193,14 @@ export default function StudentSyllabusPage() {
     setIsLoading(false) // Syllabus is static now, so "loading" is just fetching progress
   }, [])
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh progress every 30 seconds (no UI indicator)
   useEffect(() => {
     const interval = setInterval(() => {
       setIsRefreshing(true)
-      Promise.all([
-        fetchProgress(),
-        fetchStudentProgress()
-      ]).finally(() => {
-        setIsRefreshing(false)
-        setLastRefresh(new Date())
-      })
-    }, 30000) // 30 seconds
-
+      Promise.all([fetchProgress(), fetchStudentProgress()]).finally(() => setIsRefreshing(false))
+    }, 30000)
     return () => clearInterval(interval)
   }, [])
-
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      await Promise.all([
-        fetchProgress(),
-        fetchStudentProgress()
-      ])
-      setLastRefresh(new Date())
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
 
   const fetchStudentProgress = async () => {
     try {
@@ -380,11 +356,8 @@ export default function StudentSyllabusPage() {
           }`}>
           <div className="space-y-3">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/15 to-secondary/20 backdrop-blur-sm shadow-lg shadow-primary/10">
-                  <BookOpen className="w-7 h-7 text-primary" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full animate-pulse" />
+              <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 border border-primary/20">
+                <BookOpen className="w-7 h-7 text-primary" strokeWidth={1.75} />
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-neutral mb-2 leading-tight bg-gradient-to-r from-neutral to-neutral-light bg-clip-text">
@@ -520,24 +493,6 @@ export default function StudentSyllabusPage() {
         {/* Table View - Enhanced UI */}
         {!isLoading && viewMode === 'table' && (
           <Card className="overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="font-semibold text-gray-800">{weeklySchedule.length} weeks</span>
-                <span>•</span>
-                <span>Complete course roadmap</span>
-                <span>•</span>
-                <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
-              </div>
-              <button
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-light hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-            </div>
-
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -545,7 +500,6 @@ export default function StudentSyllabusPage() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">WEEK</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">TRACK</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">TOPICS</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">STATUS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -560,28 +514,20 @@ export default function StudentSyllabusPage() {
                       <tr
                         key={week.week}
                         className={cn(
-                          'group border-b border-gray-200 transition-all duration-200',
-                          isActive && !isComingSoon && 'bg-blue-50/50',
-                          isCompleted && !isComingSoon && 'bg-green-50/50',
-                          !isLocked && !isComingSoon && 'hover:bg-gray-50 cursor-pointer',
-                          (isLocked || isComingSoon) && 'opacity-50'
+                          'group border-b border-gray-200 transition-all duration-200 hover:bg-gray-50/80',
+                          !isLocked && !isComingSoon && 'cursor-pointer'
                         )}
                         onClick={() => !isLocked && !isComingSoon && handleStartWeek(week.week, status)}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                            {isActive && !isComingSoon && <div className="w-1 h-16 bg-blue-500 rounded-full flex-shrink-0" />}
-                            {isCompleted && !isComingSoon && <div className="w-1 h-16 bg-green-500 rounded-full flex-shrink-0" />}
-                            {(!isActive && !isCompleted) || isComingSoon ? <div className="w-1 h-16 bg-transparent flex-shrink-0" /> : null}
+                            <div className="w-1 h-16 flex-shrink-0" aria-hidden />
 
                             <div className="flex items-center gap-3">
                               <div className={cn(
-                                'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base transition-all duration-300 flex-shrink-0',
-                                isCompleted && !isComingSoon && 'bg-green-600 text-white shadow-md',
-                                isActive && !isComingSoon && 'bg-blue-600 text-white shadow-md',
-                                (isLocked || isComingSoon) && 'bg-gray-200 text-gray-500 border border-gray-300'
+                                'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base transition-all duration-300 flex-shrink-0 bg-gray-100 text-gray-800 border border-gray-200'
                               )}>
-                                {isCompleted && !isComingSoon ? <CheckCircle2 className="w-5 h-5" /> : week.week}
+                                {week.week}
                               </div>
                               <div>
                                 <div className="font-bold text-base text-gray-900">
@@ -620,32 +566,6 @@ export default function StudentSyllabusPage() {
                               </Badge>
                             )}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {isComingSoon ? (
-                            <Badge variant="secondary" className="text-xs px-3 py-1.5 font-semibold bg-amber-100 text-amber-700 border border-amber-200 ml-auto w-fit">
-                              <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> Coming Soon</span>
-                            </Badge>
-                          ) : isActive ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleStartWeek(week.week, status)
-                              }}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md ml-auto"
-                            >
-                              <Play className="w-4 h-4" />
-                              {status === 'start' ? 'Start' : 'Resume'}
-                            </button>
-                          ) : isCompleted ? (
-                            <Badge variant="secondary" className="text-xs px-3 py-1.5 font-semibold bg-green-600 text-white border-0 ml-auto w-fit">
-                              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Completed</span>
-                            </Badge>
-                          ) : (
-                            <Badge variant="default" className="text-xs px-3 py-1.5 font-semibold bg-gray-100 text-gray-600 border border-gray-300 ml-auto w-fit">
-                              <span className="flex items-center gap-1.5"><Lock className="w-3 h-3" /> Locked</span>
-                            </Badge>
-                          )}
                         </td>
                       </tr>
                     )

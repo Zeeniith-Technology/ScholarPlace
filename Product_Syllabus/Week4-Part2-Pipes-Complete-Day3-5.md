@@ -6,13 +6,13 @@
 
 Pipes are **identical mathematics to TimeWork**, just different context:
 
-| Aspect | TimeWork | Pipes |
-|--------|----------|-------|
-| Agent | Worker | Pipe |
-| Output | 1/time job/unit | 1/time tank/unit |
-| Combined | Add rates | Add rates |
-| Partial | Work = Rate × Time | Tank = Rate × Time |
-| Example | A (12d) + B (15d) = 6.67d | A (12m) + B (15m) = 6.67m |
+| Aspect   | TimeWork              | Pipes                 |
+| -------- | --------------------- | --------------------- |
+| Agent    | Worker                | Pipe                  |
+| Output   | 1/time job/unit       | 1/time tank/unit      |
+| Combined | Add rates             | Add rates             |
+| Partial  | Work = Rate × Time    | Tank = Rate × Time    |
+| Example  | A (12d) + B (15d) = 6.67d | A (12m) + B (15m) = 6.67m |
 
 **Your Advantage:** If you mastered Days 1-2, Pipes is immediate transfer.
 

@@ -219,15 +219,60 @@ function AptitudeWeek4Content() {
   useEffect(() => { fetchBookmarks() }, [])
   useEffect(() => { if (bookmarks.length >= 0) saveBookmarks() }, [bookmarks])
 
+  const parseTableRow = (row: string): string[] => {
+    return row
+      .split('|')
+      .map(cell => cell.trim())
+      .filter((_, i, arr) => i > 0 && i < arr.length - 1)
+  }
+
+  const stripRedundantDayHeader = (raw: string): string => {
+    if (!raw?.trim()) return raw
+    const lines = raw.split('\n')
+    let i = 0
+    while (i < lines.length && !lines[i].trim()) i++
+    if (i >= lines.length) return raw
+    const first = lines[i].trim()
+    const withoutHash = first.replace(/^#*\s*/, '')
+    const normalized = withoutHash.replace(/^\s*[^\w\s&:-]+/g, '').trim()
+    const isRedundantFirstLine = /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(normalized) ||
+      /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(normalized) ||
+      /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(normalized)
+    if (isRedundantFirstLine) {
+      i++
+      if (first.endsWith('&')) {
+        while (i < lines.length && !lines[i].trim()) i++
+        if (i < lines.length) i++
+      }
+      while (i < lines.length && !lines[i].trim()) i++
+      return lines.slice(i).join('\n')
+    }
+    return raw
+  }
+
   const renderContent = (content: string) => {
     if (!content) return <p className="text-neutral-light">No content available</p>
-
-    const lines = content.split('\n')
+    const contentWithoutRedundantHeader = stripRedundantDayHeader(content)
+    const lines = contentWithoutRedundantHeader.split('\n')
     const elements: JSX.Element[] = []
     let inCodeBlock = false
     let codeBlock = ''
+    let skipNext = 0
+    let skipTableRows = 0
+
+    const normalizeHeaderText = (t: string) => t.trim().replace(/^\s*[^\w\s&:-]+/g, '').trim()
+    const isRedundantDayHeader = (t: string) => {
+        const n = normalizeHeaderText(t)
+        return /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(n) ||
+          /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(n) ||
+          /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(n)
+      }
+    const getHeaderText = (l: string, prefix: string) => l.startsWith(prefix) ? l.replace(prefix, '').trim() : ''
 
     lines.forEach((line, index) => {
+      if (skipNext > 0) { skipNext--; return }
+      if (skipTableRows > 0) { skipTableRows--; return }
+
       if (line.startsWith('```')) {
         if (inCodeBlock) {
           elements.push(
@@ -249,7 +294,8 @@ function AptitudeWeek4Content() {
       }
 
       if (line.startsWith('# ')) {
-        const text = line.replace('# ', '').trim()
+        const text = getHeaderText(line, '# ')
+        if (isRedundantDayHeader(text)) { if (text.endsWith('&')) skipNext = 1; return }
         elements.push(
           <h1 key={`h1-${index}`} className="text-3xl font-bold text-neutral mt-8 mb-4" id={text.toLowerCase().replace(/\s+/g, '-')}>
             {text}
@@ -259,7 +305,8 @@ function AptitudeWeek4Content() {
       }
 
       if (line.startsWith('## ')) {
-        const text = line.replace('## ', '').trim()
+        const text = getHeaderText(line, '## ')
+        if (isRedundantDayHeader(text)) { if (text.endsWith('&')) skipNext = 1; return }
         elements.push(
           <h2 key={`h2-${index}`} className="text-2xl font-bold text-neutral mt-6 mb-3" id={text.toLowerCase().replace(/\s+/g, '-')}>
             {text}
@@ -269,11 +316,65 @@ function AptitudeWeek4Content() {
       }
 
       if (line.startsWith('### ')) {
-        const text = line.replace('### ', '').trim()
+        const text = getHeaderText(line, '### ')
+        if (isRedundantDayHeader(text)) { if (text.endsWith('&')) skipNext = 1; return }
         elements.push(
           <h3 key={`h3-${index}`} className="text-xl font-semibold text-neutral mt-4 mb-2" id={text.toLowerCase().replace(/\s+/g, '-')}>
             {text}
           </h3>
+        )
+        return
+      }
+
+      if (line.trim() && isRedundantDayHeader(line)) {
+        if (line.trim().endsWith('&')) skipNext = 1
+        return
+      }
+
+      // Markdown tables: lines starting with | (collect consecutive rows, render <table>)
+      if (line.includes('|') && line.trim().startsWith('|')) {
+        const tableRows: string[] = []
+        let j = index
+        while (j < lines.length && lines[j].includes('|') && lines[j].trim().startsWith('|')) {
+          tableRows.push(lines[j])
+          j++
+        }
+        skipTableRows = j - index - 1
+
+        const isSeparator = (row: string) => /^\|[\s\-:|]+\|$/.test(row.trim())
+        const headerRow = tableRows[0]
+        const separatorIndex = tableRows.findIndex(isSeparator)
+        const headerCells = parseTableRow(headerRow)
+        const bodyRows = separatorIndex >= 0 ? tableRows.slice(separatorIndex + 1) : tableRows.slice(1)
+
+        elements.push(
+          <div key={`table-${index}`} className="my-4 overflow-x-auto rounded-lg border border-neutral-light/20">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-background-elevated border-b border-neutral-light/20">
+                  {headerCells.map((cell, ci) => (
+                    <th key={ci} className="px-4 py-3 font-semibold text-neutral" dangerouslySetInnerHTML={{
+                      __html: cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    }} />
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bodyRows.filter(row => !isSeparator(row)).map((row, ri) => {
+                  const cells = parseTableRow(row)
+                  return (
+                    <tr key={ri} className="border-b border-neutral-light/10 hover:bg-background-elevated/50">
+                      {cells.map((cell, ci) => (
+                        <td key={ci} className="px-4 py-2 text-neutral-light" dangerouslySetInnerHTML={{
+                          __html: cell.replace(/\*\*(.*?)\*\*/g, '<strong class="text-neutral">$1</strong>')
+                        }} />
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )
         return
       }

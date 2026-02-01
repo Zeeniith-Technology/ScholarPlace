@@ -630,11 +630,36 @@ function WeekStudyContent() {
     }
   }
 
+  const stripRedundantDayHeader = (raw: string): string => {
+    if (!raw?.trim()) return raw
+    const lines = raw.split('\n')
+    let i = 0
+    while (i < lines.length && !lines[i].trim()) i++
+    if (i >= lines.length) return raw
+    const first = lines[i].trim()
+    const withoutHash = first.replace(/^#*\s*/, '')
+    const normalized = withoutHash.replace(/^\s*[^\w\s&:-]+/g, '').trim()
+    const isRedundantFirstLine = /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(normalized) ||
+      /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(normalized) ||
+      /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(normalized)
+    if (isRedundantFirstLine) {
+      i++
+      if (first.endsWith('&')) {
+        while (i < lines.length && !lines[i].trim()) i++
+        if (i < lines.length) i++
+      }
+      while (i < lines.length && !lines[i].trim()) i++
+      return lines.slice(i).join('\n')
+    }
+    return raw
+  }
+
   // Enhanced content renderer (same as Week 1)
   const renderContent = (content: string) => {
     if (!content) return null
 
-    const lines = content.split('\n')
+    const contentWithoutRedundantHeader = stripRedundantDayHeader(content)
+    const lines = contentWithoutRedundantHeader.split('\n')
     const elements: JSX.Element[] = []
     let currentCodeBlock: string[] = []
     let inCodeBlock = false
@@ -644,8 +669,20 @@ function WeekStudyContent() {
     let inTable = false
     let tableTitle: string | null = null
     let previousLine: string = ''
+    let skipNext = 0
+
+    const normalizeHeaderText = (t: string) => t.trim().replace(/^\s*[^\w\s&:-]+/g, '').trim()
+    const isRedundantDayHeader = (t: string) => {
+        const n = normalizeHeaderText(t)
+        return /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(n) ||
+          /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(n) ||
+          /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(n)
+      }
+    const getHeaderText = (l: string, prefix: string) => l.startsWith(prefix) ? l.replace(prefix, '').trim() : ''
 
     lines.forEach((line, index) => {
+      if (skipNext > 0) { skipNext--; return }
+
       // Detect code blocks
       if (line.startsWith('```')) {
         if (inCodeBlock) {
@@ -680,33 +717,44 @@ function WeekStudyContent() {
 
       // Headers
       if (line.startsWith('# ')) {
-        sectionId = line.replace('# ', '').trim().toLowerCase().replace(/\s+/g, '-')
+        const text = getHeaderText(line, '# ')
+        if (isRedundantDayHeader(text)) { if (text.endsWith('&')) skipNext = 1; return }
+        sectionId = text.toLowerCase().replace(/\s+/g, '-')
         elements.push(
           <h1 key={`h1-${index}`} id={sectionId} className="text-3xl font-bold text-neutral mt-8 mb-4 scroll-mt-20">
-            {line.replace('# ', '')}
+            {text}
           </h1>
         )
         previousLine = line
         return
       }
       if (line.startsWith('## ')) {
-        sectionId = line.replace('## ', '').trim().toLowerCase().replace(/\s+/g, '-')
+        const text = getHeaderText(line, '## ')
+        if (isRedundantDayHeader(text)) { if (text.endsWith('&')) skipNext = 1; return }
+        sectionId = text.toLowerCase().replace(/\s+/g, '-')
         elements.push(
           <h2 key={`h2-${index}`} id={sectionId} className="text-2xl font-bold text-neutral mt-6 mb-3 scroll-mt-20 border-b border-neutral-light/20 pb-2">
-            {line.replace('## ', '')}
+            {text}
           </h2>
         )
         previousLine = line
         return
       }
       if (line.startsWith('### ')) {
-        sectionId = line.replace('### ', '').trim().toLowerCase().replace(/\s+/g, '-')
+        const text = getHeaderText(line, '### ')
+        if (isRedundantDayHeader(text)) { if (text.endsWith('&')) skipNext = 1; return }
+        sectionId = text.toLowerCase().replace(/\s+/g, '-')
         elements.push(
           <h3 key={`h3-${index}`} id={sectionId} className="text-xl font-semibold text-neutral mt-5 mb-2 scroll-mt-20">
-            {line.replace('### ', '')}
+            {text}
           </h3>
         )
         previousLine = line
+        return
+      }
+
+      if (line.trim() && isRedundantDayHeader(line)) {
+        if (line.trim().endsWith('&')) skipNext = 1
         return
       }
 

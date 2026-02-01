@@ -23,7 +23,7 @@ Every concept follows this structure:
 
 # 📅 DAY 1: PERCENTAGES – FOUNDATION & CHANGE
 
-## Part 1.1: Why Percentages Were Invented (Historical Context)
+## Part 1.1: Why Percentages Were Invented 
 
 ### The Problem Before Percentages
 
@@ -54,7 +54,7 @@ Percentages allow fair comparison across different-sized groups.
 
 ---
 
-## Part 1.2: What is a Percentage? (Deep Definition)
+## Part 1.2: What is a Percentage? 
 
 ### Formal Mathematical Definition
 
@@ -117,7 +117,7 @@ A is actually better!
 
 ---
 
-## Part 1.3: The Percentage Formula (with Deep Understanding)
+## Part 1.3: The Percentage Formula 
 
 ### Basic Formula Explained
 
@@ -146,7 +146,7 @@ Multiplying by 100 converts to standard scale where comparison is intuitive.
 
 ---
 
-## Part 1.4: Understanding Percentage Change (The Critical Concept)
+## Part 1.4: Understanding Percentage Change 
 
 ### What "Change" Really Means
 
@@ -170,7 +170,7 @@ Change = New Value - Original Value
 Original = Starting Point (this is the BASE)
 ```
 
-### Deep Example 1A: Salary Increase (Most Relatable)
+### Deep Example 1A: Salary Increase 
 
 **Scenario:**
 Employee A: Salary ₹20,000 → ₹24,000
@@ -383,7 +383,7 @@ Final = 75% of original
 
 ---
 
-## Part 1.6: Worked Examples – Day 1 (10+ Examples)
+## Part 1.6: Worked Examples (10+ Examples)
 
 ### Example 1.1: Simple Percentage Calculation
 
@@ -552,7 +552,7 @@ Lesson: Always consider both percentage AND absolute numbers.
 
 ---
 
-### Example 1.10: Compound Changes (Preview of Day 2)
+### Example 1.10: Compound Changes
 
 ```
 Q: Price increases by 10%, then by 20%.
@@ -570,7 +570,7 @@ Why? Second 20% is on the already-increased amount.
 
 ---
 
-## Part 1.7: Common Mistakes – Day 1 (Deep Analysis)
+## Part 1.7: Common Mistakes
 
 ### Mistake 1: Using New Value as Base
 
@@ -641,7 +641,7 @@ Symmetry bias - students expect symmetric operations to cancel out. They don't i
 
 ---
 
-## Part 1.8: Interview Tips – Day 1
+## Part 1.8: Interview Tips
 
 💡 **Tip 1: Always show the base**
 "I'm calculating change from ₹20,000 (original), not ₹24,000 (new)"
@@ -663,7 +663,7 @@ Shows careful thinking.
 
 ---
 
-## Part 1.9: Practice Questions – Day 1 (8 Questions)
+## Part 1.9: Practice Questions (8 Questions)
 
 **Q1.1:** A shop had 200 products. After sale, 150 were sold. What percentage of products remained?
 
@@ -718,7 +718,7 @@ NOT 50%!
 
 ---
 
-## Part 2.2: The Successive Percentage Formula (with Proof)
+## Part 2.2: The Successive Percentage Formula 
 
 ### Formula:
 
@@ -816,7 +816,7 @@ Net% = 26.5 + (-5) + (26.5 × (-5) / 100)
 
 ## Part 2.4: Profit, Loss & Discount Applications
 
-### Part 2.4A: Profit and Loss (Deep Definition)
+### Part 2.4A: Profit and Loss 
 
 **Definitions:**
 
@@ -870,7 +870,7 @@ Selling price should be = ₹13,000
 
 ---
 
-### Part 2.4B: Discount (Deep Definition)
+### Part 2.4B: Discount 
 
 **Definitions:**
 
@@ -907,7 +907,7 @@ Interpretation:
 
 ---
 
-### Part 2.4C: Multiple Discounts (Critical!)
+### Part 2.4C: Multiple Discounts
 
 **The Mistake:** Adding discounts
 
@@ -986,7 +986,7 @@ Result: 93.5% of original = 6.5% loss
 
 ---
 
-## Part 2.6: Worked Examples – Day 2 (12+ Examples)
+## Part 2.6: Worked Examples  (12+ Examples)
 
 ### Example 2.1: Basic Successive Percentage
 
@@ -1180,7 +1180,7 @@ Note: Profit% and profit margin are different!
 
 ---
 
-## Part 2.7: Common Mistakes – Day 2
+## Part 2.7: Common Mistakes
 
 ### Mistake 1: Adding Successive Percentages
 
@@ -1222,7 +1222,7 @@ If MP = ₹1,000, 25% discount → SP = ₹750 ✓
 
 ---
 
-## Part 2.8: Interview Tips – Day 2
+## Part 2.8: Interview Tips 
 
 💡 **Tip 1: Use multiplier method for successive changes**
 More efficient than formula, less error-prone.
@@ -1241,7 +1241,7 @@ Shows thinking skills.
 
 ---
 
-## Part 2.9: Practice Questions – Day 2 (10 Questions)
+## Part 2.9: Practice Questions  (10 Questions)
 
 **Q2.1:** Value increases by 25%, then 40%. What's the total increase?
 
@@ -1267,9 +1267,9 @@ Shows thinking skills.
 
 ---
 
-# 📅 DAY 3: RATIO & PROPORTION (BEGINNER LEVEL)
+# 📅 DAY 3: RATIO & PROPORTION 
 
-## Part 3.1: What is a Ratio? (Deep Conceptual)
+## Part 3.1: What is a Ratio? 
 
 ### Misconception to Eliminate First
 
@@ -1578,7 +1578,7 @@ This is useful for real problems like exam results!
 
 ---
 
-## Part 3.7: Common Ratio Mistakes – Day 3
+## Part 3.7: Common Ratio Mistakes 
 
 ### Mistake 1: Ratio as Absolute Number
 
@@ -1616,7 +1616,7 @@ Total = 7, so A = (2/7) × 100 = 28.57%, not 2%!
 
 ---
 
-## Part 3.8: Worked Examples – Day 3 (12+ Examples)
+## Part 3.8: Worked Examples (12+ Examples)
 
 ### Example 3.1: Simplifying Ratios
 
@@ -1702,7 +1702,7 @@ Girls% = (6/10) × 100 = 60%
 
 ---
 
-## Part 3.9: Interview Tips – Day 3
+## Part 3.9: Interview Tips 
 
 💡 **Tip 1: Always simplify ratios to simplest form first**
 Shows systematic thinking.
@@ -1718,7 +1718,7 @@ Faster than solving algebraically.
 
 ---
 
-## Part 3.10: Practice Questions – Day 3 (8 Questions)
+## Part 3.10: Practice Questions (8 Questions)
 
 **Q3.1:** Simplify 60:80:100
 
@@ -1742,7 +1742,7 @@ Faster than solving algebraically.
 
 # 📅 DAY 4: PROPORTION & APPLICATIONS (INTERMEDIATE)
 
-## Part 4.1: Direct Proportion (Deep Understanding)
+## Part 4.1: Direct Proportion
 
 ### Definition and Formula
 
@@ -1801,7 +1801,7 @@ If x triples, y triples
 
 ---
 
-## Part 4.2: Inverse Proportion (Deep Understanding)
+## Part 4.2: Inverse Proportion
 
 ### Definition and Formula
 
@@ -1939,7 +1939,7 @@ t = 10 hours
 
 ---
 
-## Part 4.5: Worked Examples – Day 4 (10+ Examples)
+## Part 4.5: Worked Examples  (10+ Examples)
 
 ### Example 4.1: Direct Proportion with Constant
 
@@ -2006,7 +2006,7 @@ d = 10 days
 
 ---
 
-## Part 4.6: Common Mistakes – Day 4
+## Part 4.6: Common Mistakes 
 
 ### Mistake 1: Confusing Direct and Inverse
 
@@ -2028,7 +2028,7 @@ d = 10 days
 
 ---
 
-## Part 4.7: Interview Tips – Day 4
+## Part 4.7: Interview Tips 
 
 💡 **Tip 1: Identify proportion type first**
 "This is inverse because more workers → fewer days"
@@ -2043,7 +2043,7 @@ Shows verification habit.
 
 ---
 
-## Part 4.8: Practice Questions – Day 4 (8 Questions)
+## Part 4.8: Practice Questions (8 Questions)
 
 **Q4.1:** y ∝ x. When x = 3, y = 9. Find y when x = 8
 
@@ -2289,7 +2289,7 @@ Employee share (50 people): ₹8,444.44 each
 
 ---
 
-## Part 5.5: Comprehensive Interview Questions (Placement Prep)
+## Part 5.5: Comprehensive Interview Questions 
 
 ### Set 1: Percentage Problems
 

@@ -195,11 +195,8 @@ export default function LearningPage() {
           isMounted ? 'opacity-100' : 'opacity-0'
         )}>
           <div className="flex items-center gap-4 mb-2">
-            <div className="relative">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/15 to-secondary/20 backdrop-blur-sm shadow-lg shadow-primary/10 transition-transform duration-300 hover:scale-105">
-                <BookMarked className="w-7 h-7 text-primary transition-transform duration-300 hover:scale-110" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full animate-pulse-slow" />
+            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 border border-primary/20">
+              <BookMarked className="w-7 h-7 text-primary" strokeWidth={1.75} />
             </div>
             <div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-neutral mb-2 leading-tight">

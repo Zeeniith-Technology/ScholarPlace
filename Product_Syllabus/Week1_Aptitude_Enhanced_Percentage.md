@@ -6,7 +6,7 @@
 
 ## 📅 DAY 1: INTEGERS – UNDERSTANDING NUMBERS ABOVE & BELOW ZERO
 
-### 1. Why Integers Are Needed (Real-World Context)
+### 1. Why Integers Are Needed 
 
 **Historical Perspective:**
 - Initially, humans only used counting numbers: 1, 2, 3, 4...
@@ -19,7 +19,7 @@
 **Problem without integers:**
 If you have ₹300 and spend ₹450, the difference cannot be expressed with natural numbers alone.
 
-### 2. Definition of Integers (Formal & Simple)
+### 2. Definition of Integers 
 
 **Mathematical Definition:**
 Integers are the set of all whole numbers including positive numbers, zero, and negative numbers, without any fractional or decimal parts.
@@ -77,7 +77,7 @@ Loss: -₹3000
 Net Change: +₹5000 - ₹3000 = +₹2000
 ```
 
-### 4. The Number Line (Visual & Conceptual Foundation)
+### 4. The Number Line 
 
 ```
     ←  DECREASING  ←                 →  INCREASING  →
@@ -101,7 +101,7 @@ Net Change: +₹5000 - ₹3000 = +₹2000
 Therefore: -1 > -5 (because -1 is closer to 0)
 ```
 
-### 5. Comparing Integers (Systematic Method)
+### 5. Comparing Integers 
 
 **Comparison Rule 1: Sign First**
 ```
@@ -126,7 +126,7 @@ The negative number CLOSER to zero is GREATER
 **Quick Comparison Trick:**
 On a number line, the number that appears to the RIGHT is always greater.
 
-### 6. Worked Examples (Day 1)
+### 6. Worked Examples 
 
 **Example 1.1: Simple Positive vs Negative**
 ```
@@ -197,7 +197,7 @@ Solution:
   ✅ Answer: 5°C
 ```
 
-### 7. Common Mistakes (Day 1)
+### 7. Common Mistakes 
 
 | Mistake | Why It's Wrong | Correct Approach |
 |---------|----------------|------------------|
@@ -206,14 +206,14 @@ Solution:
 | Forgetting sign in calculation | -5 + 3 ≠ 8 | -5 + 3 = -2 |
 | Comparing without line | Mental confusion | Always visualize number line |
 
-### 8. Interview Tips (Day 1)
+### 8. Interview Tips 
 
 💡 **Tip 1:** Always use number line for comparison questions - visual clarity saves time.
 💡 **Tip 2:** Negative numbers closer to 0 are GREATER - remember "closer = bigger"
 💡 **Tip 3:** In real-world problems, negative = loss/debt/below reference point
 💡 **Tip 4:** Practice quick comparison without writing - build mental agility
 
-### 9. Practice Questions (Day 1) - 6 Questions
+### 9. Practice Questions  - 6 Questions
 
 **Q1.1:** Which is greater? -12 or -8?
 **Q1.2:** Arrange in descending order: 0, -5, 7, -2, 3
@@ -226,7 +226,7 @@ Solution:
 
 ## 📅 DAY 2: FACTORS – BREAKING NUMBERS INTO BUILDING BLOCKS
 
-### 1. Definition of Factors (Formal & Simple)
+### 1. Definition of Factors
 
 **Mathematical Definition:**
 A factor of a number N is any whole number that divides N completely with remainder = 0.
@@ -237,7 +237,7 @@ If a is a factor of b, then: b ÷ a = c (where c is an integer and remainder = 0
 **Simple Way:**
 "Factors are numbers that go into a number perfectly without leaving anything behind."
 
-### 2. Understanding Factors (Real-World Context)
+### 2. Understanding Factors 
 
 **Scenario 1: Chocolate Distribution**
 ```
@@ -374,7 +374,7 @@ A composite number is:
 | 6 | ❌ | ✅ | 4 factors: {1,2,3,6} |
 | 17 | ✅ | ❌ | 2 factors: {1,17} |
 
-### 5. Worked Examples (Day 2)
+### 5. Worked Examples 
 
 **Example 2.1: Finding All Factors**
 ```
@@ -466,7 +466,7 @@ Solution:
   ✅ Answer: 8 different arrangements
 ```
 
-### 6. Common Mistakes (Day 2)
+### 6. Common Mistakes 
 
 | Mistake | Why Wrong | Correct Approach |
 |---------|-----------|------------------|
@@ -475,14 +475,14 @@ Solution:
 | Forgetting pair factors | Only listing half the factors | Always check pairs |
 | Confusing prime with odd | 9 is odd but composite | Prime = exactly 2 factors |
 
-### 7. Interview Tips (Day 2)
+### 7. Interview Tips 
 
 💡 **Tip 1:** Use factor pairs method for speed - faster than checking each number
 💡 **Tip 2:** Remember 2 is the only even prime - helps eliminate false options
 💡 **Tip 3:** For composite numbers, find ONE non-1, non-n factor to prove it
 💡 **Tip 4:** Prime numbers are building blocks - they appear in all factorization
 
-### 8. Practice Questions (Day 2) - 6 Questions
+### 8. Practice Questions  - 6 Questions
 
 **Q2.1:** Find all factors of 36.
 **Q2.2:** Is 29 a prime or composite number? Justify.
@@ -781,7 +781,7 @@ Solution:
 | 10 | Last digit 0 | Unit digit = 0 |
 | 11 | (Odd sum) - (Even sum) ÷ 11 | Alternating sum |
 
-### 5. Common Mistakes (Day 3)
+### 5. Common Mistakes 
 
 | Mistake | Example | Fix |
 |---------|---------|-----|
@@ -790,14 +790,14 @@ Solution:
 | Forgetting AND condition for 6 | Only checking if even | MUST check both div. by 2 AND 3 |
 | Wrong alternating sum for 11 | Getting order wrong | Always: 1st - 2nd + 3rd - 4th... |
 
-### 6. Interview Tips (Day 3)
+### 6. Interview Tips 
 
 💡 **Tip 1:** Memorize top 6 rules (2, 3, 5, 6, 9, 10) - covers 80% of questions
 💡 **Tip 2:** For 6: It's the "composite rule" - must satisfy both component rules
 💡 **Tip 3:** Digit sum rules (3, 9) are fastest for large numbers
 💡 **Tip 4:** Practice mental arithmetic for these checks - develops calculation speed
 
-### 7. Practice Questions (Day 3) - 5 Questions
+### 7. Practice Questions - 5 Questions
 
 **Q3.1:** Is 456789 divisible by 3?
 **Q3.2:** Check divisibility of 7128 by 4, 6, and 8.
@@ -1060,7 +1060,7 @@ Product of HCF and LCM: 6 × 36 = 216 ✓
 - Only need to remember one formula
 - Saves calculation time
 
-### 8. Worked Examples (Day 4)
+### 8. Worked Examples 
 
 **Example 4.1: Simple HCF**
 ```
@@ -1135,7 +1135,7 @@ Solution:
   ✅ Answer: 9:36 AM
 ```
 
-### 9. Common Mistakes (Day 4)
+### 9. Common Mistakes 
 
 | Mistake | Why Wrong | Correct |
 |---------|-----------|---------|
@@ -1144,14 +1144,14 @@ Solution:
 | Forgetting the fundamental relation | Can't verify answer | Always check: HCF × LCM = a × b |
 | Prime factorization errors | Wrong factors = wrong answer | Double-check prime decomposition |
 
-### 10. Interview Tips (Day 4)
+### 10. Interview Tips 
 
 💡 **Tip 1:** Always verify HCF and LCM using the fundamental relation
 💡 **Tip 2:** For LCM of 3+ numbers, start with any two, then combine
 💡 **Tip 3:** HCF is commonly needed for "fair distribution" problems
 💡 **Tip 4:** LCM is commonly needed for "when will they meet/coincide" problems
 
-### 11. Practice Questions (Day 4) - 5 Questions
+### 11. Practice Questions  - 5 Questions
 
 **Q4.1:** Find HCF and LCM of 12 and 18.
 **Q4.2:** HCF of two numbers is 12, and one number is 36. Find the other if LCM is 108.
@@ -1381,7 +1381,7 @@ Solution:
   ✅ Answer: 22
 ```
 
-### 5. Common Mistakes (Day 5)
+### 5. Common Mistakes 
 
 | Mistake | Example | Correct |
 |---------|---------|---------|
@@ -1421,14 +1421,14 @@ Any + or -?
 └─ NO → Done
 ```
 
-### 7. Interview Tips (Day 5)
+### 7. Interview Tips 
 
 💡 **Tip 1:** Always identify bracket type and work from innermost outward
 💡 **Tip 2:** Division and Multiplication have EQUAL priority - never skip either
 💡 **Tip 3:** Use a scratch paper to mark each step - prevents skipping
 💡 **Tip 4:** Read the expression carefully - one misplaced bracket changes everything
 
-### 8. Practice Questions (Day 5) - 5 Questions
+### 8. Practice Questions  - 5 Questions
 
 **Q5.1:** 20 - 6 ÷ 3 = ?
 **Q5.2:** (20 - 6) ÷ 2 = ?

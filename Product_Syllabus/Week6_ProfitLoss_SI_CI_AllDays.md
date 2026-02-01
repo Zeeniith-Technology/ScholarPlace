@@ -22,7 +22,7 @@
 
 You completed Week 5 with deep understanding of rates across domains:
 
-**Week 5 Core Concepts (Your Foundation):**
+**Week 5 Core Concepts :**
 - TSD: Speed = Distance/Time (rate = output/input)
 - Trains: Relative speed (add/subtract based on direction)
 - Boats: Upstream (b-c), Downstream (b+c) (rate modification with constraints)
@@ -60,7 +60,7 @@ Profit/Loss is **identical to Week 5 rates**, but financial context:
 - Week 6: Profit Rate = Gain/Cost Price
 - **SAME MATHEMATICAL STRUCTURE**
 
-**Learning Objectives (By Day 1 End):**
+**Learning Objectives:**
 - [ ] Understand CP, SP, Profit, Loss as fundamental concepts
 - [ ] Calculate Profit% and Loss% from CP/SP
 - [ ] Find CP/SP given Profit% and other value

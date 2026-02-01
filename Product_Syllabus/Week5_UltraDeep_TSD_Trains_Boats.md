@@ -96,14 +96,14 @@ Every complexity (trains, boats, relative motion, average speeds) is ultimately 
 
 You completed Week 4 with these proven time/work/rates concepts:
 
-**Core Week 4 Formulas (Your Foundation):**
+**Core Week 4 Formulas :**
 - Rate formula: Rate = 1/time to complete one unit
 - Combined rates: Total rate = Rate₁ + Rate₂ + Rate₃
 - Work done: Work = Rate × Time (partial job formula)
 - Worker-days: Total effort = Workers × Days (universal measure)
 - Verification: Sum of all work done = 1 complete job
 
-**Real Example from Week 4 (Verified):**
+**Real Example from Week 4:**
 Q: A completes in 12 days, B in 15 days. Together?
 - Rate_A = 1/12 job/day, Rate_B = 1/15 job/day
 - Combined = 1/12 + 1/15 = 5/60 + 4/60 = 9/60 = 3/20 job/day
@@ -133,7 +133,7 @@ This week you'll master:
 6. **Real-world transport scenarios** (trains, boats, vehicles)
 7. **Advanced scenarios** (acceleration, deceleration, speed profiles)
 
-**Learning Objectives (By Day 1 End):**
+**Learning Objectives:**
 - [ ] Understand speed as a rate (distance per unit time)
 - [ ] Recognize Distance = Speed × Time as fundamental (derivable from definitions)
 - [ ] Solve "time to cover distance" problems systematically

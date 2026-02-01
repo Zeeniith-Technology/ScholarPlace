@@ -24,14 +24,14 @@
 
 You completed Week 3 with these proven concepts from Week3_Aptitude_Complete_AllDays.md:
 
-**Core Week 3 Formulas (Your Foundation):**
+**Core Week 3 Formulas :**
 - Single worker: A completes in *a* days → Rate = 1/*a* job/day
 - Two workers: Rate_combined = 1/*a* + 1/*b* → Time = *ab*(*a*+*b*)
 - Three workers: Rate = 1/*a* + 1/*b* + 1/*c*
 - Partial work: Work done = Rate × Time
 - Wage distribution: Pay ∝ Work done (if A does 3/5 of job, A gets 3/5 of total wage)
 
-**Real Example from Week 3 (Verified):**
+**Real Example from Week 3:**
 Q: A completes in 12 days, B in 15 days. Together?
 - Rate_A = 1/12, Rate_B = 1/15
 - Combined = 1/12 + 1/15 = 5/60 = 1/12
@@ -49,7 +49,7 @@ Real-world projects NEVER have constant teams. This week you'll master:
 4. **Calculating delays from worker loss** (Project management reality)
 5. **Efficiency multipliers** (How speed changes affect completion time)
 
-**Learning Objectives (By Day 1 End):**
+**Learning Objectives:**
 - [ ] Calculate total project effort in worker-days
 - [ ] Solve "workers join/leave mid-project" problems systematically
 - [ ] Apply efficiency multipliers (1.5× faster = rate × 1.5, NOT time × 0.67)
@@ -1121,13 +1121,13 @@ C: (48/219) × 10,000 ≈ 2,191
 
 Pipes are **identical mathematics to TimeWork**, just different context:
 
-| Aspect | TimeWork | Pipes |
-|--------|----------|-------|
-| Agent | Worker | Pipe |
-| Output | 1/time job/unit | 1/time tank/unit |
-| Combined | Add rates | Add rates |
-| Partial | Work = Rate × Time | Tank = Rate × Time |
-| Example | A (12d) + B (15d) = 6.67d | A (12m) + B (15m) = 6.67m |
+| Aspect   | TimeWork              | Pipes                 |
+| -------- | --------------------- | --------------------- |
+| Agent    | Worker                | Pipe                  |
+| Output   | 1/time job/unit       | 1/time tank/unit      |
+| Combined | Add rates             | Add rates             |
+| Partial  | Work = Rate × Time    | Tank = Rate × Time    |
+| Example  | A (12d) + B (15d) = 6.67d | A (12m) + B (15m) = 6.67m |
 
 **Your Advantage:** If you mastered Days 1-2, Pipes is immediate transfer.
 

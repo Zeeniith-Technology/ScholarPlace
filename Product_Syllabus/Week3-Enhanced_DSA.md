@@ -1363,7 +1363,7 @@ vector<int> pos = findAllOccurrences("aaaa", "aa");
 
 ---
 
-## SECTION 9: COMMON MISTAKES – DAY 1 STRING OPERATIONS
+## SECTION 9: COMMON MISTAKES STRING OPERATIONS
 
 | Mistake | Problem | Example | Fix |
 |---------|---------|---------|-----|
@@ -1380,7 +1380,7 @@ vector<int> pos = findAllOccurrences("aaaa", "aa");
 
 ---
 
-## SECTION 10: PRACTICE QUESTIONS – DAY 1
+## SECTION 10: PRACTICE QUESTIONS
 
 ### Beginner Level
 
@@ -2222,7 +2222,7 @@ vector<char> topKFrequent(const string &s, int k) {
 
 ---
 
-## SECTION 7: COMMON MISTAKES – DAY 2
+## SECTION 7: COMMON MISTAKES 
 
 | Mistake | Problem | Fix |
 |---------|---------|-----|
@@ -2236,7 +2236,7 @@ vector<char> topKFrequent(const string &s, int k) {
 
 ---
 
-## SECTION 8: PRACTICE PROBLEMS – DAY 2
+## SECTION 8: PRACTICE PROBLEMS 
 
 ### Beginner
 

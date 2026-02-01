@@ -304,10 +304,36 @@ function AptitudeWeek1Content() {
       .filter((_, i, arr) => i > 0 && i < arr.length - 1)
   }
 
+  /** Remove the redundant "DAY N: Topic" header that duplicates the card title (first such line, and optional continuation line). */
+  const stripRedundantDayHeader = (raw: string): string => {
+    if (!raw?.trim()) return raw
+    const lines = raw.split('\n')
+    let i = 0
+    while (i < lines.length && !lines[i].trim()) i++
+    if (i >= lines.length) return raw
+    const first = lines[i].trim()
+    const withoutHash = first.replace(/^#*\s*/, '')
+    const normalized = withoutHash.replace(/^\s*[^\w\s&:-]+/g, '').trim()
+    const isRedundantFirstLine = /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(normalized) ||
+      /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(normalized) ||
+      /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(normalized)
+    if (isRedundantFirstLine) {
+      i++
+      if (first.endsWith('&')) {
+        while (i < lines.length && !lines[i].trim()) i++
+        if (i < lines.length) i++
+      }
+      while (i < lines.length && !lines[i].trim()) i++
+      return lines.slice(i).join('\n')
+    }
+    return raw
+  }
+
   const renderContent = (content: string) => {
     if (!content) return <p className="text-neutral-light">No content available</p>
+    const contentWithoutRedundantHeader = stripRedundantDayHeader(content)
 
-    const lines = content.split('\n')
+    const lines = contentWithoutRedundantHeader.split('\n')
     const elements: JSX.Element[] = []
     let inCodeBlock = false
     let codeBlock = ''
@@ -339,9 +365,23 @@ function AptitudeWeek1Content() {
         continue
       }
 
+      // Skip redundant "DAY N: Topic" header (same as main card title). Normalize so leading emoji (e.g. 📅) doesn't prevent match.
+      const normalizeHeaderText = (t: string) => t.trim().replace(/^\s*[^\w\s&:-]+/g, '').trim()
+      const isRedundantDayHeader = (t: string) => {
+        const n = normalizeHeaderText(t)
+        return /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(n) ||
+          /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(n) ||
+          /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(n)
+      }
+      const getHeaderText = (l: string, prefix: string) => l.startsWith(prefix) ? l.replace(prefix, '').trim() : ''
+
       // Handle headers
       if (line.startsWith('# ')) {
-        const text = line.replace('# ', '').trim()
+        const text = getHeaderText(line, '# ')
+        if (isRedundantDayHeader(text)) {
+          if (text.endsWith('&') && index + 1 < lines.length) index++
+          continue
+        }
         elements.push(
           <h1 key={`h1-${index}`} className="text-3xl font-bold text-neutral mt-8 mb-4" id={text.toLowerCase().replace(/\s+/g, '-')}>
             {text}
@@ -351,7 +391,11 @@ function AptitudeWeek1Content() {
       }
 
       if (line.startsWith('## ')) {
-        const text = line.replace('## ', '').trim()
+        const text = getHeaderText(line, '## ')
+        if (isRedundantDayHeader(text)) {
+          if (text.endsWith('&') && index + 1 < lines.length) index++
+          continue
+        }
         elements.push(
           <h2 key={`h2-${index}`} className="text-2xl font-bold text-neutral mt-6 mb-3" id={text.toLowerCase().replace(/\s+/g, '-')}>
             {text}
@@ -361,7 +405,11 @@ function AptitudeWeek1Content() {
       }
 
       if (line.startsWith('### ')) {
-        const text = line.replace('### ', '').trim()
+        const text = getHeaderText(line, '### ')
+        if (isRedundantDayHeader(text)) {
+          if (text.endsWith('&') && index + 1 < lines.length) index++
+          continue
+        }
         elements.push(
           <h3 key={`h3-${index}`} className="text-xl font-semibold text-neutral mt-4 mb-2" id={text.toLowerCase().replace(/\s+/g, '-')}>
             {text}
@@ -436,6 +484,12 @@ function AptitudeWeek1Content() {
       const trimmed = line.trim()
       if (/^[-*_]+$/.test(trimmed) && trimmed.length >= 3) {
         elements.push(<hr key={`hr-${index}`} className="my-6 border-neutral-light/30" />)
+        continue
+      }
+
+      // Skip redundant "DAY N: Topic" when rendered as a plain line (no # prefix; may have leading emoji)
+      if (line.trim() && isRedundantDayHeader(line)) {
+        if (line.trim().endsWith('&') && index + 1 < lines.length) index++
         continue
       }
 
