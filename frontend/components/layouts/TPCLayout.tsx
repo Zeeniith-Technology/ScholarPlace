@@ -15,6 +15,7 @@ import {
   Calendar,
   Award,
   BookOpen,
+  Code,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -25,7 +26,8 @@ interface TPCLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/tpc/dashboard', icon: LayoutDashboard },
   { name: 'Students', href: '/tpc/students', icon: Users },
-  { name: 'Practice Monitoring', href: '/tpc/practice-monitoring', icon: Calendar },
+  { name: 'Aptitude Monitoring', href: '/tpc/practice-monitoring', icon: Calendar },
+  { name: 'Coding Monitoring', href: '/tpc/coding-monitoring', icon: Code },
   { name: 'Tests', href: '/tpc/tests', icon: FileText },
   { name: 'Analytics', href: '/tpc/analytics', icon: BarChart3 },
   { name: 'Reports', href: '/tpc/reports', icon: BookOpen },

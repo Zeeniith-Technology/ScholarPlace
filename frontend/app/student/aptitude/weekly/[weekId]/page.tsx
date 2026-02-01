@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -79,6 +78,58 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
         }
     }, [testStarted, startTime, showResults])
 
+    // Handle test exit/close
+    const handleExit = () => {
+        // Stop timer (though component unmount would do it, this is for clarity)
+        setTestStarted(false)
+
+        // Attempt to close window
+        // This is the primary request: "it should close that window"
+        try {
+            window.close()
+        } catch (e) {
+            console.error("Failed to close window", e)
+        }
+
+        // Fallback: If window.close() is blocked (not opened by script), 
+        // we might check if we are still here and warn or redirect.
+        // But user explicitly said redirection is "totally wrong".
+        // So we will just try window.close(). 
+        // If the user opened this in the same tab, they might be stuck unless they manually close.
+        // We'll add a small checking logic to inform them if it fails.
+        setTimeout(() => {
+            if (!document.hidden) {
+                // If we are still here, it means window.close() failed.
+                // We'll show a message or redirect as a last resort if they insist?
+                // The user said "totally wrong", so we won't auto-redirect.
+                // We'll just alert them.
+                // alert("Please close this tab to exit the test.")
+                // Actually, let's just leave it as window.close().
+            }
+        }, 500)
+    }
+
+    // Strict Mode: Watch for tab switching
+    useEffect(() => {
+        if (!testStarted || showResults) return
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // Tab switched or minimized
+                // We can be strict here as per "strict mode" usually implies auto-submit or close
+                // User requirement: "start test ... any case test cancle or return or reach tab switch this window should be close"
+                alert("Tab switching is not allowed in this test environment. The test will now close.")
+                handleExit()
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [testStarted, showResults])
+
+
     const fetchQuestions = async () => {
         try {
             setIsLoading(true)
@@ -106,9 +157,6 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
             if (response.ok) {
                 const result = await response.json()
                 if (result.success && result.data) {
-                    // Shuffle questions for randomness each time? Or keep static?
-                    // Let's shuffle slightly to make it feel fresh, or keep order if strict.
-                    // For now, use as is.
                     setQuestions(result.data)
 
                     // Initial Answer State
@@ -195,8 +243,56 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
     const submitTest = async () => {
         setShowResults(true)
         setTestStarted(false)
-        // Here you would typically save the result to the backend
-        // await saveTestResult(...)
+
+        try {
+            const { correct, total, percentage } = getScore()
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+            const authHeader = getAuthHeader()
+            const finalTimeSpent = startTime ? Math.floor((Date.now() - startTime) / 1000 / 60) : 0
+
+            // Build questions_attempted array
+            const questionsAttempted = questions.map((q) => {
+                const answerState = answers[q.question_id]
+                const isCorrect = answerState?.isCorrect || false
+                const selectedOptionKey = answerState?.selected || ''
+                const selectedOptionText = q.options.find(opt => opt.key === selectedOptionKey)?.text || ''
+
+                return {
+                    question_id: q.question_id,
+                    question: q.question_text,
+                    selected_answer: selectedOptionText,
+                    correct_answer: q.correct_answer,
+                    is_correct: isCorrect,
+                    time_spent: answerState?.timeSpent || 0,
+                    question_type: q.difficulty || 'medium',
+                    question_topic: [q.topic || 'Aptitude'],
+                    explanation: q.explanation || '',
+                }
+            })
+
+            // Save test result
+            // Using day: 'weekly-test' so it doesn't conflict with day assignments
+            await fetch(`${apiBaseUrl}/practice-test/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader || '',
+                },
+                body: JSON.stringify({
+                    week: weekId,
+                    day: 'weekly-test',
+                    score: percentage,
+                    totalQuestions: total,
+                    correctAnswers: correct,
+                    incorrectAnswers: total - correct,
+                    timeSpent: finalTimeSpent,
+                    questionsAttempted: questionsAttempted,
+                    category: 'aptitude'
+                }),
+            })
+        } catch (error) {
+            console.error('Error saving weekly test:', error)
+        }
     }
 
     const formatTime = (seconds: number) => {
@@ -214,57 +310,61 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
 
     if (isLoading) {
         return (
-            <StudentLayout>
-                <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="min-h-screen bg-background flex flex-col">
+                <div className="flex-1 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                         <p className="text-neutral-light">Loading Test Questions...</p>
                     </div>
                 </div>
-            </StudentLayout>
+            </div>
         )
     }
 
     // Start Screen
     if (!testStarted && !showResults) {
         return (
-            <StudentLayout>
-                <div className="max-w-2xl mx-auto px-4 py-12">
-                    <header className="mb-8">
-                        <Link href="/student/aptitude/weekly" className="text-sm text-neutral-light hover:text-primary flex items-center gap-1 mb-4">
-                            <ArrowLeft className="w-4 h-4" /> Back to Tests
-                        </Link>
-                    </header>
-                    <Card className="p-8 text-center">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
-                            <Calculator className="w-8 h-8" />
+            <div className="min-h-screen bg-background flex flex-col">
+                <div className="flex-1 flex items-center justify-center p-4">
+                    <Card className="max-w-2xl w-full p-12 text-center shadow-xl border-neutral-light/20">
+                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+                            <Calculator className="w-10 h-10" />
                         </div>
-                        <h1 className="text-3xl font-bold text-neutral mb-2">Week {weekId} Aptitude Test</h1>
-                        <p className="text-neutral-light mb-8">
+                        <h1 className="text-3xl font-bold text-neutral mb-3">Week {weekId} Aptitude Test</h1>
+                        <p className="text-neutral-light text-lg mb-10">
                             You are about to start a comprehensive assessment.
                         </p>
 
-                        <div className="grid grid-cols-3 gap-4 mb-8 text-left">
-                            <div className="p-4 bg-background-surface rounded-lg border border-neutral-light/10">
-                                <p className="text-xs text-neutral-light uppercase tracking-wide">Questions</p>
-                                <p className="text-xl font-bold text-neutral">{questions.length}</p>
+                        <div className="grid grid-cols-3 gap-6 mb-10 text-left">
+                            <div className="p-4 bg-background-surface rounded-xl border border-neutral-light/10">
+                                <p className="text-xs text-neutral-light uppercase tracking-wide font-semibold mb-1">Questions</p>
+                                <p className="text-2xl font-bold text-neutral">{questions.length}</p>
                             </div>
-                            <div className="p-4 bg-background-surface rounded-lg border border-neutral-light/10">
-                                <p className="text-xs text-neutral-light uppercase tracking-wide">Duration</p>
-                                <p className="text-xl font-bold text-neutral">60 Mins</p>
+                            <div className="p-4 bg-background-surface rounded-xl border border-neutral-light/10">
+                                <p className="text-xs text-neutral-light uppercase tracking-wide font-semibold mb-1">Duration</p>
+                                <p className="text-2xl font-bold text-neutral">60 Mins</p>
                             </div>
-                            <div className="p-4 bg-background-surface rounded-lg border border-neutral-light/10">
-                                <p className="text-xs text-neutral-light uppercase tracking-wide">Passing Score</p>
-                                <p className="text-xl font-bold text-neutral">70%</p>
+                            <div className="p-4 bg-background-surface rounded-xl border border-neutral-light/10">
+                                <p className="text-xs text-neutral-light uppercase tracking-wide font-semibold mb-1">Passing Score</p>
+                                <p className="text-2xl font-bold text-neutral">70%</p>
                             </div>
                         </div>
 
-                        <Button onClick={startTest} className="w-full py-6 text-lg" variant="primary">
-                            Start Assessment
-                        </Button>
+                        <div className="space-y-4">
+                            <Button onClick={startTest} className="w-full py-6 text-lg font-bold" variant="primary">
+                                Start Assessment
+                            </Button>
+                            <Button
+                                onClick={handleExit}
+                                variant="ghost"
+                                className="w-full text-neutral-light hover:text-neutral"
+                            >
+                                Cancel and Return
+                            </Button>
+                        </div>
                     </Card>
                 </div>
-            </StudentLayout>
+            </div>
         )
     }
 
@@ -272,51 +372,47 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
     if (showResults) {
         const { correct, total, percentage } = getScore()
         return (
-            <StudentLayout>
-                <div className="max-w-3xl mx-auto px-4 py-12">
-                    <Card className="p-8 text-center">
-                        <div className="mb-6">
+            <div className="min-h-screen bg-background flex flex-col">
+                <div className="flex-1 flex items-center justify-center p-4">
+                    <Card className="max-w-3xl w-full p-10 text-center shadow-xl border-neutral-light/20">
+                        <div className="mb-8">
                             <h1 className="text-3xl font-bold text-neutral mb-2">Test Completed</h1>
                             <p className="text-neutral-light">Here is how you performed on Week {weekId} Test</p>
                         </div>
 
-                        <div className="flex items-center justify-center mb-8">
-                            <div className="relative w-40 h-40 flex items-center justify-center">
-                                {/* Simple circular progress visualization could go here */}
-                                <div className="text-4xl font-bold text-primary">{percentage}%</div>
+                        <div className="flex items-center justify-center mb-10">
+                            <div className="relative w-48 h-48 flex items-center justify-center rounded-full border-8 border-primary/20">
+                                <div className="text-5xl font-bold text-primary">{percentage}%</div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4 mb-8">
-                            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                                <p className="text-sm text-green-600 mb-1">Correct</p>
-                                <p className="text-2xl font-bold text-green-700">{correct}</p>
+                        <div className="grid grid-cols-3 gap-6 mb-10">
+                            <div className="p-6 bg-green-500/10 rounded-xl border border-green-500/20">
+                                <p className="text-sm font-semibold text-green-600 mb-1">Correct</p>
+                                <p className="text-3xl font-bold text-green-700">{correct}</p>
                             </div>
-                            <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
-                                <p className="text-sm text-red-600 mb-1">Incorrect</p>
-                                <p className="text-2xl font-bold text-red-700">{total - correct}</p>
+                            <div className="p-6 bg-red-500/10 rounded-xl border border-red-500/20">
+                                <p className="text-sm font-semibold text-red-600 mb-1">Incorrect</p>
+                                <p className="text-3xl font-bold text-red-700">{total - correct}</p>
                             </div>
-                            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                                <p className="text-sm text-blue-600 mb-1">Time Taken</p>
-                                <p className="text-2xl font-bold text-blue-700">{formatTime(totalTime)}</p>
+                            <div className="p-6 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                                <p className="text-sm font-semibold text-blue-600 mb-1">Time Taken</p>
+                                <p className="text-3xl font-bold text-blue-700">{formatTime(totalTime)}</p>
                             </div>
                         </div>
 
-                        <div className="flex gap-4">
-                            <Link href="/student/aptitude/weekly" className="flex-1">
-                                <Button variant="secondary" className="w-full">
-                                    Back to List
-                                </Button>
-                            </Link>
-                            {/* 
-                          <Button variant="primary" className="flex-1" onClick={() => window.location.reload()}>
-                              Retake Test
-                          </Button> 
-                          */}
+                        <div className="flex gap-4 max-w-md mx-auto">
+                            <Button
+                                onClick={handleExit}
+                                variant="secondary"
+                                className="w-full py-6"
+                            >
+                                Back to List
+                            </Button>
                         </div>
                     </Card>
                 </div>
-            </StudentLayout>
+            </div>
         )
     }
 
@@ -325,94 +421,126 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
     const currentAns = answers[currentQ.question_id]
 
     return (
-        <StudentLayout>
-            <div className="max-w-5xl mx-auto px-4 py-6">
-                {/* Top Bar */}
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 className="text-xl font-bold text-neutral">Week {weekId} Assessment</h2>
-                        <div className="text-sm text-neutral-light">Question {currentQuestionIndex + 1} of {questions.length}</div>
+        <div className="min-h-screen bg-background flex flex-col">
+            {/* Custom Header */}
+            <div className="bg-neutral-900 text-white px-6 py-4 flex items-center justify-between shadow-lg z-50 sticky top-0">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-bold">
+                        W{weekId}
                     </div>
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold ${totalTime > 3000 ? 'bg-red-100 text-red-600' : 'bg-primary/10 text-primary'}`}>
-                        <Clock className="w-4 h-4" />
-                        {formatTime(totalTime)}
+                    <div>
+                        <div className="font-bold text-lg">Aptitude Assessment</div>
+                        <div className="text-xs text-neutral-400 font-mono">Week {weekId} Weekly Test</div>
                     </div>
                 </div>
 
+                <div className={`flex items-center gap-3 px-6 py-2 rounded-full font-mono font-bold text-xl transition-all ${totalTime > 3000 ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-white/10 text-white border border-white/10'
+                    }`}>
+                    <Clock className="w-5 h-5" />
+                    {formatTime(totalTime)}
+                </div>
+
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white/70 hover:text-white hover:bg-white/10"
+                    onClick={() => {
+                        if (confirm("Are you sure you want to exit? Your progress may be lost.")) {
+                            handleExit()
+                        }
+                    }}
+                >
+                    Exit Test
+                </Button>
+            </div>
+
+            <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col">
                 {/* Progress Bar */}
-                <div className="w-full bg-neutral-light/10 h-2 rounded-full mb-6 relative">
+                <div className="w-full bg-neutral-light/10 h-2 rounded-full mb-8 relative overflow-hidden">
                     <div
-                        className="absolute left-0 top-0 h-full bg-primary rounded-full transition-all duration-300"
+                        className="absolute left-0 top-0 h-full bg-primary rounded-full transition-all duration-300 ease-out"
                         style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                     ></div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
                     {/* Main Question Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card className="p-6">
-                            <div className="flex gap-2 mb-4">
-                                <Badge variant="secondary" className="uppercase text-xs tracking-wider">
-                                    {currentQ.difficulty}
-                                </Badge>
-                                <Badge className="bg-background-elevated text-neutral-light border-transparent">
-                                    {currentQ.topic}
-                                </Badge>
+                    <div className="lg:col-span-8 flex flex-col">
+                        <Card className="p-8 flex-1 flex flex-col border-neutral-light/20 shadow-md">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="text-sm font-medium text-neutral-light">
+                                    Question {currentQuestionIndex + 1} of {questions.length}
+                                </div>
+                                <div className="flex gap-2">
+                                    <Badge variant="secondary" className="uppercase text-xs tracking-wider">
+                                        {currentQ.difficulty}
+                                    </Badge>
+                                    <Badge className="bg-background-elevated text-neutral-light border-transparent">
+                                        {currentQ.topic}
+                                    </Badge>
+                                </div>
                             </div>
-                            <h3 className="text-lg sm:text-xl font-medium text-neutral mb-8 leading-relaxed">
+
+                            <h3 className="text-xl sm:text-2xl font-medium text-neutral mb-8 leading-relaxed">
                                 {currentQ.question_text}
                             </h3>
 
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {currentQ.options.map((opt) => (
                                     <div
                                         key={opt.key}
                                         onClick={() => handleAnswerSelect(currentQ.question_id, opt.key)}
                                         className={`
-                                    p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center gap-4
-                                    ${currentAns?.selected === opt.key
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-neutral-light/20 hover:border-primary/50 bg-background-surface'}
-                                `}
+                                            p-5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-5 group
+                                            ${currentAns?.selected === opt.key
+                                                ? 'border-primary bg-primary/5 shadow-sm'
+                                                : 'border-neutral-light/20 hover:border-primary/50 bg-background-surface hover:bg-background-elevated'}
+                                        `}
                                     >
                                         <div className={`
-                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                                    ${currentAns?.selected === opt.key ? 'bg-primary text-white' : 'bg-neutral-light/20 text-neutral-light'}
-                                 `}>
+                                            w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors
+                                            ${currentAns?.selected === opt.key ? 'bg-primary text-white' : 'bg-neutral-light/20 text-neutral-light group-hover:bg-neutral-light/30'}
+                                         `}>
                                             {opt.key}
                                         </div>
-                                        <div className="text-neutral">{opt.text}</div>
+                                        <div className={`text-lg ${currentAns?.selected === opt.key ? 'text-primary font-medium' : 'text-neutral'}`}>
+                                            {opt.text}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
+
+                            <div className="flex justify-between items-center mt-10 pt-6 border-t border-neutral-light/10">
+                                <Button
+                                    variant="secondary"
+                                    onClick={goToPreviousQuestion}
+                                    disabled={currentQuestionIndex === 0}
+                                    className="px-6"
+                                >
+                                    <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+                                </Button>
+
+                                {currentQuestionIndex === questions.length - 1 ? (
+                                    <Button variant="primary" onClick={submitTest} size="lg" className="px-8 bg-green-600 hover:bg-green-700">
+                                        Submit Test
+                                    </Button>
+                                ) : (
+                                    <Button variant="primary" onClick={goToNextQuestion} size="lg" className="px-8">
+                                        Next Question <ChevronRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                )}
+                            </div>
                         </Card>
-
-                        <div className="flex justify-between items-center">
-                            <Button
-                                variant="secondary"
-                                onClick={goToPreviousQuestion}
-                                disabled={currentQuestionIndex === 0}
-                            >
-                                <ChevronLeft className="w-4 h-4 mr-2" /> Previous
-                            </Button>
-
-                            {currentQuestionIndex === questions.length - 1 ? (
-                                <Button variant="primary" onClick={submitTest}>
-                                    Submit Test
-                                </Button>
-                            ) : (
-                                <Button variant="primary" onClick={goToNextQuestion}>
-                                    Next Question <ChevronRight className="w-4 h-4 ml-2" />
-                                </Button>
-                            )}
-                        </div>
                     </div>
 
                     {/* Sidebar / Question Palette */}
-                    <div className="hidden lg:block">
-                        <Card className="p-4">
-                            <h3 className="font-bold text-neutral mb-4 text-sm uppercase tracking-wide">Question Palette</h3>
-                            <div className="grid grid-cols-5 gap-2">
+                    <div className="lg:col-span-4">
+                        <Card className="p-6 sticky top-24 border-neutral-light/20 shadow-md">
+                            <h3 className="font-bold text-neutral mb-6 text-sm uppercase tracking-wide flex items-center justify-between">
+                                <span>Question Palette</span>
+                                <span className="text-neutral-light text-xs normal-case">{Object.values(answers).filter(a => a.selected).length}/{questions.length} Answered</span>
+                            </h3>
+                            <div className="grid grid-cols-5 gap-2.5">
                                 {questions.map((q, idx) => {
                                     const isCurrent = idx === currentQuestionIndex
                                     const isAnswered = !!answers[q.question_id]?.selected
@@ -421,9 +549,11 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
                                             key={q.question_id}
                                             onClick={() => setCurrentQuestionIndex(idx)}
                                             className={`
-                                        h-8 w-8 rounded flex items-center justify-center text-xs font-bold transition-all
-                                        ${isCurrent ? 'ring-2 ring-primary ring-offset-2' : ''}
-                                        ${isAnswered ? 'bg-primary text-white' : 'bg-background-elevated text-neutral-light hover:bg-neutral-light/20'}
+                                        h-10 w-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all
+                                        ${isCurrent ? 'ring-2 ring-primary ring-offset-2 scale-105' : ''}
+                                        ${isAnswered
+                                                    ? 'bg-primary text-white shadow-sm'
+                                                    : 'bg-background-elevated text-neutral-light hover:bg-neutral-light/20 hover:text-neutral'}
                                     `}
                                         >
                                             {idx + 1}
@@ -433,23 +563,23 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
                             </div>
 
                             <div className="mt-8 pt-6 border-t border-neutral-light/10 space-y-3">
-                                <div className="flex items-center gap-3 text-xs text-neutral-light">
-                                    <div className="w-4 h-4 rounded bg-primary"></div>
+                                <div className="flex items-center gap-3 text-sm text-neutral-light">
+                                    <div className="w-4 h-4 rounded bg-primary shadow-sm"></div>
                                     <span>Answered</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-neutral-light">
-                                    <div className="w-4 h-4 rounded bg-background-elevated"></div>
+                                <div className="flex items-center gap-3 text-sm text-neutral-light">
+                                    <div className="w-4 h-4 rounded bg-background-elevated border border-neutral-light/10"></div>
                                     <span>Not Answered</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-neutral-light">
-                                    <div className="w-4 h-4 rounded ring-2 ring-primary"></div>
-                                    <span>Current</span>
+                                <div className="flex items-center gap-3 text-sm text-neutral-light">
+                                    <div className="w-4 h-4 rounded ring-2 ring-primary bg-background-elevated"></div>
+                                    <span>Current Question</span>
                                 </div>
                             </div>
                         </Card>
                     </div>
                 </div>
             </div>
-        </StudentLayout>
+        </div>
     )
 }

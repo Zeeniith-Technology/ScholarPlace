@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { getAuthHeader } from '@/utils/auth'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -90,24 +91,14 @@ export default function StudentAnalyticsPage() {
 
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [aiWeek, setAiWeek] = useState(1)
 
   useEffect(() => {
     setIsMounted(true)
     fetchAnalytics()
   }, [])
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsRefreshing(true)
-      fetchAnalytics().finally(() => {
-        setIsRefreshing(false)
-        setLastRefresh(new Date())
-      })
-    }, 30000) // 30 seconds
 
-    return () => clearInterval(interval)
-  }, [])
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true)
@@ -123,143 +114,237 @@ export default function StudentAnalyticsPage() {
     try {
       setIsLoading(true)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      const response = await fetch(`${apiBaseUrl}/exam/list`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filter: {},
-          projection: {},
-          options: { sort: { exam_date: 1 } }
+
+      // Fetch both Exams and Practice Tests in parallel
+      console.log('Fetching analytics data...')
+
+      const authHeader = getAuthHeader()
+      // Helper to fetch DSA progress for a specific week
+      const fetchDSAProgress = async (week: number) => {
+        try {
+          const res = await fetch(`${apiBaseUrl}/coding-problems/progress/${week}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authHeader || ''
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.completedDailyProblems > 0) {
+              return {
+                exam_name: `DSA Week ${week} Practice`,
+                week: week,
+                day: 'dsa-progress',
+                // Calculate score based on completion of daily problems
+                score: data.totalDailyProblems > 0
+                  ? Math.round((data.completedDailyProblems / data.totalDailyProblems) * 100)
+                  : 0,
+                totalQuestions: data.totalDailyProblems,
+                correctAnswers: data.completedDailyProblems,
+                exam_date: new Date(), // Use current date as we don't have exact completion time
+                modules: ['DSA'],
+                topics: ['Data Structures', 'Algorithms'],
+                isPractice: true,
+                type: 'dsa'
+              };
+            }
+          }
+        } catch (e) {
+          console.error(`Error fetching DSA progress for week ${week}`, e);
+        }
+        return null;
+      };
+
+      const [examResponse, practiceResponse, ...dsaResponses] = await Promise.all([
+        fetch(`${apiBaseUrl}/exam/list`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader || ''
+          },
+          body: JSON.stringify({ filter: {}, projection: {}, options: { sort: { exam_date: 1 } } }),
         }),
+        fetch(`${apiBaseUrl}/practice-test/list`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader || ''
+          },
+          body: JSON.stringify({ filter: {}, options: { sort: { created_at: 1 } } }),
+        }),
+        // Fetch DSA progress for weeks 1-6
+        fetchDSAProgress(1),
+        fetchDSAProgress(2),
+        fetchDSAProgress(3),
+        fetchDSAProgress(4),
+        fetchDSAProgress(5),
+        fetchDSAProgress(6),
+      ])
+
+      let allExams: any[] = []
+
+      // Process Exams
+      if (examResponse.ok) {
+        const data = await examResponse.json()
+        console.log('Exam API Response:', data)
+        if (data.success && data.data) {
+          allExams = [...allExams, ...data.data]
+        }
+      } else {
+        console.error('Exam API Failed:', examResponse.status, examResponse.statusText)
+      }
+
+      // Process Practice Tests and normalize key fields
+      if (practiceResponse.ok) {
+        const data = await practiceResponse.json()
+        console.log('Practice API Response:', data)
+        if (data.success && data.data) {
+          const practiceTests = data.data.map((test: any) => ({
+            ...test,
+            exam_name: test.day === 'weekly-test' ? `Weekly Test ${test.week}` : `Practice ${test.week} - ${test.day}`,
+            exam_date: test.completed_at || test.created_at,
+            score: test.score, // Already percentage
+            modules: [test.category || 'Aptitude'], // Normalize category to modules
+            topics: test.category ? [test.category] : ['General'],
+            isPractice: true
+          }))
+          allExams = [...allExams, ...practiceTests]
+        }
+      } else {
+        console.error('Practice API Failed:', practiceResponse.status, practiceResponse.statusText)
+      }
+
+      // Process DSA Progress
+      dsaResponses.forEach((dsaItem: any) => {
+        if (dsaItem) {
+          allExams.push(dsaItem);
+        }
+      });
+
+      console.log('Combined Exams Data:', allExams)
+
+      // Sort by date
+      allExams.sort((a, b) => {
+        const dateA = new Date(a.exam_date || a.created_at).getTime()
+        const dateB = new Date(b.exam_date || b.created_at).getTime()
+        return dateA - dateB
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.data) {
-          const exams = data.data || []
-          
-          // Calculate performance metrics
-          const completedExams = exams.filter((exam: any) => exam.score !== undefined && exam.score !== null)
-          const totalExams = exams.length
-          const avgScore = completedExams.length > 0
-            ? Math.round(completedExams.reduce((sum: number, exam: any) => sum + (exam.score || 0), 0) / completedExams.length)
-            : 0
+      // Calculate performance metrics using allExams
+      const completedExams = allExams.filter((exam: any) => exam.score !== undefined && exam.score !== null)
+      const totalExams = completedExams.length // Using completed count as total since practice tests are only saved when completed
+      const avgScore = completedExams.length > 0
+        ? Math.round(completedExams.reduce((sum: number, exam: any) => sum + (Number(exam.score) || 0), 0) / completedExams.length)
+        : 0
 
-          // Calculate improvement (compare last month vs previous month)
-          const now = new Date()
-          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-          const previousMonth = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-          
-          const lastMonthExams = completedExams.filter((exam: any) => {
-            const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
-            return examDate >= lastMonth && examDate < now
-          })
-          
-          const previousMonthExams = completedExams.filter((exam: any) => {
-            const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
-            return examDate >= previousMonth && examDate < lastMonth
-          })
+      // Calculate improvement (compare last month vs previous month)
+      const now = new Date()
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const previousMonth = new Date(now.getFullYear(), now.getMonth() - 2, 1)
 
-          const lastMonthAvg = lastMonthExams.length > 0
-            ? Math.round(lastMonthExams.reduce((sum: number, exam: any) => sum + (exam.score || 0), 0) / lastMonthExams.length)
-            : 0
-          
-          const previousMonthAvg = previousMonthExams.length > 0
-            ? Math.round(previousMonthExams.reduce((sum: number, exam: any) => sum + (exam.score || 0), 0) / previousMonthExams.length)
-            : 0
+      const lastMonthExams = completedExams.filter((exam: any) => {
+        const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
+        return examDate >= lastMonth && examDate < now
+      })
 
-          const improvement = previousMonthAvg > 0 ? lastMonthAvg - previousMonthAvg : 0
+      const previousMonthExams = completedExams.filter((exam: any) => {
+        const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
+        return examDate >= previousMonth && examDate < lastMonth
+      })
 
-          // Calculate subject performance
-          const subjectMap = new Map<string, { scores: number[], count: number }>()
-          completedExams.forEach((exam: any) => {
-            const subjects = exam.modules || exam.topics || ['General']
-            const score = exam.score || 0
-            subjects.forEach((subject: string) => {
-              if (!subjectMap.has(subject)) {
-                subjectMap.set(subject, { scores: [], count: 0 })
-              }
-              const data = subjectMap.get(subject)!
-              data.scores.push(score)
-              data.count++
-            })
-          })
+      const lastMonthAvg = lastMonthExams.length > 0
+        ? Math.round(lastMonthExams.reduce((sum: number, exam: any) => sum + (Number(exam.score) || 0), 0) / lastMonthExams.length)
+        : 0
 
-          const subjectPerf = Array.from(subjectMap.entries()).map(([subject, data]) => ({
-            subject,
-            score: Math.round(data.scores.reduce((sum, s) => sum + s, 0) / data.scores.length),
-            tests: data.count,
-            trend: 'up' as const,
-          }))
+      const previousMonthAvg = previousMonthExams.length > 0
+        ? Math.round(previousMonthExams.reduce((sum: number, exam: any) => sum + (Number(exam.score) || 0), 0) / previousMonthExams.length)
+        : 0
 
-          // Calculate weekly progress (last 6 weeks)
-          const weeklyData: any[] = []
-          for (let i = 5; i >= 0; i--) {
-            const weekStart = new Date(now)
-            weekStart.setDate(weekStart.getDate() - (i * 7))
-            const weekEnd = new Date(weekStart)
-            weekEnd.setDate(weekEnd.getDate() + 7)
+      const improvement = previousMonthAvg > 0 ? lastMonthAvg - previousMonthAvg : 0
 
-            const weekExams = completedExams.filter((exam: any) => {
-              const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
-              return examDate >= weekStart && examDate < weekEnd
-            })
+      // Calculate subject performance
+      const subjectMap = new Map<string, { scores: number[], count: number }>()
+      completedExams.forEach((exam: any) => {
+        const subjects = exam.modules || exam.topics || ['General']
+        const score = Number(exam.score) || 0
+        subjects.forEach((subject: string) => {
+          // Capitalize first letter
+          const normalizedSubject = subject.charAt(0).toUpperCase() + subject.slice(1)
 
-            const weekAvg = weekExams.length > 0
-              ? Math.round(weekExams.reduce((sum: number, exam: any) => sum + (exam.score || 0), 0) / weekExams.length)
-              : 0
-
-            weeklyData.push({
-              week: `Week ${6 - i}`,
-              score: weekAvg,
-            })
+          if (!subjectMap.has(normalizedSubject)) {
+            subjectMap.set(normalizedSubject, { scores: [], count: 0 })
           }
+          const data = subjectMap.get(normalizedSubject)!
+          data.scores.push(score)
+          data.count++
+        })
+      })
 
-          // Calculate monthly trend (last 6 months)
-          const monthlyData: any[] = []
-          for (let i = 5; i >= 0; i--) {
-            const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
-            const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
+      const subjectPerf = Array.from(subjectMap.entries()).map(([subject, data]) => ({
+        subject,
+        score: Math.round(data.scores.reduce((sum, s) => sum + s, 0) / data.scores.length),
+        tests: data.count,
+        trend: 'up' as const,
+      }))
 
-            const monthExams = completedExams.filter((exam: any) => {
-              const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
-              return examDate >= monthStart && examDate <= monthEnd
-            })
-
-            const monthAvg = monthExams.length > 0
-              ? Math.round(monthExams.reduce((sum: number, exam: any) => sum + (exam.score || 0), 0) / monthExams.length)
-              : 0
-
-            monthlyData.push({
-              month: monthStart.toLocaleDateString('en-US', { month: 'short' }),
-              score: monthAvg,
-              average: monthAvg, // In real app, this would be batch average
-            })
-          }
-
-          setPerformanceData({
-            overallScore: avgScore,
-            testsCompleted: completedExams.length,
-            totalTests: totalExams,
-            averageScore: avgScore,
-            improvement,
-            rank: 0, // Would need separate API for ranking
-            totalStudents: 0, // Would need separate API
-            rankChange: 0,
-          })
-
-          setSubjectPerformance(subjectPerf)
-          setWeeklyProgress(weeklyData)
-          setMonthlyScoreTrend(monthlyData)
-          setRankHistory([]) // Would need separate API for rank history
-        }
+      // Weekly progress by course/syllabus week (Week 1–6), not calendar week
+      const weeklyData: any[] = []
+      for (let weekNum = 1; weekNum <= 6; weekNum++) {
+        const weekExams = completedExams.filter((exam: any) => Number(exam.week) === weekNum)
+        const weekAvg = weekExams.length > 0
+          ? Math.round(weekExams.reduce((sum: number, exam: any) => sum + (Number(exam.score) || 0), 0) / weekExams.length)
+          : 0
+        weeklyData.push({
+          week: `Week ${weekNum}`,
+          score: weekAvg,
+        })
       }
+
+      // Calculate monthly trend (last 6 months)
+      const monthlyData: any[] = []
+      for (let i = 5; i >= 0; i--) {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
+
+        const monthExams = completedExams.filter((exam: any) => {
+          const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
+          return examDate >= monthStart && examDate <= monthEnd
+        })
+
+        const monthAvg = monthExams.length > 0
+          ? Math.round(monthExams.reduce((sum: number, exam: any) => sum + (Number(exam.score) || 0), 0) / monthExams.length)
+          : 0
+
+        monthlyData.push({
+          month: monthStart.toLocaleDateString('en-US', { month: 'short' }),
+          score: monthAvg,
+          average: monthAvg, // In real app, this would be batch average
+        })
+      }
+
+      setPerformanceData({
+        overallScore: avgScore,
+        testsCompleted: completedExams.length,
+        totalTests: totalExams,
+        averageScore: avgScore,
+        improvement,
+        rank: 0, // Would need separate API for ranking
+        totalStudents: 0, // Would need separate API
+        rankChange: 0,
+      })
+
+      setSubjectPerformance(subjectPerf)
+      setWeeklyProgress(weeklyData)
+      setMonthlyScoreTrend(monthlyData)
+      setRankHistory([]) // Would need separate API for rank history
+      setIsLoading(false)
+
     } catch (error) {
       console.error('Error fetching analytics:', error)
-    } finally {
       setIsLoading(false)
     }
   }
@@ -316,9 +401,8 @@ export default function StudentAnalyticsPage() {
     <StudentLayout>
       <div className="max-w-7xl mx-auto space-y-6 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {/* Enhanced Header */}
-        <div className={`flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 transition-all duration-700 ${
-          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-        }`}>
+        <div className={`flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+          }`}>
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-sm">
@@ -359,18 +443,16 @@ export default function StudentAnalyticsPage() {
         </div>
 
         {/* Enhanced View Selector */}
-        <div className={`flex flex-wrap gap-3 transition-all duration-700 ${
-          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`} style={{ transitionDelay: '100ms' }}>
+        <div className={`flex flex-wrap gap-3 transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`} style={{ transitionDelay: '100ms' }}>
           {(['overview', 'progress', 'rank'] as const).map((view) => (
             <button
               key={view}
               onClick={() => setActiveView(view)}
-              className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                activeView === view
-                  ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                  : 'bg-background-surface text-neutral-light hover:bg-background-elevated hover:text-neutral border border-neutral-light/20'
-              }`}
+              className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${activeView === view
+                ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                : 'bg-background-surface text-neutral-light hover:bg-background-elevated hover:text-neutral border border-neutral-light/20'
+                }`}
             >
               {view === 'overview' && 'Performance Overview'}
               {view === 'progress' && 'Progress Tracking'}
@@ -393,9 +475,8 @@ export default function StudentAnalyticsPage() {
                         {overallScoreCount}%
                       </p>
                       {performanceData.improvement !== 0 && (
-                        <div className={`flex items-center gap-1 text-xs font-semibold ${
-                          performanceData.improvement > 0 ? 'text-secondary' : 'text-red-500'
-                        }`}>
+                        <div className={`flex items-center gap-1 text-xs font-semibold ${performanceData.improvement > 0 ? 'text-secondary' : 'text-red-500'
+                          }`}>
                           {performanceData.improvement > 0 ? (
                             <ArrowUpRight className="w-4 h-4" />
                           ) : (
@@ -412,7 +493,7 @@ export default function StudentAnalyticsPage() {
                   {performanceData.testsCompleted > 0 ? (
                     <div className="mt-4 pt-4 border-t border-neutral-light/10">
                       <div className="w-full bg-neutral-light/10 rounded-full h-1.5 overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-700"
                           style={{ width: `${Math.min(overallScoreCount, 100)}%` }}
                         />
@@ -443,7 +524,7 @@ export default function StudentAnalyticsPage() {
                   {performanceData.totalTests > 0 ? (
                     <div className="mt-4 pt-4 border-t border-neutral-light/10">
                       <div className="w-full bg-neutral-light/10 rounded-full h-1.5 overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-secondary to-emerald-500/80 rounded-full transition-all duration-700"
                           style={{ width: `${(testsCompletedCount / performanceData.totalTests) * 100}%` }}
                         />
@@ -472,7 +553,7 @@ export default function StudentAnalyticsPage() {
                   {performanceData.testsCompleted > 0 ? (
                     <div className="mt-4 pt-4 border-t border-neutral-light/10">
                       <div className="w-full bg-neutral-light/10 rounded-full h-1.5 overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-700"
                           style={{ width: `${Math.min(averageScoreCount, 100)}%` }}
                         />
@@ -493,9 +574,8 @@ export default function StudentAnalyticsPage() {
                         {performanceData.rank > 0 ? `#${performanceData.rank}` : 'N/A'}
                       </p>
                       {performanceData.rankChange !== 0 && (
-                        <div className={`flex items-center gap-1 text-xs font-semibold ${
-                          performanceData.rankChange > 0 ? 'text-secondary' : 'text-red-500'
-                        }`}>
+                        <div className={`flex items-center gap-1 text-xs font-semibold ${performanceData.rankChange > 0 ? 'text-secondary' : 'text-red-500'
+                          }`}>
                           {performanceData.rankChange > 0 ? (
                             <ArrowUpRight className="w-4 h-4" />
                           ) : (
@@ -654,14 +734,45 @@ export default function StudentAnalyticsPage() {
               </Card>
             )}
 
-            {/* AI Performance Analysis */}
-            <div className="mt-6">
-              <PerformanceAnalysis week={1} />
-            </div>
-
-            {/* AI Learning Path */}
-            <div className="mt-6">
-              <LearningPath week={1} />
+            {/* AI insights: week selector + components */}
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-neutral">AI insights for week</span>
+                <select
+                  value={aiWeek}
+                  onChange={(e) => setAiWeek(Number(e.target.value))}
+                  className="rounded-lg border border-neutral-light/30 bg-background-surface px-3 py-2 text-sm text-neutral focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {[1, 2, 3, 4, 5, 6].map((w) => (
+                    <option key={w} value={w}>Week {w}</option>
+                  ))}
+                </select>
+              </div>
+              <PerformanceAnalysis
+                week={aiWeek}
+                analyticsContext={{
+                  performanceData: {
+                    overallScore: performanceData.overallScore,
+                    testsCompleted: performanceData.testsCompleted,
+                    averageScore: performanceData.averageScore,
+                    improvement: performanceData.improvement,
+                  },
+                  subjectPerformance,
+                  weeklyProgressSummary: weeklyProgress,
+                }}
+              />
+              <LearningPath
+                week={aiWeek}
+                analyticsContext={{
+                  performanceData: {
+                    overallScore: performanceData.overallScore,
+                    testsCompleted: performanceData.testsCompleted,
+                    averageScore: performanceData.averageScore,
+                  },
+                  subjectPerformance,
+                  weeklyProgressSummary: weeklyProgress,
+                }}
+              />
             </div>
           </div>
         )}
@@ -672,47 +783,60 @@ export default function StudentAnalyticsPage() {
             {weeklyProgress.length > 0 ? (
               <>
                 <Card className="border border-neutral-light/15 bg-background-surface">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Activity className="w-5 h-5 text-primary" />
+                  <div className="flex flex-col gap-1 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Activity className="w-5 h-5 text-primary" />
+                      </div>
+                      <h2 className="text-lg font-semibold text-neutral">
+                        Weekly Progress Trend
+                      </h2>
                     </div>
-                    <h2 className="text-lg font-semibold text-neutral">
-                      Weekly Progress Trend
-                    </h2>
+                    <p className="text-sm text-neutral-light pl-11">
+                      Score by course week (Week 1–6). Complete practice or weekly tests for a week to see progress here.
+                    </p>
                   </div>
-                  <div className="p-4 rounded-xl bg-background-elevated/50">
+                  <div className="p-4 rounded-xl bg-background-elevated/50 min-h-[320px]">
                     <LineChart
                       data={weeklyProgress.map((item) => ({
                         label: item.week,
                         value: item.score,
                       }))}
-                      height={400}
+                      height={320}
                       color={COLORS.primary}
+                      yMin={0}
+                      yMax={100}
                     />
                   </div>
                 </Card>
 
                 <Card className="border border-neutral-light/15 bg-background-surface">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-lg bg-secondary/10">
-                      <BarChart3 className="w-5 h-5 text-secondary" />
+                  <div className="flex flex-col gap-1 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-secondary/10">
+                        <BarChart3 className="w-5 h-5 text-secondary" />
+                      </div>
+                      <h2 className="text-lg font-semibold text-neutral">
+                        Monthly Score Comparison
+                      </h2>
                     </div>
-                    <h2 className="text-lg font-semibold text-neutral">
-                      Monthly Score Comparison
-                    </h2>
+                    <p className="text-sm text-neutral-light pl-11">
+                      Your score vs batch average by month (last 6 months). Scores are 0–100.
+                    </p>
                   </div>
-                  <div className="p-4 rounded-xl bg-background-elevated/50">
+                  <div className="p-4 rounded-xl bg-background-elevated/50 min-h-[340px]">
                     <BarChart
                       data={monthlyScoreTrend.map((item) => ({
                         name: item.month,
                         value: item.score,
                         value2: item.average,
                       }))}
-                      height={400}
+                      height={340}
                       color={COLORS.primary}
                       color2={COLORS.secondary}
                       label1="Your Score"
                       label2="Batch Average"
+                      yMax={100}
                     />
                   </div>
                 </Card>
@@ -783,7 +907,7 @@ export default function StudentAnalyticsPage() {
                         Out of {performanceData.totalStudents} students
                       </p>
                       <p className="text-sm text-neutral-light mb-6">
-                        You're in the top {Math.round((performanceData.rank / performanceData.totalStudents) * 100)}%
+                        You&apos;re in the top {Math.round((performanceData.rank / performanceData.totalStudents) * 100)}%
                       </p>
                       {performanceData.rankChange !== 0 && (
                         <Badge variant="secondary" className="text-sm px-4 py-2">
@@ -813,11 +937,10 @@ export default function StudentAnalyticsPage() {
                         return (
                           <div
                             key={achievement.id}
-                            className={`group relative p-5 rounded-xl border transition-all duration-200 ${
-                              achievement.unlocked
-                                ? `bg-gradient-to-br ${achievement.color} border-transparent shadow-lg`
-                                : 'border-neutral-light/20 bg-background-elevated opacity-60'
-                            }`}
+                            className={`group relative p-5 rounded-xl border transition-all duration-200 ${achievement.unlocked
+                              ? `bg-gradient-to-br ${achievement.color} border-transparent shadow-lg`
+                              : 'border-neutral-light/20 bg-background-elevated opacity-60'
+                              }`}
                           >
                             {achievement.unlocked && (
                               <div className="absolute -top-2 -right-2">
@@ -825,18 +948,15 @@ export default function StudentAnalyticsPage() {
                               </div>
                             )}
                             <Icon
-                              className={`w-10 h-10 mb-3 ${
-                                achievement.unlocked ? 'text-white' : 'text-neutral-light'
-                              }`}
+                              className={`w-10 h-10 mb-3 ${achievement.unlocked ? 'text-white' : 'text-neutral-light'
+                                }`}
                             />
-                            <h3 className={`font-semibold text-sm mb-1 ${
-                              achievement.unlocked ? 'text-white' : 'text-neutral'
-                            }`}>
+                            <h3 className={`font-semibold text-sm mb-1 ${achievement.unlocked ? 'text-white' : 'text-neutral'
+                              }`}>
                               {achievement.title}
                             </h3>
-                            <p className={`text-xs ${
-                              achievement.unlocked ? 'text-white/80' : 'text-neutral-light'
-                            }`}>
+                            <p className={`text-xs ${achievement.unlocked ? 'text-white/80' : 'text-neutral-light'
+                              }`}>
                               {achievement.description}
                             </p>
                           </div>

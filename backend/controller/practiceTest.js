@@ -19,7 +19,7 @@ export default class practiceTestController {
      */
     async savePracticeTest(req, res, next) {
         try {
-            const { week, day, score, totalQuestions, correctAnswers, incorrectAnswers, timeSpent, questionsAttempted } = req.body;
+            const { week, day, score, totalQuestions, correctAnswers, incorrectAnswers, timeSpent, questionsAttempted, category } = req.body;
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
 
             if (!userId || !week || !day || score === undefined) {
@@ -66,6 +66,7 @@ export default class practiceTestController {
                 student_id: studentIdString, // ALWAYS string format
                 week: week,
                 day: day,
+                category: category || 'Aptitude', // Default to Aptitude if not provided
                 attempt: attemptNumber,
                 score: score,
                 total_questions: totalQuestions || questionsAttempted?.length || 0,
@@ -347,65 +348,58 @@ export default class practiceTestController {
 
             // Enrich practice test data with student information
             if (response.success && response.data && response.data.length > 0) {
-                const enrichedData = await Promise.all(response.data.map(async (test) => {
-                    try {
-                        // Try to fetch student info - handle both ObjectId and string formats
-                        let studentRes;
+                // Enrich practice test data with student information using optimized batch lookup
+                const studentIds = response.data.map(t => t.student_id).filter(id => id);
+                const uniqueIds = [...new Set(studentIds)];
 
-                        // First try with the student_id as-is
-                        studentRes = await fetchData(
-                            'tblPersonMaster',
-                            {},
-                            { _id: test.student_id }
-                        );
+                // Prepare IDs for lookup - handle both String and ObjectId formats
+                const { ObjectId } = await import('mongodb');
+                const objectIds = uniqueIds
+                    .filter(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id))
+                    .map(id => new ObjectId(id));
 
-                        // If not found and student_id is a string that looks like ObjectId, try converting
-                        if ((!studentRes.success || !studentRes.data || studentRes.data.length === 0) &&
-                            typeof test.student_id === 'string' && /^[0-9a-fA-F]{24}$/.test(test.student_id)) {
-                            studentRes = await fetchData(
-                                'tblPersonMaster',
-                                {},
-                                { _id: new ObjectId(test.student_id) }
-                            );
-                        }
-
-                        // If still not found, try matching by person_id field as fallback
-                        if (!studentRes.success || !studentRes.data || studentRes.data.length === 0) {
-                            studentRes = await fetchData(
-                                'tblPersonMaster',
-                                {},
-                                { person_id: test.student_id }
-                            );
-                        }
-
-                        const student = studentRes.success && studentRes.data && studentRes.data.length > 0
-                            ? studentRes.data[0]
-                            : null;
-
-                        if (!student) {
-                            console.log('[PracticeTest] Student not found for test:', {
-                                test_id: test._id,
-                                student_id: test.student_id,
-                                student_id_type: typeof test.student_id
-                            });
-                        }
-
-                        return {
-                            ...test,
-                            student_name: student?.person_name || 'Unknown',
-                            student_email: student?.person_email || '',
-                            student_rollno: student?.person_rollno || ''
-                        };
-                    } catch (error) {
-                        console.error('[PracticeTest] Error enriching test data:', error);
-                        return {
-                            ...test,
-                            student_name: 'Unknown',
-                            student_email: '',
-                            student_rollno: ''
-                        };
+                // Fetch all potential student matches in one query
+                const studentRes = await fetchData(
+                    'tblPersonMaster',
+                    { person_name: 1, person_email: 1, person_rollno: 1, person_id: 1 },
+                    {
+                        $or: [
+                            { _id: { $in: objectIds } },             // Match by ObjectId
+                            { _id: { $in: uniqueIds } },            // Match by String _id
+                            { person_id: { $in: uniqueIds } }       // Match by person_id
+                        ]
                     }
-                }));
+                );
+
+                // Create a lookup map for fast access
+                const studentMap = new Map();
+                if (studentRes.success && studentRes.data) {
+                    studentRes.data.forEach(s => {
+                        // Map by _id (String)
+                        studentMap.set(s._id.toString(), s);
+                        // Map by person_id (String)
+                        if (s.person_id) studentMap.set(s.person_id.toString(), s);
+                    });
+                }
+
+                const enrichedData = response.data.map(test => {
+                    // Try to find student in map
+                    let student = null;
+                    if (test.student_id) {
+                        student = studentMap.get(test.student_id.toString());
+                    }
+
+                    if (!student) {
+                        console.log('[PracticeTest] Student still not found for ID:', test.student_id);
+                    }
+
+                    return {
+                        ...test,
+                        student_name: student?.person_name || 'Unknown',
+                        student_email: student?.person_email || '',
+                        student_rollno: student?.person_rollno || ''
+                    };
+                });
 
                 console.log('[PracticeTest] Enriched data sample:', enrichedData[0]);
 

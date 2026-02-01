@@ -9,19 +9,19 @@ export default class syllabuscontroller {
     async listsyllabus(req, res, next) {
         try {
             const { projection, filter, options } = req.body;
-            
+
             const fetchOptions = {
                 ...(options || {}),
                 ...(req ? { req: req } : {})
             };
-            
+
             const response = await fetchData(
                 'tblSyllabus',
                 projection || {},
                 filter || {},
                 fetchOptions
             );
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -39,18 +39,18 @@ export default class syllabuscontroller {
             next();
         }
     }
-    
+
     async insertsyllabus(req, res, next) {
         try {
             const syllabusData = req.body;
-            
+
             const response = await executeData(
                 'tblSyllabus',
                 syllabusData,
                 'i',
                 syllabusSchema
             );
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 201,
@@ -72,7 +72,7 @@ export default class syllabuscontroller {
     async updatesyllabus(req, res, next) {
         try {
             const { filter, data } = req.body;
-            
+
             if (!filter) {
                 res.locals.responseData = {
                     success: false,
@@ -82,7 +82,7 @@ export default class syllabuscontroller {
                 };
                 return next();
             }
-            
+
             const response = await executeData(
                 'tblSyllabus',
                 data,
@@ -90,7 +90,7 @@ export default class syllabuscontroller {
                 syllabusSchema,
                 filter
             );
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -112,7 +112,7 @@ export default class syllabuscontroller {
     async deletesyllabus(req, res, next) {
         try {
             const { filter } = req.body;
-            
+
             if (!filter) {
                 res.locals.responseData = {
                     success: false,
@@ -122,7 +122,7 @@ export default class syllabuscontroller {
                 };
                 return next();
             }
-            
+
             const response = await executeData(
                 'tblSyllabus',
                 null,
@@ -130,7 +130,7 @@ export default class syllabuscontroller {
                 null,
                 filter
             );
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -153,12 +153,12 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'pre-week'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             const filePath = path.join(__dirname, '../../Product_Syllabus/Week-1-Complete-Lighter-Version')
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -171,7 +171,7 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseDayContent(fileContent, dayParam)
-            
+
             // Debug logging
             console.log(`Parsed content for ${dayParam}:`, {
                 title: content.title,
@@ -179,7 +179,7 @@ export default class syllabuscontroller {
                 learningOutcomes: content.learning_outcomes?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -207,7 +207,7 @@ export default class syllabuscontroller {
             const { week, day } = req.body || {}
             const weekNum = parseInt(week) || 1
             const dayParam = day || (weekNum === 1 ? 'pre-week' : 'day-1')
-            
+
             if (weekNum < 1 || weekNum > 10) {
                 res.locals.responseData = {
                     success: false,
@@ -219,7 +219,7 @@ export default class syllabuscontroller {
 
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             // Determine file path based on week
             // Week 4 is split into two files: Part 1 (Day 1) and Part 2 (Days 2-5)
             let filePath
@@ -257,7 +257,7 @@ export default class syllabuscontroller {
                 }
                 return next()
             }
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -270,7 +270,7 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             let content
-            
+
             // Use appropriate parser based on week
             if (weekNum === 1) {
                 content = parseDayContent(fileContent, dayParam)
@@ -286,14 +286,14 @@ export default class syllabuscontroller {
                 // For future weeks, use Week 2 parser as template
                 content = parseWeek2DayContent(fileContent, dayParam)
             }
-            
+
             console.log(`Parsed content for Week ${weekNum}, Day ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 learningOutcomes: content.learning_outcomes?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -317,12 +317,12 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'day-1'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             const filePath = path.join(__dirname, '../../Product_Syllabus/Week1_Aptitude_Enhanced_Percentage.md')
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -335,13 +335,13 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseAptitudeDayContent(fileContent, dayParam)
-            
+
             console.log(`Parsed aptitude content for ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -364,12 +364,12 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'day-1'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             const filePath = path.join(__dirname, '../../Product_Syllabus/Week2_Aptitude_Teaching_Edition_Complete.md')
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -382,13 +382,13 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseAptitudeWeek2DayContent(fileContent, dayParam)
-            
+
             console.log(`Parsed aptitude Week 2 content for ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -411,12 +411,12 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'day-1'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             const filePath = path.join(__dirname, '../../Product_Syllabus/Week3_Aptitude_Complete_AllDays.md')
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -429,13 +429,13 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseAptitudeWeek3DayContent(fileContent, dayParam)
-            
+
             console.log(`Parsed aptitude Week 3 content for ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -458,10 +458,10 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'day-1'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             // Week 4 Aptitude: Days 1-2 from Week4_TimeWork_Pipes_CompleteDepth.md
             // Days 3-5 (Wednesday-Friday) from Week4-Part2-Pipes-Complete-Day3-5.md
             const dayNum = parseInt(dayParam.replace('day-', '')) || 1
@@ -476,7 +476,7 @@ export default class syllabuscontroller {
                 // Fallback to main file
                 filePath = path.join(__dirname, '../../Product_Syllabus/Week4_TimeWork_Pipes_CompleteDepth.md')
             }
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -489,13 +489,13 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseAptitudeWeek4DayContent(fileContent, dayParam)
-            
+
             console.log(`Parsed aptitude Week 4 content for ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -518,10 +518,10 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'day-1'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             // Week 5 Aptitude: Day 1 from Week5_UltraDeep_TSD_Trains_Boats.md
             // Days 2-5 (Tuesday-Friday) from Week5-Part2-Advanced-Complete-Day2-5.md
             const dayNum = parseInt(dayParam.replace('day-', '')) || 1
@@ -536,7 +536,7 @@ export default class syllabuscontroller {
                 // Fallback to main file
                 filePath = path.join(__dirname, '../../Product_Syllabus/Week5_UltraDeep_TSD_Trains_Boats.md')
             }
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -549,13 +549,13 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseAptitudeWeek5DayContent(fileContent, dayParam)
-            
+
             console.log(`Parsed aptitude Week 5 content for ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -578,10 +578,10 @@ export default class syllabuscontroller {
         try {
             const { day } = req.body || {}
             const dayParam = day || 'day-1'
-            
+
             const __filename = fileURLToPath(import.meta.url)
             const __dirname = path.dirname(__filename)
-            
+
             // Week 6 Aptitude: Days 1-3 from Week6_ProfitLoss_SI_CI_AllDays.md
             // Days 4-5 (Thursday-Friday) from Week6_Complete_Thu_Fri.md
             const dayNum = parseInt(dayParam.replace('day-', '')) || 1
@@ -596,7 +596,7 @@ export default class syllabuscontroller {
                 // Fallback to main file
                 filePath = path.join(__dirname, '../../Product_Syllabus/Week6_ProfitLoss_SI_CI_AllDays.md')
             }
-            
+
             if (!fs.existsSync(filePath)) {
                 res.locals.responseData = {
                     success: false,
@@ -609,13 +609,13 @@ export default class syllabuscontroller {
 
             const fileContent = fs.readFileSync(filePath, 'utf-8')
             const content = parseAptitudeWeek6DayContent(fileContent, dayParam)
-            
+
             console.log(`Parsed aptitude Week 6 content for ${dayParam}:`, {
                 title: content.title,
                 contentLength: content.content?.length || 0,
                 topics: content.topics?.length || 0
             })
-            
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -641,25 +641,25 @@ export default class syllabuscontroller {
 function parseWeek2DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['# DAY 1:', 'DAY 1: ARRAY OPERATIONS', '# DAY 1 – MONDAY'], 
-            title: 'Array Operations — Update, Search, Reverse' 
+        'day-1': {
+            patterns: ['# DAY 1:', 'DAY 1: ARRAY OPERATIONS', '# DAY 1 – MONDAY'],
+            title: 'Array Operations — Update, Search, Reverse'
         },
-        'day-2': { 
-            patterns: ['# DAY 2:', 'DAY 2: INSERTION', '# DAY 2 – TUESDAY'], 
-            title: 'Insertion & Deletion with Shifting' 
+        'day-2': {
+            patterns: ['# DAY 2:', 'DAY 2: INSERTION', '# DAY 2 – TUESDAY'],
+            title: 'Insertion & Deletion with Shifting'
         },
-        'day-3': { 
-            patterns: ['# DAY 3:', 'DAY 3: BINARY SEARCH', '# DAY 3 – WEDNESDAY'], 
-            title: 'Binary Search - The Divide & Conquer Way' 
+        'day-3': {
+            patterns: ['# DAY 3:', 'DAY 3: BINARY SEARCH', '# DAY 3 – WEDNESDAY'],
+            title: 'Binary Search - The Divide & Conquer Way'
         },
-        'day-4': { 
-            patterns: ['# DAY 4:', 'DAY 4: TWO-POINTER', '# DAY 4 – THURSDAY'], 
-            title: 'Two-Pointer Patterns & Prefix Sum' 
+        'day-4': {
+            patterns: ['# DAY 4:', 'DAY 4: TWO-POINTER', '# DAY 4 – THURSDAY'],
+            title: 'Two-Pointer Patterns & Prefix Sum'
         },
-        'day-5': { 
-            patterns: ['# DAY 5:', 'DAY 5: COMPREHENSIVE STRING', '# DAY 5 – FRIDAY'], 
-            title: 'Comprehensive String Basics' 
+        'day-5': {
+            patterns: ['# DAY 5:', 'DAY 5: COMPREHENSIVE STRING', '# DAY 5 – FRIDAY'],
+            title: 'Comprehensive String Basics'
         },
     }
 
@@ -675,10 +675,10 @@ function parseWeek2DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         // Check if we've reached the target day
         let foundDay = false
-        
+
         // Handle multiple formats:
         // - "# 🟢 DAY 1:" (Week 2 format with emoji)
         // - "# DAY 1:" (old format)
@@ -691,14 +691,14 @@ function parseWeek2DayContent(fileContent, day) {
             // - "# DAY 1:" (old format)
             // - "# DAY 1 – MONDAY:" (Week 3 format with en dash –)
             // - "# DAY 1 — MONDAY:" (with em dash —)
-            foundDay = trimmedLine.match(new RegExp(`#.*DAY ${dayNum}:`, 'i')) !== null || 
-                      trimmedLine.match(new RegExp(`#.*DAY ${dayNum}\\s*[–—]`, 'i')) !== null ||
-                      trimmedLine.match(new RegExp(`🟢.*DAY ${dayNum}:`, 'i')) !== null ||
-                      trimmedLine.includes(`DAY ${dayNum} —`) ||
-                      trimmedLine.includes(`DAY ${dayNum} –`) ||
-                      (trimmedLine.includes(`DAY ${dayNum}:`) && trimmedLine.startsWith('#'))
+            foundDay = trimmedLine.match(new RegExp(`#.*DAY ${dayNum}:`, 'i')) !== null ||
+                trimmedLine.match(new RegExp(`#.*DAY ${dayNum}\\s*[–—]`, 'i')) !== null ||
+                trimmedLine.match(new RegExp(`🟢.*DAY ${dayNum}:`, 'i')) !== null ||
+                trimmedLine.includes(`DAY ${dayNum} —`) ||
+                trimmedLine.includes(`DAY ${dayNum} –`) ||
+                (trimmedLine.includes(`DAY ${dayNum}:`) && trimmedLine.startsWith('#'))
         }
-        
+
         // Also check for anchor tags like <a name="day-1"></a>
         if (!foundDay && trimmedLine.includes(`<a name="day-${day.replace('day-', '')}">`)) {
             // Found anchor tag, next line should be the day header
@@ -706,7 +706,7 @@ function parseWeek2DayContent(fileContent, day) {
             // Skip the anchor tag line, we'll get the header on next iteration
             continue
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -723,12 +723,12 @@ function parseWeek2DayContent(fileContent, day) {
                 console.log(`Skipping placeholder message at line ${i}`)
                 continue
             }
-            
+
             // Skip anchor tags
             if (trimmedLine.startsWith('<a name=') || trimmedLine.includes('</a>')) {
                 continue
             }
-            
+
             // Stop at next day (but not the current day) - handle multiple formats
             if (trimmedLine.startsWith('#') && trimmedLine.includes('DAY')) {
                 const currentDayNum = day.replace('day-', '')
@@ -736,15 +736,15 @@ function parseWeek2DayContent(fileContent, day) {
                 // - "# 🟢 DAY X:" (Week 2)
                 // - "# DAY X:" (old format)
                 // - "# DAY X – MONDAY:" (Week 3 with en dash)
-                const nextDayMatch = trimmedLine.match(/#.*DAY (\d+)[:–—]/i)
+                const nextDayMatch = trimmedLine.match(/#.*DAY (\d+)\s*[:–—]/i)
                 if (nextDayMatch && nextDayMatch[1] !== currentDayNum) {
                     console.log(`Stopping at line ${i}: ${trimmedLine} (next day detected)`)
                     break
                 }
             }
-            
+
             // Stop at week summary or next week
-            if (trimmedLine.includes('Week 2 Complete Summary') || 
+            if (trimmedLine.includes('Week 2 Complete Summary') ||
                 trimmedLine.includes('Week 3 Complete Summary') ||
                 trimmedLine.includes('# 📘 WEEK 3') ||
                 trimmedLine.includes('# 📘 WEEK 4') ||
@@ -754,7 +754,7 @@ function parseWeek2DayContent(fileContent, day) {
                 console.log(`Stopping at line ${i}: ${trimmedLine} (summary detected)`)
                 break
             }
-            
+
             // Extract learning outcomes if present (new format may not have explicit section)
             if (trimmedLine.includes('## Learning Outcomes') || (trimmedLine.includes('Learning Outcomes') && trimmedLine.includes('##'))) {
                 currentSection = 'learning_outcomes'
@@ -783,7 +783,7 @@ function parseWeek2DayContent(fileContent, day) {
             if (trimmedLine.startsWith('##') && !trimmedLine.includes('Learning Outcomes') && currentSection === 'learning_outcomes') {
                 currentSection = null
             }
-            
+
             // Collect ALL content lines (the new format is more section-based)
             dayContent.push(line)
 
@@ -792,7 +792,7 @@ function parseWeek2DayContent(fileContent, day) {
 
     // Extract topics from content - look for SECTION headers and key concepts
     const contentText = dayContent.join('\n')
-    
+
     // Extract topics from SECTION headers (e.g., "## SECTION 1.2: ARRAY FUNDAMENTALS" or "## SECTION 1: WHAT ARE STRINGS")
     const sectionMatches = contentText.matchAll(/##\s*SECTION\s+\d+(?:\.\d+)?:\s*([^\n]+)/gi)
     for (const match of sectionMatches) {
@@ -801,7 +801,7 @@ function parseWeek2DayContent(fileContent, day) {
             topics.push(sectionTitle)
         }
     }
-    
+
     // Also extract from topic keywords (expanded for Week 3)
     const topicKeywords = [
         'Array', 'Search', 'Reverse', 'Linear Search', 'Binary Search',
@@ -816,7 +816,7 @@ function parseWeek2DayContent(fileContent, day) {
             topics.push(keyword)
         }
     })
-    
+
     // Extract learning outcomes from day description if available
     // The new format has "Complete Day with X Examples | Y Questions" which we can use
     const dayDescriptionMatch = contentText.match(/##\s*Complete Day with[^\n]+/i)
@@ -824,7 +824,7 @@ function parseWeek2DayContent(fileContent, day) {
         // Add a learning outcome based on the day description
         learningOutcomes.push(`Complete mastery with multiple examples and practice questions`)
     }
-    
+
     // Extract learning outcomes from Week 3 format (### Beginner Level, ### Intermediate Level, etc.)
     const levelMatches = contentText.matchAll(/###\s*(Beginner|Intermediate|Expert)\s+Level[^\n]*\n([\s\S]*?)(?=###|##|$)/gi)
     for (const match of levelMatches) {
@@ -842,12 +842,12 @@ function parseWeek2DayContent(fileContent, day) {
 
     // Clean up and format content
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     // Remove placeholder messages if they exist
     cleanedContent = cleanedContent.replace(/\[Continued in next part due to length\.\.\.\]/g, '')
     cleanedContent = cleanedContent.replace(/\[Continued.*?\]/g, '')
     cleanedContent = cleanedContent.trim()
-    
+
     // Extract actual title from day header (more accurate than dayMap)
     let extractedTitle = dayInfo.title
     const dayHeaderMatch = cleanedContent.match(/^#\s*.*?DAY\s+\d+\s*[–—:]\s*([^\n]+)/i)
@@ -856,7 +856,7 @@ function parseWeek2DayContent(fileContent, day) {
         // Clean up title (remove day names like MONDAY, TUESDAY, etc. if present)
         extractedTitle = extractedTitle.replace(/^\s*(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*[–—:]\s*/i, '')
     }
-    
+
     console.log(`Week 2+ content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
@@ -864,7 +864,7 @@ function parseWeek2DayContent(fileContent, day) {
         topics: topics.length,
         extractedTitle: extractedTitle
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 200) {
         console.log(`Warning: Limited content for Week 2+, Day ${day}. Collected ${dayContent.length} lines. Content may be incomplete.`)
     }
@@ -887,28 +887,28 @@ function parseWeek2DayContent(fileContent, day) {
 function parseWeek4DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['MONDAY', '# 🔵 MONDAY'], 
+        'day-1': {
+            patterns: ['MONDAY', '# 🔵 MONDAY'],
             title: 'Linked List Reversal',
             dayName: 'MONDAY'
         },
-        'day-2': { 
-            patterns: ['TUESDAY', '# 🟢 TUESDAY'], 
+        'day-2': {
+            patterns: ['TUESDAY', '# 🟢 TUESDAY'],
             title: 'Cycle Detection',
             dayName: 'TUESDAY'
         },
-        'day-3': { 
-            patterns: ['WEDNESDAY', '# 🟡 WEDNESDAY'], 
+        'day-3': {
+            patterns: ['WEDNESDAY', '# 🟡 WEDNESDAY'],
             title: 'Merge & Sort',
             dayName: 'WEDNESDAY'
         },
-        'day-4': { 
-            patterns: ['THURSDAY', '# 🟠 THURSDAY'], 
+        'day-4': {
+            patterns: ['THURSDAY', '# 🟠 THURSDAY'],
             title: 'Doubly Linked Lists',
             dayName: 'THURSDAY'
         },
-        'day-5': { 
-            patterns: ['FRIDAY', '# 🔵 FRIDAY'], 
+        'day-5': {
+            patterns: ['FRIDAY', '# 🔵 FRIDAY'],
             title: 'Complex Problems',
             dayName: 'FRIDAY'
         },
@@ -926,21 +926,21 @@ function parseWeek4DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         // Check if we've reached the target day
         let foundDay = false
-        
+
         // Week 4 uses day names (MONDAY, TUESDAY, etc.) with emojis
         if (trimmedLine.startsWith('#') && trimmedLine.includes(dayInfo.dayName)) {
             foundDay = true
         }
-        
+
         // Also check for anchor tags
         if (!foundDay && trimmedLine.includes(`<a name="${dayInfo.dayName.toLowerCase()}">`)) {
             foundDay = true
             continue
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found Week 4 day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -957,12 +957,12 @@ function parseWeek4DayContent(fileContent, day) {
                 console.log(`Skipping placeholder message at line ${i}`)
                 continue
             }
-            
+
             // Skip anchor tags
             if (trimmedLine.startsWith('<a name=') || trimmedLine.includes('</a>')) {
                 continue
             }
-            
+
             // Stop at next day (check for other day names)
             if (trimmedLine.startsWith('#') && (
                 trimmedLine.includes('MONDAY') ||
@@ -977,9 +977,9 @@ function parseWeek4DayContent(fileContent, day) {
                     break
                 }
             }
-            
+
             // Stop at week summary or next week
-            if (trimmedLine.includes('Week 4 Complete Summary') || 
+            if (trimmedLine.includes('Week 4 Complete Summary') ||
                 trimmedLine.includes('Week 5') ||
                 trimmedLine.includes('# 📘 WEEK 5') ||
                 trimmedLine.includes('Interview Guide') && trimmedLine.includes('##')) {
@@ -989,7 +989,7 @@ function parseWeek4DayContent(fileContent, day) {
                     break
                 }
             }
-            
+
             // Extract learning outcomes if present
             if (trimmedLine.includes('## Learning Outcomes') || (trimmedLine.includes('Learning Outcomes') && trimmedLine.includes('##'))) {
                 currentSection = 'learning_outcomes'
@@ -1016,7 +1016,7 @@ function parseWeek4DayContent(fileContent, day) {
             if (trimmedLine.startsWith('##') && !trimmedLine.includes('Learning Outcomes') && currentSection === 'learning_outcomes') {
                 currentSection = null
             }
-            
+
             // Collect ALL content lines
             dayContent.push(line)
         }
@@ -1024,7 +1024,7 @@ function parseWeek4DayContent(fileContent, day) {
 
     // Extract topics from content
     const contentText = dayContent.join('\n')
-    
+
     // Extract topics from SECTION headers
     const sectionMatches = contentText.matchAll(/##\s*(?:Theory\s+)?Section\s+\d+[:\s]+([^\n]+)/gi)
     for (const match of sectionMatches) {
@@ -1033,7 +1033,7 @@ function parseWeek4DayContent(fileContent, day) {
             topics.push(sectionTitle)
         }
     }
-    
+
     // Also extract from topic keywords
     const topicKeywords = [
         'Linked List', 'Reversal', 'Cycle Detection', 'Floyd', 'Tortoise', 'Hare',
@@ -1046,7 +1046,7 @@ function parseWeek4DayContent(fileContent, day) {
             topics.push(keyword)
         }
     })
-    
+
     // Extract learning outcomes from day description if available
     const dayDescriptionMatch = contentText.match(/##\s*Complete Day with[^\n]+/i)
     if (dayDescriptionMatch) {
@@ -1055,12 +1055,12 @@ function parseWeek4DayContent(fileContent, day) {
 
     // Clean up and format content
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     // Remove placeholder messages if they exist
     cleanedContent = cleanedContent.replace(/\[Continued in next part[^\]]*\]/gi, '')
     cleanedContent = cleanedContent.replace(/\[CONTINUE[^\]]*\]/gi, '')
     cleanedContent = cleanedContent.trim()
-    
+
     // Extract actual title from day header (format: # 🔵 MONDAY – LINKED LIST REVERSAL)
     let extractedTitle = dayInfo.title
     const dayHeaderMatch = cleanedContent.match(/^#\s*[^\n]*(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)[\s–—:]+([^\n]+)/i)
@@ -1069,7 +1069,7 @@ function parseWeek4DayContent(fileContent, day) {
         // Clean up: remove extra parentheses or trailing text
         extractedTitle = extractedTitle.replace(/\s*\([^)]*\)\s*$/, '').trim()
     }
-    
+
     console.log(`Week 4 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
@@ -1077,7 +1077,7 @@ function parseWeek4DayContent(fileContent, day) {
         topics: topics.length,
         extractedTitle: extractedTitle
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 200) {
         console.log(`Warning: Limited content for Week 4, Day ${day}. Collected ${dayContent.length} lines. Content may be incomplete.`)
     }
@@ -1099,28 +1099,28 @@ function parseWeek4DayContent(fileContent, day) {
 function parseWeek5DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['MONDAY', '# 📚 WEEK 5 – MONDAY'], 
+        'day-1': {
+            patterns: ['MONDAY', '# 📚 WEEK 5 – MONDAY'],
             title: 'Stack Fundamentals',
             dayName: 'MONDAY'
         },
-        'day-2': { 
-            patterns: ['TUESDAY', '# 📚 WEEK 5 – TUESDAY'], 
+        'day-2': {
+            patterns: ['TUESDAY', '# 📚 WEEK 5 – TUESDAY'],
             title: 'Stack Applications',
             dayName: 'TUESDAY'
         },
-        'day-3': { 
-            patterns: ['WEDNESDAY', '# 📚 WEEK 5 – WEDNESDAY'], 
+        'day-3': {
+            patterns: ['WEDNESDAY', '# 📚 WEEK 5 – WEDNESDAY'],
             title: 'Monotonic Stack',
             dayName: 'WEDNESDAY'
         },
-        'day-4': { 
-            patterns: ['THURSDAY', '# 📚 WEEK 5 – THURSDAY'], 
+        'day-4': {
+            patterns: ['THURSDAY', '# 📚 WEEK 5 – THURSDAY'],
             title: 'Queue Fundamentals',
             dayName: 'THURSDAY'
         },
-        'day-5': { 
-            patterns: ['FRIDAY', '# 📚 WEEK 5 – FRIDAY'], 
+        'day-5': {
+            patterns: ['FRIDAY', '# 📚 WEEK 5 – FRIDAY'],
             title: 'Queue Applications',
             dayName: 'FRIDAY'
         },
@@ -1138,7 +1138,7 @@ function parseWeek5DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         // Check if we've reached the day header
         if (!foundHeader && trimmedLine.startsWith('#') && trimmedLine.includes(dayInfo.dayName)) {
             console.log(`Found Week 5 day header at line ${i}: ${trimmedLine}`)
@@ -1146,16 +1146,16 @@ function parseWeek5DayContent(fileContent, day) {
             dayContent.push(line)
             continue
         }
-        
+
         // Once we find the header, collect all content
         if (foundHeader) {
             // Skip anchor tags
             if (trimmedLine.startsWith('<a name=') || trimmedLine.includes('</a>')) {
                 continue
             }
-            
+
             // Stop at next week or summary sections
-            if (trimmedLine.includes('WEEK 6') || 
+            if (trimmedLine.includes('WEEK 6') ||
                 trimmedLine.includes('Week 6') ||
                 trimmedLine.includes('WEEK 5 COMPLETE') ||
                 (trimmedLine.includes('CHECKLIST') && trimmedLine.includes('##'))) {
@@ -1165,7 +1165,7 @@ function parseWeek5DayContent(fileContent, day) {
                     break
                 }
             }
-            
+
             // Extract learning outcomes if present
             if (trimmedLine.includes('## Learning Outcomes') || (trimmedLine.includes('Learning Outcomes') && trimmedLine.includes('##'))) {
                 currentSection = 'learning_outcomes'
@@ -1192,7 +1192,7 @@ function parseWeek5DayContent(fileContent, day) {
             if (trimmedLine.startsWith('##') && !trimmedLine.includes('Learning Outcomes') && currentSection === 'learning_outcomes') {
                 currentSection = null
             }
-            
+
             // Collect ALL content lines
             dayContent.push(line)
         }
@@ -1200,7 +1200,7 @@ function parseWeek5DayContent(fileContent, day) {
 
     // Extract topics from content
     const contentText = dayContent.join('\n')
-    
+
     // Extract topics from SECTION headers
     const sectionMatches = contentText.matchAll(/##\s*(?:Theory\s+)?Section\s+\d+[:\s]+([^\n]+)/gi)
     for (const match of sectionMatches) {
@@ -1209,7 +1209,7 @@ function parseWeek5DayContent(fileContent, day) {
             topics.push(sectionTitle)
         }
     }
-    
+
     // Extract from problem headers
     const problemMatches = contentText.matchAll(/#\s*[🔴🟢🟡🟠]\s*PROBLEM\s+\d+[:\s]+([^\n]+)/gi)
     for (const match of problemMatches) {
@@ -1218,7 +1218,7 @@ function parseWeek5DayContent(fileContent, day) {
             topics.push(problemTitle)
         }
     }
-    
+
     // Also extract from topic keywords
     const topicKeywords = [
         'Stack', 'Queue', 'LIFO', 'FIFO', 'Monotonic Stack', 'Parentheses Matching',
@@ -1234,7 +1234,7 @@ function parseWeek5DayContent(fileContent, day) {
 
     // Clean up and format content
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     // Extract actual title from day header
     // Format: # 📚 WEEK 5 – MONDAY
     //         ## STACK FUNDAMENTALS | Complete Implementation | 80+ Pages
@@ -1253,7 +1253,7 @@ function parseWeek5DayContent(fileContent, day) {
             }
         }
     }
-    
+
     console.log(`Week 5 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
@@ -1261,7 +1261,7 @@ function parseWeek5DayContent(fileContent, day) {
         topics: topics.length,
         extractedTitle: extractedTitle
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 200) {
         console.log(`Warning: Limited content for Week 5, Day ${day}. Collected ${dayContent.length} lines. Content may be incomplete.`)
     }
@@ -1282,29 +1282,29 @@ function parseWeek5DayContent(fileContent, day) {
 function parseDayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'pre-week': { 
-            patterns: ['# 🟢 PRE-WEEK:', 'PRE-WEEK:', 'I/O (INPUT/OUTPUT)', 'PRE-WEEK: I/O'], 
-            title: 'I/O (Input/Output) - Essential Basics' 
+        'pre-week': {
+            patterns: ['# 🟢 PRE-WEEK:', 'PRE-WEEK:', 'I/O (INPUT/OUTPUT)', 'PRE-WEEK: I/O'],
+            title: 'I/O (Input/Output) - Essential Basics'
         },
-        'day-1': { 
-            patterns: ['# 🟢 DAY 1', 'DAY 1 – DATA TYPES'], 
-            title: 'Data Types & Variables' 
+        'day-1': {
+            patterns: ['# 🟢 DAY 1', 'DAY 1 – DATA TYPES'],
+            title: 'Data Types & Variables'
         },
-        'day-2': { 
-            patterns: ['# 🟢 DAY 2', 'DAY 2 – OPERATORS'], 
-            title: 'Operators & Decision Making' 
+        'day-2': {
+            patterns: ['# 🟢 DAY 2', 'DAY 2 – OPERATORS'],
+            title: 'Operators & Decision Making'
         },
-        'day-3': { 
-            patterns: ['# 🟢 DAY 3', 'DAY 3 – LOOPS'], 
-            title: 'Loops & Patterns' 
+        'day-3': {
+            patterns: ['# 🟢 DAY 3', 'DAY 3 – LOOPS'],
+            title: 'Loops & Patterns'
         },
-        'day-4': { 
-            patterns: ['# 🟢 DAY 4', 'DAY 4 – ARRAYS'], 
-            title: 'Arrays (DSA Foundation)' 
+        'day-4': {
+            patterns: ['# 🟢 DAY 4', 'DAY 4 – ARRAYS'],
+            title: 'Arrays (DSA Foundation)'
         },
-        'day-5': { 
-            patterns: ['# 🟢 DAY 5', 'DAY 5 – FUNCTIONS'], 
-            title: 'Functions (Basics)' 
+        'day-5': {
+            patterns: ['# 🟢 DAY 5', 'DAY 5 – FUNCTIONS'],
+            title: 'Functions (Basics)'
         },
     }
 
@@ -1334,10 +1334,10 @@ function parseDayContent(fileContent, day) {
     for (let i = contentStartIndex; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         // Check if we've reached the target day - MUST start with # 🟢 to be a real section
         let foundDay = false
-        
+
         if (trimmedLine.startsWith('# 🟢')) {
             // For PRE-WEEK, check for PRE-WEEK: pattern with ESSENTIAL BASICS (actual content)
             if (day === 'pre-week') {
@@ -1351,7 +1351,7 @@ function parseDayContent(fileContent, day) {
                 foundDay = trimmedLine.includes(`DAY ${dayNum} –`) || trimmedLine.includes(`DAY ${dayNum} -`)
             }
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -1367,13 +1367,13 @@ function parseDayContent(fileContent, day) {
                 const lineLower = trimmedLine.toLowerCase()
                 return !lineLower.includes(patternLower) && !trimmedLine.includes(pattern)
             }) && (trimmedLine.startsWith('# 🟢 DAY') || trimmedLine.startsWith('# 🟢 PRE-WEEK:'))
-            
-            if (isNextDay || trimmedLine.startsWith('## 📋 WEEK 1 SUMMARY') || 
+
+            if (isNextDay || trimmedLine.startsWith('## 📋 WEEK 1 SUMMARY') ||
                 trimmedLine.includes('WEEK 1 SUMMARY') || trimmedLine.includes('# 📘 WEEK 2')) {
                 console.log(`Stopping at line ${i}: ${trimmedLine}`)
                 break
             }
-            
+
             // Extract learning outcomes
             if (trimmedLine.includes('## Learning Outcomes') || (trimmedLine.includes('Learning Outcomes') && trimmedLine.includes('##'))) {
                 currentSection = 'learning_outcomes'
@@ -1418,14 +1418,14 @@ function parseDayContent(fileContent, day) {
 
     // Clean up and format content
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         learningOutcomes: learningOutcomes.length,
         topics: topics.length
     })
-    
+
     // If no content was collected, try to get it from the file differently
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
@@ -1448,25 +1448,25 @@ function parseDayContent(fileContent, day) {
 function parseAptitudeDayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['## 📅 DAY 1: INTEGERS', 'DAY 1: INTEGERS'], 
-            title: 'Integers – Understanding Numbers Above & Below Zero' 
+        'day-1': {
+            patterns: ['## 📅 DAY 1: INTEGERS', 'DAY 1: INTEGERS'],
+            title: 'Integers – Understanding Numbers Above & Below Zero'
         },
-        'day-2': { 
-            patterns: ['## 📅 DAY 2: FACTORS', 'DAY 2: FACTORS'], 
-            title: 'Factors – Breaking Numbers Into Building Blocks' 
+        'day-2': {
+            patterns: ['## 📅 DAY 2: FACTORS', 'DAY 2: FACTORS'],
+            title: 'Factors – Breaking Numbers Into Building Blocks'
         },
-        'day-3': { 
-            patterns: ['## 📅 DAY 3: DIVISIBILITY', 'DAY 3: DIVISIBILITY'], 
-            title: 'Divisibility – Checking Without Division' 
+        'day-3': {
+            patterns: ['## 📅 DAY 3: DIVISIBILITY', 'DAY 3: DIVISIBILITY'],
+            title: 'Divisibility – Checking Without Division'
         },
-        'day-4': { 
-            patterns: ['## 📅 DAY 4: HCF & LCM', 'DAY 4: HCF'], 
-            title: 'HCF & LCM – Sharing and Grouping' 
+        'day-4': {
+            patterns: ['## 📅 DAY 4: HCF & LCM', 'DAY 4: HCF'],
+            title: 'HCF & LCM – Sharing and Grouping'
         },
-        'day-5': { 
-            patterns: ['## 📅 DAY 5: BODMAS', 'DAY 5: BODMAS'], 
-            title: 'BODMAS/VBODMAS – Discipline in Calculation' 
+        'day-5': {
+            patterns: ['## 📅 DAY 5: BODMAS', 'DAY 5: BODMAS'],
+            title: 'BODMAS/VBODMAS – Discipline in Calculation'
         },
     }
 
@@ -1481,15 +1481,15 @@ function parseAptitudeDayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         // Check if we've reached the target day
         let foundDay = false
-        
+
         if (trimmedLine.startsWith('## 📅 DAY')) {
             const dayNum = day.replace('day-', '')
             foundDay = trimmedLine.includes(`DAY ${dayNum}:`) || trimmedLine.includes(`DAY ${dayNum}`)
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found aptitude day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -1504,12 +1504,12 @@ function parseAptitudeDayContent(fileContent, day) {
                 console.log(`Stopping at next day: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('## 📋 WEEK 1') || trimmedLine.includes('WEEK 1 COMPREHENSIVE SUMMARY')) {
                 console.log(`Stopping at summary: ${trimmedLine}`)
                 break
             }
-            
+
             // Extract topics from headings
             if (trimmedLine.startsWith('### ')) {
                 const topic = trimmedLine.replace('### ', '').trim()
@@ -1517,7 +1517,7 @@ function parseAptitudeDayContent(fileContent, day) {
                     topics.push(topic)
                 }
             }
-            
+
             // Collect ALL content lines
             dayContent.push(line)
         }
@@ -1525,13 +1525,13 @@ function parseAptitudeDayContent(fileContent, day) {
 
     // Clean up and format content
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Aptitude content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         topics: topics.length
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
     }
@@ -1552,25 +1552,25 @@ function parseAptitudeDayContent(fileContent, day) {
 function parseAptitudeWeek2DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['# 📅 DAY 1: PERCENTAGES'], 
-            title: 'Percentages – Foundation & Change' 
+        'day-1': {
+            patterns: ['# 📅 DAY 1: PERCENTAGES'],
+            title: 'Percentages – Foundation & Change'
         },
-        'day-2': { 
-            patterns: ['# 📅 DAY 2: SUCCESSIVE PERCENTAGES'], 
-            title: 'Successive Percentages & Applications' 
+        'day-2': {
+            patterns: ['# 📅 DAY 2: SUCCESSIVE PERCENTAGES'],
+            title: 'Successive Percentages & Applications'
         },
-        'day-3': { 
-            patterns: ['# 📅 DAY 3: RATIO & PROPORTION'], 
-            title: 'Ratio & Proportion (Beginner Level)' 
+        'day-3': {
+            patterns: ['# 📅 DAY 3: RATIO & PROPORTION'],
+            title: 'Ratio & Proportion (Beginner Level)'
         },
-        'day-4': { 
-            patterns: ['# 📅 DAY 4: PROPORTION & APPLICATIONS'], 
-            title: 'Proportion & Applications (Intermediate)' 
+        'day-4': {
+            patterns: ['# 📅 DAY 4: PROPORTION & APPLICATIONS'],
+            title: 'Proportion & Applications (Intermediate)'
         },
-        'day-5': { 
-            patterns: ['# 📅 DAY 5: INTEGRATED APTITUDE'], 
-            title: 'Integrated Aptitude (Advanced Applications)' 
+        'day-5': {
+            patterns: ['# 📅 DAY 5: INTEGRATED APTITUDE'],
+            title: 'Integrated Aptitude (Advanced Applications)'
         },
     }
 
@@ -1584,14 +1584,14 @@ function parseAptitudeWeek2DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         // Check if we've reached the target day
         let foundDay = false
         if (trimmedLine.startsWith('# 📅 DAY')) {
             const dayNum = day.replace('day-', '')
             foundDay = trimmedLine.includes(`DAY ${dayNum}:`) || trimmedLine.includes(`DAY ${dayNum}`)
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found aptitude Week 2 day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -1605,31 +1605,31 @@ function parseAptitudeWeek2DayContent(fileContent, day) {
                 console.log(`Stopping at next day: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('## 🎓 SUMMARY') || trimmedLine.includes('END OF WEEK 2')) {
                 console.log(`Stopping at summary: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('### ')) {
                 const topic = trimmedLine.replace('### ', '').trim()
                 if (topic && !topics.includes(topic) && topic.length > 3) {
                     topics.push(topic)
                 }
             }
-            
+
             dayContent.push(line)
         }
     }
 
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Aptitude Week 2 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         topics: topics.length
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
     }
@@ -1650,25 +1650,25 @@ function parseAptitudeWeek2DayContent(fileContent, day) {
 function parseAptitudeWeek3DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['# 📅 DAY 1'], 
-            title: 'Ratio Foundations' 
+        'day-1': {
+            patterns: ['# 📅 DAY 1'],
+            title: 'Ratio Foundations'
         },
-        'day-2': { 
-            patterns: ['# 📅 DAY 2'], 
-            title: 'Advanced Ratio & Partnerships' 
+        'day-2': {
+            patterns: ['# 📅 DAY 2'],
+            title: 'Advanced Ratio & Partnerships'
         },
-        'day-3': { 
-            patterns: ['# 📅 DAY 3'], 
-            title: 'Proportion & Advanced Applications' 
+        'day-3': {
+            patterns: ['# 📅 DAY 3'],
+            title: 'Proportion & Advanced Applications'
         },
-        'day-4': { 
-            patterns: ['# 📅 DAY 4'], 
-            title: 'Time/Work – Basic Concepts' 
+        'day-4': {
+            patterns: ['# 📅 DAY 4'],
+            title: 'Time/Work – Basic Concepts'
         },
-        'day-5': { 
-            patterns: ['# 📅 DAY 5'], 
-            title: 'Time/Work – Advanced Concepts' 
+        'day-5': {
+            patterns: ['# 📅 DAY 5'],
+            title: 'Time/Work – Advanced Concepts'
         },
     }
 
@@ -1682,13 +1682,13 @@ function parseAptitudeWeek3DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         let foundDay = false
         if (trimmedLine.startsWith('# 📅 DAY')) {
             const dayNum = day.replace('day-', '')
             foundDay = trimmedLine.includes(`DAY ${dayNum}`)
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found aptitude Week 3 day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -1701,31 +1701,31 @@ function parseAptitudeWeek3DayContent(fileContent, day) {
                 console.log(`Stopping at next day: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('## 📊 WEEK 3 COMPLETE SUMMARY') || trimmedLine.includes('END OF WEEK 3')) {
                 console.log(`Stopping at summary: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('### ')) {
                 const topic = trimmedLine.replace('### ', '').trim()
                 if (topic && !topics.includes(topic) && topic.length > 3) {
                     topics.push(topic)
                 }
             }
-            
+
             dayContent.push(line)
         }
     }
 
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Aptitude Week 3 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         topics: topics.length
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
     }
@@ -1746,25 +1746,25 @@ function parseAptitudeWeek3DayContent(fileContent, day) {
 function parseAptitudeWeek4DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['# ⏰ MONDAY'], 
-            title: 'Time/Work Advanced Concepts' 
+        'day-1': {
+            patterns: ['# ⏰ MONDAY'],
+            title: 'Time/Work Advanced Concepts'
         },
-        'day-2': { 
-            patterns: ['# ⏰ TUESDAY'], 
-            title: 'Time/Work Partnerships & Wage Distribution' 
+        'day-2': {
+            patterns: ['# ⏰ TUESDAY'],
+            title: 'Time/Work Partnerships & Wage Distribution'
         },
-        'day-3': { 
-            patterns: ['# ⚙️ WEDNESDAY'], 
-            title: 'Pipes Fundamentals & Combined Pipes' 
+        'day-3': {
+            patterns: ['# ⚙️ WEDNESDAY'],
+            title: 'Pipes Fundamentals & Combined Pipes'
         },
-        'day-4': { 
-            patterns: ['# ⏱️ THURSDAY'], 
-            title: 'Pipes Advanced - Leaks, Alternate, Cisterns' 
+        'day-4': {
+            patterns: ['# ⏱️ THURSDAY'],
+            title: 'Pipes Advanced - Leaks, Alternate, Cisterns'
         },
-        'day-5': { 
-            patterns: ['# 🔄 FRIDAY'], 
-            title: 'Time/Work + Pipes Integration' 
+        'day-5': {
+            patterns: ['# 🔄 FRIDAY'],
+            title: 'Time/Work + Pipes Integration'
         },
     }
 
@@ -1778,7 +1778,7 @@ function parseAptitudeWeek4DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         let foundDay = false
         if (trimmedLine.startsWith('# ')) {
             const dayNum = day.replace('day-', '')
@@ -1794,7 +1794,7 @@ function parseAptitudeWeek4DayContent(fileContent, day) {
                 foundDay = trimmedLine.includes('FRIDAY') && trimmedLine.includes('DAY 5')
             }
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found aptitude Week 4 day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -1815,31 +1815,31 @@ function parseAptitudeWeek4DayContent(fileContent, day) {
                 console.log(`Stopping at next day: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.includes('SATURDAY') || trimmedLine.includes('SUNDAY')) {
                 console.log(`Stopping at weekend section: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('### ')) {
                 const topic = trimmedLine.replace('### ', '').trim()
                 if (topic && !topics.includes(topic) && topic.length > 3) {
                     topics.push(topic)
                 }
             }
-            
+
             dayContent.push(line)
         }
     }
 
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Aptitude Week 4 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         topics: topics.length
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
     }
@@ -1860,25 +1860,25 @@ function parseAptitudeWeek4DayContent(fileContent, day) {
 function parseAptitudeWeek5DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['# 📅 MONDAY'], 
-            title: 'TSD Fundamentals - Speed as Rate & Distance' 
+        'day-1': {
+            patterns: ['# 📅 MONDAY'],
+            title: 'TSD Fundamentals - Speed as Rate & Distance'
         },
-        'day-2': { 
-            patterns: ['# 📅 TUESDAY'], 
-            title: 'TSD Advanced - Average Speed & Multi-Segment' 
+        'day-2': {
+            patterns: ['# 📅 TUESDAY'],
+            title: 'TSD Advanced - Average Speed & Multi-Segment'
         },
-        'day-3': { 
-            patterns: ['# 📅 WEDNESDAY'], 
-            title: 'Trains & Relative Speed - Overtaking & Meeting' 
+        'day-3': {
+            patterns: ['# 📅 WEDNESDAY'],
+            title: 'Trains & Relative Speed - Overtaking & Meeting'
         },
-        'day-4': { 
-            patterns: ['# 📅 THURSDAY'], 
-            title: 'Boats & Water Current - Upstream/Downstream' 
+        'day-4': {
+            patterns: ['# 📅 THURSDAY'],
+            title: 'Boats & Water Current - Upstream/Downstream'
         },
-        'day-5': { 
-            patterns: ['# 📅 FRIDAY'], 
-            title: 'TSD + Trains + Boats Integration' 
+        'day-5': {
+            patterns: ['# 📅 FRIDAY'],
+            title: 'TSD + Trains + Boats Integration'
         },
     }
 
@@ -1892,7 +1892,7 @@ function parseAptitudeWeek5DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         let foundDay = false
         if (trimmedLine.startsWith('# 📅')) {
             const dayNum = day.replace('day-', '')
@@ -1908,7 +1908,7 @@ function parseAptitudeWeek5DayContent(fileContent, day) {
                 foundDay = trimmedLine.includes('FRIDAY') && trimmedLine.includes('DAY 5')
             }
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found aptitude Week 5 day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -1921,31 +1921,31 @@ function parseAptitudeWeek5DayContent(fileContent, day) {
                 console.log(`Stopping at next day: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.includes('SATURDAY') || trimmedLine.includes('SUNDAY')) {
                 console.log(`Stopping at weekend section: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('### ')) {
                 const topic = trimmedLine.replace('### ', '').trim()
                 if (topic && !topics.includes(topic) && topic.length > 3) {
                     topics.push(topic)
                 }
             }
-            
+
             dayContent.push(line)
         }
     }
 
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Aptitude Week 5 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         topics: topics.length
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
     }
@@ -1966,25 +1966,25 @@ function parseAptitudeWeek5DayContent(fileContent, day) {
 function parseAptitudeWeek6DayContent(fileContent, day) {
     const lines = fileContent.split('\n')
     const dayMap = {
-        'day-1': { 
-            patterns: ['# ⏰ MONDAY'], 
-            title: 'Profit & Loss Fundamentals' 
+        'day-1': {
+            patterns: ['# ⏰ MONDAY'],
+            title: 'Profit & Loss Fundamentals'
         },
-        'day-2': { 
-            patterns: ['# ⏰ TUESDAY'], 
-            title: 'Advanced P&L - Discounts & Marked Price' 
+        'day-2': {
+            patterns: ['# ⏰ TUESDAY'],
+            title: 'Advanced P&L - Discounts & Marked Price'
         },
-        'day-3': { 
-            patterns: ['# ⏰ WEDNESDAY'], 
-            title: 'Simple Interest Complete Mastery' 
+        'day-3': {
+            patterns: ['# ⏰ WEDNESDAY'],
+            title: 'Simple Interest Complete Mastery'
         },
-        'day-4': { 
-            patterns: ['# ⏰ THURSDAY'], 
-            title: 'Compound Interest Advanced + Effective Rates' 
+        'day-4': {
+            patterns: ['# ⏰ THURSDAY'],
+            title: 'Compound Interest Advanced + Effective Rates'
         },
-        'day-5': { 
-            patterns: ['# ⏰ FRIDAY'], 
-            title: 'Complete Integration - Business Scenarios' 
+        'day-5': {
+            patterns: ['# ⏰ FRIDAY'],
+            title: 'Complete Integration - Business Scenarios'
         },
     }
 
@@ -1998,7 +1998,7 @@ function parseAptitudeWeek6DayContent(fileContent, day) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         const trimmedLine = line.trim()
-        
+
         let foundDay = false
         if (trimmedLine.startsWith('# ⏰')) {
             const dayNum = day.replace('day-', '')
@@ -2017,7 +2017,7 @@ function parseAptitudeWeek6DayContent(fileContent, day) {
                 foundDay = trimmedLine.includes('FRIDAY') && trimmedLine.includes('DAY 5')
             }
         }
-        
+
         if (foundDay && !inDay) {
             console.log(`Found aptitude Week 6 day section at line ${i}: ${trimmedLine}`)
             inDay = true
@@ -2030,31 +2030,31 @@ function parseAptitudeWeek6DayContent(fileContent, day) {
                 console.log(`Stopping at next day: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.includes('SATURDAY') || trimmedLine.includes('SUNDAY') || trimmedLine.includes('📊')) {
                 console.log(`Stopping at weekend/test section: ${trimmedLine}`)
                 break
             }
-            
+
             if (trimmedLine.startsWith('### ')) {
                 const topic = trimmedLine.replace('### ', '').trim()
                 if (topic && !topics.includes(topic) && topic.length > 3) {
                     topics.push(topic)
                 }
             }
-            
+
             dayContent.push(line)
         }
     }
 
     let cleanedContent = dayContent.join('\n').trim()
-    
+
     console.log(`Aptitude Week 6 content collection summary for ${day}:`, {
         linesCollected: dayContent.length,
         contentLength: cleanedContent.length,
         topics: topics.length
     })
-    
+
     if (!cleanedContent || cleanedContent.length < 50) {
         console.log(`Warning: Limited content for ${day}. Collected ${dayContent.length} lines.`)
     }

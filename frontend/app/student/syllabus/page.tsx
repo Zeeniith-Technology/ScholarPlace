@@ -127,7 +127,8 @@ const FULL_SYLLABUS = [
     topics: ["Introduction to Graphs", "BFS & DFS", "Connected Components", "Blood Relations", "Coding-Decoding", "Direction Sense", "Seating Arrangement"],
     assignments: 5,
     tests: 1,
-    duration: "14-16 Hours"
+    duration: "14-16 Hours",
+    isComingSoon: true
   },
   {
     week: 8,
@@ -136,7 +137,8 @@ const FULL_SYLLABUS = [
     topics: ["Mock Tests", "Comprehensive DSA Revision", "Verbal Ability: Reading Comprehension", "Sentence Correction", "System Design Basics"],
     assignments: 5,
     tests: 2,
-    duration: "15-18 Hours"
+    duration: "15-18 Hours",
+    isComingSoon: true
   }
 ];
 
@@ -525,38 +527,39 @@ export default function StudentSyllabusPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {weeklySchedule.map((week) => {
+                  {weeklySchedule.map((week: any) => {
                     const status = week.status
                     const isActive = status === 'start' || status === 'in_progress'
                     const isCompleted = status === 'completed'
                     const isLocked = status === 'locked'
+                    const isComingSoon = week.isComingSoon || false
 
                     return (
                       <tr
                         key={week.week}
                         className={cn(
                           'group border-b border-gray-200 transition-all duration-200',
-                          isActive && 'bg-blue-50/50',
-                          isCompleted && 'bg-green-50/50',
-                          !isLocked && 'hover:bg-gray-50 cursor-pointer',
-                          isLocked && 'opacity-50'
+                          isActive && !isComingSoon && 'bg-blue-50/50',
+                          isCompleted && !isComingSoon && 'bg-green-50/50',
+                          !isLocked && !isComingSoon && 'hover:bg-gray-50 cursor-pointer',
+                          (isLocked || isComingSoon) && 'opacity-50'
                         )}
-                        onClick={() => !isLocked && handleStartWeek(week.week, status)}
+                        onClick={() => !isLocked && !isComingSoon && handleStartWeek(week.week, status)}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                            {isActive && <div className="w-1 h-16 bg-blue-500 rounded-full flex-shrink-0" />}
-                            {isCompleted && <div className="w-1 h-16 bg-green-500 rounded-full flex-shrink-0" />}
-                            {!isActive && !isCompleted && <div className="w-1 h-16 bg-transparent flex-shrink-0" />}
+                            {isActive && !isComingSoon && <div className="w-1 h-16 bg-blue-500 rounded-full flex-shrink-0" />}
+                            {isCompleted && !isComingSoon && <div className="w-1 h-16 bg-green-500 rounded-full flex-shrink-0" />}
+                            {(!isActive && !isCompleted) || isComingSoon ? <div className="w-1 h-16 bg-transparent flex-shrink-0" /> : null}
 
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base transition-all duration-300 flex-shrink-0',
-                                isCompleted && 'bg-green-600 text-white shadow-md',
-                                isActive && 'bg-blue-600 text-white shadow-md',
-                                isLocked && 'bg-gray-200 text-gray-500 border border-gray-300'
+                                isCompleted && !isComingSoon && 'bg-green-600 text-white shadow-md',
+                                isActive && !isComingSoon && 'bg-blue-600 text-white shadow-md',
+                                (isLocked || isComingSoon) && 'bg-gray-200 text-gray-500 border border-gray-300'
                               )}>
-                                {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : week.week}
+                                {isCompleted && !isComingSoon ? <CheckCircle2 className="w-5 h-5" /> : week.week}
                               </div>
                               <div>
                                 <div className="font-bold text-base text-gray-900">
@@ -571,12 +574,12 @@ export default function StudentSyllabusPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-1.5 max-w-lg">
-                            {week.topics.slice(0, 4).map((topic, i) => (
+                            {week.topics?.slice(0, 4).map((topic: string, i: number) => (
                               <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0.5 border border-gray-200 bg-white/60">
                                 {topic}
                               </Badge>
                             ))}
-                            {week.topics.length > 4 && (
+                            {week.topics?.length > 4 && (
                               <Badge variant="default" className="text-[10px] px-1.5 py-0.5">
                                 +{week.topics.length - 4} more
                               </Badge>
@@ -584,7 +587,11 @@ export default function StudentSyllabusPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {isActive ? (
+                          {isComingSoon ? (
+                            <Badge variant="secondary" className="text-xs px-3 py-1.5 font-semibold bg-amber-100 text-amber-700 border border-amber-200 ml-auto w-fit">
+                              <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> Coming Soon</span>
+                            </Badge>
+                          ) : isActive ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -617,62 +624,68 @@ export default function StudentSyllabusPage() {
         {/* Detailed View */}
         {!isLoading && viewMode === 'detailed' && (
           <div className="space-y-4 sm:space-y-6 animate-fade-in">
-            {weeklySchedule.map((week, index) => (
-              <Card
-                key={week.week}
-                className={`transition-all duration-700 hover:shadow-2xl ${week.status === 'completed'
-                  ? 'border-secondary/30 bg-gradient-to-br from-secondary/5 to-background-surface'
-                  : (week.status === 'start' || week.status === 'in_progress')
-                    ? 'border-primary/30 bg-gradient-to-br from-primary/5 to-background-surface'
-                    : 'border-neutral-light/20 bg-background-surface'
-                  } border-2`}
-              >
-                <div className="flex flex-col md:flex-row items-start justify-between gap-6 p-2">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-heading font-bold text-xl shadow-lg flex-shrink-0 ${week.status === 'completed' ? 'bg-green-600 text-white' :
-                      (week.status === 'start' || week.status === 'in_progress') ? 'bg-blue-600 text-white' :
-                        'bg-gray-100 text-gray-400'
-                      }`}>
-                      {week.status === 'completed' ? <CheckCircle2 /> : week.week}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-heading font-bold text-neutral mb-2">
-                        {week.title}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {week.topics.map((topic, i) => (
-                          <Badge key={i} variant="secondary" className="bg-white/50 border border-gray-100">
-                            {topic}
-                          </Badge>
-                        ))}
+            {weeklySchedule.map((week: any, index) => {
+              const isComingSoon = week.isComingSoon || false;
+              return (
+                <Card
+                  key={week.week}
+                  className={`transition-all duration-700 hover:shadow-2xl ${isComingSoon ? 'border-neutral-light/20 bg-background-surface opacity-75' :
+                    week.status === 'completed'
+                      ? 'border-secondary/30 bg-gradient-to-br from-secondary/5 to-background-surface'
+                      : (week.status === 'start' || week.status === 'in_progress')
+                        ? 'border-primary/30 bg-gradient-to-br from-primary/5 to-background-surface'
+                        : 'border-neutral-light/20 bg-background-surface'
+                    } border-2`}
+                >
+                  <div className="flex flex-col md:flex-row items-start justify-between gap-6 p-2">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-heading font-bold text-xl shadow-lg flex-shrink-0 ${isComingSoon ? 'bg-gray-100 text-gray-400' :
+                        week.status === 'completed' ? 'bg-green-600 text-white' :
+                          (week.status === 'start' || week.status === 'in_progress') ? 'bg-blue-600 text-white' :
+                            'bg-gray-100 text-gray-400'
+                        }`}>
+                        {week.status === 'completed' && !isComingSoon ? <CheckCircle2 /> : week.week}
                       </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-neutral-light">
-                        <span className="flex items-center gap-1"><Brain className="w-4 h-4" /> {week.modules.length} Modules</span>
-                        <span className="flex items-center gap-1"><FileText className="w-4 h-4" /> {week.assignments} Assignments</span>
-                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {week.duration}</span>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-heading font-bold text-neutral mb-2">
+                          {week.title}
+                        </h3>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {week.topics?.map((topic: string, i: number) => (
+                            <Badge key={i} variant="secondary" className="bg-white/50 border border-gray-100">
+                              {topic}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-4 text-sm text-neutral-light">
+                          <span className="flex items-center gap-1"><Brain className="w-4 h-4" /> {week.modules?.length} Modules</span>
+                          <span className="flex items-center gap-1"><FileText className="w-4 h-4" /> {week.assignments} Assignments</span>
+                          <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {week.duration}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-3 min-w-[140px]">
-                    <Badge variant={
-                      week.status === 'completed' ? 'secondary' :
-                        (week.status === 'start' || week.status === 'in_progress') ? 'primary' : 'default'
-                    } className="capitalize px-3 py-1">
-                      {week.status === 'in_progress' ? 'In Progress' : week.status}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-3 min-w-[140px]">
+                      <Badge variant={
+                        isComingSoon ? 'default' :
+                          week.status === 'completed' ? 'secondary' :
+                            (week.status === 'start' || week.status === 'in_progress') ? 'primary' : 'default'
+                      } className="capitalize px-3 py-1">
+                        {isComingSoon ? 'Coming Soon' : week.status === 'in_progress' ? 'In Progress' : week.status}
+                      </Badge>
 
-                    {week.status !== 'locked' && (
-                      <button
-                        onClick={() => handleStartWeek(week.week, week.status)}
-                        className="w-full px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
-                      >
-                        {week.status === 'start' ? 'Start Week' : week.status === 'completed' ? 'Review' : 'Continue'}
-                      </button>
-                    )}
+                      {week.status !== 'locked' && !isComingSoon && (
+                        <button
+                          onClick={() => handleStartWeek(week.week, week.status)}
+                          className="w-full px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+                        >
+                          {week.status === 'start' ? 'Start Week' : week.status === 'completed' ? 'Review' : 'Continue'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              )
+            })}
           </div>
         )}
 
@@ -680,22 +693,26 @@ export default function StudentSyllabusPage() {
         {!isLoading && viewMode === 'timeline' && (
           <Card className="p-8">
             <div className="relative border-l-2 border-gray-200 ml-4 space-y-8">
-              {weeklySchedule.map((week) => (
-                <div key={week.week} className="relative pl-8">
-                  <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 bg-white ${week.status === 'completed' ? 'border-green-500 bg-green-500' :
-                    (week.status === 'start' || week.status === 'in_progress') ? 'border-blue-500 animate-pulse' :
-                      'border-gray-300'
-                    }`} />
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-                    <h3 className={`text-lg font-bold ${week.status === 'locked' ? 'text-gray-400' : 'text-gray-800'
-                      }`}>Week {week.week}: {week.title}</h3>
-                    <Badge variant="secondary">{week.duration}</Badge>
+              {weeklySchedule.map((week: any) => {
+                const isComingSoon = week.isComingSoon || false;
+                return (
+                  <div key={week.week} className="relative pl-8">
+                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 bg-white ${isComingSoon ? 'border-gray-300' :
+                        week.status === 'completed' ? 'border-green-500 bg-green-500' :
+                          (week.status === 'start' || week.status === 'in_progress') ? 'border-blue-500 animate-pulse' :
+                            'border-gray-300'
+                      }`} />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                      <h3 className={`text-lg font-bold ${week.status === 'locked' || isComingSoon ? 'text-gray-400' : 'text-gray-800'
+                        }`}>Week {week.week}: {week.title} {isComingSoon && '(Coming Soon)'}</h3>
+                      <Badge variant="secondary">{week.duration}</Badge>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-2">
+                      {week.topics?.slice(0, 5).join(', ')}...
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-500 mb-2">
-                    {week.topics.slice(0, 5).join(', ')}...
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </Card>
         )}

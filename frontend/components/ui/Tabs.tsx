@@ -32,7 +32,7 @@ export function Tabs({ items, className }: TabsProps) {
       if (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) return true
       // Learning: /student/study and sub-routes, but NOT /student/study-help
       if (item.href === '/student/study' && pathname.startsWith('/student/study') && !pathname.startsWith('/student/study-help')) return true
-      if (item.href === '/student/study' && pathname.startsWith('/student/practice')) return true
+      if (item.href === '/student/study' && pathname.startsWith('/student/practice/')) return true
       // Coding: match sub-routes
       if (item.href === '/student/coding' && pathname.startsWith('/student/coding')) return true
       return false
@@ -92,7 +92,7 @@ export function Tabs({ items, className }: TabsProps) {
           (item.href === '/student/coding' && pathname.startsWith('/student/coding')) ||
           (item.href === '/student/study' && (
             (pathname.startsWith('/student/study') && !pathname.startsWith('/student/study-help') && !pathname.startsWith('/student/coding')) ||
-            pathname.startsWith('/student/practice')
+            pathname.startsWith('/student/practice/')
           ))
 
         return (

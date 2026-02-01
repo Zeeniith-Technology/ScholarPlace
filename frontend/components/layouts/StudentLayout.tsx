@@ -24,7 +24,6 @@ const navigation = [
   { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
   { name: 'Syllabus', href: '/student/syllabus', icon: BookOpen },
   { name: 'Learning', href: '/student/study', icon: BookMarked },
-  { name: 'Coding', href: '/student/coding', icon: FileText },
   { name: 'Study Help', href: '/student/study-help', icon: HelpCircle },
   { name: 'Tests', href: '/student/tests', icon: FileText },
   { name: 'Practice Analytics', href: '/student/practice-analytics', icon: BarChart3 },

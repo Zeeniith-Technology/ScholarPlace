@@ -2745,24 +2745,36 @@ export default class tpcController {
             const user = userInfo.user;
             const collegeId = user.person_collage_id || user.collage_id;
             const department = user.department;
+            const departmentId = user.department_id || (typeof user.department === 'string' && user.department.match(/^[0-9a-fA-F]{24}$/) ? user.department : null);
 
-            if (!collegeId || !department) {
+            if (!collegeId || (!department && !departmentId)) {
                 res.locals.responseData = {
                     success: false,
                     status: 400,
-                    message: 'College ID or Department not found',
+                    message: 'College ID or Department info not found',
                     error: 'Department information missing'
                 };
                 return next();
             }
 
+            // Build department filter
+            let departmentFilter = {};
+            if (department && departmentId) {
+                // If we have both, match either (legacy vs new)
+                departmentFilter = { $or: [{ department: department }, { department: departmentId }, { department_id: departmentId }] };
+            } else if (departmentId) {
+                departmentFilter = { $or: [{ department: departmentId }, { department_id: departmentId }] };
+            } else {
+                departmentFilter = { department: department };
+            }
+
             // Get all students in department
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
-                { department: 1, person_name: 1, person_email: 1 },
+                { department: 1, person_name: 1, person_email: 1, person_status: 1 },
                 {
                     person_collage_id: collegeId,
-                    department: department,
+                    ...departmentFilter,
                     person_deleted: false,
                     person_status: 'active',
                     person_role: 'Student'
@@ -2770,7 +2782,9 @@ export default class tpcController {
             );
 
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id).toString());
+            console.log(`[TPC Analytics] Found ${students.length} students in department ${department}`);
+            console.log(`[TPC Analytics] Student IDs:`, studentIds);
 
             // Get progress data
             const progressResponse = await fetchData(
@@ -2779,6 +2793,10 @@ export default class tpcController {
                 { student_id: { $in: studentIds } }
             );
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
+            console.log(`[TPC Analytics] Found ${progressData.length} progress records`);
+            if (progressData.length > 0) console.log('[TPC Analytics] Sample Progress:', JSON.stringify(progressData[0], null, 2));
+
+            // Get practice test data
 
             // Get practice test data
             const practiceTestResponse = await fetchData(
@@ -2792,30 +2810,68 @@ export default class tpcController {
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.person_status === 'active').length;
 
-            // Calculate average score
+            // Calculate average score (Aptitude + Coding)
             let totalScore = 0;
             let scoreCount = 0;
             let totalTestsCompleted = 0;
             let totalDaysCompleted = 0;
             let topPerformers = 0;
 
+            // Estimated total coding problems per week to calculate percentage
+            const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
+
             progressData.forEach(progress => {
+                let aptitudeScore = null;
+                let codingScore = null;
+
+                // 1. Aptitude Score
                 if (progress.average_score !== undefined && progress.average_score !== null) {
-                    totalScore += progress.average_score;
+                    aptitudeScore = progress.average_score;
+                }
+
+                // 2. Coding Score
+                if (progress.coding_problems_completed && progress.coding_problems_completed.length > 0) {
+                    const uniqueProblems = new Set(progress.coding_problems_completed).size;
+                    // Cap at 100%
+                    codingScore = Math.min(100, Math.round((uniqueProblems / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
+                }
+
+                // 3. Composite Score
+                let studentScore = null;
+                if (aptitudeScore !== null && codingScore !== null) {
+                    studentScore = Math.round((aptitudeScore + codingScore) / 2);
+                } else if (aptitudeScore !== null) {
+                    studentScore = aptitudeScore;
+                } else if (codingScore !== null) {
+                    studentScore = codingScore;
+                }
+
+                if (studentScore !== null) {
+                    totalScore += studentScore;
                     scoreCount++;
-                    if (progress.average_score >= 85) {
+                    if (studentScore >= 85) {
                         topPerformers++;
                     }
                 }
+
                 if (progress.total_practice_tests) {
                     totalTestsCompleted += progress.total_practice_tests;
                 }
                 if (progress.total_days_completed) {
                     totalDaysCompleted += progress.total_days_completed;
                 }
+
+                // Count coding problems as "Tests Completed"
+                if (progress.coding_problems_completed?.length > 0) {
+                    const uniqueEncoded = new Set(progress.coding_problems_completed).size;
+                    // Only add if not already counted (avoid double counting if logic changes)
+                    // Here we treat each problem as a "mini test" or just add 1 per set? 
+                    // Let's add total problems solved to "Tests Completed" count to show activity
+                    totalTestsCompleted += uniqueEncoded;
+                }
             });
 
-            // Also calculate from practice tests if no progress data
+            // Fallback: If no progress data but practice tests exist
             if (scoreCount === 0 && practiceTests.length > 0) {
                 const testScores = practiceTests.map(t => t.score || 0).filter(s => s > 0);
                 if (testScores.length > 0) {
@@ -2837,15 +2893,30 @@ export default class tpcController {
                     totalStudents,
                     activeStudents,
                     averageScore,
-                    totalTests: practiceTests.length,
+                    totalTests: totalTestsCompleted, // Use the aggregated count
                     totalDaysCompleted,
                     topPerformers,
                     engagementRate,
+                    // Needs Attention Logic: Students with Composite Score < 50
                     needsAttention: students.filter(student => {
-                        const studentProgress = progressData.find(p =>
-                            (p.student_id === student._id || p.student_id === student.person_id)
-                        );
-                        return !studentProgress || (studentProgress.average_score && studentProgress.average_score < 50);
+                        const progress = progressData.find(p => (p.student_id === student._id || p.student_id === student.person_id));
+                        if (!progress) return true; // No progress = needs attention
+
+                        let aptScore = progress.average_score;
+                        let codeScore = 0;
+                        if (progress.coding_problems_completed?.length > 0) {
+                            const unique = new Set(progress.coding_problems_completed).size;
+                            codeScore = Math.min(100, Math.round((unique / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
+                        }
+
+                        let finalScore = 0;
+                        if (aptScore !== undefined && aptScore !== null) {
+                            finalScore = codeScore > 0 ? (aptScore + codeScore) / 2 : aptScore;
+                        } else {
+                            finalScore = codeScore;
+                        }
+
+                        return finalScore < 50;
                     }).length
                 }
             };
@@ -2928,12 +2999,12 @@ export default class tpcController {
                 }
             );
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id).toString());
 
-            // Get practice tests grouped by week
+            // 1. Get Practice Tests (Daily)
             const practiceTestResponse = await fetchData(
                 'tblPracticeTest',
-                { week: 1, score: 1, student_id: 1, completed_at: 1 },
+                { week: 1, score: 1, student_id: 1 },
                 {
                     student_id: { $in: studentIds },
                     week: { $lte: weeks }
@@ -2941,19 +3012,97 @@ export default class tpcController {
             );
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
 
+            // 2. Get Weekly Test Analysis (Weekly Exams)
+            const analysisResponse = await fetchData(
+                'tblTestAnalysis',
+                { week: 1, score: 1, student_id: 1, test_type: 1 },
+                {
+                    student_id: { $in: studentIds },
+                    week: { $lte: weeks },
+                    test_type: 'weekly'
+                }
+            );
+            const weeklyTests = analysisResponse.success && analysisResponse.data ? analysisResponse.data : [];
+
+            // 3. Get Coding Progress
+            const progressResponse = await fetchData(
+                'tblStudentProgress',
+                { week: 1, coding_problems_completed: 1, average_score: 1, student_id: 1 },
+                {
+                    student_id: { $in: studentIds },
+                    week: { $lte: weeks }
+                }
+            );
+            const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
+
             // Group by week
             const weeklyTrends = [];
+            const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
+
             for (let week = 1; week <= weeks; week++) {
-                const weekTests = practiceTests.filter(t => t.week === week);
-                const avgScore = weekTests.length > 0
-                    ? Math.round(weekTests.reduce((sum, t) => sum + (t.score || 0), 0) / weekTests.length)
-                    : 0;
+                const pTests = practiceTests.filter(t => t.week === week);
+                const wTests = weeklyTests.filter(t => t.week === week);
+                const wProgress = progressData.filter(p => p.week === week);
+
+                // Identify all participants for this week
+                const participants = new Set([
+                    ...pTests.map(t => t.student_id),
+                    ...wTests.map(t => t.student_id),
+                    ...wProgress.map(p => p.student_id)
+                ]);
+
+                let totalWeekScore = 0;
+                let studentCount = 0;
+
+                participants.forEach(studentId => {
+                    // 1. Practice Score (Average of all daily tests for this student)
+                    const myPTests = pTests.filter(t => t.student_id === studentId);
+                    let practiceScore = null;
+                    if (myPTests.length > 0) {
+                        practiceScore = myPTests.reduce((a, b) => a + (b.score || 0), 0) / myPTests.length;
+                    }
+
+                    // 2. Weekly Test Score
+                    const myWTest = wTests.find(t => t.student_id === studentId); // Assuming 1 weekly test
+                    let weeklyScore = myWTest ? myWTest.score : null;
+
+                    // 3. Coding Score
+                    const myProgress = wProgress.find(p => p.student_id === studentId);
+                    let codingScore = null;
+                    if (myProgress && myProgress.coding_problems_completed?.length > 0) {
+                        const unique = new Set(myProgress.coding_problems_completed).size;
+                        codingScore = Math.min(100, Math.round((unique / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
+                    }
+
+                    // Calculate Composite for Student
+                    // Weightage: Weekly Test > Coding > Practice? 
+                    // Or just average all available components?
+                    // Let's Average Available Components
+                    let components = [];
+                    if (practiceScore !== null) components.push(practiceScore);
+                    if (weeklyScore !== null) components.push(weeklyScore);
+                    if (codingScore !== null) components.push(codingScore);
+
+                    // Fallback to average_score from progress if nothing else
+                    if (components.length === 0 && myProgress && myProgress.average_score) {
+                        components.push(myProgress.average_score);
+                    }
+
+                    if (components.length > 0) {
+                        const studentAvg = components.reduce((a, b) => a + b, 0) / components.length;
+                        totalWeekScore += studentAvg;
+                        studentCount++;
+                    }
+                });
+
+                const avgScore = studentCount > 0 ? Math.round(totalWeekScore / studentCount) : 0;
+                const totalActivities = pTests.length + wTests.length + wProgress.filter(p => p.coding_problems_completed?.length > 0).length;
 
                 weeklyTrends.push({
                     week,
                     averageScore: avgScore,
-                    totalTests: weekTests.length,
-                    studentsParticipated: new Set(weekTests.map(t => t.student_id)).size
+                    totalTests: totalActivities,
+                    studentsParticipated: participants.size
                 });
             }
 
@@ -3041,7 +3190,7 @@ export default class tpcController {
                 }
             );
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id).toString());
 
             // Get progress data
             const progressResponse = await fetchData(
@@ -3059,18 +3208,36 @@ export default class tpcController {
             );
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
 
-            // Collect all scores
+            // Collect composite scores
             const allScores = [];
+            const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
+
             progressData.forEach(progress => {
-                if (progress.average_score !== undefined && progress.average_score !== null) {
-                    allScores.push(progress.average_score);
+                let aptScore = progress.average_score;
+                let codeScore = null;
+
+                if (progress.coding_problems_completed && progress.coding_problems_completed.length > 0) {
+                    const unique = new Set(progress.coding_problems_completed).size;
+                    codeScore = Math.min(100, Math.round((unique / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
+                }
+
+                if (aptScore !== undefined && aptScore !== null && codeScore !== null) {
+                    allScores.push(Math.round((aptScore + codeScore) / 2));
+                } else if (aptScore !== undefined && aptScore !== null) {
+                    allScores.push(aptScore);
+                } else if (codeScore !== null) {
+                    allScores.push(codeScore);
                 }
             });
-            practiceTests.forEach(test => {
-                if (test.score !== undefined && test.score !== null) {
-                    allScores.push(test.score);
-                }
-            });
+
+            // If no progress scores, try practice tests
+            if (allScores.length === 0) {
+                practiceTests.forEach(test => {
+                    if (test.score !== undefined && test.score !== null) {
+                        allScores.push(test.score);
+                    }
+                });
+            }
 
             // Calculate distribution
             const distribution = {
@@ -3152,14 +3319,21 @@ export default class tpcController {
             const collegeId = user.person_collage_id || user.collage_id;
             const department = user.department;
 
-            if (!collegeId || !department) {
-                res.locals.responseData = {
-                    success: false,
-                    status: 400,
-                    message: 'College ID or Department not found',
-                    error: 'Department information missing'
-                };
+            const departmentId = user.department_id || (typeof user.department === 'string' && user.department.match(/^[0-9a-fA-F]{24}$/) ? user.department : null);
+
+            if (!collegeId || (!department && !departmentId)) {
+                res.locals.responseData = { success: false, status: 400, message: 'Department info missing' };
                 return next();
+            }
+
+            // Build department filter
+            let departmentFilter = {};
+            if (department && departmentId) {
+                departmentFilter = { $or: [{ department: department }, { department: departmentId }, { department_id: departmentId }] };
+            } else if (departmentId) {
+                departmentFilter = { $or: [{ department: departmentId }, { department_id: departmentId }] };
+            } else {
+                departmentFilter = { department: department };
             }
 
             // Get students in department
@@ -3168,9 +3342,10 @@ export default class tpcController {
                 { _id: 1 },
                 {
                     person_collage_id: collegeId,
-                    department: department,
+                    ...departmentFilter,
                     person_deleted: false,
-                    person_role: 'Student'
+                    person_role: 'Student',
+                    person_status: 'active'
                 }
             );
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
@@ -4205,4 +4380,422 @@ export default class tpcController {
         }
     }
 
+    /**
+     * Get Department TPC Performance Analytics
+     * Route: POST /tpc-dept/analytics/performance
+     */
+    async getDeptTPCPerformance(req, res, next) {
+        try {
+            const userId = req.userId || req.user?.id;
+            const userRole = req.user?.role;
+
+            console.log('[DeptTPC] Performance Request by:', userId, userRole);
+
+            if (userRole !== 'DeptTPC') {
+                res.locals.responseData = { success: false, status: 403, message: 'Access denied' };
+                return next();
+            }
+
+            const userInfo = await this.getUserInfo(userId);
+            if (!userInfo.found || !userInfo.user) throw new Error('User not found');
+
+            const deptTpcUser = userInfo.user;
+            const deptFilter = deptTpcUser.department;
+            const deptIdFilter = deptTpcUser.department_id;
+            const collegeId = deptTpcUser.person_collage_id || deptTpcUser.collage_id;
+
+            console.log('[DeptTPC] User Dept:', deptFilter, 'ID:', deptIdFilter, 'College:', collegeId);
+
+            if (!deptFilter && !deptIdFilter) throw new Error('Department not assigned to user');
+
+            const studentFilter = {
+                person_role: { $regex: /^student$/i },
+                person_collage_id: collegeId,
+                person_deleted: false
+            };
+
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                deptOrConditions.push({ department_id: deptIdFilter });
+                try {
+                    const { ObjectId } = await import('mongodb');
+                    if (typeof deptIdFilter === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdFilter)) {
+                        deptOrConditions.push({ department_id: new ObjectId(deptIdFilter) });
+                    }
+                } catch (e) { }
+            }
+            if (deptFilter) {
+                const trimmed = deptFilter.trim();
+                deptOrConditions.push(
+                    { department: trimmed },
+                    { department: { $regex: new RegExp(`^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                );
+            }
+            if (deptOrConditions.length > 0) studentFilter.$or = deptOrConditions;
+
+            // Fetch Students
+            const studentsRes = await fetchData('tblPersonMaster',
+                { _id: 1, person_id: 1, person_name: 1, person_email: 1, person_status: 1, enrollment_number: 1 },
+                studentFilter
+            );
+            const students = studentsRes.data || [];
+            const studentIds = students.map(s => (s._id || s.person_id).toString());
+
+            console.log('[DeptTPC] Students found:', students.length);
+
+            // Fetch Progress (DSA/Daily) - Check multiple collection names if needed, but assuming tblStudentProgress
+            const progressRes = await fetchData('tblStudentProgress', {}, { student_id: { $in: studentIds } });
+            const progressData = progressRes.data || [];
+
+            // Fetch Practice Tests (Aptitude) - RAW DATA for accurate average
+            const practiceRes = await fetchData('tblPracticeTest', { score: 1, student_id: 1 }, { student_id: { $in: studentIds } });
+            const practiceTests = practiceRes.data || [];
+
+            console.log('[DeptTPC] Progress records:', progressData.length, 'Practice tests:', practiceTests.length);
+
+            // Calculate Stats
+            const totalStudents = students.length;
+            const activeStudents = students.filter(s => s.person_status === 'active').length;
+
+            let totalScoreSum = 0;
+            let totalPracticeTests = practiceTests.length;
+            let totalDays = 0;
+            let studentDetails = [];
+
+            students.forEach(s => {
+                const sId = (s._id || s.person_id).toString();
+
+                // Get Progress
+                const prog = progressData.find(p => (p.student_id?.toString() || p.student_id) === sId);
+                const completedDays = (prog?.completed_days || prog?.days_completed || []).length;
+                const codingProblems = (prog?.coding_problems_completed || []).length;
+                if (prog) totalDays += completedDays;
+
+                // Get Practice Tests for THIS student
+                const studentTests = practiceTests.filter(t => (t.student_id?.toString() || t.student_id) === sId);
+                const testCount = studentTests.length;
+
+                // Calculate average from RAW tests if available, fallback to progress
+                let average = 0;
+                if (testCount > 0) {
+                    const sum = studentTests.reduce((acc, t) => acc + (t.score || 0), 0);
+                    average = Math.round(sum / testCount);
+                } else {
+                    average = prog?.average_score || 0;
+                }
+
+                totalScoreSum += average;
+
+                studentDetails.push({
+                    id: sId,
+                    name: s.person_name,
+                    email: s.person_email,
+                    status: s.person_status || 'inactive',
+                    compositeScore: average,
+                    testsCompleted: testCount,
+                    codingProblemsSolved: codingProblems,
+                    daysCompleted: completedDays
+                });
+            });
+
+            // Dept Average: Average of student averages
+            const averageScore = totalStudents > 0 ? Math.round(totalScoreSum / totalStudents) : 0;
+
+            const topPerformers = studentDetails.filter(s => s.compositeScore >= 85).length;
+            const needsAttention = studentDetails.filter(s => s.compositeScore < 50 && s.status === 'active').length;
+            const engagementRate = totalStudents > 0 ? Math.round((activeStudents / totalStudents) * 100) : 0;
+
+            console.log('[DeptTPC] Stats:', { averageScore, totalPracticeTests, totalDays });
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                data: {
+                    department: deptFilter,
+                    totalStudents,
+                    activeStudents,
+                    averageScore,
+                    topPerformers,
+                    needsAttention,
+                    totalTests: totalPracticeTests, // Count of all practice tests taken
+                    totalDaysCompleted: totalDays,
+                    engagementRate,
+                    studentDetails
+                }
+            };
+            next();
+        } catch (error) {
+            console.error('[TPC] Dept Performance Error:', error);
+            res.locals.responseData = { success: false, status: 500, message: 'Fetch failed', error: error.message };
+            next();
+        }
+    }
+
+    /**
+     * Get Department TPC Score Distribution
+     * Route: POST /tpc-dept/analytics/distribution
+     */
+    async getDeptTPCDistribution(req, res, next) {
+        try {
+            const userId = req.userId || req.user?.id;
+            const userRole = req.user?.role;
+            if (userRole !== 'DeptTPC') return next();
+
+            const userInfo = await this.getUserInfo(userId);
+            const deptTpcUser = userInfo.user;
+            const deptFilter = deptTpcUser.department;
+            const deptIdFilter = deptTpcUser.department_id;
+            const collegeId = deptTpcUser.person_collage_id || deptTpcUser.collage_id;
+
+            const studentFilter = { person_role: { $regex: /^student$/i }, person_collage_id: collegeId, person_deleted: false };
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                deptOrConditions.push({ department_id: deptIdFilter });
+                try {
+                    const { ObjectId } = await import('mongodb');
+                    if (typeof deptIdFilter === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdFilter)) {
+                        deptOrConditions.push({ department_id: new ObjectId(deptIdFilter) });
+                    }
+                } catch (e) { }
+            }
+            if (deptFilter) {
+                const trimmed = deptFilter.trim();
+                deptOrConditions.push(
+                    { department: trimmed },
+                    { department: { $regex: new RegExp(`^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                );
+            }
+            if (deptOrConditions.length > 0) studentFilter.$or = deptOrConditions;
+
+            const studentsRes = await fetchData('tblPersonMaster', { _id: 1, person_id: 1 }, studentFilter);
+            const students = studentsRes.data || [];
+            const studentIds = students.map(s => (s._id || s.person_id).toString());
+
+            // Fetch raw tests to calculate real average
+            const practiceRes = await fetchData('tblPracticeTest', { score: 1, student_id: 1 }, { student_id: { $in: studentIds } });
+            const practiceTests = practiceRes.data || [];
+
+            const distribution = { excellent: 0, good: 0, average: 0, poor: 0, noData: 0 };
+
+            students.forEach(s => {
+                const sId = (s._id || s.person_id).toString();
+                const studentTests = practiceTests.filter(t => (t.student_id?.toString() || t.student_id) === sId);
+
+                if (studentTests.length === 0) {
+                    distribution.noData++;
+                } else {
+                    const sum = studentTests.reduce((acc, t) => acc + (t.score || 0), 0);
+                    const avg = sum / studentTests.length;
+
+                    if (avg >= 85) distribution.excellent++;
+                    else if (avg >= 70) distribution.good++;
+                    else if (avg >= 50) distribution.average++;
+                    else distribution.poor++;
+                }
+            });
+
+            res.locals.responseData = {
+                success: true, status: 200,
+                data: { distribution }
+            };
+            next();
+        } catch (error) {
+            console.error('[TPC] Dept Distribution Error:', error);
+            res.locals.responseData = { success: false, status: 500, message: 'Fetch failed', error: error.message };
+            next();
+        }
+    }
+
+    /**
+     * Get Department TPC Trends
+     * Route: POST /tpc-dept/analytics/trends
+     */
+    async getDeptTPCTrends(req, res, next) {
+        try {
+            const { weeks = 8 } = req.body;
+            const userId = req.userId || req.user?.id;
+
+            const { ObjectId } = await import('mongodb'); // Move import to top
+
+            const userInfo = await this.getUserInfo(userId);
+            const deptTpcUser = userInfo.user;
+            const deptFilter = deptTpcUser.department;
+            const deptIdFilter = deptTpcUser.department_id;
+            const collegeId = deptTpcUser.person_collage_id || deptTpcUser.collage_id;
+
+            const studentFilter = { person_role: { $regex: /^student$/i }, person_collage_id: collegeId, person_deleted: false };
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                deptOrConditions.push({ department_id: deptIdFilter });
+                try {
+                    if (typeof deptIdFilter === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdFilter)) {
+                        deptOrConditions.push({ department_id: new ObjectId(deptIdFilter) });
+                    }
+                } catch (e) { }
+            }
+            if (deptFilter) {
+                const trimmed = deptFilter.trim();
+                deptOrConditions.push(
+                    { department: trimmed },
+                    { department: { $regex: new RegExp(`^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                );
+            }
+            if (deptOrConditions.length > 0) studentFilter.$or = deptOrConditions;
+
+            const studentsRes = await fetchData('tblPersonMaster', { _id: 1, person_id: 1 }, studentFilter);
+            const trendStudents = studentsRes.data || []; // Renamed variable
+            const studentIds = trendStudents.map(s => (s._id || s.person_id).toString());
+
+            const trendsRes = await fetchData('tblPracticeTest',
+                { week: 1, score: 1, student_id: 1 },
+                { student_id: { $in: studentIds }, week: { $lte: weeks } }
+            );
+
+            const tests = trendsRes.data || [];
+
+            const weekStats = {};
+            tests.forEach(t => {
+                if (!t.week) return;
+                if (!weekStats[t.week]) weekStats[t.week] = { sum: 0, count: 0, students: new Set() };
+                weekStats[t.week].sum += (t.score || 0);
+                weekStats[t.week].count++;
+                weekStats[t.week].students.add(t.student_id);
+            });
+
+            const trendsData = [];
+            Object.keys(weekStats).forEach(w => {
+                const stat = weekStats[w];
+                if (stat.count > 0) {
+                    trendsData.push({
+                        week: parseInt(w),
+                        averageScore: Math.round(stat.sum / stat.count),
+                        studentsParticipated: stat.students.size
+                    });
+                }
+            });
+
+            trendsData.sort((a, b) => a.week - b.week);
+
+            console.log('[DeptTPC] Trends weeks:', trendsData.length);
+
+            res.locals.responseData = {
+                success: true, status: 200,
+                data: trendsData
+            };
+            next();
+        } catch (error) {
+            console.error('[TPC] Dept Trends Error:', error);
+            res.locals.responseData = { success: false, status: 500, message: 'Fetch failed', error: error.message };
+            next();
+        }
+    }
+
+    /**
+     * Get Student Detailed Analytics
+     * Route: POST /tpc-dept/student/details
+     */
+    async getStudentDetailedAnalytics(req, res, next) {
+        try {
+            const { student_id } = req.body;
+            const userId = req.userId || req.user?.id;
+            const userRole = req.user?.role;
+
+            if (userRole !== 'DeptTPC') {
+                res.locals.responseData = { success: false, status: 403, message: 'Access denied' };
+                return next();
+            }
+
+            if (!student_id) {
+                res.locals.responseData = { success: false, status: 400, message: 'Student ID is required' };
+                return next();
+            }
+
+            // Verify DeptTPC Access
+            const userInfo = await this.getUserInfo(userId);
+            const deptTpcUser = userInfo.user;
+            const deptFilter = deptTpcUser.department;
+            const deptIdFilter = deptTpcUser.department_id;
+            const collegeId = deptTpcUser.person_collage_id || deptTpcUser.collage_id;
+
+            // Fetch Student
+            const { ObjectId } = await import('mongodb');
+            let studentFilter = {
+                person_role: { $regex: /^student$/i },
+                person_collage_id: collegeId,
+                $or: [
+                    { person_id: student_id },
+                    { _id: student_id }
+                ]
+            };
+
+            // Try treating student_id as ObjectId if valid
+            if (typeof student_id === 'string' && /^[0-9a-fA-F]{24}$/.test(student_id)) {
+                studentFilter.$or.push({ _id: new ObjectId(student_id) });
+            }
+
+            const studentRes = await fetchData('tblPersonMaster', {}, studentFilter);
+            const student = studentRes.data?.[0];
+
+            if (!student) {
+                res.locals.responseData = { success: false, status: 404, message: 'Student not found in your college' };
+                return next();
+            }
+
+            // Simple access grant for now
+            const accessGranted = true;
+
+            const sIdString = (student._id || student.person_id).toString();
+
+            // Fetch Aptitude Tests
+            const practiceRes = await fetchData('tblPracticeTest', {}, {
+                $or: [
+                    { student_id: sIdString },
+                    { student_id: student._id }
+                ]
+            });
+            const practiceTests = practiceRes.data || [];
+
+            // Fetch DSA Progress
+            const progressRes = await fetchData('tblStudentProgress', {}, {
+                $or: [
+                    { student_id: sIdString },
+                    { student_id: new ObjectId(sIdString) }
+                ]
+            });
+            const progress = progressRes.data?.[0] || null;
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                data: {
+                    student: {
+                        id: sIdString,
+                        name: student.person_name,
+                        email: student.person_email,
+                        enrollment: student.enrollment_number,
+                        department: student.department
+                    },
+                    aptitude: practiceTests.map(t => ({
+                        id: t._id,
+                        week: t.week,
+                        score: t.score,
+                        totalQuestions: t.total_questions,
+                        correct: t.correct_answers,
+                        date: t.created_at
+                    })).sort((a, b) => b.week - a.week),
+                    dsa: {
+                        weeksCompleted: progress?.completed_weeks || [],
+                        daysCompleted: progress?.completed_days || progress?.days_completed || [],
+                        problemsSolved: progress?.coding_problems_completed?.length || 0,
+                        currentStreak: progress?.current_streak || 0
+                    }
+                }
+            };
+            next();
+        } catch (error) {
+            console.error('[TPC] Student Detail Error:', error);
+            res.locals.responseData = { success: false, status: 500, message: 'Fetch failed', error: error.message };
+            next();
+        }
+    }
 }

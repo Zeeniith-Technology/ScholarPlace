@@ -4518,7 +4518,7 @@ int main() {
 11. **Detect Cycle:** Use Floyd's algorithm (slow/fast pointers) to detect cycles.
 12. **Find Middle Element:** Use slow/fast pointer technique.
 
----
+<!-- ---
 
 # WEEK 3 SUMMARY – READY FOR WEEK 4
 
@@ -4597,7 +4597,7 @@ Week 3 prepares you for:
 4. **Performance thinking:** Always consider time and space complexity.
 5. **Write code carefully:** One wrong pointer assignment breaks the entire structure.
 
----
+--- -->
 
 # APPENDIX: QUICK REFERENCE
 

@@ -21,7 +21,7 @@ class AIService {
         // Gemini Pro Configuration
         this.provider = process.env.AI_PROVIDER || 'gemini'; // 'gemini' or 'openai'
         this.geminiApiKey = process.env.GEMINI_API_KEY;
-        
+
         // Initialize Gemini if API key is available
         if (this.geminiApiKey && this.provider === 'gemini') {
             // Initialize Gemini SDK
@@ -38,7 +38,7 @@ class AIService {
         } else {
             console.warn('[AIService] Gemini API key not found. AI features will not work.');
         }
-        
+
         // Scope restrictions - only these topics are allowed
         this.allowedTopics = [
             'C Programming', 'C++ Programming', 'JavaScript',
@@ -46,6 +46,28 @@ class AIService {
             'Loops', 'Arrays', 'Functions', 'Input/Output',
             'DSA Basics', 'Programming Fundamentals'
         ];
+    }
+
+    /**
+     * Strip markdown asterisks from text so UI shows plain text only
+     */
+    stripMarkdownAsterisks(text) {
+        if (typeof text !== 'string') return text;
+        return text.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+    }
+
+    /**
+     * Sanitize analysis/learning-path object: strip ** and * from all string values
+     */
+    sanitizePlainText(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        const out = Array.isArray(obj) ? [] : {};
+        for (const [k, v] of Object.entries(obj)) {
+            if (typeof v === 'string') out[k] = this.stripMarkdownAsterisks(v);
+            else if (Array.isArray(v)) out[k] = v.map((item) => typeof item === 'string' ? this.stripMarkdownAsterisks(item) : item);
+            else out[k] = v;
+        }
+        return out;
     }
 
     /**
@@ -60,7 +82,7 @@ class AIService {
             'dsa', 'data structures', 'algorithms basics',
             'programming', 'code', 'coding', 'syntax'
         ];
-        
+
         return scopeKeywords.some(keyword => queryLower.includes(keyword));
     }
 
@@ -153,7 +175,7 @@ Format your response as:
     }
 
     async getHintGemini(problemDescription, studentCode, language, hintNumber, previousHints) {
-        const previousHintsText = previousHints.length > 0 
+        const previousHintsText = previousHints.length > 0
             ? `Previous hints given:\n${previousHints.map((h, i) => `Hint ${i + 1}: ${h}`).join('\n')}`
             : 'No previous hints given.';
 
@@ -196,10 +218,10 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
 
         const result = await this.model.generateContent(prompt);
         const response = await result.response;
-        
+
         // Post-process to ensure conciseness
         let hintText = response.text().trim();
-        
+
         // Remove common verbose openings
         const verboseOpenings = [
             "That's an excellent question",
@@ -209,7 +231,7 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
             "I'd encourage you to",
             "To get a helpful hint"
         ];
-        
+
         for (const opening of verboseOpenings) {
             if (hintText.toLowerCase().startsWith(opening.toLowerCase())) {
                 // Find the first sentence after the opening
@@ -220,14 +242,14 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
                 }
             }
         }
-        
+
         // Limit to reasonable length (max 200 words for hint 3, 100 for hint 1)
         const maxWords = hintNumber === 1 ? 30 : hintNumber === 2 ? 50 : 80;
         const words = hintText.split(/\s+/);
         if (words.length > maxWords) {
             hintText = words.slice(0, maxWords).join(' ') + '...';
         }
-        
+
         return {
             hint: hintText,
             hintNumber: hintNumber,
@@ -252,10 +274,14 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
     }
 
     async generateLearningPathGemini(studentPerformance) {
+        const { analyticsContext, ...dataForPrompt } = studentPerformance;
+        const contextBlock = analyticsContext
+            ? `\n\nDashboard summary (overall scores, subject performance, weekly trend - use to tailor the path):\n${JSON.stringify(analyticsContext, null, 2)}\n\n`
+            : '';
         const prompt = `${this.getSystemPrompt('personalized-learning')}
 
 Student Performance Data:
-${JSON.stringify(studentPerformance, null, 2)}
+${JSON.stringify(dataForPrompt, null, 2)}${contextBlock}
 
 Based on this performance, generate a personalized learning path:
 1. Identify weak areas (topics with <80% score after 3 attempts)
@@ -263,6 +289,8 @@ Based on this performance, generate a personalized learning path:
 3. Recommend practice questions focus areas
 4. Provide study schedule suggestions
 5. Give encouragement and motivation
+
+IMPORTANT: Use plain text only. Do NOT use asterisks (*) or ** for bold. No markdown formatting in weakAreas, recommendedDays, focusAreas, studyPlan, or motivation. Write in plain sentences.
 
 Format as JSON:
 {
@@ -275,17 +303,18 @@ Format as JSON:
 
         const result = await this.model.generateContent(prompt);
         const response = await result.response;
-        
+
         try {
             // Try to parse JSON response
             const text = response.text();
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
+                const parsed = JSON.parse(jsonMatch[0]);
+                return this.sanitizePlainText(parsed);
             }
-            return { analysis: text };
+            return { analysis: this.stripMarkdownAsterisks(text) };
         } catch (parseError) {
-            return { analysis: response.text() };
+            return { analysis: this.stripMarkdownAsterisks(response.text()) };
         }
     }
 
@@ -334,7 +363,7 @@ Format as JSON array:
 
         const result = await this.model.generateContent(prompt);
         const response = await result.response;
-        
+
         try {
             const text = response.text();
             const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -364,39 +393,49 @@ Format as JSON array:
     }
 
     async analyzePerformanceGemini(studentData) {
+        const { analyticsContext, ...dataForPrompt } = studentData;
+        const contextBlock = analyticsContext
+            ? `\n\nDashboard summary (use to enrich your feedback - overall scores, subject breakdown, weekly trend):\n${JSON.stringify(analyticsContext, null, 2)}\n\n`
+            : '';
         const prompt = `${this.getSystemPrompt('performance-analysis')}
 
 Student Performance Data:
-${JSON.stringify(studentData, null, 2)}
+${JSON.stringify(dataForPrompt, null, 2)}${contextBlock}
 
-Analyze and provide:
-1. Overall performance summary
-2. Strong areas (topics mastered)
-3. Weak areas (need improvement)
-4. Specific recommendations for improvement
-5. Encouraging feedback
+Analyze the data carefully. Note that "dsa" and "aptitude" have separate "dailyPractice" and "weeklyTest" sections.
 
-Format as JSON:
+Instructions:
+1. **Check for Partial Data**: If the student has progress in ONE area (e.g., DSA Daily) but not others, acknowledge the progress. DO NOT say "No data/activity" if *any* section has data.
+2. **Specific Feedback**: 
+   - If 'dsa.dailyPractice.score' > 0, praise their coding practice.
+   - If 'aptitude.dailyPractice' is empty, encourage them to start aptitude.
+   - distinguishable between 'Daily Practice' and 'Weekly Tests'.
+3. **Strong/Weak Areas**: Base these strictly on the provided scores.
+
+IMPORTANT: Use plain text only. Do NOT use asterisks (*) or ** for bold. No markdown formatting in overallScore, strongAreas, weakAreas, recommendations, or feedback. Write in plain sentences.
+
+Output Format (JSON):
 {
-  "overallScore": "percentage",
-  "strongAreas": ["area1", "area2"],
-  "weakAreas": ["area1", "area2"],
-  "recommendations": ["rec1", "rec2"],
-  "feedback": "encouraging message"
+  "overallScore": "percentage (average of available scores)",
+  "strongAreas": ["list of areas with good progress"],
+  "weakAreas": ["specific areas with low/no progress"],
+  "recommendations": ["actionable steps based on missing items"],
+  "feedback": "Encouraging summary acknowledging what they HAVE done."
 }`;
 
         const result = await this.model.generateContent(prompt);
         const response = await result.response;
-        
+
         try {
             const text = response.text();
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
+                const parsed = JSON.parse(jsonMatch[0]);
+                return this.sanitizePlainText(parsed);
             }
-            return { analysis: response.text() };
+            return { analysis: this.stripMarkdownAsterisks(response.text()) };
         } catch (parseError) {
-            return { analysis: response.text() };
+            return { analysis: this.stripMarkdownAsterisks(response.text()) };
         }
     }
 
@@ -425,7 +464,7 @@ Format as JSON:
     }
 
     async answerQuestionGemini(question, context) {
-        const contextText = context.currentDay 
+        const contextText = context.currentDay
             ? `Student is currently studying: ${context.currentDay}`
             : '';
 
@@ -443,7 +482,7 @@ Provide a clear, educational answer:
 
         const result = await this.model.generateContent(prompt);
         const response = await result.response;
-        
+
         return {
             answer: response.text(),
             outOfScope: false
@@ -589,7 +628,7 @@ Output ONLY a JSON array, no other text. Example: [{"question":"...","options":[
             const topics = {};
             const questionTypes = {};
             const timePatterns = [];
-            
+
             questions_attempted.forEach(q => {
                 const topic = q.question_topic?.[0] || 'General';
                 topics[topic] = (topics[topic] || { correct: 0, total: 0 });
@@ -620,7 +659,7 @@ Output ONLY a JSON array, no other text. Example: [{"question":"...","options":[
                 const lastScore = prevScores[prevScores.length - 1];
                 const improvement = score - lastScore;
                 const trend = improvement > 5 ? 'improving' : improvement < -5 ? 'declining' : 'stable';
-                
+
                 comparison = {
                     previous_score: lastScore,
                     average_previous: Math.round(avgPrevScore),
@@ -688,9 +727,9 @@ Output as JSON:
             const text = result?.response?.text() || '';
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (!jsonMatch) throw new Error('Could not parse AI analysis response.');
-            
+
             const analysis = JSON.parse(jsonMatch[0]);
-            
+
             return {
                 learning_patterns: Array.isArray(analysis.learning_patterns) ? analysis.learning_patterns : [],
                 strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
@@ -708,12 +747,12 @@ Output as JSON:
                 learning_patterns: [],
                 strengths: score >= 70 ? ['Good understanding of basics'] : [],
                 weak_areas: score < 70 ? ['Need more practice'] : [],
-                guidance: score >= 80 
+                guidance: score >= 80
                     ? 'Great job! You have a strong grasp of the concepts. Keep practicing to maintain this level.'
                     : score >= 60
-                    ? 'You are making progress. Review the incorrect answers and practice similar problems to improve further.'
-                    : 'Don\'t worry, learning takes time. Review the study material again and practice more problems on the topics you found challenging.',
-                recommendations: score < 70 
+                        ? 'You are making progress. Review the incorrect answers and practice similar problems to improve further.'
+                        : 'Don\'t worry, learning takes time. Review the study material again and practice more problems on the topics you found challenging.',
+                recommendations: score < 70
                     ? ['Review the study material for this day/week', 'Practice similar problems', 'Focus on understanding the explanations']
                     : ['Continue practicing', 'Try more challenging problems'],
                 topics_to_revisit: [],
@@ -724,7 +763,7 @@ Output as JSON:
     }
 
     // ========== GPT-4 Methods (for future upgrade) ==========
-    
+
     async reviewCodeOpenAI(code, language, problemContext) {
         // TODO: Implement when upgrading to GPT-4
         throw new Error('OpenAI integration not yet implemented');

@@ -12,11 +12,17 @@ interface LineChartProps {
   height?: number
   color?: string
   showGrid?: boolean
+  /** Fixed Y-axis min (e.g. 0 for score charts) */
+  yMin?: number
+  /** Fixed Y-axis max (e.g. 100 for score charts) */
+  yMax?: number
 }
 
-export function LineChart({ data, height = 300, color = '#4F46E5', showGrid = true }: LineChartProps) {
-  const maxValue = Math.max(...data.map((d) => d.value), 100)
-  const minValue = Math.min(...data.map((d) => d.value), 0)
+export function LineChart({ data, height = 300, color = '#4F46E5', showGrid = true, yMin: yMinProp, yMax: yMaxProp }: LineChartProps) {
+  const dataMin = data.length ? Math.min(...data.map((d) => d.value)) : 0
+  const dataMax = data.length ? Math.max(...data.map((d) => d.value)) : 100
+  const minValue = yMinProp !== undefined ? yMinProp : Math.min(dataMin, 0)
+  const maxValue = yMaxProp !== undefined ? yMaxProp : Math.max(dataMax, 100)
   const range = maxValue - minValue || 1
   const width = 800
   const padding = 60

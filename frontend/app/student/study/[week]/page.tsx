@@ -147,8 +147,7 @@ function WeekStudyContent() {
   // Fetch progress from database on component mount
   useEffect(() => {
     fetchStudentProgress()
-    fetchDailyCodingProblems(selectedDay) // Fetch daily problems for current day
-    fetchCodingProblems(selectedDay) // Fetch capstone problems for day 5
+    // coding problems fetches are handled by the [selectedDay] effect below
     checkWeeklyTestEligibility()
     fetchWeeklyProgress() // Check capstone eligibility
     fetchBookmarks()
@@ -289,11 +288,13 @@ function WeekStudyContent() {
 
       if (!authHeader) {
         console.error('[fetchDailyCodingProblems] No auth token found')
+        console.log('[Debug] Auth token missing. LocalStorage check:', localStorage.getItem('token') ? 'Exists' : 'Missing');
         setDailyCodingProblems([])
         return
       }
 
-      console.log(`[fetchDailyCodingProblems] Fetching daily problems for Week ${weekNum}, Day ${dayNum}`)
+      console.log(`[fetchDailyCodingProblems] (Dynamic) Fetching for Week ${weekNum}, Day ${dayNum}. Auth Header length: ${authHeader.length}`);
+
       const response = await fetch(`${apiBaseUrl}/coding-problems/daily/${weekNum}/${dayNum}`, {
         method: 'POST',
         credentials: 'include',
@@ -305,10 +306,13 @@ function WeekStudyContent() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('[fetchDailyCodingProblems] API response:', result)
+        console.log('[fetchDailyCodingProblems] API response success:', result.success);
 
         if (result.success && result.problems) {
           console.log(`[fetchDailyCodingProblems] Loaded ${result.problems.length} daily problems`)
+          if (result.problems.length > 0) {
+            console.log('[Debug] First problem status:', result.problems[0].status);
+          }
           setDailyCodingProblems(result.problems)
         } else {
           console.log('[fetchDailyCodingProblems] No problems found')
@@ -349,7 +353,8 @@ function WeekStudyContent() {
             coding_problems: {
               eligible: result.isEligible,
               completedCount: result.completedDailyProblems,
-              totalCount: result.totalDailyProblems
+              totalCount: result.totalDailyProblems,
+              pendingProblems: result.pendingProblems
             }
           }))
         }
@@ -589,46 +594,7 @@ function WeekStudyContent() {
     }
   }, [searchParams, weekNum, overallProgress, defaultDay, days])
 
-  const markDayComplete = async (dayId: string) => {
-    try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      const response = await fetch(`${apiBaseUrl}/student-progress/complete-day`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          week: weekNum,
-          day: dayId
-        }),
-      })
 
-      if (!response.ok) {
-        throw new Error('Failed to save progress to database')
-      }
-
-      const result = await response.json()
-      if (result.success && result.data) {
-        setDbProgress(result.data)
-        setTimeout(() => {
-          fetchStudentProgress()
-        }, 1000)
-
-        trackProgress(weekNum, dayId, 'day-completed', {
-          day: dayId,
-          completed: true,
-          progressData: result.data,
-          timestamp: new Date()
-        })
-      } else {
-        await fetchStudentProgress()
-      }
-    } catch (error) {
-      console.error('Error saving progress to database:', error)
-      await fetchStudentProgress()
-    }
-  }
 
   const toggleBookmark = (day: string, section: string) => {
     setBookmarks(prev => {
@@ -1157,21 +1123,33 @@ function WeekStudyContent() {
                 <div className="mt-6 pt-6 border-t border-neutral-light/20">
                   <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Capstone Project</h3>
                   <div
-                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.coding_problems?.eligible
+                    onClick={() => {
+                      // Allow access if eligible OR in development mode
+                      if (weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production') {
+                        const width = window.screen.width;
+                        const height = window.screen.height;
+                        window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
+                      } else {
+                        alert("Please complete 30 daily coding problems to unlock this Capstone Project.");
+                      }
+                    }}
+                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production'
                       ? 'bg-primary/10 border-2 border-primary/30 cursor-pointer hover:bg-primary/20'
-                      : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60'
+                      : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-not-allowed'
                       }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <Trophy className={`w-4 h-4 ${weeklyTestEligibility?.coding_problems?.eligible ? 'text-primary' : 'text-neutral-light'}`} />
+                          <Trophy className={`w-4 h-4 ${weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production' ? 'text-primary' : 'text-neutral-light'}`} />
                           <div className="font-semibold text-sm">Capstone Projects</div>
                         </div>
                         <div className="text-xs opacity-80">
                           {weeklyTestEligibility?.coding_problems?.eligible
                             ? `${codingProblems.length} projects available`
-                            : `${weeklyTestEligibility?.coding_problems?.completedCount || 0}/${weeklyTestEligibility?.coding_problems?.totalCount || 30} daily completed`
+                            : process.env.NODE_ENV !== 'production'
+                              ? "Unlocked (Development)"
+                              : `${weeklyTestEligibility?.coding_problems?.completedCount || 0}/${weeklyTestEligibility?.coding_problems?.totalCount || 30} daily completed`
                           }
                         </div>
                       </div>
@@ -1239,21 +1217,7 @@ function WeekStudyContent() {
                         <Bookmark className="w-5 h-5" />
                       )}
                     </button>
-                    {!isDayCompleted && (
-                      <button
-                        onClick={() => markDayComplete(selectedDay)}
-                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Mark Complete
-                      </button>
-                    )}
-                    {isDayCompleted && (
-                      <div className="px-4 py-2 bg-green-500/20 text-green-600 rounded-lg text-sm font-semibold flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Completed
-                      </div>
-                    )}
+
                   </div>
 
                   <div className="space-y-6">
@@ -1348,8 +1312,11 @@ function WeekStudyContent() {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
                                       <span className="text-neutral-light font-medium text-xs">#{index + 1}</span>
-                                      <div className="font-semibold text-base text-neutral group-hover:text-primary transition-colors">
+                                      <div className="font-semibold text-base text-neutral group-hover:text-primary transition-colors flex items-center gap-2">
                                         {problem.title}
+                                        {problem.status === 'passed' && (
+                                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs text-neutral-light">
@@ -1382,95 +1349,9 @@ function WeekStudyContent() {
                       </div>
                     </Card>
 
-                    {selectedDay === days[days.length - 1].id && (
-                      <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-secondary/5 mt-6">
-                        <div className="p-6">
-                          <div className="flex items-start justify-between gap-4 mb-6">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 rounded-lg bg-primary/20">
-                                  <Trophy className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                  <h2 className="text-xl font-bold text-neutral mb-1">
-                                    Weekly Capstone Project
-                                  </h2>
-                                  <p className="text-sm text-neutral-light">
-                                    Apply your knowledge with these hands-on projects
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <Badge variant={weeklyTestEligibility?.coding_problems?.eligible ? "success" : "secondary"} className="text-sm px-3 py-1">
-                              {weeklyTestEligibility?.coding_problems?.eligible ? (
-                                <span className="flex items-center gap-1">
-                                  <Check className="w-3 h-3" /> Unlocked
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1">
-                                  <Lock className="w-3 h-3" /> Locked
-                                </span>
-                              )}
-                            </Badge>
-                          </div>
 
-                          {weeklyTestEligibility?.coding_problems?.eligible ? (
-                            <div className="space-y-4">
-                              {/* Capstone Problems List */}
-                              {codingProblems.length > 0 ? (
-                                codingProblems.map((problem: any, index: number) => (
-                                  <div
-                                    key={problem.question_id}
-                                    className="bg-white rounded-lg border border-neutral-light/20 p-4 hover:border-primary/50 transition-all group cursor-pointer"
-                                    onClick={() => router.push(`/student/coding-problem/${problem.question_id}`)}
-                                  >
-                                    <div className="flex items-start justify-between">
-                                      <div>
-                                        <h3 className="font-semibold text-neutral mb-1 group-hover:text-primary transition-colors">
-                                          {problem.title}
-                                        </h3>
-                                        <div className="flex items-center gap-3 text-xs text-neutral-light">
-                                          <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-medium">
-                                            Capstone
-                                          </span>
-                                          <span className={`px-2 py-0.5 rounded ${problem.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
-                                            problem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                                              'bg-red-100 text-red-700'
-                                            }`}>
-                                            {problem.difficulty}
-                                          </span>
-                                          <span>⏱️ {problem.estimated_time_minutes} min</span>
-                                        </div>
-                                      </div>
-                                      <Play className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-center py-6 text-neutral-light">
-                                  No capstone projects available yet.
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="bg-neutral-light/5 rounded-lg p-6 text-center border-2 border-dashed border-neutral-light/20">
-                              <Lock className="w-8 h-8 text-neutral-light mx-auto mb-3 opacity-50" />
-                              <h3 className="font-semibold text-neutral mb-2">Capstone Locked</h3>
-                              <p className="text-sm text-neutral-light mb-4">
-                                Complete all daily coding problems to unlock the Weekly Capstone Project.
-                              </p>
-                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-background-elevated rounded-full text-sm font-medium text-neutral">
-                                <span className={weeklyTestEligibility?.coding_problems?.completedCount === weeklyTestEligibility?.coding_problems?.totalCount ? "text-green-600" : "text-primary"}>
-                                  {weeklyTestEligibility?.coding_problems?.completedCount || 0}
-                                </span>
-                                <span className="text-neutral-light">/</span>
-                                <span>{weeklyTestEligibility?.coding_problems?.totalCount || 30} Completed</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </Card>
-                    )}
+
+
                   </div>
                 </div>
               ) : (

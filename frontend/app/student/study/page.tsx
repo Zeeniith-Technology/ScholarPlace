@@ -43,15 +43,15 @@ export default function LearningPage() {
       setIsLoading(true)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
-      
+
       if (authHeader) {
         headers['Authorization'] = authHeader
       }
-      
+
       const response = await fetch(`${apiBaseUrl}/syllabus/list`, {
         method: 'POST',
         credentials: 'include',
@@ -80,12 +80,12 @@ export default function LearningPage() {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
         console.error('[Student Progress] No auth token found')
         return
       }
-      
+
       const response = await fetch(`${apiBaseUrl}/student-progress/list`, {
         method: 'POST',
         credentials: 'include',
@@ -139,16 +139,18 @@ export default function LearningPage() {
     const hasDaysCompleted = progress.days_completed && progress.days_completed.length > 0
     const hasAssignmentsCompleted = progress.assignments_completed && progress.assignments_completed > 0
     const hasTestsCompleted = progress.tests_completed && progress.tests_completed > 0
-    
+
     if (progress.status === 'in_progress' && !hasDaysCompleted && !hasAssignmentsCompleted && !hasTestsCompleted) {
       return 'start'
     }
-    return progress.status || 'locked'
+    // If we're here, the week is unlocked by rule. Ensure we don't return 'locked'.
+    const status = progress.status || 'start'
+    return status === 'locked' ? 'start' : status
   }
 
   const handleStartWeek = (week: number, status: string) => {
     if (status === 'locked') return
-    
+
     // For Week 1, show selection page with DSA and Aptitude options
     if (week === 1) {
       router.push('/student/study/week-1-select')
@@ -175,8 +177,8 @@ export default function LearningPage() {
     { week: 4, title: 'Algorithms', assignments: 0, tests: 0 },
     { week: 5, title: 'Problem Solving', assignments: 0, tests: 0 },
     { week: 6, title: 'Interview Prep', assignments: 0, tests: 0 },
-    { week: 7, title: 'Mock Tests', assignments: 0, tests: 0 },
-    { week: 8, title: 'Final Review', assignments: 0, tests: 0 },
+    { week: 7, title: 'Mock Tests', assignments: 0, tests: 0, isComingSoon: true },
+    { week: 8, title: 'Final Review', assignments: 0, tests: 0, isComingSoon: true },
   ]
 
   const weeklySchedule = defaultWeeks.map((week) => {
@@ -252,43 +254,43 @@ export default function LearningPage() {
                     const isActive = studentStatus === 'start' || studentStatus === 'in_progress'
                     const isCompleted = studentStatus === 'completed'
                     const isLocked = studentStatus === 'locked' || !studentStatus
-                    const canStart = !isLocked
                     const weekNum = week.week || index + 1
+                    const isComingSoon = week.isComingSoon || false
 
                     return (
                       <tr
                         key={weekNum}
                         className={cn(
                           'group border-b border-gray-200 transition-all duration-300',
-                          isActive && 'bg-blue-50/50',
-                          isCompleted && 'bg-green-50/50',
-                          !isLocked && 'hover:bg-gray-50 cursor-pointer hover:shadow-sm',
-                          isLocked && 'opacity-50'
+                          isActive && !isComingSoon && 'bg-blue-50/50',
+                          isCompleted && !isComingSoon && 'bg-green-50/50',
+                          !isLocked && !isComingSoon && 'hover:bg-gray-50 cursor-pointer hover:shadow-sm',
+                          (isLocked || isComingSoon) && 'opacity-50'
                         )}
-                        onClick={() => !isLocked && handleStartWeek(weekNum, studentStatus)}
+                        onClick={() => !isLocked && !isComingSoon && handleStartWeek(weekNum, studentStatus)}
                       >
                         {/* WEEK Column */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
                             {/* Status Indicator Bar */}
-                            {isActive && (
+                            {isActive && !isComingSoon && (
                               <div className="w-1 h-16 bg-blue-500 rounded-full flex-shrink-0" />
                             )}
-                            {isCompleted && (
+                            {isCompleted && !isComingSoon && (
                               <div className="w-1 h-16 bg-green-500 rounded-full flex-shrink-0" />
                             )}
-                            {!isActive && !isCompleted && (
+                            {(!isActive && !isCompleted) || isComingSoon ? (
                               <div className="w-1 h-16 bg-transparent flex-shrink-0" />
-                            )}
-                            
+                            ) : null}
+
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base transition-all duration-300 flex-shrink-0',
-                                isCompleted && 'bg-green-600 text-white shadow-md',
-                                isActive && 'bg-blue-600 text-white shadow-md',
-                                isLocked && 'bg-gray-200 text-gray-500 border border-gray-300'
+                                isCompleted && !isComingSoon && 'bg-green-600 text-white shadow-md',
+                                isActive && !isComingSoon && 'bg-blue-600 text-white shadow-md',
+                                (isLocked || isComingSoon) && 'bg-gray-200 text-gray-500 border border-gray-300'
                               )}>
-                                {isCompleted ? (
+                                {isCompleted && !isComingSoon ? (
                                   <CheckCircle2 className="w-5 h-5" />
                                 ) : (
                                   weekNum
@@ -311,7 +313,7 @@ export default function LearningPage() {
                           <div className="flex items-center gap-3">
                             <div className={cn(
                               'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base flex-shrink-0',
-                              isActive ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+                              isActive && !isComingSoon ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
                             )}>
                               {weekNum}
                             </div>
@@ -319,7 +321,7 @@ export default function LearningPage() {
                               <div className="text-sm font-semibold text-gray-900">
                                 {week.week === 1 ? '6' : (week.assignments || 0)} practice assignments
                               </div>
-                              {isActive && (
+                              {isActive && !isComingSoon && (
                                 <Badge
                                   variant="primary"
                                   className="text-xs px-2 py-0.5 w-fit bg-blue-100 text-blue-700 border border-blue-200"
@@ -333,7 +335,17 @@ export default function LearningPage() {
 
                         {/* STATUS Column */}
                         <td className="px-6 py-4 text-right">
-                          {studentStatus === 'start' && weekNum === 1 ? (
+                          {isComingSoon ? (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs px-3 py-1.5 font-semibold bg-amber-100 text-amber-700 border border-amber-200 ml-auto w-fit"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3 h-3" />
+                                <span>Coming Soon</span>
+                              </span>
+                            </Badge>
+                          ) : studentStatus === 'start' && weekNum === 1 ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -481,7 +493,7 @@ export default function LearningPage() {
                 <div>
                   <p className="text-sm text-neutral-light">Completed</p>
                   <p className="text-2xl font-bold text-neutral">
-                    {weeklySchedule.filter((w: any, i: number) => 
+                    {weeklySchedule.filter((w: any, i: number) =>
                       getStudentWeekStatus(w.week || i + 1) === 'completed'
                     ).length}
                   </p>

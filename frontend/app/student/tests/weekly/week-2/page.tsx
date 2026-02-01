@@ -1114,7 +1114,7 @@ export default function Week2WeeklyTestPage() {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-neutral mb-1">Duration: 60 minutes</p>
-                        <p className="text-sm text-neutral-light">Timer starts when you click "Start Test"</p>
+                        <p className="text-sm text-neutral-light">Timer starts when you click &quot;Start Test&quot;</p>
                       </div>
                     </div>
                     

@@ -646,8 +646,8 @@ export default function SyllabusManagementPage() {
           <div>
             <h2 className="text-xl font-semibold text-neutral mb-2">Import Syllabus from Excel</h2>
             <p className="text-sm text-neutral-dark mb-4">
-              Upload an Excel file (.xlsx, .xls, or .file extension) with syllabus data. The file should contain sheets named "Week1" through "Week8" 
-              and reference sheets "Aptitude_topics_indepth" and "DSA_topics_indepth". 
+              Upload an Excel file (.xlsx, .xls, or .file extension) with syllabus data. The file should contain sheets named &quot;Week1&quot; through &quot;Week8&quot; 
+              and reference sheets &quot;Aptitude_topics_indepth&quot; and &quot;DSA_topics_indepth&quot;. 
               <br />
               <span className="text-xs text-neutral-dark mt-1 block">
                 Note: Files with .file extension will be automatically detected if they are Excel files.

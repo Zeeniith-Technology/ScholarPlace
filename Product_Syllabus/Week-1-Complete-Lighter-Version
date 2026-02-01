@@ -63,7 +63,6 @@ User types → Program reads (INPUT)
 Program processes → Program displays (OUTPUT)
 ```
 
----
 
 ## I/O in C
 
@@ -108,7 +107,6 @@ Enter your age: 25
 You are 25 years old
 ```
 
----
 
 ## I/O in C++
 
@@ -154,7 +152,6 @@ Enter your age: 25
 You are 25 years old
 ```
 
----
 
 ## I/O in JavaScript
 
@@ -183,7 +180,6 @@ Alert popup: "You are 25 years old"
 Console: Age: 25
 ```
 
----
 
 ## Multiple Inputs/Outputs (C++)
 
@@ -226,7 +222,6 @@ Age: 25
 Salary: 50000
 ```
 
----
 
 ## 📚 In-Depth Theory: I/O Operations
 
@@ -392,22 +387,19 @@ age = +age;                       // Unary + converts to number: 25
 - `endl` in C++ flushes the buffer immediately
 - `\n` in C/C++ also flushes buffer in most cases
 
----
 
 ## Common Mistakes (I/O)
 
 | Mistake | Why Wrong | Correct |
 |---------|-----------|---------|
 | `scanf("%d", age);` | Missing & operator | `scanf("%d", &age);` |
-| `cin >> "name"` | Wrong syntax - using string literal instead of variable | `cin >> name;` |
-| `printf("%d", 3.14);` | Type mismatch - using %d for float | `printf("%f", 3.14);` |
-| No `#include <stdio.h>` | scanf/printf functions won't work without header | Add `#include <stdio.h>` at top |
-| `scanf("%s", &name);` | String arrays don't need & operator | `scanf("%s", name);` |
-| Using `var` instead of `let/const` | Outdated, function scope issues | Use `let` or `const` |
+| `cin >> "name"` | Syntax error - cannot use string literal | `cin >> name;` |
+| `printf("%d", 3.14);` | Type mismatch - %d is for int | `printf("%f", 3.14);` |
+| No `#include <stdio.h>` | Functions undefined without header | Add `#include <stdio.h>` at top |
+| `scanf("%s", &name);` | No & needed for string arrays | `scanf("%s", name);` |
+| Using `var` | Outdated, function scope issues | Use `let` or `const` |
 
----
 
----
 
 # 🟢 DAY 1 – DATA TYPES & VARIABLES
 
@@ -436,20 +428,20 @@ Wrong container → damage/waste
 Wrong data type → wrong output/error
 ```
 
----
+
 
 ## Data Types in C & C++
 
-| **Type** | **Size** | **Range** | **Example** |
-|----------|----------|-----------|-----------|
-| **int** | 4 bytes | -2B to +2B | `int age = 25;` |
-| **float** | 4 bytes | ±3.4e-38 | `float salary = 25000.50;` |
-| **double** | 8 bytes | ±1.7e-308 | `double pi = 3.14159;` |
-| **char** | 1 byte | -128 to 127 | `char grade = 'A';` |
-| **string** (C++) | Variable | Text | `string name = "Amit";` |
-| **bool** | 1 byte | true/false | `bool passed = true;` |
+| Type | Size | Range | Example |
+|:---|:---|:---|:---|
+| `int` | 4 bytes | -2B to +2B | `int age = 25;` |
+| `float` | 4 bytes | ±3.4e-38 | `float salary = 25000.50;` |
+| `double` | 8 bytes | ±1.7e-308 | `double pi = 3.14159;` |
+| `char` | 1 byte | -128 to 127 | `char grade = 'A';` |
+| `string` (C++) | Variable | Text | `string name = "Amit";` |
+| `bool` | 1 byte | true/false | `bool passed = true;` |
 
----
+
 
 ## Declaring Variables (C/C++)
 
@@ -468,7 +460,6 @@ string city = "Mumbai";
 bool isStudent = true;
 ```
 
----
 
 ## Data Types in JavaScript
 
@@ -485,11 +476,11 @@ let x;                     // undefined
 
 **var, let, const (Keywords in JavaScript):**
 
-| **Keyword** | **Scope** | **Reassign?** | **Redeclare?** | **Use Case** |
-|-----------|----------|-------------|--------------|------------|
-| **var** | Function | ✓ Yes | ✓ Yes | Old code (avoid now) |
-| **let** | Block | ✓ Yes | ✗ No | Modern standard |
-| **const** | Block | ✗ No | ✗ No | Constants (won't change) |
+| Keyword | Scope | Reassign? | Redeclare? | Use Case |
+|:---|:---|:---|:---|:---|
+| `var` | Function | ✓ Yes | ✓ Yes | Old code (avoid now) |
+| `let` | Block | ✓ Yes | ✗ No | Modern standard |
+| `const` | Block | ✗ No | ✗ No | Constants (won't change) |
 
 ```javascript
 var a = 10;      // Can reassign
@@ -503,7 +494,7 @@ const PI = 3.14;
 PI = 3.15;       // ERROR! (const doesn't allow reassign)
 ```
 
----
+
 
 ## 📚 In-Depth Theory: Data Types & Variables
 
@@ -662,8 +653,8 @@ char grade = 'A';
 
 **Understanding Memory Allocation:**
 
-| **Type** | **Size (bytes)** | **Size (bits)** | **Range** |
-|----------|-----------------|-----------------|-----------|
+| Type | Size (bytes) | Size (bits) | Range |
+|:---|:---|:---|:---|
 | `char` | 1 | 8 | -128 to 127 (or 0 to 255 if unsigned) |
 | `int` | 4 | 32 | -2,147,483,648 to 2,147,483,647 |
 | `float` | 4 | 32 | ±3.4e-38 to ±3.4e+38 |
@@ -753,8 +744,6 @@ function example() {
 - Local variables (like `int age`) are stored on the **stack**
 - Stack is fast but limited in size
 - Heap is used for dynamic memory allocation (advanced topic)
-
----
 
 ## Worked Examples (Day 1)
 
@@ -851,7 +840,6 @@ Months: 12
 Annual Salary: 600000.00
 ```
 
----
 
 ### Example 3: JavaScript Variables
 
@@ -886,7 +874,6 @@ Updated Age: 23
 Updated CGPA: 8.7
 ```
 
----
 
 ### Example 4: Type Matters (C++)
 
@@ -921,19 +908,16 @@ Float: 10.5
 10 / 3 (float): 3.33333
 ```
 
----
 
 ## Common Mistakes (Day 1)
 
-| **Mistake** | **Output** | **Why Wrong** | **Correct** |
-|-----------|-----------|-------------|-----------|
-| `int x = 10.5;` | x = 10 | Loses decimal | Use float for decimals |
-| `char c = "ABC";` | ERROR | char holds 1 char | Use string for text |
-| `float pi = 3.14159;` | 3.14159 | Loss of precision | Use double for precision |
+| Mistake | Output | Why Wrong | Correct |
+|:---|:---|:---|:---|
+| `int x = 10.5;` | `x = 10` | Loses decimal | Use `float` for decimals |
+| `char c = "ABC";` | ERROR | `char` holds 1 char | Use `string` for text |
+| `float pi = 3.14159;` | `3.14159` | Loss of precision | Use `double` for precision |
 | `printf("%d", 3.14);` | Garbage | Type mismatch | Use `%f` for float |
 | `let x = 10; let x = 20;` | ERROR | Redeclare not allowed | Use `var` if needed |
-
----
 
 
 ## Interview Tips (Day 1)
@@ -943,9 +927,6 @@ Float: 10.5
 💡 **Tip 3:** In JavaScript, use `let` instead of `var` (modern standard)  
 💡 **Tip 4:** Remember to use `&` in scanf: `scanf("%d", &x);`  
 
----
-
----
 
 # 🟢 DAY 2 – OPERATORS & DECISION MAKING
 
@@ -957,19 +938,19 @@ By the end of Day 2, you will:
 ✅ Use switch-case for multiple choices  
 ✅ Apply ternary operator  
 
----
+
 
 ## Operators Overview
 
 **1️⃣ Arithmetic Operators**
 
-| **Op** | **Name** | **Example** | **Result** |
-|--------|----------|-----------|-----------|
-| **+** | Addition | 10 + 3 | 13 |
-| **-** | Subtraction | 10 - 3 | 7 |
-| **\*** | Multiplication | 10 * 3 | 30 |
-| **/** | Division | 10 / 3 | 3 (int) or 3.33 (float) |
-| **%** | Modulus (remainder) | 10 % 3 | 1 |
+| Op | Name | Example | Result |
+|:---|:---|:---|:---|
+| `+` | Addition | 10 + 3 | 13 |
+| `-` | Subtraction | 10 - 3 | 7 |
+| `*` | Multiplication | 10 * 3 | 30 |
+| `/` | Division | 10 / 3 | 3 (int) or 3.33 (float) |
+| `%` | Modulus (remainder) | 10 % 3 | 1 |
 
 ```cpp
 int a = 10, b = 3;
@@ -980,18 +961,17 @@ cout << a / b << endl;  // 3
 cout << a % b << endl;  // 1
 ```
 
----
 
 **2️⃣ Relational Operators (Comparisons)**
 
-| **Op** | **Meaning** | **Example** | **Result** |
-|--------|-----------|-----------|-----------|
-| **>** | Greater than | 10 > 3 | true |
-| **<** | Less than | 10 < 3 | false |
-| **>=** | Greater or equal | 10 >= 10 | true |
-| **<=** | Less or equal | 10 <= 3 | false |
-| **==** | Equal | 10 == 10 | true |
-| **!=** | Not equal | 10 != 3 | true |
+| Op | Meaning | Example | Result |
+|:---|:---|:---|:---|
+| `>` | Greater than | 10 > 3 | true |
+| `<` | Less than | 10 < 3 | false |
+| `>=` | Greater or equal | 10 >= 10 | true |
+| `<=` | Less or equal | 10 <= 3 | false |
+| `==` | Equal | 10 == 10 | true |
+| `!=` | Not equal | 10 != 3 | true |
 
 ```cpp
 int age = 18;
@@ -1000,15 +980,14 @@ if (age >= 18) {
 }
 ```
 
----
 
 **3️⃣ Logical Operators**
 
-| **Op** | **Meaning** | **Example** | **Result** |
-|--------|-----------|-----------|-----------|
-| **&&** | AND (both true) | true && false | false |
-| **\|\|** | OR (at least one true) | true \|\| false | true |
-| **!** | NOT (reverse) | !true | false |
+| Op | Meaning | Example | Result |
+|:---|:---|:---|:---|
+| `&&` | AND (both true) | true && false | false |
+| `\|\|` | OR (at least one true) | true \|\| false | true |
+| `!` | NOT (reverse) | !true | false |
 
 ```cpp
 int age = 25;
@@ -1023,16 +1002,15 @@ if (age < 18 || !hasID) {
 }
 ```
 
----
 
 **4️⃣ Assignment Operators**
 
-| **Op** | **Meaning** | **Example** | **After** |
-|--------|-----------|-----------|----------|
-| **=** | Assign | x = 10 | x = 10 |
-| **+=** | Add & assign | x += 5 (x=10) | x = 15 |
-| **-=** | Subtract & assign | x -= 3 (x=10) | x = 7 |
-| **\*=** | Multiply & assign | x *= 2 (x=10) | x = 20 |
+| Op | Meaning | Example | After |
+|:---|:---|:---|:---|
+| `=` | Assign | x = 10 | x = 10 |
+| `+=` | Add & assign | x += 5 (x=10) | x = 15 |
+| `-=` | Subtract & assign | x -= 3 (x=10) | x = 7 |
+| `*=` | Multiply & assign | x *= 2 (x=10) | x = 20 |
 
 ```cpp
 int x = 10;
@@ -1041,7 +1019,6 @@ x -= 3;   // x = 15 - 3 = 12
 x *= 2;   // x = 12 * 2 = 24
 ```
 
----
 
 **5️⃣ Increment/Decrement**
 
@@ -1053,7 +1030,6 @@ i--;      // i = 5 (decrease by 1)
 i++;      // Post-increment (use, then increment)
 ```
 
----
 
 ## 📚 In-Depth Theory: Operators & Decision Making
 
@@ -1219,8 +1195,6 @@ cout << *ptr++;  // Prints 1, then ptr points to arr[1]
 cout << *++ptr;  // ptr points to arr[2], then prints 2
 ```
 
----
-
 ## IF-ELSE Decision Making
 
 **Basic Structure:**
@@ -1330,7 +1304,6 @@ char grade = (marks >= 90) ? 'A' :
 // Can be hard to read - prefer if-else for complex cases
 ```
 
----
 
 ## Worked Examples (Day 2)
 
@@ -1410,7 +1383,7 @@ You are eligible to vote
 ### Example 3: Ternary Operator (One-Line IF)
 
 ```cpp
-// Long version
+ // Long version
 int num = 5;
 if (num > 0) {
     cout << "Positive" << endl;
@@ -1428,7 +1401,6 @@ cout << (num > 0 ? "Positive" : "Non-positive") << endl;
 (condition) ? value_if_true : value_if_false
 ```
 
----
 
 ### Example 4: Nested Ternary (Multiple Choices)
 
@@ -1466,7 +1438,6 @@ Enter marks: 78
 Grade: B
 ```
 
----
 
 ### Example 5: Switch-Case
 
@@ -1514,14 +1485,13 @@ Enter choice: 2
 You selected: Subtract
 ```
 
----
 
 ## Common Mistakes (Day 2)
 
-| **Mistake** | **Result** | **Fix** |
-|-----------|-----------|--------|
+| Mistake | Result | Fix |
+|:---|:---|:---|
 | `if (age = 18)` | Always true, WRONG | Use `==` not `=` |
-| `if (age > 18 || < 30)` | SYNTAX ERROR | `if (age > 18 \|\| age < 30)` |
+| `if (age > 18 \|\| < 30)` | SYNTAX ERROR | `if (age > 18 \|\| age < 30)` |
 | `if (age >= 18 && <= 30)` | SYNTAX ERROR | `if (age >= 18 && age <= 30)` |
 | No break in switch | Falls through cases | Add `break;` after each case |
 | `if age > 18:` | SYNTAX (Python style) | Use `if (age > 18) {` (C/C++) |
@@ -1534,9 +1504,6 @@ You selected: Subtract
 💡 **Tip 3:** Ternary is fast but use only for simple conditions  
 💡 **Tip 4:** Switch is better than if-else for many choices  
 
----
-
----
 
 # 🟢 DAY 3 – LOOPS & PATTERNS
 
@@ -1548,7 +1515,7 @@ By the end of Day 3, you will:
 ✅ Print star patterns  
 ✅ Control loops with break & continue  
 
----
+
 
 ## Loop Types
 
@@ -1564,8 +1531,6 @@ for (int i = 1; i <= 5; i++) {
 }
 ```
 
----
-
 **2️⃣ WHILE Loop** (when condition is checked)
 
 ```cpp
@@ -1580,7 +1545,6 @@ while (i <= 5) {
 }
 ```
 
----
 
 **3️⃣ DO-WHILE Loop** (executes at least once)
 
@@ -1617,7 +1581,7 @@ do {
 - Best for: menu-driven programs, input validation with retry
 - Example: Ask user for password until correct
 
----
+
 
 ## 📚 In-Depth Theory: Loop Control Structures
 
@@ -1778,7 +1742,6 @@ for (int i = 0; i < n; i++) {
 - O(n²) complexity can be slow for large n
 - Consider if algorithm can be optimized
 
----
 
 ## Break & Continue
 
@@ -1798,7 +1761,6 @@ for (int i = 1; i <= 5; i++) {
 }
 ```
 
----
 
 ## Worked Examples (Day 3)
 
@@ -1832,7 +1794,6 @@ do {
 // Output: 1 2 3 4 5
 ```
 
----
 
 ### Example 2: Square Star Pattern
 
@@ -1855,7 +1816,6 @@ for (int i = 1; i <= 5; i++) {           // 5 rows
 }
 ```
 
----
 
 ## 📊 Step-by-Step Iteration Explanation
 
@@ -1866,7 +1826,7 @@ for (int i = 1; i <= 5; i++) {           // 5 rows
 ### Iteration Table
 
 | Iteration | i Value | j Loop Runs | Stars in Row |
-|-----------|---------|-------------|--------------|
+|:---|:---|:---|:---|
 | 1st | i = 1 | j = 1, 2, 3, 4, 5 | 5 stars |
 | 2nd | i = 2 | j = 1, 2, 3, 4, 5 | 5 stars |
 | 3rd | i = 3 | j = 1, 2, 3, 4, 5 | 5 stars |
@@ -1891,7 +1851,6 @@ Step 5: i++ → i = 2, continue to next row
 ### 💡 Key Concept
 The inner loop **always completes fully** (1 to 5) for every outer loop iteration. This means every row gets exactly 5 stars, creating a perfect square pattern.
 
----
 
 ### Example 3: Right Triangle Pattern
 
@@ -1914,7 +1873,6 @@ for (int i = 1; i <= 5; i++) {           // 5 rows
 }
 ```
 
----
 
 ## 📊 Step-by-Step Iteration Explanation
 
@@ -1925,7 +1883,7 @@ for (int i = 1; i <= 5; i++) {           // 5 rows
 ### Iteration Table
 
 | Iteration | i Value | Condition (j <= i) | j Values | Stars in Row |
-|-----------|---------|-------------------|----------|--------------|
+|:---|:---|:---|:---|:---|
 | 1st | i = 1 | j <= 1 | j = 1 | 1 star |
 | 2nd | i = 2 | j <= 2 | j = 1, 2 | 2 stars |
 | 3rd | i = 3 | j <= 3 | j = 1, 2, 3 | 3 stars |
@@ -1956,7 +1914,6 @@ The condition `j <= i` is the **magic formula**! It makes the inner loop run `i`
 
 This creates the **growing triangle pattern**!
 
----
 
 ### Example 4: Inverted Triangle
 
@@ -1979,7 +1936,6 @@ for (int i = 5; i >= 1; i--) {           // Decrease rows
 }
 ```
 
----
 
 ## 📊 Step-by-Step Iteration Explanation
 
@@ -1990,7 +1946,7 @@ for (int i = 5; i >= 1; i--) {           // Decrease rows
 ### Iteration Table
 
 | Iteration | i Value | Condition (j <= i) | j Values | Stars in Row |
-|-----------|---------|-------------------|----------|--------------|
+|:---|:---|:---|:---|:---|
 | 1st | i = 5 | j <= 5 | j = 1, 2, 3, 4, 5 | 5 stars |
 | 2nd | i = 4 | j <= 4 | j = 1, 2, 3, 4 | 4 stars |
 | 3rd | i = 3 | j <= 3 | j = 1, 2, 3 | 3 stars |
@@ -2022,7 +1978,6 @@ The **decrementing loop** (`i--`) is the secret! Starting from i = 5 and decreas
 
 Each row has **fewer stars** than the previous one, creating the inverted triangle!
 
----
 
 ### Example 5: Pyramid Pattern
 
@@ -2051,7 +2006,6 @@ for (int i = 1; i <= n; i++) {
 }
 ```
 
----
 
 ## 📊 Step-by-Step Iteration Explanation
 
@@ -2063,7 +2017,7 @@ for (int i = 1; i <= n; i++) {
 ### Iteration Table
 
 | Iteration | i Value | Spaces (n-i) | s Values | Stars (2*i-1) | st Values |
-|-----------|---------|--------------|----------|---------------|-----------|
+|:---|:---|:---|:---|:---|:---|
 | 1st | i = 1 | 5-1 = 4 | s = 1,2,3,4 | 2×1-1 = 1 | st = 1 |
 | 2nd | i = 2 | 5-2 = 3 | s = 1,2,3 | 2×2-1 = 3 | st = 1,2,3 |
 | 3rd | i = 3 | 5-3 = 2 | s = 1,2 | 2×3-1 = 5 | st = 1,2,3,4,5 |
@@ -2120,12 +2074,11 @@ This formula creates **odd numbers** (1, 3, 5, 7, 9) which center perfectly in t
 - Second loop: Prints the actual star pattern
 - Together: Creates a beautiful centered pyramid!
 
----
 
 ## Common Mistakes (Day 3)
 
-| **Mistake** | **Problem** | **Fix** |
-|-----------|-----------|--------|
+| Mistake | Problem | Fix |
+|:---|:---|:---|
 | `for (int i = 1, i <= 5, i++)` | Wrong syntax | Use `;` not `,` |
 | `for (int i = 1; i < 5; i++)` | Stops at 4 | Use `<=` for 1 to 5 |
 | `while (i <= 5)` without i++ | Infinite loop | Add `i++` inside loop |
@@ -2140,9 +2093,6 @@ This formula creates **odd numbers** (1, 3, 5, 7, 9) which center perfectly in t
 💡 **Tip 3:** Use `continue` to skip, `break` to exit  
 💡 **Tip 4:** Nested loops multiply: 2 loops = n² iterations  
 
----
-
----
 
 # 🟢 DAY 4 – ARRAYS (DSA FOUNDATION)
 
@@ -2154,7 +2104,7 @@ By the end of Day 4, you will:
 ✅ Find max/min in array  
 ✅ Understand array bounds  
 
----
+
 
 ## What is an Array?
 
@@ -2175,7 +2125,6 @@ Index 2: Amit
 Index 3: Zara
 ```
 
----
 
 ## Declaring Arrays
 
@@ -2193,7 +2142,6 @@ int arr[5] = {10, 20, 30, 40, 50};
 float marks[] = {85.5, 90.0, 78.5};  // Size auto-calculated
 ```
 
----
 
 ## 📚 In-Depth Theory: Arrays (Basics)
 
@@ -2296,7 +2244,6 @@ for (int i = 0; i < 5; i++) {
 }
 ```
 
----
 
 ## Worked Examples (Day 4)
 
@@ -2345,7 +2292,7 @@ Enter 5 elements:
 Sum: 150
 ```
 
----
+
 
 ### Example 2: Find Maximum
 
@@ -2395,7 +2342,7 @@ Enter 5 elements:
 Maximum: 42
 ```
 
----
+
 
 ### Example 3: Find Minimum
 
@@ -2409,11 +2356,9 @@ for (int i = 1; i < n; i++) {
 cout << "Minimum: " << min << endl;
 ```
 
----
 
 **Note:** 2D Arrays (Matrices) will be covered in Week 2.
 
----
 
 ## Array Bounds & Errors
 
@@ -2431,12 +2376,12 @@ arr[0] = 10;  // OK
 arr[4] = 20;  // OK (last index is size-1)
 ```
 
----
+
 
 ## Common Mistakes (Day 4)
 
-| **Mistake** | **Problem** | **Fix** |
-|-----------|-----------|--------|
+| Mistake | Problem | Fix |
+|:---|:---|:---|
 | `int arr[5]; arr[5] = 10;` | Out of bounds | arr[0] to arr[4] only |
 | `for (i = 0; i < 5; i++)` | i starts at 0 | Index: 0, 1, 2, 3, 4 |
 | `arr[n]` when size is n | Out of bounds | Valid: arr[0] to arr[n-1] |
@@ -2455,7 +2400,7 @@ By the end of Day 5, you will:
 ✅ Return values from functions  
 ✅ Use functions in programs  
 
----
+
 
 ## What is a Function?
 
@@ -2471,7 +2416,6 @@ Process: Add them
 Output: 8
 ```
 
----
 
 ## Function Syntax (C++)
 
@@ -2494,7 +2438,6 @@ int add(int a, int b) {
 int result = add(5, 3);  // result = 8
 ```
 
----
 
 ## 📚 In-Depth Theory: Functions
 
@@ -2738,7 +2681,7 @@ greet("Priya", "Dr.");     // Overrides: "Dr. Priya"
 5. **Avoid Global Variables:** Prefer passing parameters
 6. **Return Early:** Use early returns to reduce nesting
 
----
+
 
 ## Worked Examples (Day 5)
 
@@ -2771,7 +2714,7 @@ int main() {
 10 + 20 = 30
 ```
 
----
+
 
 ### Example 2: Function with No Return
 
@@ -2799,7 +2742,6 @@ Hello, Raj!
 Hello, Priya!
 ```
 
----
 
 ### Example 3: Function with Multiple Parameters
 
@@ -2829,7 +2771,6 @@ int main() {
 GPA: 84.3333
 ```
 
----
 
 ### Example 4: Function - Check Prime
 
@@ -2864,7 +2805,7 @@ Is 7 prime? Yes
 Is 10 prime? No
 ```
 
----
+
 
 ### Example 5: JavaScript Function
 
@@ -2886,12 +2827,12 @@ const multiply = (a, b) => {
 console.log(multiply(4, 5));  // Output: 20
 ```
 
----
+
 
 ## Common Mistakes (Day 5)
 
-| **Mistake** | **Problem** | **Fix** |
-|-----------|-----------|--------|
+| Mistake | Problem | Fix |
+|:---|:---|:---|
 | Function defined AFTER main() | Compiler error | Declare before main, define after |
 | `return` in void function | Syntax error | void doesn't return |
 | Missing return type | Compiler error | Specify int/float/void/etc |
@@ -2906,14 +2847,11 @@ console.log(multiply(4, 5));  // Output: 20
 💡 **Tip 3:** `void` = no return, other types must return  
 💡 **Tip 4:** Declare functions BEFORE main()  
 
----
-
----
 
 ## 📋 WEEK 1 SUMMARY
 
-| **Day** | **Topics** | **Key Skills** |
-|--------|-----------|----------------|
+| Day | Topics | Key Skills |
+|:---|:---|:---|
 | **PRE** | I/O Basics | Input/output in C, C++, JS |
 | **Day 1** | Data Types & Variables | int, float, char, string, bool |
 | **Day 2** | Operators & Decision Making | if-else, ternary, switch-case |
@@ -3027,7 +2965,6 @@ Step 5: i++ → i = 2, continue to next row
 ### 💡 Key Concept
 The inner loop **always completes fully** (1 to 5) for every outer loop iteration. This means every row gets exactly 5 stars, creating a perfect square pattern.
 
----
 
 ### Example 3: Right Triangle Pattern
 
@@ -3050,7 +2987,6 @@ for (int i = 1; i <= 5; i++) {           // 5 rows
 }
 ```
 
----
 
 ## 📊 Step-by-Step Iteration Explanation
 
@@ -3256,7 +3192,6 @@ This formula creates **odd numbers** (1, 3, 5, 7, 9) which center perfectly in t
 - Second loop: Prints the actual star pattern
 - Together: Creates a beautiful centered pyramid!
 
----
 
 ## Common Mistakes (Day 3)
 
@@ -3276,9 +3211,7 @@ This formula creates **odd numbers** (1, 3, 5, 7, 9) which center perfectly in t
 💡 **Tip 3:** Use `continue` to skip, `break` to exit  
 💡 **Tip 4:** Nested loops multiply: 2 loops = n² iterations  
 
----
 
----
 
 # 🟢 DAY 4 – ARRAYS (DSA FOUNDATION)
 
@@ -3290,7 +3223,6 @@ By the end of Day 4, you will:
 ✅ Find max/min in array  
 ✅ Understand array bounds  
 
----
 
 ## What is an Array?
 
@@ -3311,7 +3243,6 @@ Index 2: Amit
 Index 3: Zara
 ```
 
----
 
 ## Declaring Arrays
 
@@ -3329,7 +3260,6 @@ int arr[5] = {10, 20, 30, 40, 50};
 float marks[] = {85.5, 90.0, 78.5};  // Size auto-calculated
 ```
 
----
 
 ## 📚 In-Depth Theory: Arrays (Basics)
 
@@ -3405,7 +3335,6 @@ for (int i = 0; i <= 5; i++) {  // BUG: should be i < 5
 
 **Note:** Advanced topics like memory layout, pointer arithmetic, and multi-dimensional arrays will be covered in Week 2.
 
----
 
 ## Array Input/Output
 
@@ -3432,7 +3361,6 @@ for (int i = 0; i < 5; i++) {
 }
 ```
 
----
 
 ## Worked Examples (Day 4)
 
@@ -3481,7 +3409,6 @@ Enter 5 elements:
 Sum: 150
 ```
 
----
 
 ### Example 2: Find Maximum
 
@@ -3531,7 +3458,6 @@ Enter 5 elements:
 Maximum: 42
 ```
 
----
 
 ### Example 3: Find Minimum
 
@@ -3545,11 +3471,9 @@ for (int i = 1; i < n; i++) {
 cout << "Minimum: " << min << endl;
 ```
 
----
 
 **Note:** 2D Arrays (Matrices) will be covered in Week 2.
 
----
 
 ## Array Bounds & Errors
 
@@ -3591,7 +3515,6 @@ By the end of Day 5, you will:
 ✅ Return values from functions  
 ✅ Use functions in programs  
 
----
 
 ## What is a Function?
 
@@ -3607,7 +3530,6 @@ Process: Add them
 Output: 8
 ```
 
----
 
 ## Function Syntax (C++)
 
@@ -3630,7 +3552,7 @@ int add(int a, int b) {
 int result = add(5, 3);  // result = 8
 ```
 
----
+
 
 ## 📚 In-Depth Theory: Functions
 
@@ -3874,7 +3796,7 @@ greet("Priya", "Dr.");     // Overrides: "Dr. Priya"
 5. **Avoid Global Variables:** Prefer passing parameters
 6. **Return Early:** Use early returns to reduce nesting
 
----
+
 
 ## Worked Examples (Day 5)
 
@@ -3907,7 +3829,7 @@ int main() {
 10 + 20 = 30
 ```
 
----
+
 
 ### Example 2: Function with No Return
 
@@ -3934,8 +3856,6 @@ int main() {
 Hello, Raj!
 Hello, Priya!
 ```
-
----
 
 ### Example 3: Function with Multiple Parameters
 
@@ -3965,7 +3885,7 @@ int main() {
 GPA: 84.3333
 ```
 
----
+
 
 ### Example 4: Function - Check Prime
 
@@ -4000,7 +3920,7 @@ Is 7 prime? Yes
 Is 10 prime? No
 ```
 
----
+
 
 ### Example 5: JavaScript Function
 
@@ -4022,7 +3942,7 @@ const multiply = (a, b) => {
 console.log(multiply(4, 5));  // Output: 20
 ```
 
----
+
 
 ## Common Mistakes (Day 5)
 
@@ -4042,9 +3962,7 @@ console.log(multiply(4, 5));  // Output: 20
 💡 **Tip 3:** `void` = no return, other types must return  
 💡 **Tip 4:** Declare functions BEFORE main()  
 
----
 
----
 
 ## 📋 WEEK 1 SUMMARY
 
@@ -4057,7 +3975,7 @@ console.log(multiply(4, 5));  // Output: 20
 | **Day 4** | Arrays | Declaration, input, traversal, max/min |
 | **Day 5** | Functions | Define, call, parameters, return |
 
----
+
 
 ## 📚 TOTAL PRACTICE QUESTIONS: 25
 
@@ -4068,7 +3986,7 @@ console.log(multiply(4, 5));  // Output: 20
 - Day 4: 5 questions
 - Day 5: 5 questions
 
----
+
 
 ## ✅ LIGHTER VERSION CHECKLIST
 

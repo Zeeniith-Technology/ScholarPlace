@@ -16,6 +16,7 @@ import {
   Award,
   BookOpen,
   Shield,
+  Code,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAuthHeader } from '@/utils/auth'
@@ -83,7 +84,8 @@ function TestApprovalsBadge() {
 const navigation = [
   { name: 'Dashboard', href: '/dept-tpc/dashboard', icon: LayoutDashboard },
   { name: 'Students', href: '/dept-tpc/students', icon: Users },
-  { name: 'Practice Monitoring', href: '/dept-tpc/practice-monitoring', icon: Calendar },
+  { name: 'Aptitude Monitoring', href: '/dept-tpc/practice-monitoring', icon: Calendar },
+  { name: 'Coding Monitoring', href: '/dept-tpc/coding-monitoring', icon: Code },
   { name: 'Tests', href: '/dept-tpc/tests', icon: FileText },
   { name: 'Test Approvals', href: '/dept-tpc/test-approvals', icon: Shield },
   { name: 'Analytics', href: '/dept-tpc/analytics', icon: BarChart3 },

@@ -388,7 +388,7 @@ export default function StudentProfilePage() {
                 <p>Current Email from Token: <strong>{getCurrentUserFromToken()?.email || 'Not found'}</strong></p>
                 <p>Current Role from Token: <strong>{getCurrentUserFromToken()?.role || 'Not found'}</strong></p>
                 <p className="text-yellow-600 mt-2">
-                  💡 If you see old data, click "Logout" and login again with your new account.
+                  💡 If you see old data, click &quot;Logout&quot; and login again with your new account.
                 </p>
               </div>
             </div>

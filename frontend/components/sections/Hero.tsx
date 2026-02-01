@@ -37,7 +37,7 @@ export function Hero() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <p className="text-lg md:text-xl font-medium text-primary italic">
-                  "Your dream our Stairs"
+                  &quot;Your dream our Stairs&quot;
                 </p>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-neutral leading-tight">
                   Lets crack placement together

@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Lock,
   Play,
+  CheckCircle2
 } from 'lucide-react'
 import { getAuthHeader } from '@/utils/auth'
 import { cn } from '@/lib/utils'
@@ -164,8 +165,13 @@ function AptitudeWeek5Content() {
 
   const handleWeeklyTestClick = () => {
     if (!weeklyTestEligibility?.eligible) {
-      alert('You must complete all requirements before taking the weekly test:\n• Score ≥70% on all practice tests')
-      return
+      // Allow bypass in development mode
+      if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
+        console.log('Development mode: Bypassing eligibility check')
+      } else {
+        alert('You must complete all requirements before taking the weekly test:\n• Score ≥70% on all practice tests')
+        return
+      }
     }
     window.open('/student/aptitude/weekly/5', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')
   }
@@ -386,15 +392,61 @@ function AptitudeWeek5Content() {
                           <div>
                             <h3 className="text-lg font-bold text-neutral">Ready to Practice?</h3>
                             <p className="text-sm text-neutral-light">Test your understanding with practice questions</p>
+                            {(() => {
+                              const dayStats = weeklyTestEligibility?.practice_tests?.days?.find((d: any) => d.day === selectedDay) ||
+                                weeklyTestEligibility?.practice_tests?.failed?.find((d: any) => d.day === selectedDay);
+                              const attempts = weeklyTestEligibility?.practice_tests?.attempts_by_day?.[selectedDay] || 0;
+
+                              if (attempts > 0) {
+                                return (
+                                  <p className="text-xs mt-1 font-semibold text-neutral-light/80">
+                                    Attempts: {attempts}/3 • Score: {dayStats?.score || 0}%
+                                  </p>
+                                )
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
-                        <button
-                          onClick={() => router.push(`/student/practice/aptitude-week-5?day=${selectedDay}`)}
-                          className="px-6 py-3 bg-accent hover:bg-accent/80 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
-                        >
-                          <BookOpen className="w-5 h-5" />
-                          Take Practice Test
-                        </button>
+                        {(() => {
+                          const attempts = weeklyTestEligibility?.practice_tests?.attempts_by_day?.[selectedDay] || 0;
+                          const dayStats = weeklyTestEligibility?.practice_tests?.days?.find((d: any) => d.day === selectedDay); // Only in 'days' if passed >= 70
+                          const isPassed = !!dayStats;
+
+                          if (isPassed) {
+                            return (
+                              <button
+                                disabled
+                                className="px-6 py-3 bg-green-500/20 text-green-600 rounded-lg font-semibold cursor-default flex items-center gap-2 border border-green-500/20"
+                              >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Completed
+                              </button>
+                            )
+                          }
+
+                          if (attempts >= 3) {
+                            return (
+                              <button
+                                disabled
+                                className="px-6 py-3 bg-neutral-light/20 text-neutral-light rounded-lg font-semibold cursor-not-allowed flex items-center gap-2"
+                              >
+                                <Lock className="w-5 h-5" />
+                                Max Attempts
+                              </button>
+                            )
+                          }
+
+                          return (
+                            <button
+                              onClick={() => router.push(`/student/practice/aptitude-week-5?day=${selectedDay}`)}
+                              className="px-6 py-3 bg-accent hover:bg-accent/80 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
+                            >
+                              <BookOpen className="w-5 h-5" />
+                              {attempts > 0 ? "Retake Practice" : "Take Practice Test"}
+                            </button>
+                          )
+                        })()}
                       </div>
                     </div>
                   </Card>

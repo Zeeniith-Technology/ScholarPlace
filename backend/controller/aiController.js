@@ -3,7 +3,7 @@
  * Handles all AI-related endpoints
  */
 
-import { executeData, fetchData } from '../methods.js';
+import { executeData, fetchData, getDB } from '../methods.js';
 import aiService from '../services/aiService.js';
 import aiInteractionSchema from '../schema/aiInteraction.js';
 import studentLearningProfileSchema from '../schema/studentLearningProfile.js';
@@ -217,13 +217,13 @@ export default class aiController {
     async generateLearningPath(req, res, next) {
         try {
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
-            const { week } = req.body;
+            const { week, analyticsContext } = req.body;
 
             // Fetch student performance data
             const progressResult = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: week || 1 },
+                { student_id: userId }, // Should fetch all progress to understand weak areas
                 {}
             );
 
@@ -243,9 +243,10 @@ export default class aiController {
             );
 
             const studentPerformance = {
-                progress: progressResult.data?.[0] || {},
+                progress: progressResult.data || [],
                 practiceTests: practiceTestResult.data || [],
-                learningProfile: profileResult.data?.[0] || {}
+                learningProfile: profileResult.data?.[0] || {},
+                ...(analyticsContext && { analyticsContext })
             };
 
             // Generate learning path
@@ -359,23 +360,41 @@ export default class aiController {
     async analyzePerformance(req, res, next) {
         try {
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
-            const { week } = req.body;
+            const { week, analyticsContext } = req.body;
+            // Ensure week is a number for DB queries
+            const weekNum = parseInt(week) || 1;
 
-            // Fetch comprehensive student data
+            if (!userId) {
+                console.error('[AI Analysis] Error: User ID missing from request');
+                return res.status(401).json({ success: false, message: 'User ID missing' });
+            }
+
+            console.log(`[AI Analysis] User: ${userId}, Week: ${weekNum}`);
+
+            // 1. Fetch Syllabus Progress
+            // We fetch ALL progress records for this week (could be multiple days)
             const progressResult = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: week || 1 },
+                { student_id: userId, week: weekNum },
                 {}
             );
+            console.log(`[AI Analysis] Progress records found: ${progressResult.data?.length || 0}`);
 
+            // 2. Fetch Practice Tests (Aptitude)
             const practiceTestResult = await fetchData(
                 'tblPracticeTest',
                 {},
-                { student_id: userId, week: week || 1 },
+                { student_id: userId, week: weekNum },
                 {}
             );
+            const allPracticeTests = practiceTestResult.data || [];
 
+            // Split Aptitude into Daily Practice and Weekly Test
+            const aptitudeDaily = allPracticeTests.filter(t => t.day !== 'weekly-test');
+            const aptitudeWeekly = allPracticeTests.filter(t => t.day === 'weekly-test');
+
+            // 3. Fetch Learning Profile
             const profileResult = await fetchData(
                 'tblStudentLearningProfile',
                 {},
@@ -383,10 +402,91 @@ export default class aiController {
                 {}
             );
 
+            // 4. Fetch Coding (DSA) Progress manually
+            let dsaDaily = { completed: 0, total: 0, score: 0 };
+            let dsaWeekly = { completed: 0, total: 0, score: 0 };
+
+            try {
+                const db = getDB();
+                const problemsCollection = db.collection('tblCodingProblem');
+
+                // Get ALL problems for this week (both daily and capstone/weekly)
+                const allProblems = await problemsCollection.find({
+                    week: weekNum,
+                    deleted: { $ne: true }
+                }).project({ question_id: 1, title: 1, day: 1, is_capstone: 1 }).toArray();
+
+                console.log(`[AI Analysis] Total coding problems found: ${allProblems.length}`);
+
+                if (allProblems.length > 0) {
+                    const problemIds = allProblems.map(p => p.question_id);
+                    const submissionsCollection = db.collection('tblCodingSubmissions');
+
+                    // Get student's passed submissions
+                    const submissions = await submissionsCollection.find({
+                        student_id: userId.toString(),
+                        problem_id: { $in: problemIds },
+                        status: 'passed'
+                    }).project({ problem_id: 1 }).toArray();
+
+                    const completedProblemIds = new Set(submissions.map(s => s.problem_id));
+
+                    // Categorize problems
+                    const dailyProblems = allProblems.filter(p => !p.is_capstone);
+                    const weeklyProblems = allProblems.filter(p => p.is_capstone);
+
+                    // Expected DSA daily problems per week (syllabus: 25 per week; DB may have more in bank)
+                    const EXPECTED_DSA_DAILY_PER_WEEK = 25;
+                    const dailyCompleted = dailyProblems.filter(p => completedProblemIds.has(p.question_id)).length;
+                    const totalForWeek = Math.min(dailyProblems.length, EXPECTED_DSA_DAILY_PER_WEEK);
+                    const completedForWeek = Math.min(dailyCompleted, EXPECTED_DSA_DAILY_PER_WEEK);
+                    dsaDaily = {
+                        completed: completedForWeek,
+                        total: totalForWeek,
+                        score: totalForWeek > 0 ? Math.round((completedForWeek / totalForWeek) * 100) : 0
+                    };
+
+                    // Calculate DSA Weekly (Capstone) Stats
+                    const weeklyCompleted = weeklyProblems.filter(p => completedProblemIds.has(p.question_id)).length;
+                    dsaWeekly = {
+                        completed: weeklyCompleted,
+                        total: weeklyProblems.length,
+                        score: weeklyProblems.length > 0 ? Math.round((weeklyCompleted / weeklyProblems.length) * 100) : 0
+                    };
+                }
+            } catch (err) {
+                console.warn('Failed to fetch coding progress:', err);
+            }
+
+            // Calculate performance behavior (Aptitude)
+            const behavior = {
+                avgTimePerQuestion: 0,
+                accuracyRate: 0,
+                totalAttempts: allPracticeTests.length
+            };
+
+            if (allPracticeTests.length > 0) {
+                const totalQuestions = allPracticeTests.reduce((acc, t) => acc + (t.total_questions || 0), 0);
+                const totalCorrect = allPracticeTests.reduce((acc, t) => acc + (t.correct_answers || 0), 0);
+                const totalTime = allPracticeTests.reduce((acc, t) => acc + (t.time_spent || 0), 0);
+
+                behavior.accuracyRate = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+                behavior.avgTimePerQuestion = totalQuestions > 0 ? (totalTime / totalQuestions).toFixed(1) : 0;
+            }
+
             const studentData = {
-                progress: progressResult.data?.[0] || {},
-                practiceTests: practiceTestResult.data || [],
-                learningProfile: profileResult.data?.[0] || {}
+                syllabusProgress: progressResult.data || [],
+                aptitude: {
+                    dailyPractice: aptitudeDaily,
+                    weeklyTest: aptitudeWeekly
+                },
+                dsa: {
+                    dailyPractice: dsaDaily,
+                    weeklyTest: dsaWeekly
+                },
+                behavior: behavior,
+                learningProfile: profileResult.data?.[0] || {},
+                ...(analyticsContext && { analyticsContext })
             };
 
             // Analyze performance
@@ -398,7 +498,7 @@ export default class aiController {
                 {
                     student_id: userId,
                     interaction_type: 'performance-analysis',
-                    week: week || 1,
+                    week: weekNum,
                     input_data: studentData,
                     ai_response: JSON.stringify(analysis),
                     parsed_response: analysis,
@@ -473,7 +573,7 @@ export default class aiController {
             res.locals.responseData = {
                 success: true,
                 status: 200,
-                message: answerResult.outOfScope 
+                message: answerResult.outOfScope
                     ? 'Question is outside project scope'
                     : 'Question answered successfully',
                 data: {

@@ -52,14 +52,17 @@ export default class studentProgressController {
 
             let finalFilter = filter || {};
 
+            let studentIdString = null;
+            let isObjectId = false;
+
             // If student, only show their own progress
             if (userRole === 'Student' && userId) {
                 // Convert userId to string for consistent matching (student_id is stored as String in schema)
-                const studentIdString = userId.toString();
+                studentIdString = userId.toString();
 
                 // Handle both ObjectId and string formats in database
                 const { ObjectId } = await import('mongodb');
-                const isObjectId = typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId);
+                isObjectId = typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId);
 
                 // Try to match student_id as both string and ObjectId
                 finalFilter = {
@@ -81,10 +84,19 @@ export default class studentProgressController {
             }
             // Admin and Superadmin can view all or filter by student_id
 
+            // If we already filtered by student_id manually (for Student role), 
+            // do NOT pass 'req' to fetchData options to avoid double-filtering in applyRoleBasedFilter
             const fetchOptions = {
                 ...(options || {}),
-                ...(req ? { req: req } : {})
+                ...((userRole !== 'Student' && req) ? { req: req } : {})
             };
+
+            console.log('[StudentProgress] List Query Details:', {
+                studentIdString,
+                isObjectId,
+                finalFilter: JSON.stringify(finalFilter),
+                collection: 'tblStudentProgress'
+            });
 
             const response = await fetchData(
                 'tblStudentProgress',
@@ -93,11 +105,13 @@ export default class studentProgressController {
                 fetchOptions
             );
 
-            console.log('[StudentProgress] Response:', {
-                success: response.success,
-                dataCount: response.data?.length || 0,
-                userId,
-                userRole
+            console.log('[StudentProgress] List Result:', {
+                count: response.data?.length || 0,
+                firstRecord: response.data?.[0] ? {
+                    _id: response.data[0]._id,
+                    week: response.data[0].week,
+                    days_completed: response.data[0].days_completed
+                } : 'None'
             });
 
             res.locals.responseData = {
@@ -233,10 +247,15 @@ export default class studentProgressController {
             console.log('[StudentProgress] Complete day request:', { userId, week, day });
 
             if (!userId || !week || !day) {
+                const missing = [];
+                if (!userId) missing.push('userId');
+                if (!week) missing.push('week');
+                if (!day) missing.push('day');
+
                 res.locals.responseData = {
                     success: false,
                     status: 400,
-                    message: 'Week and day are required',
+                    message: `Missing required fields: ${missing.join(', ')}`,
                     error: 'Missing required fields'
                 };
                 return next();
@@ -285,8 +304,21 @@ export default class studentProgressController {
                 }
             }
 
-            // Get existing progress - handle both ObjectId and string formats
-            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
+            // Get existing progress - handle both ObjectId and string formats explicitly
+            const { ObjectId } = await import('mongodb');
+            const studentIdString = userId.toString();
+            let studentIdFilter = {};
+
+            if (/^[0-9a-fA-F]{24}$/.test(studentIdString)) {
+                studentIdFilter = {
+                    $or: [
+                        { student_id: studentIdString }, // String format
+                        { student_id: new ObjectId(studentIdString) } // ObjectId format
+                    ]
+                };
+            } else {
+                studentIdFilter = { student_id: studentIdString };
+            }
 
             const existingFilter = {
                 week: week,
@@ -394,18 +426,39 @@ export default class studentProgressController {
                 {}
             );
 
-            let response;
+            // Atomic update to ensure days_completed is preserved even if other requests are concurrent
             if (existingCheck.data && existingCheck.data.length > 0) {
-                // Update existing - use $or to match both formats
+                // Update existing - Use atomic operators
+                const updatePayload = {
+                    $addToSet: { days_completed: day },
+                    $set: {
+                        last_accessed: new Date(),
+                        updated_at: new Date(),
+                        status: status, // This might be slightly stale if calculated before add, but acceptable for now
+                        progress_percentage: progressPercentage,
+                        assignments_completed: assignmentsCompleted,
+                        tests_completed: testsCompleted,
+                        practice_tests_completed: practiceTestsCompleted
+                    }
+                };
+
+                if (status === 'completed') {
+                    updatePayload.$set.completed_at = new Date();
+                }
+
                 response = await executeData(
                     'tblStudentProgress',
-                    progressData,
+                    updatePayload,
                     'u',
-                    studentProgressSchema,
+                    // Pass null for schema when using operators to avoid schema validation affecting operators
+                    // But we still want type conversion if possible. 
+                    // executeData handles operators by skipping schema wrapping, but applies defaults?
+                    // Let's pass null to be safe and rely on manual construction
+                    null,
                     { week: week, ...studentIdFilter }
                 );
             } else {
-                // Insert new
+                // Insert new (keep as is)
                 progressData.created_at = new Date();
                 response = await executeData(
                     'tblStudentProgress',
@@ -642,12 +695,28 @@ export default class studentProgressController {
 
                 if (existingTestIndex >= 0) {
                     const existingTest = practiceTestScores[existingTestIndex];
-                    // Only allow retake if previous score was < 80%
-                    if (existingTest.score >= 80) {
+                    // Check for max attempts (Limit: 3)
+                    if ((existingTest.attempt || 1) >= 3) {
                         res.locals.responseData = {
                             success: false,
                             status: 403,
-                            message: 'Test already completed with score >= 80%. Retake not allowed.',
+                            message: 'Maximum attempts (3) reached for this test.',
+                            error: 'Max attempts reached',
+                            data: {
+                                attempts: existingTest.attempt,
+                                previousScore: existingTest.score,
+                                canRetake: false
+                            }
+                        };
+                        return next();
+                    }
+
+                    // Only allow retake if previous score was < 70%
+                    if (existingTest.score >= 70) {
+                        res.locals.responseData = {
+                            success: false,
+                            status: 403,
+                            message: 'Test already completed with score >= 70%. Retake not allowed.',
                             error: 'Test already passed',
                             data: {
                                 previousScore: existingTest.score,
@@ -850,19 +919,59 @@ export default class studentProgressController {
 
             const progressData = allProgress.data || [];
 
-            // Calculate summary statistics
+            // Syllabus has 6 weeks; use for progress denominator
+            const SYLLABUS_TOTAL_WEEKS = 6;
             const weeksCompleted = progressData.filter(p => p.status === 'completed').length;
-            const totalWeeks = progressData.length > 0 ? Math.max(...progressData.map(p => p.week)) : 0;
+            const totalWeeks = Math.max(SYLLABUS_TOTAL_WEEKS, progressData.length > 0 ? Math.max(...progressData.map(p => p.week)) : 0);
             const currentWeek = progressData.find(p => p.status === 'in_progress' || p.status === 'start')?.week || 1;
-
-            const totalPracticeTests = progressData.reduce((sum, p) => sum + (p.practice_tests_completed || 0), 0);
-            const allPracticeScores = progressData.flatMap(p => p.practice_test_scores || []);
-            const averagePracticeScore = allPracticeScores.length > 0
-                ? Math.round(allPracticeScores.reduce((sum, t) => sum + (t.score || 0), 0) / allPracticeScores.length)
-                : 0;
 
             const totalTimeSpent = progressData.reduce((sum, p) => sum + (p.time_spent || 0), 0);
             const totalDaysCompleted = progressData.reduce((sum, p) => sum + (p.days_completed?.length || 0), 0);
+
+            // Actual practice test count and streak from tblPracticeTest
+            let totalPracticeTests = 0;
+            let averagePracticeScore = 0;
+            let currentStreak = 0;
+            try {
+                const practiceRes = await fetchData(
+                    'tblPracticeTest',
+                    { score: 1, completed_at: 1, created_at: 1 },
+                    progressFilter,
+                    { sort: { completed_at: -1, created_at: -1 } }
+                );
+                const tests = practiceRes.data || [];
+                totalPracticeTests = tests.length;
+                const scores = tests.map(t => t.score).filter(s => s != null);
+                averagePracticeScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+                // Consecutive days streak from completed_at
+                const sortedByDate = [...tests].filter(t => t.completed_at || t.created_at).sort((a, b) => {
+                    const da = new Date(a.completed_at || a.created_at).getTime();
+                    const db = new Date(b.completed_at || b.created_at).getTime();
+                    return db - da;
+                });
+                let lastDate = null;
+                for (const test of sortedByDate) {
+                    const testDate = new Date(test.completed_at || test.created_at);
+                    testDate.setHours(0, 0, 0, 0);
+                    if (!lastDate) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (testDate.getTime() === today.getTime() || testDate.getTime() === today.getTime() - 86400000) {
+                            currentStreak = 1;
+                            lastDate = testDate;
+                        } else break;
+                    } else {
+                        const dayDiff = Math.floor((lastDate - testDate) / 86400000);
+                        if (dayDiff === 0) continue;
+                        else if (dayDiff === 1) {
+                            currentStreak++;
+                            lastDate = testDate;
+                        } else break;
+                    }
+                }
+            } catch (err) {
+                console.warn('[StudentProgress] Summary practice/streak fetch failed:', err.message);
+            }
 
             res.locals.responseData = {
                 success: true,
@@ -876,6 +985,7 @@ export default class studentProgressController {
                     averagePracticeScore,
                     totalTimeSpent,
                     totalDaysCompleted,
+                    currentStreak,
                     progressByWeek: progressData
                 }
             };
@@ -1102,7 +1212,16 @@ export default class studentProgressController {
 
             // Get latest attempt for each day
             const latestTestsByDay = {};
+            const attemptsByDay = {};
+
             practiceTests.forEach(test => {
+                // Count attempts
+                if (!attemptsByDay[test.day]) {
+                    attemptsByDay[test.day] = 0;
+                }
+                attemptsByDay[test.day]++;
+
+                // Track latest attempt
                 if (!latestTestsByDay[test.day] || test.attempt > latestTestsByDay[test.day].attempt) {
                     latestTestsByDay[test.day] = test;
                 }
@@ -1111,16 +1230,29 @@ export default class studentProgressController {
             // Check each day
             for (const day of weekDays) {
                 const test = latestTestsByDay[day];
+                const attemptCount = attemptsByDay[day] || 0;
+
                 if (!test) {
                     practiceTestEligibility.missing.push(day);
                     practiceTestEligibility.eligible = false;
                 } else if (test.score < 70) {
-                    practiceTestEligibility.failed.push({ day, score: test.score });
+                    practiceTestEligibility.failed.push({
+                        day,
+                        score: test.score,
+                        attempts: attemptCount
+                    });
                     practiceTestEligibility.eligible = false;
                 } else {
-                    practiceTestEligibility.days.push({ day, score: test.score });
+                    practiceTestEligibility.days.push({
+                        day,
+                        score: test.score,
+                        attempts: attemptCount
+                    });
                 }
             }
+
+            // Add raw attempts map for frontend lookups
+            practiceTestEligibility.attempts_by_day = attemptsByDay;
 
             // Check coding problems completion
             // If no coding problems exist for this week, automatically consider requirement met
@@ -1129,6 +1261,21 @@ export default class studentProgressController {
                 total: allCodingProblems.length,
                 completed: codingProblemsCompleted.length,
                 missing: allCodingProblems.filter(id => !codingProblemsCompleted.includes(id))
+            };
+
+            // Check if Weekly Test itself is completed (day: 'weekly-test')
+            // results are already in 'practiceTests' array drawn from tblPracticeTest
+            const weeklyTestAttempts = practiceTests.filter(t => t.day === 'weekly-test');
+            const weeklyAttemptCount = weeklyTestAttempts.length;
+            const latestWeeklyTest = weeklyTestAttempts.sort((a, b) => b.attempt - a.attempt)[0];
+
+            const weeklyTestStatus = {
+                attempted: weeklyAttemptCount > 0,
+                score: latestWeeklyTest ? latestWeeklyTest.score : 0,
+                completed: !!latestWeeklyTest,
+                passed: latestWeeklyTest ? latestWeeklyTest.score >= 70 : false,
+                attempts: weeklyAttemptCount,
+                max_attempts: 3
             };
 
             // Overall eligibility
@@ -1142,6 +1289,7 @@ export default class studentProgressController {
                     eligible: isEligible,
                     practice_tests: practiceTestEligibility,
                     coding_problems: codingProblemsEligibility,
+                    weekly_test_status: weeklyTestStatus,
                     requirements: {
                         practice_test_threshold: 70,
                         coding_problems_required: 'all'

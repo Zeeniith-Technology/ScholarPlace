@@ -15,7 +15,8 @@ import {
     Play,
     ArrowLeft,
     Calculator,
-    Target
+    Target,
+    RotateCcw
 } from 'lucide-react'
 import { getAuthHeader } from '@/utils/auth'
 import { cn } from '@/lib/utils'
@@ -203,7 +204,7 @@ export default function WeeklyAptitudeTestsPage() {
                         const isLoaded = !isLoading && eligibility !== undefined
 
                         // Test mode override for development
-                        const testMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true'
+                        const testMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true' || process.env.NODE_ENV === 'development'
                         const canStartTest = testMode || isEligible
 
                         return (
@@ -224,19 +225,33 @@ export default function WeeklyAptitudeTestsPage() {
                                                 {test.difficulty}
                                             </Badge>
                                             {isLoaded && (
-                                                <Badge variant={canStartTest ? "default" : "secondary"} className="flex items-center gap-1">
-                                                    {canStartTest ? (
-                                                        <>
+                                                <div className="flex flex-col gap-2 items-end">
+                                                    {eligibility?.weekly_test_status?.passed ? (
+                                                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20 flex items-center gap-1">
                                                             <CheckCircle2 className="w-3 h-3" />
-                                                            Unlocked
-                                                        </>
+                                                            Completed ({eligibility.weekly_test_status.score}%)
+                                                        </Badge>
+                                                    ) : eligibility?.weekly_test_status?.attempted ? (
+                                                        <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            Score: {eligibility.weekly_test_status.score}%
+                                                        </Badge>
                                                     ) : (
-                                                        <>
-                                                            <Lock className="w-3 h-3" />
-                                                            Locked
-                                                        </>
+                                                        <Badge variant={canStartTest ? "default" : "secondary"} className="flex items-center gap-1">
+                                                            {canStartTest ? (
+                                                                <>
+                                                                    <Play className="w-3 h-3" />
+                                                                    Unlocked
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Lock className="w-3 h-3" />
+                                                                    Locked
+                                                                </>
+                                                            )}
+                                                        </Badge>
                                                     )}
-                                                </Badge>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -315,15 +330,42 @@ export default function WeeklyAptitudeTestsPage() {
 
                                 <div className="p-4 bg-background-surface/50 border-t border-neutral-light/10 mt-auto">
                                     {canStartTest ? (
-                                        <Link href={`/student/aptitude/weekly/${test.id}`} className="w-full">
-                                            <Button
-                                                className="w-full gap-2 font-semibold"
-                                                variant="primary"
-                                            >
-                                                <Play className="w-4 h-4" />
-                                                Start Test
-                                            </Button>
-                                        </Link>
+                                        <div className="space-y-2">
+                                            {eligibility?.weekly_test_status?.attempted && (
+                                                <div className="text-xs text-center text-neutral-light mb-1">
+                                                    Attempts: {eligibility.weekly_test_status.attempts}/{eligibility.weekly_test_status.max_attempts || 3}
+                                                </div>
+                                            )}
+                                            {eligibility?.weekly_test_status?.attempts >= 3 ? (
+                                                <Button
+                                                    className="w-full gap-2 font-semibold"
+                                                    variant="secondary"
+                                                    disabled
+                                                >
+                                                    <Lock className="w-4 h-4" />
+                                                    Max Attempts Reached
+                                                </Button>
+                                            ) : (
+                                                <Link href={`/student/aptitude/weekly/${test.id}`} className="w-full block" target="_blank">
+                                                    <Button
+                                                        className="w-full gap-2 font-semibold"
+                                                        variant={eligibility?.weekly_test_status?.passed ? "secondary" : "primary"}
+                                                    >
+                                                        {eligibility?.weekly_test_status?.attempted ? (
+                                                            <>
+                                                                <RotateCcw className="w-4 h-4" />
+                                                                Retake Test
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Play className="w-4 h-4" />
+                                                                Start Test
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </Link>
+                                            )}
+                                        </div>
                                     ) : (
                                         <Button
                                             className="w-full gap-2 font-semibold"

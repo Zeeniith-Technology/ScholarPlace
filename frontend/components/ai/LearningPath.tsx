@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { AIService } from '@/lib/aiService'
+import type { AnalyticsContextSummary } from '@/lib/aiService'
 import { 
   Map, 
   Loader2, 
@@ -17,10 +18,11 @@ import {
 
 interface LearningPathProps {
   week?: number
+  analyticsContext?: AnalyticsContextSummary
   onClose?: () => void
 }
 
-export function LearningPath({ week, onClose }: LearningPathProps) {
+export function LearningPath({ week = 1, analyticsContext, onClose }: LearningPathProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [learningPath, setLearningPath] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -30,10 +32,17 @@ export function LearningPath({ week, onClose }: LearningPathProps) {
     setError(null)
 
     try {
-      const response = await AIService.generateLearningPath({ week })
+      const response = await AIService.generateLearningPath({ week, analyticsContext })
       
       if (response.success && response.data) {
-        setLearningPath(response.data)
+        const raw = response.data as any
+        setLearningPath({
+          weak_areas: raw.weak_areas ?? raw.weakAreas ?? [],
+          recommended_days: raw.recommended_days ?? raw.recommendedDays ?? [],
+          focus_areas: raw.focus_areas ?? raw.focusAreas ?? [],
+          study_plan: raw.study_plan ?? raw.studyPlan ?? '',
+          motivation: raw.motivation ?? '',
+        })
       } else {
         setError('Failed to generate learning path. Please try again.')
       }

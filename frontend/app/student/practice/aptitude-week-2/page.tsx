@@ -9,6 +9,7 @@ import {
     ArrowLeft,
     Clock,
     CheckCircle2,
+    Lock,
     XCircle,
     HelpCircle,
     Brain,
@@ -60,6 +61,7 @@ function AptitudeWeek2PracticeContent() {
     const [showResults, setShowResults] = useState(false)
     const [startTime, setStartTime] = useState<number | null>(null)
     const [totalTime, setTotalTime] = useState(0)
+    const [attempts, setAttempts] = useState<number>(0)
     const [testStarted, setTestStarted] = useState(false)
     const [questionStartTimes, setQuestionStartTimes] = useState<{ [questionId: string]: number }>({})
 
@@ -233,7 +235,7 @@ function AptitudeWeek2PracticeContent() {
             })
 
             // Save practice test
-            await fetch(`${apiBaseUrl}/practice-test/save`, {
+            const response = await fetch(`${apiBaseUrl}/practice-test/save`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -241,7 +243,7 @@ function AptitudeWeek2PracticeContent() {
                     'Authorization': authHeader || '',
                 },
                 body: JSON.stringify({
-                    week: 1,
+                    week: 2,
                     day: day,
                     score: percentage,
                     totalQuestions: total,
@@ -252,6 +254,14 @@ function AptitudeWeek2PracticeContent() {
                     category: 'aptitude'
                 }),
             })
+
+            if (response.ok) {
+                const data = await response.json()
+                if (data.success && data.data) {
+                    setAttempts(data.data.attempts || 0)
+                }
+            }
+
         } catch (error) {
             console.error('Error saving practice test:', error)
         }
@@ -370,13 +380,25 @@ function AptitudeWeek2PracticeContent() {
                             </div>
 
                             <div className="flex gap-4 justify-center">
-                                <button
-                                    onClick={resetTest}
-                                    className="px-6 py-3 bg-accent hover:bg-accent/80 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
-                                >
-                                    <RotateCcw className="w-5 h-5" />
-                                    Retake Test
-                                </button>
+                                {percentage >= 70 ? (
+                                    <div className="flex items-center gap-2 px-6 py-3 bg-green-500/20 text-green-600 rounded-lg font-semibold border border-green-500/20 cursor-default">
+                                        <CheckCircle2 className="w-5 h-5" />
+                                        Test Passed
+                                    </div>
+                                ) : attempts >= 3 ? (
+                                    <div className="flex items-center gap-2 px-6 py-3 bg-neutral-light/20 text-neutral-light rounded-lg font-semibold border border-neutral-light/20 cursor-not-allowed">
+                                        <Lock className="w-5 h-5" />
+                                        Max Attempts Reached
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={resetTest}
+                                        className="px-6 py-3 bg-accent hover:bg-accent/80 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
+                                    >
+                                        <RotateCcw className="w-5 h-5" />
+                                        Retake Test
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => router.push(`/student/study/aptitude-week-1?day=${day}`)}
                                     className="px-6 py-3 bg-background-elevated hover:bg-background-elevated/80 text-neutral rounded-lg font-semibold transition-all flex items-center gap-2"

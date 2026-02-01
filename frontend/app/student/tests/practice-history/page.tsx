@@ -244,7 +244,7 @@ function PracticeTestHistoryContent() {
           <Card className="p-12 text-center">
             <Brain className="w-16 h-16 text-neutral-light/40 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-neutral mb-2">No Practice Tests Found</h3>
-            <p className="text-neutral-light mb-6">You haven't taken any practice tests yet.</p>
+            <p className="text-neutral-light mb-6">You haven&apos;t taken any practice tests yet.</p>
             <button
               onClick={() => router.push('/student/study')}
               className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-all"

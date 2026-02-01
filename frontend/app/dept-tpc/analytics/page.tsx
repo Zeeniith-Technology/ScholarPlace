@@ -18,7 +18,10 @@ import {
   Filter,
   Download,
   PieChart,
+  X,
+  Search
 } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
 
 /**
  * Department TPC Analytics Page
@@ -36,6 +39,12 @@ export default function DepartmentTPCAnalyticsPage() {
   const [selectedWeeks, setSelectedWeeks] = useState(8)
   const [departmentName, setDepartmentName] = useState('')
 
+  // Modal State
+  const [showModal, setShowModal] = useState(false)
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalData, setModalData] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+
   useEffect(() => {
     checkAuth()
     fetchAnalyticsData()
@@ -51,7 +60,7 @@ export default function DepartmentTPCAnalyticsPage() {
     try {
       const apiBaseUrl = getApiBaseUrl()
       const token = getToken()
-      
+
       const authHeader = getAuthHeader()
       if (!authHeader) {
         clearAuth()
@@ -225,6 +234,80 @@ export default function DepartmentTPCAnalyticsPage() {
     showToast('Analytics data exported successfully', 'success')
   }
 
+  const handleCardClick = (metric: string) => {
+    if (!performance?.studentDetails) return
+
+    let data: any[] = []
+    let title = ''
+
+    switch (metric) {
+      case 'total_students':
+        title = 'All Students'
+        data = performance.studentDetails
+        break
+      case 'active_students':
+        title = 'Active Students'
+        data = performance.studentDetails.filter((s: any) => s.status === 'active')
+        break
+      case 'top_performers':
+        title = 'Top Performers'
+        data = performance.studentDetails.filter((s: any) => s.compositeScore >= 85)
+        break
+      case 'needs_attention':
+        title = 'Students Needing Attention'
+        data = performance.studentDetails.filter((s: any) => s.compositeScore < 50 && s.status === 'active')
+        break
+      case 'tests_completed':
+        title = 'Tests/Problems Activity'
+        data = performance.studentDetails.filter((s: any) => s.testsCompleted > 0)
+        break
+      default:
+        return
+    }
+
+    setModalTitle(title)
+    setModalData(data)
+    setSearchTerm('')
+    setShowModal(true)
+  }
+
+  // Student Detail Modal State
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false)
+  const [studentDetail, setStudentDetail] = useState<any>(null)
+
+  const handleStudentClick = async (studentId: string) => {
+    try {
+      setIsFetchingDetail(true)
+      const apiBaseUrl = getApiBaseUrl()
+      const authHeader = getAuthHeader()
+
+      const res = await fetch(`${apiBaseUrl}/tpc-dept/student/details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader || '' },
+        body: JSON.stringify({ student_id: studentId })
+      })
+
+      const result = await res.json()
+      if (result.success) {
+        setStudentDetail(result.data)
+        setShowDetailModal(true)
+      } else {
+        showToast(result.message || 'Failed to load student details', 'error')
+      }
+    } catch (error) {
+      console.error('Fetch detail error:', error)
+      showToast('Error loading details', 'error')
+    } finally {
+      setIsFetchingDetail(false)
+    }
+  }
+
+  const filteredModalData = modalData.filter(student =>
+    student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   return (
     <DepartmentTPCLayout>
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
@@ -273,7 +356,10 @@ export default function DepartmentTPCAnalyticsPage() {
             {/* Performance Overview */}
             {performance && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card>
+                <Card
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleCardClick('total_students')}
+                >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-neutral-light">Total Students</span>
@@ -286,7 +372,10 @@ export default function DepartmentTPCAnalyticsPage() {
                   </div>
                 </Card>
 
-                <Card>
+                <Card
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleCardClick('top_performers')}
+                >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-neutral-light">Average Score</span>
@@ -299,7 +388,10 @@ export default function DepartmentTPCAnalyticsPage() {
                   </div>
                 </Card>
 
-                <Card>
+                <Card
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleCardClick('tests_completed')}
+                >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-neutral-light">Tests Completed</span>
@@ -312,7 +404,10 @@ export default function DepartmentTPCAnalyticsPage() {
                   </div>
                 </Card>
 
-                <Card>
+                <Card
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleCardClick('needs_attention')}
+                >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-neutral-light">Engagement Rate</span>
@@ -470,6 +565,163 @@ export default function DepartmentTPCAnalyticsPage() {
             onClose={hideToast}
           />
         )}
+
+        {/* List Modal */}
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          title={modalTitle}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-light" />
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-background border border-neutral-light/20 rounded-lg focus:outline-none focus:border-primary/50 text-neutral"
+              />
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-neutral-light/20">
+                    <th className="p-3 text-sm font-semibold text-neutral-light">Student</th>
+                    <th className="p-3 text-sm font-semibold text-neutral-light text-center">Score</th>
+                    <th className="p-3 text-sm font-semibold text-neutral-light text-center">Solved</th>
+                    <th className="p-3 text-sm font-semibold text-neutral-light text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredModalData.length > 0 ? (
+                    filteredModalData.map((student) => (
+                      <tr
+                        key={student.id}
+                        className="border-b border-neutral-light/10 hover:bg-background-elevated/50 cursor-pointer transition-colors"
+                        onClick={() => handleStudentClick(student.id)}
+                      >
+                        <td className="p-3">
+                          <div className="font-medium text-neutral">{student.name}</div>
+                          <div className="text-xs text-neutral-light">{student.email}</div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant={student.compositeScore >= 80 ? 'success' : student.compositeScore >= 50 ? 'warning' : 'error'}>
+                            {student.compositeScore}%
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-center text-neutral">
+                          {student.codingProblemsSolved} problems
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant={student.status === 'active' ? 'primary' : 'default'}>
+                            {student.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="p-6 text-center text-neutral-light">
+                        No students found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Student Detail Modal */}
+        <Modal
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          title="Student Details"
+          size="lg"
+        >
+          {studentDetail ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-light/10">
+                <div>
+                  <h3 className="text-xl font-bold text-neutral">{studentDetail.student.name}</h3>
+                  <p className="text-sm text-neutral-light">{studentDetail.student.email}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-primary">{studentDetail.student.enrollment}</p>
+                  <p className="text-xs text-neutral-light">{studentDetail.student.department}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-background-surface rounded-lg">
+                  <p className="text-sm text-neutral-light mb-1">Aptitude Tests</p>
+                  <p className="text-2xl font-bold text-neutral">{studentDetail.aptitude?.length || 0}</p>
+                </div>
+                <div className="p-4 bg-background-surface rounded-lg">
+                  <p className="text-sm text-neutral-light mb-1">DSA Problems</p>
+                  <p className="text-2xl font-bold text-neutral">{studentDetail.dsa?.problemsSolved || 0}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-neutral mb-3 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-primary" /> Aptitude History
+                </h4>
+                {studentDetail.aptitude?.length > 0 ? (
+                  <div className="overflow-hidden rounded-lg border border-neutral-light/20">
+                    <table className="w-full text-sm">
+                      <thead className="bg-background-elevated">
+                        <tr>
+                          <th className="p-3 text-left font-medium text-neutral-light">Week</th>
+                          <th className="p-3 text-center font-medium text-neutral-light">Score</th>
+                          <th className="p-3 text-center font-medium text-neutral-light">Correct</th>
+                          <th className="p-3 text-right font-medium text-neutral-light">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-light/10">
+                        {studentDetail.aptitude.map((test: any) => (
+                          <tr key={test.id} className="hover:bg-background-elevated/30">
+                            <td className="p-3">Week {test.week}</td>
+                            <td className="p-3 text-center font-bold text-primary">{test.score}</td>
+                            <td className="p-3 text-center">{test.correct}/{test.totalQuestions}</td>
+                            <td className="p-3 text-right text-neutral-light">
+                              {new Date(test.date).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-light italic">No tests taken yet.</p>
+                )}
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-neutral mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" /> DSA Progress
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {studentDetail.dsa?.daysCompleted?.map((day: any, idx: number) => (
+                      <Badge key={idx} variant="success" className="text-xs">
+                        {typeof day === 'string' ? day : `Day ${day}`}
+                      </Badge>
+                    ))}
+                    {(!studentDetail.dsa?.daysCompleted || studentDetail.dsa.daysCompleted.length === 0) && (
+                      <p className="text-sm text-neutral-light italic">No daily progress recorded.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">Loading details...</div>
+          )}
+        </Modal>
       </div>
     </DepartmentTPCLayout>
   )

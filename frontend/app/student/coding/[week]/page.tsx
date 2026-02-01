@@ -7,9 +7,10 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { CodeEditor } from '@/components/ui/CodeEditor'
 import { CodeReview } from '@/components/ai/CodeReview'
-import { Toast, useToast } from '@/components/ui/Toast'
-import { getAuthHeader } from '@/utils/auth'
-import { getApiBaseUrl } from '@/utils/api'
+import { Toast, useToast } from '@/components/ui/Toast' // Restored
+import { ProblemCompleted } from '@/components/coding/ProblemCompleted'
+import { getAuthHeader } from '@/utils/auth' // Restored
+import { getApiBaseUrl } from '@/utils/api' // Restored
 import {
   ArrowLeft,
   Code2,
@@ -20,7 +21,8 @@ import {
   FileCode,
   Layout,
   List,
-  Sparkles
+  Sparkles,
+  CheckCircle2, // Added CheckCircle2
 } from 'lucide-react'
 
 // Types
@@ -45,6 +47,7 @@ interface CodingProblem {
     description?: string
   }>
   explanation: string
+  status?: 'passed' | 'pending'
 }
 
 // Day Configuration
@@ -67,7 +70,6 @@ function CodingContent() {
   const currentDay = searchParams.get('day')
 
   // Parse Week
-  // params.week is likely 'week-1', 'week-2', etc.
   const weekParam = params.week as string;
   const weekNum = weekParam ? weekParam.replace('week-', '') : '1';
   const weekLabel = `Week ${weekNum}`;
@@ -81,6 +83,7 @@ function CodingContent() {
   const [code, setCode] = useState('')
   const [activeTab, setActiveTab] = useState<'editor' | 'review'>('editor')
   const [language, setLanguage] = useState<'javascript' | 'c' | 'cpp' | 'python'>('javascript')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Fetch Problems
   useEffect(() => {
@@ -133,6 +136,7 @@ function CodingContent() {
     setCode(initialCode)
     setLanguage('javascript') // Reset to JS on new problem
     setActiveTab('editor')
+    setIsSubmitting(false)
   }
 
   const handleLanguageChange = (lang: 'javascript' | 'c' | 'cpp' | 'python') => {
@@ -145,14 +149,64 @@ function CodingContent() {
     }
   }
 
+  const handleSubmit = async () => {
+    if (!selectedProblem) return
+
+    setIsSubmitting(true)
+    try {
+      const apiBaseUrl = getApiBaseUrl()
+      const authHeader = getAuthHeader()
+
+      const res = await fetch(`${apiBaseUrl}/coding-problems/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader || ''
+        },
+        body: JSON.stringify({
+          problemId: selectedProblem.problem_id,
+          code: code,
+          language: language
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        showToast('Problem solved successfully! 🎉', 'success')
+        // Update local state
+        setSelectedProblem(prev => prev ? { ...prev, status: 'passed' } : null)
+        setProblems(prev => prev.map(p =>
+          p.problem_id === selectedProblem.problem_id
+            ? { ...p, status: 'passed' }
+            : p
+        ))
+      } else {
+        showToast(data.message || 'Submission failed. Please check your code.', 'error')
+      }
+
+    } catch (error) {
+      console.error('Submit error:', error)
+      showToast('Failed to submit solution', 'error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSolveAgain = () => {
+    if (selectedProblem) {
+      setSelectedProblem({ ...selectedProblem, status: 'pending' })
+    }
+  }
+
   // Render: Day Selection Dashboard
   if (!currentDay) {
     return (
       <StudentLayout>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="mb-8">
-            <button onClick={() => router.push('/student/dashboard')} className="flex items-center text-sm text-neutral-light hover:text-primary mb-4 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
+            <button onClick={() => router.push(`/student/study/week-${weekNum}`)} className="flex items-center text-sm text-neutral-light hover:text-primary mb-4 transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back to Learning
             </button>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -200,9 +254,9 @@ function CodingContent() {
         <div className="h-14 px-4 sticky top-0 z-20 bg-white border-b flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push('/student/coding')}
+              onClick={() => router.push(`/student/study/week-${weekNum}`)}
               className="p-2 hover:bg-gray-100 text-gray-500 hover:text-gray-900 rounded-full transition-colors"
-              title="Back to Roadmap"
+              title="Back to Learning"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -254,6 +308,9 @@ function CodingContent() {
                     <span className={`text-sm font-medium ${selectedProblem?.problem_id === problem.problem_id ? 'text-blue-900' : 'text-gray-700 group-hover:text-gray-900'}`}>
                       {problem.title}
                     </span>
+                    {problem.status === 'passed' && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`w-1.5 h-1.5 rounded-full ${problem.difficulty && problem.difficulty.toLowerCase() === 'easy' ? 'bg-green-400' :
@@ -373,14 +430,26 @@ function CodingContent() {
             {/* Content */}
             <div className="flex-1 relative overflow-hidden">
               {activeTab === 'editor' ? (
-                <CodeEditor
-                  value={code}
-                  language={language}
-                  onChange={setCode}
-                  onLanguageChange={handleLanguageChange}
-                  testCases={selectedProblem?.test_cases}
-                  problemId={selectedProblem?.problem_id}
-                />
+                selectedProblem?.status === 'passed' ? (
+                  <div className="h-full flex flex-col bg-[#1e1e1e]">
+                    <ProblemCompleted
+                      week={parseInt(weekNum)}
+                      day={parseInt(currentDay.replace('day-', ''))}
+                      onSolveAgain={handleSolveAgain}
+                    />
+                  </div>
+                ) : (
+                  <CodeEditor
+                    value={code}
+                    language={language}
+                    onChange={setCode}
+                    onLanguageChange={handleLanguageChange}
+                    onSubmit={handleSubmit}
+                    isSubmitting={isSubmitting}
+                    testCases={selectedProblem?.test_cases}
+                    problemId={selectedProblem?.problem_id}
+                  />
+                )
               ) : (
                 <div className="h-full overflow-y-auto bg-gray-50/10 custom-scrollbar">
                   <div className="p-4">

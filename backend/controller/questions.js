@@ -295,6 +295,27 @@ export default class questionscontroller {
 
             const problems = await collection.find(query).toArray();
 
+            // Fetch user's submissions for these problems to check status
+            const userId = req.user?.id;
+            let submissionMap = {};
+
+            if (userId && problems.length > 0) {
+                const problemIds = problems.map(p => p.question_id);
+                const submissionsCollection = db.collection('tblCodingSubmissions');
+
+                // Find passed submissions for these problems
+                const submissions = await submissionsCollection.find({
+                    user_id: userId,
+                    problem_id: { $in: problemIds },
+                    status: 'passed'
+                }).toArray();
+
+                // Create a map of passed problem IDs
+                submissions.forEach(sub => {
+                    submissionMap[sub.problem_id] = true;
+                });
+            }
+
             // Map to frontend expected format
             const problemsWithTemplates = problems.map(p => ({
                 problem_id: p.question_id,
@@ -307,7 +328,8 @@ export default class questionscontroller {
                 code_templates: null, // DB might not have this populated yet
                 code_template: '// Write your code here',
                 test_cases: p.test_cases || [],
-                explanation: p.hints && p.hints.length > 0 ? p.hints[0].hint_text : ''
+                explanation: p.hints && p.hints.length > 0 ? p.hints[0].hint_text : '',
+                status: submissionMap[p.question_id] ? 'passed' : 'pending'
             }));
 
             res.locals.responseData = {

@@ -94,7 +94,7 @@ export default function TermsOfServicePage() {
                         <section>
                             <h2 className="text-xl font-bold text-neutral-900 mb-4">5. Limitation of Liability</h2>
                             <p>
-                                Scholarplace is provided on an "as-is" basis. We do not guarantee that the platform will be error-free or uninterrupted. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service.
+                                Scholarplace is provided on an &quot;as-is&quot; basis. We do not guarantee that the platform will be error-free or uninterrupted. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service.
                             </p>
                         </section>
 

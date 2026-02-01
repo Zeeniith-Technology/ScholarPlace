@@ -3,25 +3,41 @@
  * Handles all communication with backend AI endpoints
  */
 
+import { getAuthHeader } from '@/utils/auth'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
 
+/** Map backend/network errors to user-friendly messages */
+function getFriendlyAIError(message: string): string {
+  const lower = message.toLowerCase()
+  if (lower.includes('api key') || lower.includes('api_key') || lower.includes('gemini')) return 'AI service is not configured. Please try again later.'
+  if (lower.includes('rate limit') || lower.includes('429') || lower.includes('quota')) return 'Too many requests. Please wait a minute and try again.'
+  if (lower.includes('401') || lower.includes('unauthorized')) return 'Please sign in again to use AI features.'
+  if (lower.includes('500') || lower.includes('internal')) return 'AI service is temporarily unavailable. Please try again in a few minutes.'
+  if (lower.includes('network') || lower.includes('fetch')) return 'Connection problem. Check your internet and try again.'
+  return message
+}
+
 /**
- * Make authenticated API request using httpOnly cookies
- * Cookies are automatically sent by the browser
+ * Make authenticated API request using app auth (same as rest of student analytics)
  */
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
+  const authHeader = typeof window !== 'undefined' ? getAuthHeader() : null
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    credentials: 'include', // Include cookies in request
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(authHeader ? { 'Authorization': authHeader } : {}),
       ...options.headers,
     },
   })
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Request failed' }))
-    throw new Error(error.message || `Request failed with status ${response.status}`)
+    const msg = error.message || `Request failed with status ${response.status}`
+    throw new Error(getFriendlyAIError(msg))
   }
 
   return response.json()
@@ -71,6 +87,7 @@ export interface HintResponse {
 
 export interface LearningPathRequest {
   week?: number
+  analyticsContext?: AnalyticsContextSummary
 }
 
 export interface LearningPathResponse {
@@ -102,8 +119,15 @@ export interface GenerateQuestionsResponse {
   }
 }
 
+export interface AnalyticsContextSummary {
+  performanceData?: { overallScore?: number; testsCompleted?: number; averageScore?: number; improvement?: number }
+  subjectPerformance?: Array<{ subject: string; score: number; tests: number }>
+  weeklyProgressSummary?: Array<{ week: string; score: number }>
+}
+
 export interface AnalyzePerformanceRequest {
   week?: number
+  analyticsContext?: AnalyticsContextSummary
 }
 
 export interface AnalyzePerformanceResponse {

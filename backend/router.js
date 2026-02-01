@@ -28,6 +28,7 @@ import DeptTestController from './controller/deptTest.js';
 import * as codingProblemsController from './controller/codingProblems.js';
 import { responsedata } from './methods.js';
 import { auth, requireRole } from './middleware/auth.js';
+import tpcCodingController from './controller/tpcCoding.js';
 
 const router = express.Router();
 
@@ -57,6 +58,7 @@ const passwordReset = new PasswordResetController();
 const bulkActions = new BulkActionsController();
 const deptTest = new DeptTestController();
 const errorLogs = new errorLogController();
+const tpcCoding = new tpcCodingController();
 
 // Default data routes
 router.post('/defaultdata/insertroles', defaultdata.insertroles, responsedata);
@@ -154,16 +156,22 @@ router.post('/questions/bulk-insert', auth, requireRole(['Superadmin']), questio
 router.post('/coding-problems/week/:weekNum', auth, codingProblemsController.getCodingProblemsByWeek, responsedata);
 // Get daily coding problems by week and day: All authenticated users
 router.post('/coding-problems/daily/:weekNum/:dayNum', auth, codingProblemsController.getDailyCodingProblems, responsedata);
-// Get coding problem by ID: All authenticated users
-router.post('/coding-problems/:problemId', auth, codingProblemsController.getCodingProblemById, responsedata);
+
+// Specific routes MUST come before generic :problemId parameter
 // Get all coding problems (admin/testing): All authenticated users
 router.post('/coding-problems/all', auth, codingProblemsController.getAllCodingProblems, responsedata);
 // Submit solution: Students submit their code
 router.post('/coding-problems/submit', auth, codingProblemsController.submitSolution, responsedata);
-// Get student submissions for a problem: Students see their own submissions
-router.post('/coding-problems/:problemId/submissions', auth, codingProblemsController.getStudentSubmissions, responsedata);
+// Run solution (Test only): Students run their code against test cases
+router.post('/coding-problems/run', auth, codingProblemsController.runSolution, responsedata);
 // Get weekly coding progress (check capstone eligibility): All authenticated users
 router.post('/coding-problems/progress/:weekNum', auth, codingProblemsController.getWeeklyCodingProgress, responsedata);
+
+// Generic route last
+// Get coding problem by ID: All authenticated users
+router.post('/coding-problems/:problemId', auth, codingProblemsController.getCodingProblemById, responsedata);
+// Get student submissions for a problem: Students see their own submissions
+router.post('/coding-problems/:problemId/submissions', auth, codingProblemsController.getStudentSubmissions, responsedata);
 
 
 
@@ -276,6 +284,10 @@ router.post('/superadmin/analytics/students', auth, requireRole('Superadmin'), s
 router.post('/superadmin/analytics/graphical', auth, requireRole('Superadmin'), superadminAnalytics.getGraphicalAnalytics.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/security', auth, requireRole('Superadmin'), superadminAnalytics.getSecurityViolations.bind(superadminAnalytics), responsedata);
 
+// TPC Coding Monitoring
+router.post('/tpc/coding/stats', auth, (req, res, next) => tpcCoding.getCodingStats(req, res, next), responsedata);
+router.post('/tpc/coding/student-details', auth, (req, res, next) => tpcCoding.getStudentDetails(req, res, next), responsedata);
+
 // TPC Routes (College TPC only)
 router.post('/tpc-college/dashboard/stats', auth, requireRole('TPC'), tpc.getDashboardStats.bind(tpc), responsedata);
 router.post('/tpc-college/students/list', auth, requireRole('TPC'), tpc.getStudentsList.bind(tpc), responsedata);
@@ -296,6 +308,7 @@ router.post('/tpc-dept/students/needs-attention', auth, requireRole('DeptTPC'), 
 router.post('/tpc-dept/analytics/performance', auth, requireRole('DeptTPC'), tpc.getDeptTPCPerformance.bind(tpc), responsedata);
 router.post('/tpc-dept/analytics/trends', auth, requireRole('DeptTPC'), tpc.getDeptTPCTrends.bind(tpc), responsedata);
 router.post('/tpc-dept/analytics/distribution', auth, requireRole('DeptTPC'), tpc.getDeptTPCDistribution.bind(tpc), responsedata);
+router.post('/tpc-dept/student/details', auth, requireRole('DeptTPC'), tpc.getStudentDetailedAnalytics.bind(tpc), responsedata);
 // Approve test retake: DeptTPC can approve blocked students
 router.post('/tpc-dept/approve-test-retake', auth, requireRole('DeptTPC'), tpc.approveTestRetake.bind(tpc), responsedata);
 // Get blocked students: DeptTPC can view students needing approval

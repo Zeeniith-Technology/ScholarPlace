@@ -2,6 +2,23 @@ import dotenv from 'dotenv';
 // Load environment variables FIRST before importing services
 dotenv.config();
 
+// Production safety: refuse to start with default/weak JWT_SECRET
+if (process.env.NODE_ENV === 'production') {
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret === 'your-secret-key' || secret.length < 32) {
+        console.error('Production requires a strong JWT_SECRET (min 32 chars). Do not use the default.');
+        process.exit(1);
+    }
+    if (!process.env.MONGO_URI || process.env.MONGO_URI.includes('localhost')) {
+        console.error('Production requires MONGO_URI to point to a non-local database.');
+        process.exit(1);
+    }
+    if (!process.env.FRONTEND_URL || process.env.FRONTEND_URL.includes('localhost')) {
+        console.error('Production requires FRONTEND_URL to be your live frontend URL (e.g. https://...).');
+        process.exit(1);
+    }
+}
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';

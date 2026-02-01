@@ -31,6 +31,97 @@ interface PracticeTest {
     completed_at: string
     difficulty: string
     accuracy: number
+    questions_attempted: any[]
+}
+
+interface QuestionAttempt {
+    question_id: string
+    question: string
+    selected_answer: string
+    correct_answer: string
+    is_correct: boolean
+    time_spent: number
+    explanation: string
+}
+
+function PracticeTestDetailsModal({
+    test,
+    onClose
+}: {
+    test: PracticeTest | null,
+    onClose: () => void
+}) {
+    if (!test) return null
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                {/* Header */}
+                <div className="p-6 border-b flex items-center justify-between bg-neutral-50">
+                    <div>
+                        <h2 className="text-xl font-bold text-neutral">{test.student_name}&apos;s Test Details</h2>
+                        <div className="flex gap-4 mt-1 text-sm text-neutral-light">
+                            <span>Week {test.week}</span>
+                            <span>•</span>
+                            <span>{test.category}</span>
+                            <span>•</span>
+                            <span className={test.score >= 70 ? "text-green-600 font-medium" : "text-yellow-600 font-medium"}>
+                                Score: {test.score}%
+                            </span>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-neutral-200 rounded-full transition">
+                        <Loader2 className="w-5 h-5 text-neutral hidden" /> {/* Dummy loader import usage */}
+                        <span className="text-2xl leading-none">&times;</span>
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6 bg-neutral-50/30">
+                    <div className="space-y-6">
+                        {test.questions_attempted && test.questions_attempted.length > 0 ? (
+                            test.questions_attempted.map((q: QuestionAttempt, index: number) => (
+                                <div key={index} className={`bg-white rounded-lg border p-4 ${q.is_correct ? 'border-green-200 shadow-sm' : 'border-red-200 shadow-sm'}`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <h3 className="font-medium text-neutral-800 flex-1">
+                                            <span className="text-neutral-400 mr-2">Q{index + 1}.</span>
+                                            {q.question}
+                                        </h3>
+                                        <Badge variant={q.is_correct ? 'success' : 'error'} className={q.is_correct ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-red-100 text-red-700 hover:bg-red-100'}>
+                                            {q.is_correct ? 'Correct' : 'Incorrect'}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
+                                        <div className={`p-3 rounded-lg ${q.is_correct ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                                            <p className="text-xs text-neutral-500 mb-1 uppercase tracking-wider font-semibold">Selected Answer</p>
+                                            <p className="font-medium text-neutral-800">{q.selected_answer || 'Not Attempted'}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                                            <p className="text-xs text-neutral-500 mb-1 uppercase tracking-wider font-semibold">Correct Answer</p>
+                                            <p className="font-medium text-neutral-800">{q.correct_answer}</p>
+                                        </div>
+                                    </div>
+
+                                    {q.explanation && (
+                                        <div className="bg-neutral-100/50 p-3 rounded-lg text-sm text-neutral-600 mt-2">
+                                            <p className="font-semibold text-xs text-neutral-500 mb-1 uppercase">Explanation</p>
+                                            {q.explanation}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-12 text-neutral-light">
+                                <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                <p>No detailed question data available for this test.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
 }
 
 export default function DeptTPCPracticeMonitoringPage() {
@@ -38,11 +129,11 @@ export default function DeptTPCPracticeMonitoringPage() {
     const [filteredTests, setFilteredTests] = useState<PracticeTest[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
+    const [selectedTest, setSelectedTest] = useState<PracticeTest | null>(null)
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('')
     const [weekFilter, setWeekFilter] = useState<number | 'all'>('all')
-    const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
     // Analytics
     const [analytics, setAnalytics] = useState({
@@ -58,7 +149,7 @@ export default function DeptTPCPracticeMonitoringPage() {
 
     useEffect(() => {
         filterTests()
-    }, [searchQuery, weekFilter, categoryFilter, practiceTests])
+    }, [searchQuery, weekFilter, practiceTests])
 
     const fetchPracticeData = async () => {
         try {
@@ -92,7 +183,7 @@ export default function DeptTPCPracticeMonitoringPage() {
                     student_name: test.student_name || 'Unknown',
                     student_email: test.student_email || '',
                     week: test.week || 1,
-                    category: test.category || 'DSA',
+                    category: test.category || 'Aptitude',
                     score: test.score || 0,
                     total_questions: test.total_questions || 0,
                     correct_answers: test.correct_answers || 0,
@@ -101,8 +192,10 @@ export default function DeptTPCPracticeMonitoringPage() {
                     difficulty: test.difficulty || 'medium',
                     accuracy: test.total_questions > 0
                         ? Math.round((test.correct_answers / test.total_questions) * 100)
-                        : 0
+                        : 0,
+                    questions_attempted: test.questions_attempted || []
                 }))
+
 
                 setPracticeTests(tests)
                 calculateAnalytics(tests)
@@ -154,10 +247,7 @@ export default function DeptTPCPracticeMonitoringPage() {
             filtered = filtered.filter(test => test.week === weekFilter)
         }
 
-        // Category filter
-        if (categoryFilter !== 'all') {
-            filtered = filtered.filter(test => test.category === categoryFilter)
-        }
+
 
         // Sort by completion date (newest first)
         filtered.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
@@ -187,23 +277,13 @@ export default function DeptTPCPracticeMonitoringPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-neutral mb-2">Practice Monitoring</h1>
-                        <p className="text-neutral-light">Monitor department student practice test performance</p>
+                        <h1 className="text-3xl font-bold text-neutral mb-2">Aptitude Monitoring</h1>
+                        <p className="text-neutral-light">Monitor department student aptitude test performance</p>
                     </div>
 
                     {/* Analytics Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <Card className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-neutral-light mb-1">Total Attempts</p>
-                                    <p className="text-2xl font-bold text-neutral">{analytics.totalAttempts}</p>
-                                </div>
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <Award className="w-6 h-6 text-primary" />
-                                </div>
-                            </div>
-                        </Card>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+
 
                         <Card className="p-6">
                             <div className="flex items-center justify-between">
@@ -229,24 +309,14 @@ export default function DeptTPCPracticeMonitoringPage() {
                             </div>
                         </Card>
 
-                        <Card className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-neutral-light mb-1">Last 7 Days</p>
-                                    <p className="text-2xl font-bold text-neutral">{analytics.recentActivity}</p>
-                                </div>
-                                <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
-                                    <Clock className="w-6 h-6 text-purple-600" />
-                                </div>
-                            </div>
-                        </Card>
+
                     </div>
 
                     {/* Filters */}
                     <Card className="p-6 mb-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Search */}
-                            <div className="md:col-span-2">
+                            <div>
                                 <label className="block text-sm font-medium text-neutral mb-2">
                                     Search Student
                                 </label>
@@ -276,22 +346,6 @@ export default function DeptTPCPracticeMonitoringPage() {
                                     {[1, 2, 3, 4, 5, 6].map(week => (
                                         <option key={week} value={week}>Week {week}</option>
                                     ))}
-                                </select>
-                            </div>
-
-                            {/* Category Filter */}
-                            <div>
-                                <label className="block text-sm font-medium text-neutral mb-2">
-                                    Category
-                                </label>
-                                <select
-                                    value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="w-full px-4 py-2 rounded-lg border border-neutral-light/20 bg-background-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                >
-                                    <option value="all">All Categories</option>
-                                    <option value="DSA">DSA</option>
-                                    <option value="Aptitude">Aptitude</option>
                                 </select>
                             </div>
                         </div>
@@ -324,7 +378,6 @@ export default function DeptTPCPracticeMonitoringPage() {
                                         <tr className="border-b border-neutral-light/20">
                                             <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Student</th>
                                             <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Week</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Category</th>
                                             <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Score</th>
                                             <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Accuracy</th>
                                             <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Difficulty</th>
@@ -334,7 +387,11 @@ export default function DeptTPCPracticeMonitoringPage() {
                                     </thead>
                                     <tbody>
                                         {filteredTests.map((test) => (
-                                            <tr key={test._id} className="border-b border-neutral-light/10 hover:bg-background-elevated transition-colors">
+                                            <tr
+                                                key={test._id}
+                                                className="border-b border-neutral-light/10 hover:bg-background-elevated transition-colors cursor-pointer"
+                                                onClick={() => setSelectedTest(test)}
+                                            >
                                                 <td className="py-3 px-4">
                                                     <div>
                                                         <p className="font-medium text-neutral">{test.student_name}</p>
@@ -343,9 +400,6 @@ export default function DeptTPCPracticeMonitoringPage() {
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <Badge variant="secondary">Week {test.week}</Badge>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <Badge variant="secondary">{test.category}</Badge>
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getScoreColor(test.score)}`}>
@@ -363,7 +417,7 @@ export default function DeptTPCPracticeMonitoringPage() {
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-sm text-neutral">
-                                                    {Math.floor(test.time_spent / 60)}m
+                                                    {test.time_spent}m
                                                 </td>
                                                 <td className="py-3 px-4 text-sm text-neutral-light">
                                                     {new Date(test.completed_at).toLocaleDateString()}
@@ -377,6 +431,14 @@ export default function DeptTPCPracticeMonitoringPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Test Details Modal */}
+            {selectedTest && (
+                <PracticeTestDetailsModal
+                    test={selectedTest}
+                    onClose={() => setSelectedTest(null)}
+                />
+            )}
         </DepartmentTPCLayout>
     )
 }

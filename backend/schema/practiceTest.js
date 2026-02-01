@@ -18,6 +18,11 @@ export default {
         required: true
         // e.g., 'pre-week', 'day-1', 'day-2', etc.
     },
+    category: {
+        type: String,
+        required: false,
+        default: 'Aptitude'
+    },
     attempt: {
         type: Number,
         required: true,

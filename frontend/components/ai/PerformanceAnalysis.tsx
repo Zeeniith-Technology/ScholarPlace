@@ -5,9 +5,10 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { AIService } from '@/lib/aiService'
-import { 
-  BarChart3, 
-  Loader2, 
+import type { AnalyticsContextSummary } from '@/lib/aiService'
+import {
+  BarChart3,
+  Loader2,
   AlertCircle,
   CheckCircle2,
   XCircle,
@@ -17,10 +18,11 @@ import {
 
 interface PerformanceAnalysisProps {
   week?: number
+  analyticsContext?: AnalyticsContextSummary
   onClose?: () => void
 }
 
-export function PerformanceAnalysis({ week, onClose }: PerformanceAnalysisProps) {
+export function PerformanceAnalysis({ week = 1, analyticsContext, onClose }: PerformanceAnalysisProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [analysis, setAnalysis] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -30,8 +32,8 @@ export function PerformanceAnalysis({ week, onClose }: PerformanceAnalysisProps)
     setError(null)
 
     try {
-      const response = await AIService.analyzePerformance({ week })
-      
+      const response = await AIService.analyzePerformance({ week, analyticsContext })
+
       if (response.success && response.data) {
         setAnalysis(response.data)
       } else {
@@ -101,22 +103,22 @@ export function PerformanceAnalysis({ week, onClose }: PerformanceAnalysisProps)
         {analysis && !isLoading && (
           <div className="space-y-4">
             {/* Overall Score */}
-            {analysis.overall_score && (
+            {analysis.overallScore && (
               <div className="p-4 bg-background-elevated rounded-lg border border-neutral-light/20 text-center">
                 <p className="text-sm text-neutral-light mb-1">Overall Performance</p>
-                <p className="text-3xl font-bold text-primary">{analysis.overall_score}</p>
+                <p className="text-3xl font-bold text-primary">{analysis.overallScore}</p>
               </div>
             )}
 
             {/* Strong Areas */}
-            {analysis.strong_areas && analysis.strong_areas.length > 0 && (
+            {analysis.strongAreas && analysis.strongAreas.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
                   <h4 className="font-semibold text-neutral">Strong Areas</h4>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {analysis.strong_areas.map((area: string, idx: number) => (
+                  {analysis.strongAreas.map((area: string, idx: number) => (
                     <Badge key={idx} variant="success" className="text-xs">
                       {area}
                     </Badge>
@@ -126,14 +128,14 @@ export function PerformanceAnalysis({ week, onClose }: PerformanceAnalysisProps)
             )}
 
             {/* Weak Areas */}
-            {analysis.weak_areas && analysis.weak_areas.length > 0 && (
+            {analysis.weakAreas && analysis.weakAreas.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="w-4 h-4 text-red-500" />
                   <h4 className="font-semibold text-neutral">Areas for Improvement</h4>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {analysis.weak_areas.map((area: string, idx: number) => (
+                  {analysis.weakAreas.map((area: string, idx: number) => (
                     <Badge key={idx} variant="error" className="text-xs">
                       {area}
                     </Badge>

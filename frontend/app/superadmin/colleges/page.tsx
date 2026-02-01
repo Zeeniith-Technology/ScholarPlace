@@ -1248,7 +1248,7 @@ export default function CollegesManagementPage() {
                     placeholder="Name of TPC contact person"
                   />
                   <p className="text-xs text-neutral-dark mt-1">
-                    💡 You can create College TPC account separately using "Manage College TPC" button on the college card.
+                    💡 You can create College TPC account separately using &quot;Manage College TPC&quot; button on the college card.
                   </p>
 
                   <div className="flex gap-4 pt-4">
@@ -1718,7 +1718,7 @@ export default function CollegesManagementPage() {
                     {tpcOperationMode === 'update' && !selectedCollegeForTpc.collage_tpc_email && (
                       <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200 mb-4">
                         <p className="text-sm text-yellow-800">
-                          ⚠️ No TPC account found for this college. Please use "Create TPC" instead.
+                          ⚠️ No TPC account found for this college. Please use &quot;Create TPC&quot; instead.
                         </p>
                       </div>
                     )}
