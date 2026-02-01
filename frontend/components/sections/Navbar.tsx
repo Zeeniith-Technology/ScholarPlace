@@ -26,13 +26,16 @@ export function Navbar() {
     { href: '#contact', label: 'Contact' },
   ]
 
+  // Deep navy-blue header: complements logo light blue + white, strong contrast, brand-aligned
+  const headerBg = 'bg-[#152238]' // deep navy-blue (blue-950 range)
+  const headerBorder = 'border-white/[0.08]'
+  const headerScrolled = isScrolled
+    ? 'backdrop-blur-xl shadow-xl shadow-black/20 border-white/[0.1]'
+    : 'backdrop-blur-lg'
+
   return (
     <nav
-      className={`fixed top-4 left-[10%] right-[10%] z-50 transition-all duration-300 rounded-full ${
-        isScrolled
-          ? 'bg-[rgb(30,41,59)]/95 backdrop-blur-xl border border-[rgb(30,41,59)]/40 shadow-lg shadow-[rgb(30,41,59)]/20'
-          : 'bg-[rgb(30,41,59)]/85 backdrop-blur-lg border border-[rgb(30,41,59)]/30'
-      }`}
+      className={`fixed top-4 left-[10%] right-[10%] z-50 transition-all duration-300 rounded-full ${headerBg} ${headerBorder} ${headerScrolled}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
@@ -63,27 +66,24 @@ export function Navbar() {
           </div>
 
           {/* Desktop CTAs */}
-          <div className="hidden md:flex items-center space-x-2">
-            <Link 
+          <div className="hidden md:flex items-center gap-2">
+            <Link
               href="/auth/login"
-              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2 rounded-lg transition-all duration-200 relative group"
+              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2.5 rounded-full transition-all duration-200"
             >
-              <span className="relative z-10">Login</span>
-              <span className="absolute inset-0 bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+              Login
             </Link>
-            <Link 
+            <Link
               href="/auth/signup"
-              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2 rounded-lg transition-all duration-200 relative group"
+              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2.5 rounded-full transition-all duration-200"
             >
-              <span className="relative z-10">Sign Up</span>
-              <span className="absolute inset-0 bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+              Sign Up
             </Link>
-            <Link 
+            <Link
               href="#contact"
-              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2 rounded-lg transition-all duration-200 relative group"
+              className="text-sm font-semibold text-[#152238] bg-white hover:bg-blue-50 px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
             >
-              <span className="relative z-10">Book a Demo</span>
-              <span className="absolute inset-0 bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+              Book a Demo
             </Link>
           </div>
 
@@ -100,7 +100,7 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[rgb(30,41,59)]/95 backdrop-blur-xl border-t border-[rgb(30,41,59)]/40 rounded-b-3xl">
+        <div className="md:hidden bg-[#152238] backdrop-blur-xl border-t border-white/[0.08] rounded-b-3xl">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map((link) => (
               <Link
@@ -114,29 +114,26 @@ export function Navbar() {
               </Link>
             ))}
             <div className="pt-4 space-y-2 border-t border-white/20">
-              <Link 
-                href="/auth/login" 
-                className="block text-sm font-medium text-white/90 hover:text-white py-2 px-4 rounded-lg transition-all duration-200 relative group -mx-2"
+              <Link
+                href="/auth/login"
+                className="block text-sm font-medium text-white/90 hover:text-white py-2.5 px-4 rounded-xl -mx-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span className="relative z-10">Login</span>
-                <span className="absolute inset-0 bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                Login
               </Link>
-              <Link 
-                href="/auth/signup" 
-                className="block text-sm font-medium text-white/90 hover:text-white py-2 px-4 rounded-lg transition-all duration-200 relative group -mx-2"
+              <Link
+                href="/auth/signup"
+                className="block text-sm font-medium text-white/90 hover:text-white py-2.5 px-4 rounded-xl -mx-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span className="relative z-10">Sign Up</span>
-                <span className="absolute inset-0 bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                Sign Up
               </Link>
-              <Link 
-                href="#contact" 
-                className="block text-sm font-medium text-white/90 hover:text-white py-2 px-4 rounded-lg transition-all duration-200 relative group -mx-2"
+              <Link
+                href="#contact"
+                className="block text-sm font-semibold text-[#152238] bg-white hover:bg-blue-50 py-2.5 px-4 rounded-xl text-center -mx-2 mt-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span className="relative z-10">Book a Demo</span>
-                <span className="absolute inset-0 bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                Book a Demo
               </Link>
             </div>
           </div>

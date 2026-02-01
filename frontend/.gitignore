@@ -80,3 +80,5 @@ logs/
 temp/
 tmp/
 *.tmp
+
+scripts

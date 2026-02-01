@@ -18,6 +18,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'Scholarplace - Student Learning Platform',
   description: 'Track your progress, take tests, and improve your skills',
+  // Favicon: app/icon.svg (32×32 viewBox, scales crisp at any size)
 }
 
 export default function RootLayout({

@@ -12,10 +12,6 @@ import {
   Mail,
   GraduationCap,
   Calendar,
-  Edit,
-  Save,
-  X,
-  Camera,
   Phone,
   BookOpen,
   LogOut,
@@ -55,9 +51,7 @@ interface ProfileStats {
  */
 export default function StudentProfilePage() {
   const [isMounted, setIsMounted] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
@@ -69,16 +63,6 @@ export default function StudentProfilePage() {
     overallProgress: 0,
     dayStreak: 7,
     currentRank: 0,
-  })
-
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    collegeName: '',
-    semester: '',
-    enrollmentNumber: '',
-    phone: '',
-    department: '',
   })
 
   const [passwordData, setPasswordData] = useState({
@@ -124,17 +108,7 @@ export default function StudentProfilePage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          const profile = data.data
-          setProfileData(profile)
-          setFormData({
-            fullName: profile.name || '',
-            email: profile.email || '',
-            collegeName: profile.college_name || '',
-            semester: profile.semester ? `${profile.semester}` : '',
-            enrollmentNumber: profile.enrollment_number || '',
-            phone: profile.contact_number || '',
-            department: profile.department || '',
-          })
+          setProfileData(data.data)
         } else {
           setError(data.message || 'Failed to load profile')
         }
@@ -188,79 +162,6 @@ export default function StudentProfilePage() {
     } catch (error) {
       console.error('Error fetching stats:', error)
     }
-  }
-
-  const handleSave = async () => {
-    try {
-      setIsSaving(true)
-      setError(null)
-      setSuccess(null)
-
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      const updateData = {
-        person_name: formData.fullName,
-        contact_number: formData.phone,
-        department: formData.department,
-        semester: formData.semester ? parseInt(formData.semester) : null,
-        enrollment_number: formData.enrollmentNumber,
-        college_name: formData.collegeName,
-      }
-
-      const authHeader = getAuthHeader()
-
-      if (!authHeader) {
-        setError('Authentication required. Please login again.')
-        return
-      }
-
-      const response = await fetch(`${apiBaseUrl}/profile/update`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-        },
-        body: JSON.stringify(updateData),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setSuccess('Profile updated successfully!')
-          setIsEditing(false)
-          // Refresh profile data
-          await fetchProfile()
-          setTimeout(() => setSuccess(null), 3000)
-        } else {
-          setError(data.message || 'Failed to update profile')
-        }
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || 'Failed to update profile')
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      setError('Failed to update profile. Please try again.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleCancel = () => {
-    if (profileData) {
-      setFormData({
-        fullName: profileData.name || '',
-        email: profileData.email || '',
-        collegeName: profileData.college_name || '',
-        semester: profileData.semester ? `${profileData.semester}` : '',
-        enrollmentNumber: profileData.enrollment_number || '',
-        phone: profileData.contact_number || '',
-        department: profileData.department || '',
-      })
-    }
-    setIsEditing(false)
-    setError(null)
-    setSuccess(null)
   }
 
   const handlePasswordChange = async () => {
@@ -405,54 +306,25 @@ export default function StudentProfilePage() {
               Manage your profile information and preferences
             </p>
           </div>
-          {!isEditing ? (
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <Lock className="w-4 h-4" />
-                Change Password
-              </button>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Profile
-              </button>
-              <button
-                onClick={() => {
-                  clearAuth()
-                  window.location.href = '/auth/login'
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
-          ) : (
-            <div className="flex space-x-2">
-              <Button variant="secondary" onClick={handleCancel} disabled={isSaving}>
-                <X className="w-4 h-4 mr-2" />
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowPasswordChange(!showPasswordChange)}
+              className="flex items-center justify-center gap-2 min-w-[140px] px-5 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow-md shrink-0"
+            >
+              <Lock className="w-4 h-4 shrink-0" />
+              Change Password
+            </button>
+            <button
+              onClick={() => {
+                clearAuth()
+                window.location.href = '/auth/login'
+              }}
+              className="flex items-center justify-center gap-2 min-w-[140px] px-5 py-2.5 h-11 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow-md shrink-0"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Password Change Section */}
@@ -534,11 +406,6 @@ export default function StudentProfilePage() {
                   {profileData.name.charAt(0).toUpperCase()}
                 </span>
               </div>
-              {isEditing && (
-                <button className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors">
-                  <Camera className="w-4 h-4" />
-                </button>
-              )}
             </div>
             <h2 className="text-2xl font-heading font-bold text-neutral mb-1">
               {profileData.name}
@@ -564,15 +431,7 @@ export default function StudentProfilePage() {
                 <User className="w-4 h-4 inline mr-2" />
                 Full Name
               </label>
-              {isEditing ? (
-                <Input
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="Enter your full name"
-                />
-              ) : (
-                <p className="text-neutral">{profileData.name}</p>
-              )}
+              <p className="text-neutral">{profileData.name}</p>
             </div>
 
             <div>
@@ -589,15 +448,7 @@ export default function StudentProfilePage() {
                 <GraduationCap className="w-4 h-4 inline mr-2" />
                 College Name
               </label>
-              {isEditing ? (
-                <Input
-                  value={formData.collegeName}
-                  onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
-                  placeholder="Enter your college name"
-                />
-              ) : (
-                <p className="text-neutral">{profileData.college_name || 'Not set'}</p>
-              )}
+              <p className="text-neutral">{profileData.college_name || 'Not set'}</p>
             </div>
 
             <div>
@@ -605,33 +456,14 @@ export default function StudentProfilePage() {
                 <Calendar className="w-4 h-4 inline mr-2" />
                 Semester
               </label>
-              {isEditing ? (
-                <Input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={formData.semester}
-                  onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                  placeholder="Enter your semester (1-8)"
-                />
-              ) : (
-                <p className="text-neutral">{profileData.semester ? `${profileData.semester} Semester` : 'Not set'}</p>
-              )}
+              <p className="text-neutral">{profileData.semester ? `${profileData.semester} Semester` : 'Not set'}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral mb-2">
                 Enrollment Number
               </label>
-              {isEditing ? (
-                <Input
-                  value={formData.enrollmentNumber}
-                  onChange={(e) => setFormData({ ...formData, enrollmentNumber: e.target.value })}
-                  placeholder="Enter enrollment number"
-                />
-              ) : (
-                <p className="text-neutral">{profileData.enrollment_number || 'Not set'}</p>
-              )}
+              <p className="text-neutral">{profileData.enrollment_number || 'Not set'}</p>
             </div>
 
             <div>
@@ -639,31 +471,14 @@ export default function StudentProfilePage() {
                 <Phone className="w-4 h-4 inline mr-2" />
                 Phone Number
               </label>
-              {isEditing ? (
-                <Input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Enter phone number"
-                />
-              ) : (
-                <p className="text-neutral">{profileData.contact_number || 'Not set'}</p>
-              )}
+              <p className="text-neutral">{profileData.contact_number || 'Not set'}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral mb-2">
                 Department
               </label>
-              {isEditing ? (
-                <Input
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  placeholder="Enter department"
-                />
-              ) : (
-                <p className="text-neutral">{profileData.department || 'Not set'}</p>
-              )}
+              <p className="text-neutral">{profileData.department || 'Not set'}</p>
             </div>
           </div>
         </Card>

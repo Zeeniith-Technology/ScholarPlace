@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -9,7 +10,6 @@ import {
   FileText,
   BarChart3,
   User,
-  GraduationCap,
   BookMarked,
   HelpCircle,
 } from 'lucide-react'
@@ -28,77 +28,73 @@ const navigation = [
   { name: 'Tests', href: '/student/tests', icon: FileText },
   { name: 'Practice Analytics', href: '/student/practice-analytics', icon: BarChart3 },
   { name: 'Analytics', href: '/student/analytics', icon: BarChart3 },
-  { name: 'Profile', href: '/student/profile', icon: User },
 ]
 
 export function StudentLayout({ children }: StudentLayoutProps) {
   const pathname = usePathname()
-  const [isMounted, setIsMounted] = useState(false)
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const isProfile = pathname === '/student/profile'
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Header with Logo and Tabs */}
-      <header className="sticky top-0 z-50 bg-background-surface/95 backdrop-blur-md border-b border-neutral-light/20 shadow-sm">
+      {/* Premium Student Header */}
+      <header className="sticky top-0 z-50 bg-white border-b border-neutral-light/15 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        {/* Top accent strip */}
+        <div className="h-0.5 w-full bg-gradient-to-r from-primary via-primary-light to-secondary" aria-hidden />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Logo and User Section */}
-          <div className="flex items-center justify-between h-16 border-b border-neutral-light/10">
-            <Link
-              href="/student/dashboard"
-              className="flex items-center gap-2.5 group transition-all duration-300 hover:scale-105"
-              suppressHydrationWarning
-            >
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 group-hover:from-primary/30 group-hover:to-secondary/30 transition-all duration-300 group-hover:rotate-3">
-                <GraduationCap className="w-5 h-5 text-primary" />
-              </div>
-              <span className="font-heading font-bold text-lg text-neutral">
-                Scholarplace
-              </span>
+          <div className="flex items-center gap-6 lg:gap-8 h-20 sm:h-[5rem]">
+            {/* Logo */}
+            <Link href="/student/dashboard" className="flex items-center shrink-0 group" suppressHydrationWarning>
+              <Image
+                src="/images/Small_Logo.png"
+                alt="Scholarplace"
+                width={200}
+                height={52}
+                className="h-11 sm:h-12 w-auto object-contain group-hover:opacity-90 transition-opacity"
+                priority
+              />
             </Link>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background-elevated border border-neutral-light/10">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs text-neutral-light font-medium" suppressHydrationWarning>
-                  {isMounted
-                    ? (() => {
-                      // Study Help first (path is under /student/study-* so must be before study)
-                      if (pathname.startsWith('/student/study-help')) return 'Study Help'
-                      // Check for exact navigation matches
-                      const matchedNav = navigation.find(item => pathname.startsWith(item.href))
-                      if (matchedNav) return matchedNav.name
-                      // Coding, practice, study (Learning)
-                      if (pathname.startsWith('/student/coding') || pathname.startsWith('/student/practice') || pathname.startsWith('/student/study')) return 'Learning'
-                      return 'Dashboard'
-                    })()
-                    : ''}
-                </span>
-              </div>
-              <Link
-                href="/student/profile"
-                className={cn(
-                  'p-2 rounded-lg transition-all duration-300 hover:scale-110 active:scale-95 relative group',
-                  pathname === '/student/profile'
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-neutral-light hover:text-neutral hover:bg-background-elevated'
-                )}
-                title="Profile"
-                suppressHydrationWarning
-              >
-                <User className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                {pathname === '/student/profile' && (
-                  <div className="absolute inset-0 rounded-lg bg-primary/10 animate-pulse" />
-                )}
-              </Link>
-            </div>
-          </div>
+            {/* Vertical divider */}
+            <div className="hidden lg:block w-px h-10 bg-neutral-light/20 shrink-0" aria-hidden />
 
-          {/* Tabs Navigation */}
-          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
-            <Tabs items={navigation} />
+            {/* Nav */}
+            <nav className="flex-1 min-w-0 flex items-center justify-center lg:justify-start">
+              <div className="w-full max-w-3xl rounded-2xl bg-neutral-light/[0.06] px-1.5 py-1.5">
+                <Tabs items={navigation} variant="premium" />
+              </div>
+            </nav>
+
+            {/* Profile */}
+            <Link
+              href="/student/profile"
+              className={cn(
+                'group shrink-0 flex items-center gap-3 pl-2 pr-4 py-2 rounded-2xl border transition-all duration-300',
+                isProfile
+                  ? 'bg-primary/5 border-primary/20 text-primary shadow-sm'
+                  : 'border-transparent bg-transparent text-neutral-light hover:text-neutral hover:bg-neutral-light/[0.06] hover:border-neutral-light/10'
+              )}
+              title="Profile"
+              suppressHydrationWarning
+            >
+              <div
+                className={cn(
+                  'flex items-center justify-center w-10 h-10 rounded-xl border-2 transition-all duration-300',
+                  isProfile
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-neutral-light/10 border-neutral-light/20 text-neutral-light group-hover:border-neutral-light/30'
+                )}
+              >
+                <User className="w-4 h-4" strokeWidth={2} />
+              </div>
+              <div className="hidden md:flex flex-col items-start">
+                <span className={cn('text-sm font-semibold leading-tight', isProfile ? 'text-primary' : 'text-neutral')}>
+                  My account
+                </span>
+                <span className="text-[11px] text-neutral-light font-medium">Profile & settings</span>
+              </div>
+            </Link>
           </div>
         </div>
       </header>

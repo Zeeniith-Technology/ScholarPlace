@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -11,7 +12,6 @@ import {
   Settings,
   Menu,
   X,
-  GraduationCap,
   Calendar,
   Award,
   BookOpen,
@@ -113,10 +113,15 @@ export function DepartmentTPCLayout({ children }: DepartmentTPCLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-neutral-light/20">
-            <Link href="/dept-tpc/dashboard" className="flex items-center gap-2">
-              <GraduationCap className="w-6 h-6 text-primary" />
-              <span className="font-heading font-bold text-lg text-neutral">Scholarplace</span>
+          <div className="flex items-center justify-between h-20 px-6 border-b border-neutral-light/20">
+            <Link href="/dept-tpc/dashboard" className="flex items-center shrink-0">
+              <Image
+                src="/images/Small_Logo.png"
+                alt="Scholarplace"
+                width={180}
+                height={48}
+                className="h-11 w-auto object-contain"
+              />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -168,16 +173,21 @@ export function DepartmentTPCLayout({ children }: DepartmentTPCLayoutProps) {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between h-16 px-4 bg-background-surface border-b border-neutral-light/20">
+        <header className="lg:hidden flex items-center justify-between h-20 px-4 bg-background-surface border-b border-neutral-light/20">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-neutral-light hover:text-neutral"
           >
             <Menu className="w-6 h-6" />
           </button>
-          <Link href="/dept-tpc/dashboard" className="flex items-center gap-2">
-            <GraduationCap className="w-6 h-6 text-primary" />
-            <span className="font-heading font-bold text-lg text-neutral">Scholarplace</span>
+          <Link href="/dept-tpc/dashboard" className="flex items-center shrink-0">
+            <Image
+              src="/images/Small_Logo.png"
+              alt="Scholarplace"
+              width={180}
+              height={48}
+              className="h-11 w-auto object-contain"
+            />
           </Link>
           <div className="w-6" /> {/* Spacer for centering */}
         </header>

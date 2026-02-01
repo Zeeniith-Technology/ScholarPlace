@@ -15,12 +15,13 @@ interface TabItem {
 interface TabsProps {
   items: TabItem[]
   className?: string
+  variant?: 'default' | 'premium'
 }
 
-export function Tabs({ items, className }: TabsProps) {
+export function Tabs({ items, className, variant = 'default' }: TabsProps) {
   const pathname = usePathname()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, top: 0, height: 0 })
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -42,7 +43,7 @@ export function Tabs({ items, className }: TabsProps) {
     }
   }, [pathname, items])
 
-  // Update indicator position and size
+  // Update indicator position and size (for both default line and premium pill)
   useEffect(() => {
     const updateIndicator = () => {
       const activeTab = tabRefs.current[activeIndex]
@@ -53,40 +54,69 @@ export function Tabs({ items, className }: TabsProps) {
         setIndicatorStyle({
           left: tabRect.left - containerRect.left,
           width: tabRect.width,
+          top: tabRect.top - containerRect.top,
+          height: tabRect.height,
         })
       }
     }
 
-    // Small delay to ensure DOM is updated
-    const timeoutId = setTimeout(updateIndicator, 10)
-
-    // Also update on resize
+    const rafId = requestAnimationFrame(() => {
+      updateIndicator()
+    })
+    const timeoutId = setTimeout(updateIndicator, 50)
     window.addEventListener('resize', updateIndicator)
 
     return () => {
+      cancelAnimationFrame(rafId)
       clearTimeout(timeoutId)
       window.removeEventListener('resize', updateIndicator)
     }
   }, [activeIndex, pathname])
 
+  const isPremium = variant === 'premium'
+
+  const transitionClass = 'transition-all duration-[350ms] ease-[cubic-bezier(0.4,0,0.2,1)]'
+
   return (
     <div
       ref={containerRef}
-      className={cn('relative flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1', className)}
+      className={cn(
+        'relative flex items-center overflow-x-auto scrollbar-hide',
+        isPremium ? 'gap-1' : 'gap-0.5',
+        className
+      )}
     >
-      {/* Animated sliding indicator */}
-      <div
-        className="absolute bottom-0 h-1 bg-primary rounded-full transition-all duration-500 ease-out"
-        style={{
-          left: `${indicatorStyle.left}px`,
-          width: `${indicatorStyle.width}px`,
-          transform: 'translateZ(0)', // GPU acceleration
-        }}
-      />
+      {/* Default: sliding underline */}
+      {!isPremium && (
+        <div
+          className={cn('absolute bottom-0 h-0.5 bg-primary rounded-full will-change-[left,width]', transitionClass)}
+          style={{
+            left: `${indicatorStyle.left}px`,
+            width: `${indicatorStyle.width}px`,
+            transform: 'translateZ(0)',
+          }}
+        />
+      )}
+
+      {/* Premium: sliding pill background */}
+      {isPremium && (
+        <div
+          className={cn(
+            'absolute rounded-xl bg-white shadow-sm border border-neutral-light/10 will-change-[left,width] pointer-events-none',
+            transitionClass
+          )}
+          style={{
+            left: `${indicatorStyle.left}px`,
+            width: `${indicatorStyle.width}px`,
+            top: `${indicatorStyle.top}px`,
+            height: `${indicatorStyle.height}px`,
+            transform: 'translateZ(0)',
+          }}
+        />
+      )}
 
       {items.map((item, index) => {
         const Icon = item.icon
-        // Exact match or nested route
         const isActive = pathname === item.href ||
           (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) ||
           (item.href === '/student/coding' && pathname.startsWith('/student/coding')) ||
@@ -103,29 +133,28 @@ export function Tabs({ items, className }: TabsProps) {
               tabRefs.current[index] = el
             }}
             className={cn(
-              'group relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium z-10',
-              'transition-all duration-500 ease-out whitespace-nowrap',
-              'transform-gpu will-change-transform',
-              isActive
-                ? 'text-primary'
-                : 'text-neutral-light hover:text-neutral hover:bg-background-elevated'
+              'group relative flex items-center z-10 whitespace-nowrap',
+              isPremium
+                ? 'gap-2 px-4 py-2.5 rounded-xl text-sm font-medium tracking-tight transition-colors duration-200 ease-out'
+                : 'gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ease-out',
+              isPremium
+                ? isActive
+                  ? 'text-primary'
+                  : 'text-neutral-light hover:text-neutral hover:bg-white/50'
+                : isActive
+                  ? 'text-primary bg-primary/5'
+                  : 'text-neutral-light hover:text-neutral hover:bg-background-elevated'
             )}
             suppressHydrationWarning
           >
             <Icon
               className={cn(
-                'w-4 h-4 flex-shrink-0 transition-all duration-300 ease-out',
-                isActive
-                  ? 'text-primary'
-                  : 'group-hover:text-primary'
+                'flex-shrink-0 transition-colors duration-200',
+                isPremium ? 'w-4 h-4' : 'w-4 h-4',
+                isActive ? 'text-primary' : 'text-inherit opacity-80 group-hover:opacity-100'
               )}
             />
-            <span
-              className={cn(
-                'font-medium transition-all duration-300 ease-out',
-                isActive && 'font-semibold'
-              )}
-            >
+            <span className={cn(isPremium ? 'font-semibold' : 'font-medium', isActive && isPremium && 'text-primary')}>
               {item.name}
             </span>
           </Link>
