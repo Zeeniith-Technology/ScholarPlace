@@ -597,12 +597,15 @@ export async function getWeeklyCodingProgress(req, res) {
                 question_number: p.question_number
             }));
 
-        const isEligible = completedCount >= totalDailyProblems;
+        // Dynamic: require all daily problems for this week to unlock capstone (works for any count per week)
+        const requiredToUnlock = totalDailyProblems;
+        const isEligible = completedCount >= requiredToUnlock;
 
         res.status(200).json({
             success: true,
             week: week,
             totalDailyProblems,
+            requiredToUnlock,
             completedDailyProblems: completedCount,
             isEligible,
             completedIds: Array.from(completedProblemIds),

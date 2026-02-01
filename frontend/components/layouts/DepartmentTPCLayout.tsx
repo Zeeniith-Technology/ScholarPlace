@@ -60,9 +60,6 @@ function TestApprovalsBadge() {
     }
 
     fetchBlockedCount()
-    // Refresh count every 30 seconds
-    const interval = setInterval(fetchBlockedCount, 30000)
-    return () => clearInterval(interval)
   }, [])
 
   if (count === null || count === 0) return null

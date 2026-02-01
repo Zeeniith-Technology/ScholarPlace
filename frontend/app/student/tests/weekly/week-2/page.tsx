@@ -72,6 +72,7 @@ export default function Week2WeeklyTestPage() {
   const [loadingHint, setLoadingHint] = useState(false)
   const [hintError, setHintError] = useState<string | null>(null)
   const [testAnalysis, setTestAnalysis] = useState<any>(null)
+  const [blockedForRetake, setBlockedForRetake] = useState(false)
 
   // Refs to store functions that will be defined later
   const blockStudentFromRetakeRef = React.useRef<(() => Promise<void>) | null>(null)
@@ -86,6 +87,7 @@ export default function Week2WeeklyTestPage() {
     if (testStarted && !showResults) {
       console.log('[handleAutoSubmit] Test is active, blocking student and submitting...')
       try {
+        setBlockedForRetake(true)
         // Mark as blocked in backend FIRST
         if (blockStudentFromRetakeRef.current) {
           await blockStudentFromRetakeRef.current()
@@ -111,16 +113,13 @@ export default function Week2WeeklyTestPage() {
   // Strict security validations for test window - MUST be at top level
   const security = useTestSecurity({
     enforceFullscreen: true,
-    maxTabSwitches: 3,
+    maxTabSwitches: 1, // Limit 1: single tab switch → block and Dept TPC approval for retake
     autoSubmitOnViolation: false,
-    autoSubmitOnWindowSwitch: true, // NEW: Auto-submit on ANY window switch
+    autoSubmitOnWindowSwitch: true,
     logToServer: true,
     onViolation: (violation) => {
       console.warn('[Security] Violation detected:', violation)
-      if (violation.type === 'window_switch_auto_submit') {
-        // Test will be auto-submitted via onAutoSubmit callback
-        alert('Test automatically submitted due to window switch. You will need Department TPC approval to retake.')
-      }
+      // No alert; blocked state and results banner direct student to Dept TPC Test Approvals
     },
     onAutoSubmit: handleAutoSubmit,
   })
@@ -1381,7 +1380,7 @@ export default function Week2WeeklyTestPage() {
                       </p>
                       {security.tabSwitchCount > 0 && (
                         <p className="text-xs text-yellow-600 mt-1">
-                          Tab switches: {security.tabSwitchCount}/3
+                          Tab switches: {security.tabSwitchCount}/1
                         </p>
                       )}
                     </div>
@@ -1457,7 +1456,25 @@ export default function Week2WeeklyTestPage() {
 
         {/* Main Content */}
         <div className="flex-1 flex items-center justify-center px-4 py-8">
-          <div className="max-w-4xl w-full">
+          <div className="max-w-4xl w-full space-y-4">
+            {/* Blocked banner: request Dept TPC Test Approvals (no alert) */}
+            {blockedForRetake && (
+              <Card className="bg-red-500/10 border-2 border-red-500/30">
+                <div className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-red-500/20 flex-shrink-0">
+                      <Shield className="w-6 h-6 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-red-600 mb-2">Test blocked</h3>
+                      <p className="text-sm text-red-700 mb-2">
+                        You have been blocked due to a tab switch. Request retake approval from your Department TPC via Test Approvals.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
         <Card className="border-2 border-secondary/30 bg-gradient-to-br from-secondary/5 to-primary/5">
           <div className="p-8 text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-secondary/20 mb-6">

@@ -64,11 +64,25 @@ function useCountUp(end: number, duration: number = 2000, start: number = 0): nu
   return count
 }
 
-// FULL SYLLABUS DEFINITION
-const FULL_SYLLABUS = [
+// Track label: DSA-only weeks vs DSA & Aptitude combined
+type TrackLabel = 'DSA' | 'DSA & Aptitude'
+
+// FULL SYLLABUS DEFINITION (DSA & Aptitude curriculum)
+const FULL_SYLLABUS: Array<{
+  week: number
+  title: string
+  track: TrackLabel
+  modules: string[]
+  topics: string[]
+  assignments: number
+  tests: number
+  duration: string
+  isComingSoon?: boolean
+}> = [
   {
     week: 1,
     title: "Foundation & Logic Building",
+    track: "DSA & Aptitude",
     modules: ["Basics of Programming", "Control Structures"],
     topics: ["Input/Output", "Data Types", "Operators", "Conditional Statements", "Loops (For, While)", "Pattern Printing", "Functions"],
     assignments: 6,
@@ -78,6 +92,7 @@ const FULL_SYLLABUS = [
   {
     week: 2,
     title: "Arrays & Strings",
+    track: "DSA & Aptitude",
     modules: ["Data Structures I", "Problem Solving"],
     topics: ["Introduction to Arrays", "Linear Search", "Binary Search", "Two Pointer Technique", "Sliding Window", "Introduction to Strings", "2D Arrays"],
     assignments: 8,
@@ -87,6 +102,7 @@ const FULL_SYLLABUS = [
   {
     week: 3,
     title: "Recursion & Sorting",
+    track: "DSA & Aptitude",
     modules: ["Algorithms I", "Recursion Depth"],
     topics: ["Recursion Basics", "Recursion on Arrays", "Merge Sort", "Quick Sort", "Backtracking Introduction", "Space Complexity"],
     assignments: 8,
@@ -96,6 +112,7 @@ const FULL_SYLLABUS = [
   {
     week: 4,
     title: "Linked Lists",
+    track: "DSA & Aptitude",
     modules: ["Data Structures II", "Pointers"],
     topics: ["Singly Linked List", "Doubly Linked List", "Circular Linked List", "Fast & Slow Pointers", "Reversing a Linked List", "Intersection Point"],
     assignments: 7,
@@ -105,6 +122,7 @@ const FULL_SYLLABUS = [
   {
     week: 5,
     title: "Stacks & Queues",
+    track: "DSA",
     modules: ["Data Structures III", "LIFO & FIFO"],
     topics: ["Stack Implementation", "Queue Implementation", "Monotonic Stack", "Priority Queue Basics", "Circular Queue", "Applications of Stack"],
     assignments: 7,
@@ -114,6 +132,7 @@ const FULL_SYLLABUS = [
   {
     week: 6,
     title: "DSA & Aptitude Prep - I",
+    track: "DSA & Aptitude",
     modules: ["Trees & Quant"],
     topics: ["Introduction to Trees", "Binary Trees", "Tree Traversals", "Height & Depth", "Number Systems", "Percentages", "Ratio & Proportion"],
     assignments: 5,
@@ -123,6 +142,7 @@ const FULL_SYLLABUS = [
   {
     week: 7,
     title: "DSA & Aptitude Prep - II",
+    track: "DSA & Aptitude",
     modules: ["Graphs & Reasoning"],
     topics: ["Introduction to Graphs", "BFS & DFS", "Connected Components", "Blood Relations", "Coding-Decoding", "Direction Sense", "Seating Arrangement"],
     assignments: 5,
@@ -133,6 +153,7 @@ const FULL_SYLLABUS = [
   {
     week: 8,
     title: "Final Preparation",
+    track: "DSA & Aptitude",
     modules: [],
     topics: ["Mock Tests", "Comprehensive DSA Revision", "Verbal Ability: Reading Comprehension", "Sentence Correction", "System Design Basics"],
     assignments: 5,
@@ -140,7 +161,7 @@ const FULL_SYLLABUS = [
     duration: "15-18 Hours",
     isComingSoon: true
   }
-];
+]
 
 /**
  * Student Syllabus Page
@@ -367,11 +388,11 @@ export default function StudentSyllabusPage() {
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-neutral mb-2 leading-tight bg-gradient-to-r from-neutral to-neutral-light bg-clip-text">
-                  Course Syllabus
+                  DSA & Aptitude Syllabus
                 </h1>
                 <div className="text-sm sm:text-base text-neutral-light flex items-center gap-2 font-medium">
                   <Calendar className="w-4 h-4 text-primary" />
-                  <span>Complete placement preparation roadmap</span>
+                  <span>Complete placement preparation roadmap — DSA and Aptitude topics</span>
                 </div>
               </div>
             </div>
@@ -522,6 +543,7 @@ export default function StudentSyllabusPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">WEEK</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">TRACK</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">TOPICS</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">STATUS</th>
                   </tr>
@@ -571,6 +593,19 @@ export default function StudentSyllabusPage() {
                               </div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              'text-xs px-2.5 py-1 font-semibold',
+                              week.track === 'DSA & Aptitude'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-blue-100 text-blue-800 border border-blue-200'
+                            )}
+                          >
+                            {week.track}
+                          </Badge>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-1.5 max-w-lg">

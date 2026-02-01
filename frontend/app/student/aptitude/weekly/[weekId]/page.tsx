@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import {
     ArrowLeft,
     Clock,
@@ -55,6 +56,8 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
     const [totalTime, setTotalTime] = useState(0) // Seconds
     const [testStarted, setTestStarted] = useState(false)
     const [questionStartTimes, setQuestionStartTimes] = useState<{ [questionId: string]: number }>({})
+    const [showBlockedModal, setShowBlockedModal] = useState(false)
+    const tabSwitchBlockedRef = useRef(false)
 
     // Fetch questions on mount
     useEffect(() => {
@@ -109,17 +112,38 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
         }, 500)
     }
 
-    // Strict Mode: Watch for tab switching
+    // Block student for retake (limit 1: single tab switch requires Dept TPC approval)
+    const blockForRetake = async () => {
+        if (tabSwitchBlockedRef.current) return
+        tabSwitchBlockedRef.current = true
+        try {
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+            const authHeader = getAuthHeader()
+            if (!authHeader) return
+            await fetch(`${apiBaseUrl}/student-progress/block-test-retake`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                body: JSON.stringify({
+                    week: weekId,
+                    test_type: 'weekly',
+                    reason: 'window_switch_violation',
+                }),
+            })
+        } catch (e) {
+            console.error('Error blocking for retake:', e)
+        }
+    }
+
+    // Strict Mode: Watch for tab switching (limit 1 → block, show modal, then close)
     useEffect(() => {
         if (!testStarted || showResults) return
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                // Tab switched or minimized
-                // We can be strict here as per "strict mode" usually implies auto-submit or close
-                // User requirement: "start test ... any case test cancle or return or reach tab switch this window should be close"
-                alert("Tab switching is not allowed in this test environment. The test will now close.")
-                handleExit()
+                // Single tab switch: block, show modal (no alert), then close. Dept TPC Test Approvals.
+                blockForRetake().then(() => {
+                    setShowBlockedModal(true)
+                })
             }
         }
 
@@ -580,6 +604,34 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
                     </div>
                 </div>
             </div>
+
+            {/* Blocked modal: no alert, ask for Dept TPC Test Approvals */}
+            <Modal
+                isOpen={showBlockedModal}
+                onClose={() => {
+                    setShowBlockedModal(false)
+                    handleExit()
+                }}
+                title="Test blocked"
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-neutral-dark">
+                        You have been blocked due to a tab switch. Request retake approval from your Department TPC (Test Approvals).
+                    </p>
+                    <div className="flex justify-end">
+                        <Button
+                            onClick={() => {
+                                setShowBlockedModal(false)
+                                handleExit()
+                            }}
+                            variant="primary"
+                        >
+                            OK
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }

@@ -6,7 +6,7 @@ const features = [
   {
     icon: BookOpen,
     title: 'Semester-wise Aptitude & DSA Roadmaps',
-    description: 'Structured learning paths from 3rd to 7th semester, covering all essential topics for placement preparation.',
+    description: 'Structured learning paths from 5th to 7th semester, covering all essential topics for placement preparation.',
   },
   {
     icon: Calendar,

@@ -180,20 +180,18 @@ export default function DepartmentTPCStudentsPage() {
         </div>
 
         <Card>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-light" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+            <div className="flex-1 min-w-0 sm:min-w-[200px] sm:max-w-md relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-light pointer-events-none" />
               <Input
                 type="text"
-                placeholder="Search students by name, email, or enrollment number..."
+                placeholder="Search by name, email, or enrollment..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch()
-                  }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearch()
                 }}
-                className="pl-10"
+                className="pl-10 w-full"
               />
             </div>
             <Select
@@ -204,11 +202,12 @@ export default function DepartmentTPCStudentsPage() {
               ]}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-48"
+              className="w-full sm:w-40 shrink-0"
             />
             <button
+              type="button"
               onClick={handleSearch}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all duration-300 hover:scale-105 shadow-sm hover:shadow-md"
+              className="shrink-0 px-4 py-2 h-10 sm:h-[38px] rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors shadow-sm border-0"
             >
               Search
             </button>

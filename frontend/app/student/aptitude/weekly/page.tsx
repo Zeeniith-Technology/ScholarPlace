@@ -257,17 +257,6 @@ export default function WeeklyAptitudeTestsPage() {
                                     </div>
 
                                     <div className="space-y-4 mb-6">
-                                        <div>
-                                            <p className="text-sm font-semibold text-neutral-light mb-2">Topics Covered:</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {test.topics.map(topic => (
-                                                    <span key={topic} className="px-2 py-1 bg-background-surface rounded text-xs text-neutral-light border border-neutral-light/10">
-                                                        {topic}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-
                                         <div className="flex items-center gap-6 text-sm text-neutral-light border-t border-neutral-light/10 pt-4">
                                             <div className="flex items-center gap-1">
                                                 <Clock className="w-4 h-4" />

@@ -34,6 +34,7 @@ import {
   Lock,
 } from 'lucide-react'
 import { CodeEditor } from '@/components/ui/CodeEditor'
+import { Modal } from '@/components/ui/Modal'
 import { AIQuestionAnswer } from '@/components/ai/AIQuestionAnswer'
 import { getAuthHeader, getCurrentUserFromToken } from '@/utils/auth'
 import { cn } from '@/lib/utils'
@@ -71,6 +72,7 @@ function WeekStudyContent() {
   const [codingProblems, setCodingProblems] = useState<any[]>([]) // Capstone coding problems for Day 5
   const [dailyCodingProblems, setDailyCodingProblems] = useState<any[]>([]) // Daily coding problems for current day
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
+  const [showCapstoneUnlockModal, setShowCapstoneUnlockModal] = useState(false)
   const sessionStartTime = useRef<number | null>(null)
   const progressUpdateInterval = useRef<NodeJS.Timeout | null>(null)
 
@@ -354,6 +356,7 @@ function WeekStudyContent() {
               eligible: result.isEligible,
               completedCount: result.completedDailyProblems,
               totalCount: result.totalDailyProblems,
+              requiredToUnlock: result.requiredToUnlock ?? 25,
               pendingProblems: result.pendingProblems
             }
           }))
@@ -886,21 +889,35 @@ function WeekStudyContent() {
 
       // Lists
       if (line.startsWith('- ') || line.startsWith('* ') || line.startsWith('✅ ')) {
-        elements.push(
-          <li key={`li-${index}`} className="text-base text-neutral-light mb-2 ml-6 list-disc">
-            {line.replace(/^[-*✅]\s*/, '')}
-          </li>
-        )
+        let text = line.replace(/^[-*✅]\s*/, '').trim()
+        if (text) {
+          text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-neutral">$1</strong>')
+          text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+          text = text.replace(/`(.*?)`/g, '<code class="bg-background-elevated px-2 py-1 rounded text-sm">$1</code>')
+          elements.push(
+            <li key={`li-${index}`} className="text-base text-neutral-light mb-2 ml-6 list-disc" dangerouslySetInnerHTML={{ __html: text }} />
+          )
+        }
+        previousLine = line
+        return
+      }
+
+      // Horizontal rules (---, ***, ___)
+      const trimmed = line.trim()
+      if (/^[-*_]+$/.test(trimmed) && trimmed.length >= 3) {
+        elements.push(<hr key={`hr-${index}`} className="my-6 border-neutral-light/30" />)
         previousLine = line
         return
       }
 
       // Regular paragraphs
       if (line.trim()) {
+        let processedLine = line
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-neutral">$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+          .replace(/`(.*?)`/g, '<code class="bg-background-elevated px-2 py-1 rounded text-sm">$1</code>')
         elements.push(
-          <div key={`p-${index}`} className="text-base text-neutral-light mb-4 leading-relaxed">
-            {line}
-          </div>
+          <div key={`p-${index}`} className="text-base text-neutral-light mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
         )
       } else {
         elements.push(<br key={`br-${index}`} />)
@@ -1130,7 +1147,7 @@ function WeekStudyContent() {
                         const height = window.screen.height;
                         window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
                       } else {
-                        alert("Please complete 30 daily coding problems to unlock this Capstone Project.");
+                        setShowCapstoneUnlockModal(true)
                       }
                     }}
                     className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production'
@@ -1149,7 +1166,7 @@ function WeekStudyContent() {
                             ? `${codingProblems.length} projects available`
                             : process.env.NODE_ENV !== 'production'
                               ? "Unlocked (Development)"
-                              : `${weeklyTestEligibility?.coding_problems?.completedCount || 0}/${weeklyTestEligibility?.coding_problems?.totalCount || 30} daily completed`
+                              : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? 25} daily completed`
                           }
                         </div>
                       </div>
@@ -1162,6 +1179,34 @@ function WeekStudyContent() {
                   </div>
                 </div>
               )}
+
+              {/* Capstone unlock requirement modal (no alert) */}
+              <Modal
+                isOpen={showCapstoneUnlockModal}
+                onClose={() => setShowCapstoneUnlockModal(false)}
+                title="Capstone Project locked"
+                size="sm"
+              >
+                <div className="space-y-4">
+                  <p className="text-neutral-dark">
+                    Please complete all daily coding problems for this week to unlock the Capstone Project.
+                    {weeklyTestEligibility?.coding_problems != null && (
+                      <span className="block mt-2 text-sm text-neutral-light">
+                        Progress: {weeklyTestEligibility.coding_problems.completedCount ?? 0} / {weeklyTestEligibility.coding_problems.requiredToUnlock ?? 25} daily completed
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowCapstoneUnlockModal(false)}
+                      className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
+                    >
+                      OK
+                    </button>
+                  </div>
+                </div>
+              </Modal>
 
               {bookmarks.length > 0 && (
                 <div className="mt-6">
@@ -1259,24 +1304,6 @@ function WeekStudyContent() {
                       <Card className="border-2 border-neutral-light/10">
                         <div className="p-6 text-center text-neutral-light">
                           <p>Loading content...</p>
-                        </div>
-                      </Card>
-                    )}
-
-                    {studyContent.topics && studyContent.topics.length > 0 && (
-                      <Card>
-                        <div className="p-6">
-                          <h2 className="text-xl font-bold text-neutral mb-4 flex items-center gap-2">
-                            <FileText className="w-6 h-6 text-secondary" />
-                            Topics Covered
-                          </h2>
-                          <div className="flex flex-wrap gap-2">
-                            {studyContent.topics.map((topic: string, idx: number) => (
-                              <Badge key={idx} variant="secondary" className="text-sm">
-                                {topic}
-                              </Badge>
-                            ))}
-                          </div>
                         </div>
                       </Card>
                     )}

@@ -69,9 +69,20 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-neutral/10 text-center">
+        <div className="pt-8 border-t border-neutral/10 text-center space-y-2">
           <p className="text-neutral-dark text-sm">
             © Scholarplace, 2025. All rights reserved.
+          </p>
+          <p className="text-neutral-dark text-sm">
+            Powered by{' '}
+            <a
+              href="https://www.zeeniith.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary hover:text-secondary transition-colors underline underline-offset-2"
+            >
+              Zeeniith Technology
+            </a>
           </p>
         </div>
       </div>

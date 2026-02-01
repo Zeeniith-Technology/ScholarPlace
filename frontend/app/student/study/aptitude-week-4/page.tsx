@@ -18,7 +18,9 @@ import {
   AlertCircle,
   Lock,
   Play,
-  CheckCircle2
+  CheckCircle2,
+  Bookmark,
+  BookmarkCheck,
 } from 'lucide-react'
 import { getAuthHeader } from '@/utils/auth'
 import { cn } from '@/lib/utils'
@@ -41,7 +43,7 @@ function AptitudeWeek4Content() {
   const [studyContent, setStudyContent] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentDayIndex, setCurrentDayIndex] = useState(0)
-  const [bookmarks] = useState<BookmarkItem[]>([])
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeSection, setActiveSection] = useState<string>('')
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
@@ -176,6 +178,47 @@ function AptitudeWeek4Content() {
     window.open('/student/aptitude/weekly/4', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')
   }
 
+  const fetchBookmarks = async () => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      const authHeader = getAuthHeader()
+      if (!authHeader) return
+      const response = await fetch(`${apiBaseUrl}/student-progress/bookmarks/get`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ week: 4, type: 'aptitude' }),
+      })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) setBookmarks(result.data)
+      }
+    } catch (error) { console.error('Error fetching bookmarks:', error) }
+  }
+  const saveBookmarks = async () => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      const authHeader = getAuthHeader()
+      if (!authHeader) return
+      await fetch(`${apiBaseUrl}/student-progress/bookmarks/save`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ week: 4, bookmarks, type: 'aptitude' }),
+      })
+    } catch (error) { console.error('Error saving bookmarks:', error) }
+  }
+  const toggleBookmark = (day: string, section: string) => {
+    setBookmarks(prev => {
+      const existing = prev.find(b => b.day === day && b.section === section)
+      if (existing) return prev.filter(b => !(b.day === day && b.section === section))
+      return [...prev, { day, section, timestamp: new Date().toISOString() }]
+    })
+  }
+  const isBookmarked = (day: string, section: string) => bookmarks.some(b => b.day === day && b.section === section)
+  useEffect(() => { fetchBookmarks() }, [])
+  useEffect(() => { if (bookmarks.length >= 0) saveBookmarks() }, [bookmarks])
+
   const renderContent = (content: string) => {
     if (!content) return <p className="text-neutral-light">No content available</p>
 
@@ -236,14 +279,22 @@ function AptitudeWeek4Content() {
       }
 
       if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        const text = line.replace(/^[-*]\s*/, '').trim()
+        let text = line.replace(/^[-*]\s*/, '').trim()
         if (text) {
+          text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-neutral">$1</strong>')
+          text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+          text = text.replace(/`(.*?)`/g, '<code class="bg-background-elevated px-2 py-1 rounded text-sm">$1</code>')
           elements.push(
-            <li key={`li-${index}`} className="ml-6 mb-2 text-neutral-light list-disc">
-              {text}
-            </li>
+            <li key={`li-${index}`} className="ml-6 mb-2 text-neutral-light list-disc" dangerouslySetInnerHTML={{ __html: text }} />
           )
         }
+        return
+      }
+
+      // Horizontal rules (---, ***, ___)
+      const trimmed = line.trim()
+      if (/^[-*_]+$/.test(trimmed) && trimmed.length >= 3) {
+        elements.push(<hr key={`hr-${index}`} className="my-6 border-neutral-light/30" />)
         return
       }
 
@@ -368,14 +419,23 @@ function AptitudeWeek4Content() {
                 <div className="max-w-4xl mx-auto space-y-6">
                   <Card className="border-2 border-neutral-light/10">
                     <div className="p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 rounded-lg bg-accent/20">
-                          <Calculator className="w-6 h-6 text-accent" />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 rounded-lg bg-accent/20">
+                            <Calculator className="w-6 h-6 text-accent" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-bold text-neutral">{studyContent.title}</h2>
+                            <p className="text-sm text-neutral-light">{studyContent.day}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h2 className="text-2xl font-bold text-neutral">{studyContent.title}</h2>
-                          <p className="text-sm text-neutral-light">{studyContent.day}</p>
-                        </div>
+                        <button
+                          onClick={() => toggleBookmark(selectedDay, studyContent?.title || '')}
+                          className={`p-2 rounded-lg transition-all ${isBookmarked(selectedDay, studyContent?.title || '') ? 'bg-accent/20 text-accent' : 'bg-background-elevated text-neutral-light hover:bg-accent/10'}`}
+                          title={isBookmarked(selectedDay, studyContent?.title || '') ? 'Remove Bookmark' : 'Bookmark this content'}
+                        >
+                          {isBookmarked(selectedDay, studyContent?.title || '') ? <BookmarkCheck className="w-6 h-6" /> : <Bookmark className="w-6 h-6" />}
+                        </button>
                       </div>
 
                       {renderContent(studyContent.content)}

@@ -119,7 +119,7 @@ export default function CapstoneTestPage() {
                 })
             })
             setIsBlocked(true)
-            alert(`Test Terminated: ${reason}`)
+            alert(`Test terminated: ${reason}`)
         } catch (error) {
             console.error("Error blocking user:", error)
         }
@@ -133,13 +133,10 @@ export default function CapstoneTestPage() {
             if (document.hidden) {
                 setWarningCount((prev: number) => {
                     const newCount = prev + 1
-                    // Disabled auto-block for testing/user request
-                    // if (newCount >= 3) {
-                    //    blockUser("Multiple tab switches detected")
-                    // } else {
-                    // toast.error(`Warning ${newCount}/3: Do not switch tabs!`, { duration: 4000 })
-                    alert(`Warning ${newCount}: Please stay on the tab.`)
-                    // }
+                    // Limit 1: single tab switch requires Dept TPC approval
+                    if (newCount >= 1) {
+                        blockUser("Tab switch detected. Department TPC approval required for retake.")
+                    }
                     return newCount
                 })
             }
@@ -237,9 +234,11 @@ export default function CapstoneTestPage() {
                     <Button
                         variant="ghost"
                         className="w-full border border-neutral-300"
-                        onClick={() => router.push(`/student/study/week-${weekNum}`)}
+                        onClick={() => {
+                            if (typeof window !== 'undefined') window.close();
+                        }}
                     >
-                        Return to Dashboard
+                        Close
                     </Button>
                 </Card>
             </div>
@@ -265,8 +264,8 @@ export default function CapstoneTestPage() {
                                 <h3 className="font-semibold text-warning-content mb-1">Strict Mode Enforcement</h3>
                                 <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1">
                                     <li>Fullscreen mode is mandatory.</li>
-                                    <li>Switching tabs or exiting fullscreen will trigger a warning.</li>
-                                    <li>3 warnings will result in an immediate block.</li>
+                                    <li>Switching tabs not allowed.</li>
+                                    <li>Exiting fullscreen will require Department TPC approval to Retake the test.</li>
                                     <li>Right-click and copy-paste capabilities are disabled.</li>
                                 </ul>
                             </div>

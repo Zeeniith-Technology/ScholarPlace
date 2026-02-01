@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
 import { Card } from '@/components/ui/Card'
@@ -28,15 +28,16 @@ import {
 export default function TestApprovalsPage() {
   const router = useRouter()
   const { toast, showToast, hideToast } = useToast()
-  const [isLoading, setIsLoading] = useState(true)
+  const [hasFetched, setHasFetched] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [blockedStudents, setBlockedStudents] = useState<any[]>([])
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set())
+  /** Selection is per block (row), not per student. Key = student_id|week|test_type */
+  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set())
   const [isBulkApproving, setIsBulkApproving] = useState(false)
 
-  useEffect(() => {
-    fetchBlockedStudents()
-  }, [])
+  const blockKey = (s: { student_id: string; week: number; test_type: string }) =>
+    `${s.student_id}|${s.week}|${s.test_type}`
 
   const fetchBlockedStudents = async () => {
     try {
@@ -70,6 +71,7 @@ export default function TestApprovalsPage() {
       showToast('Failed to load blocked students', 'error')
     } finally {
       setIsLoading(false)
+      setHasFetched(true)
     }
   }
 
@@ -119,8 +121,8 @@ export default function TestApprovalsPage() {
   }
 
   const handleBulkApprove = async () => {
-    if (selectedStudents.size === 0) {
-      showToast('Please select at least one student', 'error')
+    if (selectedBlocks.size === 0) {
+      showToast('Please select at least one approval', 'error')
       return
     }
 
@@ -134,6 +136,11 @@ export default function TestApprovalsPage() {
         return
       }
 
+      // Backend expects student_ids; send unique student_ids from selected blocks
+      const studentIds = Array.from(new Set(
+        Array.from(selectedBlocks).map(key => key.split('|')[0])
+      ))
+
       const response = await fetch(`${apiBaseUrl}/dept-tpc/bulk-approve-retakes`, {
         method: 'POST',
         headers: {
@@ -141,7 +148,7 @@ export default function TestApprovalsPage() {
           'Authorization': authHeader,
         },
         body: JSON.stringify({
-          student_ids: Array.from(selectedStudents)
+          student_ids: studentIds
         }),
       })
 
@@ -149,7 +156,7 @@ export default function TestApprovalsPage() {
         const data = await response.json()
         if (data.success) {
           showToast(`Bulk approval complete: ${data.data.approved} approved, ${data.data.failed} failed`, 'success')
-          setSelectedStudents(new Set())
+          setSelectedBlocks(new Set())
           fetchBlockedStudents()
         } else {
           showToast(data.message || 'Failed to bulk approve', 'error')
@@ -165,21 +172,21 @@ export default function TestApprovalsPage() {
     }
   }
 
-  const handleToggleStudent = (studentId: string) => {
-    const newSelected = new Set(selectedStudents)
-    if (newSelected.has(studentId)) {
-      newSelected.delete(studentId)
+  const handleToggleBlock = (key: string) => {
+    const newSelected = new Set(selectedBlocks)
+    if (newSelected.has(key)) {
+      newSelected.delete(key)
     } else {
-      newSelected.add(studentId)
+      newSelected.add(key)
     }
-    setSelectedStudents(newSelected)
+    setSelectedBlocks(newSelected)
   }
 
   const handleToggleAll = () => {
-    if (selectedStudents.size === blockedStudents.length) {
-      setSelectedStudents(new Set())
+    if (selectedBlocks.size === blockedStudents.length) {
+      setSelectedBlocks(new Set())
     } else {
-      setSelectedStudents(new Set(blockedStudents.map(s => s.student_id)))
+      setSelectedBlocks(new Set(blockedStudents.map(s => blockKey(s))))
     }
   }
 
@@ -195,23 +202,6 @@ export default function TestApprovalsPage() {
     })
   }
 
-  if (isLoading && blockedStudents.length === 0) {
-    return (
-      <DepartmentTPCLayout>
-        <div className="min-h-screen bg-gray-50">
-          <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center space-y-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                <p className="text-neutral-light">Loading blocked students...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DepartmentTPCLayout>
-    )
-  }
-
   return (
     <DepartmentTPCLayout>
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
@@ -224,13 +214,24 @@ export default function TestApprovalsPage() {
               Approve students who were blocked from retaking tests due to violations
             </p>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="p-2 rounded-lg bg-background-surface border border-neutral-light/20 hover:bg-background-elevated transition-all duration-300 hover:scale-105 disabled:opacity-50"
+          <Button
+            onClick={hasFetched ? handleRefresh : fetchBlockedStudents}
+            disabled={isLoading || isRefreshing}
+            variant="primary"
+            className="flex items-center gap-2"
           >
-            <RefreshCw className={`w-4 h-4 text-neutral-light ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
+            {isLoading || isRefreshing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                {hasFetched ? 'Refreshing...' : 'Loading...'}
+              </>
+            ) : (
+              <>
+                <Shield className="w-4 h-4" />
+                {hasFetched ? 'Refresh list' : 'Load blocked students'}
+              </>
+            )}
+          </Button>
         </div>
 
         {blockedStudents.length > 0 && (
@@ -240,19 +241,19 @@ export default function TestApprovalsPage() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedStudents.size === blockedStudents.length && blockedStudents.length > 0}
+                    checked={selectedBlocks.size === blockedStudents.length && blockedStudents.length > 0}
                     onChange={handleToggleAll}
                     className="w-4 h-4 rounded border-neutral-light/20 text-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <span className="text-sm font-medium text-neutral">Select All</span>
                 </label>
                 <span className="text-sm text-neutral-light">
-                  {selectedStudents.size} of {blockedStudents.length} selected
+                  {selectedBlocks.size} of {blockedStudents.length} selected
                 </span>
               </div>
               <Button
                 onClick={handleBulkApprove}
-                disabled={selectedStudents.size === 0 || isBulkApproving}
+                disabled={selectedBlocks.size === 0 || isBulkApproving}
                 variant="primary"
                 className="transition-all duration-300 hover:scale-105"
               >
@@ -264,7 +265,7 @@ export default function TestApprovalsPage() {
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Bulk Approve ({selectedStudents.size})
+                    Bulk Approve ({selectedBlocks.size})
                   </>
                 )}
               </Button>
@@ -272,7 +273,26 @@ export default function TestApprovalsPage() {
           </Card>
         )}
 
-        {blockedStudents.length === 0 ? (
+        {!hasFetched ? (
+          <Card className="p-8 text-center">
+            <Shield className="w-16 h-16 text-neutral-light/50 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-neutral mb-2">Blocked students list</h3>
+            <p className="text-neutral-light mb-6">Click &quot;Load blocked students&quot; above to fetch the list.</p>
+            <Button onClick={fetchBlockedStudents} disabled={isLoading} variant="primary">
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Load blocked students
+                </>
+              )}
+            </Button>
+          </Card>
+        ) : blockedStudents.length === 0 ? (
           <Card className="p-8 text-center">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-neutral mb-2">No Blocked Students</h3>
@@ -281,12 +301,12 @@ export default function TestApprovalsPage() {
         ) : (
           <div className="space-y-4">
             {blockedStudents.map((student, index) => (
-              <Card key={index} className="p-5 border-l-4 border-l-red-500">
+              <Card key={blockKey(student)} className="p-5 border-l-4 border-l-red-500">
                 <div className="flex items-start gap-4">
                   <input
                     type="checkbox"
-                    checked={selectedStudents.has(student.student_id)}
-                    onChange={() => handleToggleStudent(student.student_id)}
+                    checked={selectedBlocks.has(blockKey(student))}
+                    onChange={() => handleToggleBlock(blockKey(student))}
                     className="mt-6 w-4 h-4 rounded border-neutral-light/20 text-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <div className="flex-1">
@@ -315,9 +335,12 @@ export default function TestApprovalsPage() {
                         </div>
 
                         <div className="mt-3 space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-sm flex-wrap">
                             <Badge variant="accent" className="text-xs">
-                              Week {student.week} - {student.test_type === 'weekly' ? 'Weekly Test' : 'Practice Test'}
+                              Week {student.week} - {student.test_type === 'weekly' ? 'Weekly Test' : student.test_type === 'capstone' ? 'Capstone Project' : 'Practice Test'}
+                            </Badge>
+                            <Badge variant={student.test_type === 'weekly' ? 'secondary' : 'default'} className="text-xs">
+                              {student.test_type === 'weekly' ? 'Aptitude' : 'DSA'}
                             </Badge>
                             <span className="text-neutral-light">•</span>
                             <span className="text-neutral-light">

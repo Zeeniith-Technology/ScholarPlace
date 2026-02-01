@@ -14,7 +14,9 @@ import {
     Filter,
     Calendar,
     Eye,
-    Loader2
+    Loader2,
+    ChevronDown,
+    ChevronRight
 } from 'lucide-react'
 
 interface PracticeTest {
@@ -23,6 +25,7 @@ interface PracticeTest {
     student_name: string
     student_email: string
     week: number
+    day?: string
     category: string
     score: number
     total_questions: number
@@ -44,79 +47,118 @@ interface QuestionAttempt {
     explanation: string
 }
 
+function getDayLabelForTest(test: PracticeTest) {
+    if (test.day) {
+        const d = test.day.replace(/^day-/, '')
+        return /^\d+$/.test(d) ? `Day ${d}` : test.day
+    }
+    return new Date(test.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function PracticeTestDetailsModal({
-    test,
+    tests,
     onClose
 }: {
-    test: PracticeTest | null,
+    tests: PracticeTest[],
     onClose: () => void
 }) {
-    if (!test) return null
+    const [expandedDay, setExpandedDay] = useState<string | null>(null)
+
+    if (!tests || tests.length === 0) return null
+
+    const first = tests[0]
+    const sorted = [...tests].sort((a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime())
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
                 {/* Header */}
-                <div className="p-6 border-b flex items-center justify-between bg-neutral-50">
+                <div className="p-6 border-b flex items-center justify-between bg-neutral-50 flex-shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold text-neutral">{test.student_name}&apos;s Test Details</h2>
+                        <h2 className="text-xl font-bold text-neutral">{first.student_name}&apos;s Test Details</h2>
                         <div className="flex gap-4 mt-1 text-sm text-neutral-light">
-                            <span>Week {test.week}</span>
+                            <span>Week {first.week}</span>
                             <span>•</span>
-                            <span>{test.category}</span>
-                            <span>•</span>
-                            <span className={test.score >= 70 ? "text-green-600 font-medium" : "text-yellow-600 font-medium"}>
-                                Score: {test.score}%
-                            </span>
+                            <span>{tests.length} day{tests.length !== 1 ? 's' : ''}</span>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-neutral-200 rounded-full transition">
-                        <Loader2 className="w-5 h-5 text-neutral hidden" /> {/* Dummy loader import usage */}
                         <span className="text-2xl leading-none">&times;</span>
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Content: Day 1, Day 2, ... expandable; on open show questions */}
                 <div className="flex-1 overflow-y-auto p-6 bg-neutral-50/30">
-                    <div className="space-y-6">
-                        {test.questions_attempted && test.questions_attempted.length > 0 ? (
-                            test.questions_attempted.map((q: QuestionAttempt, index: number) => (
-                                <div key={index} className={`bg-white rounded-lg border p-4 ${q.is_correct ? 'border-green-200 shadow-sm' : 'border-red-200 shadow-sm'}`}>
-                                    <div className="flex justify-between items-start mb-3">
-                                        <h3 className="font-medium text-neutral-800 flex-1">
-                                            <span className="text-neutral-400 mr-2">Q{index + 1}.</span>
-                                            {q.question}
-                                        </h3>
-                                        <Badge variant={q.is_correct ? 'success' : 'error'} className={q.is_correct ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-red-100 text-red-700 hover:bg-red-100'}>
-                                            {q.is_correct ? 'Correct' : 'Incorrect'}
-                                        </Badge>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
-                                        <div className={`p-3 rounded-lg ${q.is_correct ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
-                                            <p className="text-xs text-neutral-500 mb-1 uppercase tracking-wider font-semibold">Selected Answer</p>
-                                            <p className="font-medium text-neutral-800">{q.selected_answer || 'Not Attempted'}</p>
+                    <div className="space-y-2">
+                        {sorted.map((test) => {
+                            const dayKey = test.day || test.completed_at || test._id
+                            const dayLabel = getDayLabelForTest(test)
+                            const isOpen = expandedDay === dayKey
+                            const questions = test.questions_attempted || []
+                            return (
+                                <div key={test._id} className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setExpandedDay(isOpen ? null : dayKey)}
+                                        className="w-full flex items-center justify-between p-4 text-left hover:bg-neutral-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {isOpen ? (
+                                                <ChevronDown className="w-5 h-5 text-neutral-500" />
+                                            ) : (
+                                                <ChevronRight className="w-5 h-5 text-neutral-500" />
+                                            )}
+                                            <span className="font-semibold text-neutral">{dayLabel}</span>
+                                            <span className={`text-sm px-2 py-0.5 rounded font-medium ${test.score >= 70 ? 'text-green-700 bg-green-50' : 'text-yellow-700 bg-yellow-50'}`}>
+                                                {test.score}%
+                                            </span>
+                                            <span className="text-sm text-neutral-light">
+                                                {test.correct_answers}/{test.total_questions} · {test.time_spent}m · {new Date(test.completed_at).toLocaleDateString()}
+                                            </span>
                                         </div>
-                                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-                                            <p className="text-xs text-neutral-500 mb-1 uppercase tracking-wider font-semibold">Correct Answer</p>
-                                            <p className="font-medium text-neutral-800">{q.correct_answer}</p>
-                                        </div>
-                                    </div>
-
-                                    {q.explanation && (
-                                        <div className="bg-neutral-100/50 p-3 rounded-lg text-sm text-neutral-600 mt-2">
-                                            <p className="font-semibold text-xs text-neutral-500 mb-1 uppercase">Explanation</p>
-                                            {q.explanation}
+                                    </button>
+                                    {isOpen && (
+                                        <div className="border-t border-neutral-200 p-4 bg-neutral-50/50 space-y-4">
+                                            {questions.length > 0 ? (
+                                                questions.map((q: QuestionAttempt, index: number) => (
+                                                    <div key={index} className={`rounded-lg border p-4 ${q.is_correct ? 'border-green-200 bg-green-50/30' : 'border-red-200 bg-red-50/30'}`}>
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <h3 className="font-medium text-neutral-800 flex-1">
+                                                                <span className="text-neutral-400 mr-2">Q{index + 1}.</span>
+                                                                {q.question}
+                                                            </h3>
+                                                            <Badge variant={q.is_correct ? 'success' : 'error'} className={q.is_correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                                                {q.is_correct ? 'Correct' : 'Incorrect'}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-2">
+                                                            <div className={`p-3 rounded-lg ${q.is_correct ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                                                                <p className="text-xs text-neutral-500 mb-1 font-semibold">Selected Answer</p>
+                                                                <p className="font-medium text-neutral-800">{q.selected_answer || 'Not Attempted'}</p>
+                                                            </div>
+                                                            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                                                                <p className="text-xs text-neutral-500 mb-1 font-semibold">Correct Answer</p>
+                                                                <p className="font-medium text-neutral-800">{q.correct_answer}</p>
+                                                            </div>
+                                                        </div>
+                                                        {q.explanation && (
+                                                            <div className="bg-neutral-100/80 p-3 rounded-lg text-sm text-neutral-600 mt-2">
+                                                                <p className="font-semibold text-xs text-neutral-500 mb-1">Explanation</p>
+                                                                {q.explanation}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-8 text-neutral-light text-sm">
+                                                    No question data for this day.
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-12 text-neutral-light">
-                                <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                <p>No detailed question data available for this test.</p>
-                            </div>
-                        )}
+                            )
+                        })}
                     </div>
                 </div>
             </div>
@@ -183,6 +225,7 @@ export default function DeptTPCPracticeMonitoringPage() {
                     student_name: test.student_name || 'Unknown',
                     student_email: test.student_email || '',
                     week: test.week || 1,
+                    day: test.day,
                     category: test.category || 'Aptitude',
                     score: test.score || 0,
                     total_questions: test.total_questions || 0,
@@ -271,6 +314,74 @@ export default function DeptTPCPracticeMonitoringPage() {
         return colors[difficulty.toLowerCase()] || 'text-neutral bg-neutral-light/10'
     }
 
+    // Group by week, then by student: one row per student per week with avg score & avg accuracy
+    interface StudentWeekRow {
+        student_id: string
+        student_name: string
+        student_email: string
+        week: number
+        tests: PracticeTest[]
+        avgScore: number
+        totalCorrect: number
+        totalQuestions: number
+        attempts: number
+        totalTime: number
+        lastCompleted: string
+    }
+    const testsByWeekAndStudent = React.useMemo(() => {
+        const weekMap = new Map<number, PracticeTest[]>()
+        for (const test of filteredTests) {
+            const w = test.week
+            if (!weekMap.has(w)) weekMap.set(w, [])
+            weekMap.get(w)!.push(test)
+        }
+        const result: { weekNum: number; rows: StudentWeekRow[] }[] = []
+        for (const [weekNum, tests] of Array.from(weekMap.entries()).sort(([a], [b]) => a - b)) {
+            const byStudent = new Map<string, PracticeTest[]>()
+            for (const t of tests) {
+                const id = t.student_id
+                if (!byStudent.has(id)) byStudent.set(id, [])
+                byStudent.get(id)!.push(t)
+            }
+            const rows: StudentWeekRow[] = []
+            for (const [student_id, studentTests] of byStudent.entries()) {
+                const first = studentTests[0]
+                const totalCorrect = studentTests.reduce((s, t) => s + t.correct_answers, 0)
+                const totalQuestions = studentTests.reduce((s, t) => s + t.total_questions, 0)
+                const avgScore = studentTests.length > 0
+                    ? Math.round(studentTests.reduce((s, t) => s + t.score, 0) / studentTests.length)
+                    : 0
+                const totalTime = studentTests.reduce((s, t) => s + (t.time_spent || 0), 0)
+                const lastCompleted = studentTests.reduce((latest, t) =>
+                    (new Date(t.completed_at) > new Date(latest) ? t.completed_at : latest), studentTests[0].completed_at)
+                rows.push({
+                    student_id,
+                    student_name: first.student_name,
+                    student_email: first.student_email,
+                    week: weekNum,
+                    tests: studentTests.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()),
+                    avgScore,
+                    totalCorrect,
+                    totalQuestions,
+                    attempts: studentTests.length,
+                    totalTime,
+                    lastCompleted
+                })
+            }
+            rows.sort((a, b) => b.avgScore - a.avgScore)
+            result.push({ weekNum, rows })
+        }
+        return result
+    }, [filteredTests])
+
+    const getDayLabel = (test: PracticeTest) => {
+        if (test.day) {
+            const d = test.day.replace(/^day-/, '')
+            return /^\d+$/.test(d) ? `Day ${d}` : test.day
+        }
+        return new Date(test.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+
     return (
         <DepartmentTPCLayout>
             <div className="min-h-screen bg-background">
@@ -351,91 +462,103 @@ export default function DeptTPCPracticeMonitoringPage() {
                         </div>
                     </Card>
 
-                    {/* Practice Tests List */}
-                    <Card className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-neutral">
-                                Practice Tests ({filteredTests.length})
-                            </h2>
+                    {/* Practice Tests: one card per week, day-wise inside */}
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
                         </div>
-
-                        {isLoading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                            </div>
-                        ) : error ? (
-                            <div className="text-center py-12">
-                                <p className="text-red-600">{error}</p>
-                            </div>
-                        ) : filteredTests.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-neutral-light">No practice tests found</p>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-neutral-light/20">
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Student</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Week</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Score</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Accuracy</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Difficulty</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Time</th>
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredTests.map((test) => (
-                                            <tr
-                                                key={test._id}
-                                                className="border-b border-neutral-light/10 hover:bg-background-elevated transition-colors cursor-pointer"
-                                                onClick={() => setSelectedTest(test)}
-                                            >
-                                                <td className="py-3 px-4">
-                                                    <div>
-                                                        <p className="font-medium text-neutral">{test.student_name}</p>
-                                                        <p className="text-sm text-neutral-light">{test.student_email}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <Badge variant="secondary">Week {test.week}</Badge>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getScoreColor(test.score)}`}>
-                                                        {test.score}%
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <span className="text-sm text-neutral">
-                                                        {test.correct_answers}/{test.total_questions}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <span className={`inline-flex px-2 py-1 rounded text-xs font-medium capitalize ${getDifficultyColor(test.difficulty)}`}>
-                                                        {test.difficulty}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-sm text-neutral">
-                                                    {test.time_spent}m
-                                                </td>
-                                                <td className="py-3 px-4 text-sm text-neutral-light">
-                                                    {new Date(test.completed_at).toLocaleDateString()}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </Card>
+                    ) : error ? (
+                        <div className="text-center py-12">
+                            <p className="text-red-600">{error}</p>
+                        </div>
+                    ) : testsByWeekAndStudent.length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-neutral-light">No practice tests found</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {testsByWeekAndStudent.map(({ weekNum, rows }) => {
+                                const totalAttempts = rows.reduce((s, r) => s + r.attempts, 0)
+                                const weekAvgScore = rows.length > 0
+                                    ? Math.round(rows.reduce((s, r) => s + r.avgScore, 0) / rows.length)
+                                    : 0
+                                return (
+                                    <Card key={weekNum} className="p-6 border-l-4 border-l-primary/50">
+                                        <div className="mb-4">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                                <h2 className="text-xl font-semibold text-neutral flex items-center gap-2">
+                                                    <Calendar className="w-5 h-5 text-primary" />
+                                                    Week {weekNum}
+                                                </h2>
+                                                <div className="flex items-center gap-3 text-sm text-neutral-light">
+                                                    <span>{rows.length} student{rows.length !== 1 ? 's' : ''}</span>
+                                                    <span>·</span>
+                                                    <span>{totalAttempts} attempt{totalAttempts !== 1 ? 's' : ''}</span>
+                                                    <span>·</span>
+                                                    <span className="font-medium text-neutral">Avg {weekAvgScore}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-x-auto rounded-lg border border-neutral-light/20">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="border-b border-neutral-light/20 bg-neutral-light/5">
+                                                        <th className="text-left py-2.5 px-3 font-semibold text-neutral">Student</th>
+                                                        <th className="text-left py-2.5 px-3 font-semibold text-neutral">Avg Score</th>
+                                                        <th className="text-left py-2.5 px-3 font-semibold text-neutral">Avg Accuracy</th>
+                                                        <th className="text-left py-2.5 px-3 font-semibold text-neutral">Attempts</th>
+                                                        <th className="text-left py-2.5 px-3 font-semibold text-neutral">Time</th>
+                                                        <th className="text-left py-2.5 px-3 font-semibold text-neutral">Last completed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {rows.map((row) => (
+                                                        <tr
+                                                            key={`${row.student_id}-${row.week}`}
+                                                            className="border-b border-neutral-light/10 last:border-0 hover:bg-primary/5 transition-colors cursor-pointer"
+                                                            onClick={() => setSelectedTest(row.tests[0])}
+                                                        >
+                                                            <td className="py-2.5 px-3">
+                                                                <div>
+                                                                    <p className="font-medium text-neutral">{row.student_name}</p>
+                                                                    <p className="text-xs text-neutral-light">{row.student_email}</p>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-2.5 px-3">
+                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getScoreColor(row.avgScore)}`}>
+                                                                    {row.avgScore}%
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2.5 px-3 text-neutral">
+                                                                {row.totalCorrect}/{row.totalQuestions}
+                                                                {row.totalQuestions > 0 && (
+                                                                    <span className="text-neutral-light ml-1">
+                                                                        ({Math.round((row.totalCorrect / row.totalQuestions) * 100)}%)
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="py-2.5 px-3 text-neutral">{row.attempts}</td>
+                                                            <td className="py-2.5 px-3 text-neutral">{row.totalTime}m</td>
+                                                            <td className="py-2.5 px-3 text-neutral-light">
+                                                                {new Date(row.lastCompleted).toLocaleDateString()}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Card>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Test Details Modal */}
+            {/* Test Details Modal: all tests for this student in this week, Day 1 / Day 2 expandable → questions */}
             {selectedTest && (
                 <PracticeTestDetailsModal
-                    test={selectedTest}
+                    tests={filteredTests.filter(t => t.student_id === selectedTest.student_id && t.week === selectedTest.week)}
                     onClose={() => setSelectedTest(null)}
                 />
             )}

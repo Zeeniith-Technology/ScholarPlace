@@ -297,6 +297,13 @@ function AptitudeWeek1Content() {
     window.open(testUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')
   }
 
+  const parseTableRow = (row: string): string[] => {
+    return row
+      .split('|')
+      .map(cell => cell.trim())
+      .filter((_, i, arr) => i > 0 && i < arr.length - 1)
+  }
+
   const renderContent = (content: string) => {
     if (!content) return <p className="text-neutral-light">No content available</p>
 
@@ -306,11 +313,12 @@ function AptitudeWeek1Content() {
     let codeBlock = ''
     let codeLanguage = ''
 
-    lines.forEach((line, index) => {
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index]
+
       // Handle code blocks
       if (line.startsWith('```')) {
         if (inCodeBlock) {
-          // End code block
           elements.push(
             <pre key={`code-${index}`} className="bg-background-elevated p-4 rounded-lg overflow-x-auto my-4 border border-neutral-light/20">
               <code className="text-sm">{codeBlock.trim()}</code>
@@ -320,16 +328,15 @@ function AptitudeWeek1Content() {
           codeLanguage = ''
           inCodeBlock = false
         } else {
-          // Start code block
           codeLanguage = line.replace('```', '').trim()
           inCodeBlock = true
         }
-        return
+        continue
       }
 
       if (inCodeBlock) {
         codeBlock += line + '\n'
-        return
+        continue
       }
 
       // Handle headers
@@ -340,7 +347,7 @@ function AptitudeWeek1Content() {
             {text}
           </h1>
         )
-        return
+        continue
       }
 
       if (line.startsWith('## ')) {
@@ -350,7 +357,7 @@ function AptitudeWeek1Content() {
             {text}
           </h2>
         )
-        return
+        continue
       }
 
       if (line.startsWith('### ')) {
@@ -360,26 +367,76 @@ function AptitudeWeek1Content() {
             {text}
           </h3>
         )
-        return
+        continue
       }
 
-      // Handle tables
+      // Handle markdown tables: collect consecutive table rows and render one <table>
       if (line.includes('|') && line.trim().startsWith('|')) {
-        // Table row - we'll handle this separately
-        return
+        const tableRows: string[] = [line]
+        let j = index + 1
+        while (j < lines.length && lines[j].includes('|') && lines[j].trim().startsWith('|')) {
+          tableRows.push(lines[j])
+          j++
+        }
+        index = j - 1
+
+        const isSeparator = (row: string) => /^\|[\s\-:|]+\|$/.test(row.trim())
+        const headerRow = tableRows[0]
+        const separatorIndex = tableRows.findIndex(isSeparator)
+        const headerCells = parseTableRow(headerRow)
+        const bodyRows = separatorIndex >= 0 ? tableRows.slice(separatorIndex + 1) : tableRows.slice(1)
+
+        elements.push(
+          <div key={`table-${index}`} className="my-4 overflow-x-auto rounded-lg border border-neutral-light/20">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-background-elevated border-b border-neutral-light/20">
+                  {headerCells.map((cell, ci) => (
+                    <th key={ci} className="px-4 py-3 font-semibold text-neutral" dangerouslySetInnerHTML={{
+                      __html: cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    }} />
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bodyRows.filter(row => !isSeparator(row)).map((row, ri) => {
+                  const cells = parseTableRow(row)
+                  return (
+                    <tr key={ri} className="border-b border-neutral-light/10 hover:bg-background-elevated/50">
+                      {cells.map((cell, ci) => (
+                        <td key={ci} className="px-4 py-2 text-neutral-light" dangerouslySetInnerHTML={{
+                          __html: cell.replace(/\*\*(.*?)\*\*/g, '<strong class="text-neutral">$1</strong>')
+                        }} />
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+        continue
       }
 
       // Handle lists
       if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        const text = line.replace(/^[-*]\s*/, '').trim()
+        let text = line.replace(/^[-*]\s*/, '').trim()
         if (text) {
+          text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-neutral">$1</strong>')
+          text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+          text = text.replace(/`(.*?)`/g, '<code class="bg-background-elevated px-2 py-1 rounded text-sm">$1</code>')
           elements.push(
-            <li key={`li-${index}`} className="ml-6 mb-2 text-neutral-light list-disc">
-              {text}
-            </li>
+            <li key={`li-${index}`} className="ml-6 mb-2 text-neutral-light list-disc" dangerouslySetInnerHTML={{ __html: text }} />
           )
         }
-        return
+        continue
+      }
+
+      // Handle horizontal rules (---, ***, ___)
+      const trimmed = line.trim()
+      if (/^[-*_]+$/.test(trimmed) && trimmed.length >= 3) {
+        elements.push(<hr key={`hr-${index}`} className="my-6 border-neutral-light/30" />)
+        continue
       }
 
       // Handle bold text
@@ -388,7 +445,6 @@ function AptitudeWeek1Content() {
       processedLine = processedLine.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
       processedLine = processedLine.replace(/`(.*?)`/g, '<code class="bg-background-elevated px-2 py-1 rounded text-sm">$1</code>')
 
-      // Regular paragraph
       if (line.trim()) {
         elements.push(
           <p key={`p-${index}`} className="text-neutral-light mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
@@ -396,7 +452,7 @@ function AptitudeWeek1Content() {
       } else {
         elements.push(<br key={`br-${index}`} />)
       }
-    })
+    }
 
     return <div className="prose prose-invert max-w-none">{elements}</div>
   }

@@ -951,31 +951,63 @@ export default class tpcController {
                 });
             }
 
-            // Get progress data for each student
+            // Get progress data for each student (tblStudentProgress stores student_id as string)
             const studentIds = students.map(s => s._id || s.person_id);
-            // Student progress student_id is stored as String in our schema.
-            // Convert ids to strings to ensure $in works even if progress has string ids.
-            const studentIdStrings = studentIds.map(id => id?.toString?.() || id).filter(Boolean);
+            const studentIdStrings = studentIds.map(id => (id?.toString?.() || id)).filter(Boolean);
+            const progressFilter = studentIdStrings.length
+                ? { $or: [ { student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } } ] }
+                : { _id: null };
             const progressResponse = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: { $in: studentIdStrings } }
+                progressFilter
             );
-
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // Combine student data with progress
+            // Get practice test data: tblPracticeTest stores student_id as STRING (see practiceTest.save)
+            // Match both string and ObjectId so we find records regardless of storage format
+            const practiceFilter = studentIdStrings.length
+                ? { $or: [ { student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } } ] }
+                : { _id: null };
+            const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
+            const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
+
+            const practiceByStudent = {};
+            for (const t of practiceTests) {
+                const sid = (t.student_id != null && typeof t.student_id.toString === 'function') ? t.student_id.toString() : String(t.student_id);
+                if (!practiceByStudent[sid]) practiceByStudent[sid] = { sum: 0, count: 0 };
+                practiceByStudent[sid].sum += (t.score != null ? Number(t.score) : 0);
+                practiceByStudent[sid].count += 1;
+            }
+
+            console.log('[getStudentsList] students:', students.length, 'progressDocs:', progressData.length, 'practiceTests:', practiceTests.length, 'practiceByStudent keys:', Object.keys(practiceByStudent));
+
+            // Combine: always prefer derived from practice tests when progress has no/zero score or test count
             const studentsWithProgress = students.map(student => {
+                const sid = (student._id != null && typeof student._id.toString === 'function') ? student._id.toString() : String(student._id);
+                const sidAlt = (student.person_id != null && typeof student.person_id.toString === 'function') ? student.person_id.toString() : String(student.person_id || '');
                 const progress = progressData.find(p =>
-                    (p.student_id === student._id || p.student_id === student.person_id)
+                    (String(p.student_id) === sid || String(p.student_id) === sidAlt)
                 );
+                let practice = practiceByStudent[sid] || practiceByStudent[sidAlt];
+                if (!practice && Object.keys(practiceByStudent).length > 0) {
+                    const matchKey = Object.keys(practiceByStudent).find(k => k === sid || k === sidAlt || String(k) === sid || String(k) === sidAlt);
+                    if (matchKey) practice = practiceByStudent[matchKey];
+                }
+                const derivedAvg = practice && practice.count > 0 ? Math.round(practice.sum / practice.count) : 0;
+                const derivedTestCount = practice ? practice.count : 0;
+                const progressScore = progress && progress.average_score != null && Number(progress.average_score) > 0 ? Number(progress.average_score) : null;
+                const progressTests = progress && progress.total_practice_tests != null && Number(progress.total_practice_tests) > 0 ? Number(progress.total_practice_tests) : null;
+                const averageScore = progressScore != null ? progressScore : derivedAvg;
+                const totalPracticeTests = progressTests != null ? progressTests : derivedTestCount;
                 return {
                     ...student,
-                    progress: progress || {
-                        total_days_completed: 0,
-                        total_practice_tests: 0,
-                        total_coding_problems: 0,
-                        average_score: 0
+                    progress: {
+                        ...(progress || {}),
+                        average_score: averageScore,
+                        total_days_completed: progress?.total_days_completed ?? 0,
+                        total_practice_tests: totalPracticeTests,
+                        total_coding_problems: progress?.total_coding_problems ?? 0
                     }
                 };
             });
@@ -1246,32 +1278,57 @@ export default class tpcController {
 
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id)));
 
             // Get progress data
             const progressResponse = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: { $in: studentIds } }
+                { student_id: { $in: studentIdStrings.length ? studentIdStrings : studentIds } }
             );
 
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // Combine and filter top performers (score >= 85)
-            const topPerformers = students
-                .map(student => {
-                    const progress = progressData.find(p =>
-                        (p.student_id === student._id || p.student_id === student.person_id)
-                    );
-                    return {
-                        ...student,
-                        progress: progress || {
-                            average_score: 0,
-                            total_days_completed: 0,
-                            total_practice_tests: 0,
-                            total_coding_problems: 0
-                        }
-                    };
-                })
+            // Get practice test scores so we can derive average when progress.average_score is missing
+            const practiceIds = [...new Set([...studentIdStrings, ...studentIds])];
+            const practiceFilter = practiceIds.length ? { student_id: { $in: practiceIds } } : { _id: null };
+            const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
+            const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
+            const avgByStudent = {};
+            for (const t of practiceTests) {
+                const sid = (t.student_id && typeof t.student_id.toString === 'function' ? t.student_id.toString() : String(t.student_id));
+                if (!avgByStudent[sid]) avgByStudent[sid] = { sum: 0, count: 0 };
+                avgByStudent[sid].sum += (t.score || 0);
+                avgByStudent[sid].count += 1;
+            }
+
+            // Combine: use progress.average_score when present, else average from practice tests
+            const studentsWithScore = students.map(student => {
+                const sid = (student._id && typeof student._id.toString === 'function' ? student._id.toString() : String(student._id));
+                const sidAlt = (student.person_id && typeof student.person_id.toString === 'function' ? student.person_id.toString() : String(student.person_id));
+                const progress = progressData.find(p =>
+                    (String(p.student_id) === sid || String(p.student_id) === sidAlt)
+                );
+                const practiceAvg = avgByStudent[sid] || avgByStudent[sidAlt];
+                const derivedAvg = practiceAvg && practiceAvg.count > 0
+                    ? Math.round(practiceAvg.sum / practiceAvg.count)
+                    : 0;
+                const averageScore = (progress && (progress.average_score !== undefined && progress.average_score !== null && progress.average_score > 0))
+                    ? progress.average_score
+                    : derivedAvg;
+                return {
+                    ...student,
+                    progress: {
+                        ...(progress || {}),
+                        average_score: averageScore,
+                        total_days_completed: progress?.total_days_completed ?? 0,
+                        total_practice_tests: progress?.total_practice_tests ?? (practiceAvg?.count || 0),
+                        total_coding_problems: progress?.total_coding_problems ?? 0
+                    }
+                };
+            });
+
+            const topPerformers = studentsWithScore
                 .filter(student => student.progress.average_score >= 85)
                 .sort((a, b) => b.progress.average_score - a.progress.average_score)
                 .slice(0, limit);

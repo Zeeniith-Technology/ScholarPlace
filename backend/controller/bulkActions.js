@@ -25,65 +25,81 @@ class BulkActionsController {
                 return next();
             }
 
-            // Get DeptTPC info to verify department
-            const deptTPC = await fetchData('tblDeptTPC', {}, { person_id: userId });
-            if (!deptTPC.success || !deptTPC.data || deptTPC.data.length === 0) {
-                res.locals.responseData = { success: false, status: 403, message: 'Not authorized as DeptTPC' };
+            // Require DeptTPC role (middleware already checked; ensure we have a DeptTPC identity for consistency)
+            const userRole = (req.user?.role || '').toString();
+            if (userRole.toLowerCase() !== 'depttpc') {
+                res.locals.responseData = { success: false, status: 403, message: 'Not authorized as DeptTPC', error: 'Not authorized as DeptTPC' };
                 return next();
             }
 
-            const department_id = deptTPC.data[0].department_id;
+            // Resolve DeptTPC: prefer PersonMaster (JWT/single source of truth), then legacy tblDeptTPC
+            let department_id = req.user?.department_id || null;
+            if (department_id == null) {
+                const personRes = await fetchData(
+                    'tblPersonMaster',
+                    { department_id: 1, person_role: 1 },
+                    { _id: userId, person_deleted: false }
+                );
+                if (personRes.success && personRes.data && personRes.data.length > 0) {
+                    department_id = personRes.data[0].department_id || null;
+                }
+            }
+            if (department_id == null) {
+                const deptTPC = await fetchData('tblDeptTPC', {}, { person_id: userId });
+                if (deptTPC.success && deptTPC.data && deptTPC.data.length > 0) {
+                    department_id = deptTPC.data[0].department_id || null;
+                }
+            }
+            // department_id may still be null for some legacy setups; bulk approval does not filter by department
+            // Blocked retakes are stored in tblBlockedTestRetake (same as single approve / getBlockedStudents)
             let approved = 0;
             let failed = 0;
             const results = [];
+            const { ObjectId } = await import('mongodb');
 
             for (const student_id of student_ids) {
                 try {
-                    // Get student progress with blocked retake
-                    const progressRes = await fetchData(
-                        'tblStudentProgress',
+                    const studentIdString = (student_id && typeof student_id === 'string') ? student_id : (student_id && typeof student_id.toString === 'function' ? student_id.toString() : String(student_id));
+
+                    // Find all pending blocked records for this student in tblBlockedTestRetake
+                    const blockedRes = await fetchData(
+                        'tblBlockedTestRetake',
                         {},
-                        {
-                            student_id: student_id,
-                            'blocked_tests.requires_approval': true,
-                            'blocked_tests.approved': false
-                        }
+                        { student_id: studentIdString, blocked: true, approved_by: null }
                     );
 
-                    if (progressRes.success && progressRes.data && progressRes.data.length > 0) {
-                        const progress = progressRes.data[0];
-                        const updated_blocked_tests = progress.blocked_tests.map(bt => {
-                            if (bt.requires_approval && !bt.approved) {
-                                return {
-                                    ...bt,
-                                    approved: true,
-                                    approved_by: userId,
-                                    approved_at: new Date()
-                                };
-                            }
-                            return bt;
-                        });
-
-                        const updateRes = await executeData(
-                            'tblStudentProgress',
-                            { blocked_tests: updated_blocked_tests },
-                            { student_id: student_id }
-                        );
-
-                        if (updateRes.success) {
-                            approved++;
-                            results.push({ student_id, success: true });
+                    if (blockedRes.success && blockedRes.data && blockedRes.data.length > 0) {
+                        let studentApproved = 0;
+                        for (const record of blockedRes.data) {
+                            const updateRes = await executeData(
+                                'tblBlockedTestRetake',
+                                {
+                                    $set: {
+                                        blocked: false,
+                                        approved_by: (userId && typeof userId.toString === 'function' ? userId.toString() : userId),
+                                        approved_at: new Date()
+                                    }
+                                },
+                                'u',
+                                null,
+                                { _id: record._id instanceof ObjectId ? record._id : new ObjectId(record._id) }
+                            );
+                            if (updateRes.success) studentApproved++;
+                        }
+                        if (studentApproved > 0) {
+                            approved += studentApproved;
+                            results.push({ student_id: studentIdString, success: true, approved_count: studentApproved });
                         } else {
                             failed++;
-                            results.push({ student_id, success: false, error: 'Update failed' });
+                            results.push({ student_id: studentIdString, success: false, error: 'Update failed' });
                         }
                     } else {
                         failed++;
-                        results.push({ student_id, success: false, error: 'No pending approvals' });
+                        results.push({ student_id: studentIdString, success: false, error: 'No pending approvals' });
                     }
                 } catch (error) {
                     failed++;
-                    results.push({ student_id, success: false, error: error.message });
+                    results.push({ student_id: String(student_id), success: false, error: error.message });
                 }
             }
 

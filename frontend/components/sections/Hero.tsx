@@ -86,7 +86,7 @@ export function Hero() {
 
             <p className="text-sm text-neutral-dark flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Built for 3rd–7th sem students and TPC teams
+              Built for 5th–7th sem students and TPC teams
             </p>
           </div>
 

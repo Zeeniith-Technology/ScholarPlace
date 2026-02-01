@@ -230,7 +230,7 @@ export default function LearningPage() {
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span className="font-semibold text-gray-800">{weeklySchedule.length} weeks</span>
                   <span>•</span>
-                  <span>Complete course roadmap</span>
+                  <span>DSA & Aptitude course roadmap</span>
                 </div>
                 <div className="text-xs text-gray-500">
                   Last updated: {new Date().toLocaleTimeString()}
