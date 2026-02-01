@@ -358,7 +358,7 @@ function Week1StudyContent() {
               eligible: result.isEligible,
               completedCount: result.completedDailyProblems,
               totalCount: result.totalDailyProblems,
-              requiredToUnlock: result.requiredToUnlock ?? 25,
+              requiredToUnlock: result.requiredToUnlock ?? result.totalDailyProblems ?? 0,
               pendingProblems: result.pendingProblems
             }
           }))
@@ -1162,7 +1162,7 @@ function Week1StudyContent() {
                             ? `${codingProblems.length} projects available`
                             : process.env.NODE_ENV !== 'production'
                               ? "Unlocked (Development Mode)"
-                              : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? 25} daily completed`
+                              : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} daily completed`
                           }
                         </div>
                       </div>
@@ -1188,7 +1188,7 @@ function Week1StudyContent() {
                     Please complete all daily coding problems for this week to unlock the Capstone Project.
                     {weeklyTestEligibility?.coding_problems != null && (
                       <span className="block mt-2 text-sm text-neutral-light">
-                        Progress: {weeklyTestEligibility.coding_problems.completedCount ?? 0} / {weeklyTestEligibility.coding_problems.requiredToUnlock ?? 25} daily completed
+                        Progress: {weeklyTestEligibility.coding_problems.completedCount ?? 0} / {weeklyTestEligibility.coding_problems.requiredToUnlock ?? weeklyTestEligibility.coding_problems.totalCount ?? 0} daily completed
                       </span>
                     )}
                   </p>
@@ -1476,11 +1476,11 @@ function Week1StudyContent() {
                               )}
 
                               <div className="inline-flex items-center gap-2 px-4 py-2 bg-background-elevated rounded-full text-sm font-medium text-neutral">
-                                <span className={(weeklyTestEligibility?.coding_problems?.completedCount ?? 0) >= (weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? 25) ? "text-green-600" : "text-primary"}>
+                                <span className={(weeklyTestEligibility?.coding_problems?.completedCount ?? 0) >= (weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0) ? "text-green-600" : "text-primary"}>
                                   {weeklyTestEligibility?.coding_problems?.completedCount || 0}
                                 </span>
                                 <span className="text-neutral-light">/</span>
-                                <span>{weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? 25} Completed</span>
+                                <span>{weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} Completed</span>
                               </div>
                             </div>
                           )}

@@ -558,11 +558,12 @@ export async function getWeeklyCodingProgress(req, res) {
 
         const db = getDB();
 
-        // 1. Get all daily problems for this week
+        // 1. Get all daily problems for this week (day-wise: day-1..day-5 only; exclude pre-week)
+        // Support both string days ('day-1', ...) and numeric days (1..5) for compatibility
         const problemsCollection = db.collection(COLLECTION_NAME);
         const dailyProblems = await problemsCollection.find({
             week: week,
-            day: { $lte: 5 }, // Ensure we only count standard 5 days
+            day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
             is_capstone: false,
             deleted: { $ne: true }
         }).project({ question_id: 1, title: 1, day: 1, question_number: 1 }).toArray();
@@ -587,6 +588,13 @@ export async function getWeeklyCodingProgress(req, res) {
         const completedProblemIds = new Set(submissions.map(s => s.problem_id));
         const completedCount = completedProblemIds.size;
 
+        // Helper: day order for sorting (supports 'day-1'..'day-5' and numeric 1..5)
+        const dayOrder = (d) => {
+            if (typeof d === 'number' && d >= 1 && d <= 5) return d;
+            const m = String(d || '').match(/day-(\d+)/);
+            return m ? parseInt(m[1], 10) : 0;
+        };
+
         // Identify pending problems
         const pendingProblems = dailyProblems
             .filter(p => !completedProblemIds.has(p.question_id))
@@ -601,6 +609,8 @@ export async function getWeeklyCodingProgress(req, res) {
         const requiredToUnlock = totalDailyProblems;
         const isEligible = completedCount >= requiredToUnlock;
 
+        pendingProblems.sort((a, b) => dayOrder(a.day) - dayOrder(b.day) || (a.question_number || 0) - (b.question_number || 0));
+
         res.status(200).json({
             success: true,
             week: week,
@@ -609,7 +619,7 @@ export async function getWeeklyCodingProgress(req, res) {
             completedDailyProblems: completedCount,
             isEligible,
             completedIds: Array.from(completedProblemIds),
-            pendingProblems: pendingProblems.sort((a, b) => a.day - b.day || a.question_number - b.question_number)
+            pendingProblems
         });
 
     } catch (error) {

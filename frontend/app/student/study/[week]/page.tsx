@@ -357,7 +357,7 @@ function WeekStudyContent() {
               eligible: result.isEligible,
               completedCount: result.completedDailyProblems,
               totalCount: result.totalDailyProblems,
-              requiredToUnlock: result.requiredToUnlock ?? 25,
+              requiredToUnlock: result.requiredToUnlock ?? result.totalDailyProblems ?? 0,
               pendingProblems: result.pendingProblems
             }
           }))
@@ -1209,7 +1209,7 @@ function WeekStudyContent() {
                             ? `${codingProblems.length} projects available`
                             : process.env.NODE_ENV !== 'production'
                               ? "Unlocked (Development)"
-                              : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? 25} daily completed`
+                              : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} daily completed`
                           }
                         </div>
                       </div>
@@ -1235,7 +1235,7 @@ function WeekStudyContent() {
                     Please complete all daily coding problems for this week to unlock the Capstone Project.
                     {weeklyTestEligibility?.coding_problems != null && (
                       <span className="block mt-2 text-sm text-neutral-light">
-                        Progress: {weeklyTestEligibility.coding_problems.completedCount ?? 0} / {weeklyTestEligibility.coding_problems.requiredToUnlock ?? 25} daily completed
+                        Progress: {weeklyTestEligibility.coding_problems.completedCount ?? 0} / {weeklyTestEligibility.coding_problems.requiredToUnlock ?? weeklyTestEligibility.coding_problems.totalCount ?? 0} daily completed
                       </span>
                     )}
                   </p>
