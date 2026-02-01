@@ -1139,10 +1139,10 @@ export default class studentProgressController {
      */
     async checkWeeklyTestEligibility(req, res, next) {
         try {
-            const { week } = req.body;
+            const { week, track } = req.body;
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
 
-            console.log('[StudentProgress] Check weekly test eligibility request:', { userId, week });
+            console.log('[StudentProgress] Check weekly test eligibility request:', { userId, week, track });
 
             if (!userId || !week) {
                 res.locals.responseData = {
@@ -1255,9 +1255,10 @@ export default class studentProgressController {
             practiceTestEligibility.attempts_by_day = attemptsByDay;
 
             // Check coding problems completion
-            // If no coding problems exist for this week, automatically consider requirement met
+            // If no coding problems exist for this week, or track is 'aptitude' (no coding in aptitude), consider requirement met
+            const codingRequired = track !== 'aptitude';
             const codingProblemsEligibility = {
-                eligible: allCodingProblems.length === 0 || allCodingProblems.every(id => codingProblemsCompleted.includes(id)),
+                eligible: !codingRequired || allCodingProblems.length === 0 || allCodingProblems.every(id => codingProblemsCompleted.includes(id)),
                 total: allCodingProblems.length,
                 completed: codingProblemsCompleted.length,
                 missing: allCodingProblems.filter(id => !codingProblemsCompleted.includes(id))
