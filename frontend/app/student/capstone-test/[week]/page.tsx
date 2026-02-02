@@ -404,6 +404,26 @@ export default function CapstoneTestPage() {
                                             </ul>
                                         </>
                                     )}
+
+                                    {(activeProblem.test_cases && activeProblem.test_cases.length > 0) && (
+                                        <>
+                                            <h3 className="text-xs font-bold uppercase text-neutral-500 mb-2 mt-6">Test cases</h3>
+                                            <p className="text-xs text-neutral-500 mb-2">
+                                                Input is passed to your program as <strong>stdin</strong>. Use <code className="bg-base-200 px-1 rounded">cin &gt;&gt; n</code> (C++), <code className="bg-base-200 px-1 rounded">scanf</code> (C), or <code className="bg-base-200 px-1 rounded">input()</code> (Python) in your code. Run to see results for each test.
+                                            </p>
+                                            <div className="space-y-2">
+                                                {(activeProblem.test_cases as any[]).slice(0, 5).map((tc: any, i: number) => (
+                                                    <div key={i} className="bg-base-200/50 p-3 rounded-md text-sm border border-base-300/50">
+                                                        <span className="font-semibold text-neutral-600">Test {i + 1}:</span>{' '}
+                                                        <span className="text-neutral-700">{tc.input ?? tc.stdin ?? '—'}</span>
+                                                        {tc.output != null || tc.expected_output != null ? (
+                                                            <div className="mt-1 text-neutral-600">Expected: <code className="text-xs">{tc.expected_output ?? tc.output ?? ''}</code></div>
+                                                        ) : null}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 

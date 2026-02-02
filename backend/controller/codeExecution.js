@@ -6,6 +6,63 @@ import { exec } from 'child_process'
 
 const execAsync = promisify(exec)
 
+/** Run an executable with stdin string; returns { stdout, stderr, code }. cwd = directory to run in. */
+function runWithStdin(exePath, stdinStr, timeoutMs = 5000, cwd) {
+  const workDir = cwd || join(exePath, '..')
+  return new Promise((resolve, reject) => {
+    const child = spawn(exePath, [], {
+      cwd: workDir,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: false
+    })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (d) => { stdout += d.toString() })
+    child.stderr.on('data', (d) => { stderr += d.toString() })
+    const timer = setTimeout(() => {
+      child.kill()
+      reject(new Error('Execution timeout'))
+    }, timeoutMs)
+    child.on('error', (err) => {
+      clearTimeout(timer)
+      reject(err)
+    })
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      resolve({ stdout, stderr, code })
+    })
+    child.stdin.write(stdinStr, (err) => {
+      if (err) {
+        clearTimeout(timer)
+        child.kill()
+        reject(err)
+        return
+      }
+      child.stdin.end()
+    })
+  })
+}
+
+/**
+ * Get machine-readable stdin from a test case for piping to program.
+ * - If testCase.stdin exists, use it (ensure newline for cin/input()).
+ * - Else if testCase.input looks like "n = 3" or "n=5", extract the number(s) for single-int problems.
+ * - Else use testCase.input as-is.
+ */
+function getStdinForTestCase(testCase) {
+  if (testCase.stdin != null && testCase.stdin !== '') {
+    const s = String(testCase.stdin).trim()
+    return s.endsWith('\n') ? s : s + '\n'
+  }
+  const input = String(testCase.input || '').trim()
+  if (!input) return ''
+  // Single integer: "n = 3", "n=5", "3", " 5 "
+  const singleNum = input.match(/\bn\s*=\s*(\d+)\b/i) || input.match(/^\s*(\d+)\s*$/)
+  if (singleNum) return singleNum[1] + '\n'
+  // Use as-is (e.g. multi-line input); ensure trailing newline for cin
+  return input.endsWith('\n') ? input : input + '\n'
+}
+
 export default class CodeExecutionController {
   constructor() {
     // Create temp directory if it doesn't exist
@@ -361,44 +418,65 @@ export default class CodeExecutionController {
 
   /**
    * Execute C code
+   * When testCases are provided, runs the binary once per test case with stdin from each test case.
    */
   async executeC(code, testCases) {
     const timestamp = Date.now()
     const fileName = `code_${timestamp}.c`
     const filePath = join(this.tempDir, fileName)
-    // On Windows, executable needs .exe extension
     const exePath = join(this.tempDir, `code_${timestamp}${process.platform === 'win32' ? '.exe' : ''}`)
 
     try {
-      // Write code to file
       writeFileSync(filePath, code)
 
-      // Compile C code
-      const compileResult = await execAsync(`gcc "${filePath}" -o "${exePath}"`, {
+      await execAsync(`gcc "${filePath}" -o "${exePath}"`, {
         timeout: 10000,
         cwd: this.tempDir
       })
 
-      // Execute compiled binary
+      if (testCases && testCases.length > 0) {
+        const testResults = []
+        let lastOutput = ''
+        for (const tc of testCases) {
+          const stdinStr = getStdinForTestCase(tc)
+          const expected = String(tc.expectedOutput ?? tc.output ?? tc.expected_output ?? '').trim()
+          try {
+            const { stdout, stderr } = await runWithStdin(exePath, stdinStr, 5000, this.tempDir)
+            const actual = (stdout || '').trim()
+            lastOutput = actual
+            const passed = actual === expected
+            testResults.push({
+              passed,
+              input: tc.input || stdinStr.trim(),
+              expected,
+              actual: actual || '(no output)',
+              error: passed ? undefined : (stderr || 'Output mismatch')
+            })
+          } catch (runErr) {
+            testResults.push({
+              passed: false,
+              input: tc.input || stdinStr.trim(),
+              expected,
+              actual: '(no output)',
+              error: runErr.message || 'Execution failed'
+            })
+          }
+        }
+        this.cleanupFiles([filePath, exePath])
+        return {
+          output: lastOutput || 'No output',
+          testResults,
+          executionTime: Date.now()
+        }
+      }
+
       const executeResult = await execAsync(`"${exePath}"`, {
         timeout: 5000,
         cwd: this.tempDir
       })
 
       const output = executeResult.stdout.trim() || 'No output'
-
-      // Cleanup - ensure both files are deleted
       this.cleanupFiles([filePath, exePath])
-
-      if (testCases && testCases.length > 0) {
-        const testResults = this.runTestCases(code, testCases, output)
-        return {
-          output,
-          testResults,
-          executionTime: Date.now()
-        }
-      }
-
       return {
         output,
         executionTime: Date.now()
@@ -414,6 +492,7 @@ export default class CodeExecutionController {
 
   /**
    * Execute C++ code
+   * When testCases are provided, runs the binary once per test case with stdin from each test case.
    */
   async executeCpp(code, testCases) {
     const timestamp = Date.now()
@@ -430,6 +509,42 @@ export default class CodeExecutionController {
         cwd: this.tempDir
       })
 
+      if (testCases && testCases.length > 0) {
+        const testResults = []
+        let lastOutput = ''
+        for (const tc of testCases) {
+          const stdinStr = getStdinForTestCase(tc)
+          const expected = String(tc.expectedOutput ?? tc.output ?? tc.expected_output ?? '').trim()
+          try {
+            const { stdout, stderr } = await runWithStdin(exePath, stdinStr, 5000, this.tempDir)
+            const actual = (stdout || '').trim()
+            lastOutput = actual
+            const passed = actual === expected
+            testResults.push({
+              passed,
+              input: tc.input || stdinStr.trim(),
+              expected,
+              actual: actual || '(no output)',
+              error: passed ? undefined : (stderr || 'Output mismatch')
+            })
+          } catch (runErr) {
+            testResults.push({
+              passed: false,
+              input: tc.input || stdinStr.trim(),
+              expected,
+              actual: '(no output)',
+              error: runErr.message || 'Execution failed'
+            })
+          }
+        }
+        this.cleanupFiles([filePath, exePath])
+        return {
+          output: lastOutput || 'No output',
+          testResults,
+          executionTime: Date.now()
+        }
+      }
+
       const executeResult = await execAsync(`"${exePath}"`, {
         timeout: 5000,
         cwd: this.tempDir
@@ -438,15 +553,6 @@ export default class CodeExecutionController {
       const output = executeResult.stdout.trim() || 'No output'
 
       this.cleanupFiles([filePath, exePath])
-
-      if (testCases && testCases.length > 0) {
-        const testResults = this.runTestCases(code, testCases, output)
-        return {
-          output,
-          testResults,
-          executionTime: Date.now()
-        }
-      }
 
       return {
         output,
@@ -463,16 +569,53 @@ export default class CodeExecutionController {
 
   /**
    * Execute Python code
+   * When testCases are provided, runs the script once per test case with stdin from each test case.
    */
   async executePython(code, testCases) {
-    return new Promise((resolve, reject) => {
-      const timeout = 5000
-      const fileName = `code_${Date.now()}.py`
-      const filePath = join(this.tempDir, fileName)
+    const timeout = 5000
+    const fileName = `code_${Date.now()}.py`
+    const filePath = join(this.tempDir, fileName)
 
-      try {
-        writeFileSync(filePath, code)
+    try {
+      writeFileSync(filePath, code)
 
+      if (testCases && testCases.length > 0) {
+        const testResults = []
+        let lastOutput = ''
+        for (const tc of testCases) {
+          const stdinStr = getStdinForTestCase(tc)
+          const expected = String(tc.expectedOutput ?? tc.output ?? tc.expected_output ?? '').trim()
+          try {
+            const { stdout, stderr } = await this.runPythonWithStdin(filePath, stdinStr, timeout)
+            const actual = (stdout || '').trim()
+            lastOutput = actual
+            const passed = actual === expected
+            testResults.push({
+              passed,
+              input: tc.input || stdinStr.trim(),
+              expected,
+              actual: actual || '(no output)',
+              error: passed ? undefined : (stderr || 'Output mismatch')
+            })
+          } catch (runErr) {
+            testResults.push({
+              passed: false,
+              input: tc.input || stdinStr.trim(),
+              expected,
+              actual: '(no output)',
+              error: runErr.message || 'Execution failed'
+            })
+          }
+        }
+        this.cleanupFiles([filePath])
+        return {
+          output: lastOutput || 'No output',
+          testResults,
+          executionTime: Date.now()
+        }
+      }
+
+      return new Promise((resolve, reject) => {
         const child = spawn('python', [filePath], {
           cwd: this.tempDir,
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -482,13 +625,8 @@ export default class CodeExecutionController {
         let stdout = ''
         let stderr = ''
 
-        child.stdout.on('data', (data) => {
-          stdout += data.toString()
-        })
-
-        child.stderr.on('data', (data) => {
-          stderr += data.toString()
-        })
+        child.stdout.on('data', (data) => { stdout += data.toString() })
+        child.stderr.on('data', (data) => { stderr += data.toString() })
 
         const timer = setTimeout(() => {
           child.kill()
@@ -499,37 +637,58 @@ export default class CodeExecutionController {
         child.on('close', (code) => {
           clearTimeout(timer)
           this.cleanupFiles([filePath])
-
           if (code !== 0) {
-            resolve({
-              output: '',
-              error: stderr || 'Execution failed'
-            })
-            return
-          }
-
-          const output = stdout.trim() || 'No output'
-
-          if (testCases && testCases.length > 0) {
-            const testResults = this.runTestCases(code, testCases, output)
-            resolve({
-              output,
-              testResults
-            })
+            resolve({ output: '', error: stderr || 'Execution failed' })
           } else {
-            resolve({ output })
+            resolve({ output: stdout.trim() || 'No output' })
           }
         })
 
-        child.on('error', (error) => {
+        child.on('error', (err) => {
           clearTimeout(timer)
           this.cleanupFiles([filePath])
-          reject(error)
+          reject(err)
         })
-      } catch (error) {
-        this.cleanupFiles([filePath])
-        reject(error)
+      })
+    } catch (error) {
+      this.cleanupFiles([filePath])
+      return {
+        output: '',
+        error: error.message || 'Execution failed'
       }
+    }
+  }
+
+  /** Run Python script with stdin; returns Promise<{ stdout, stderr }>. */
+  runPythonWithStdin(filePath, stdinStr, timeoutMs = 5000) {
+    return new Promise((resolve, reject) => {
+      const child = spawn('python', [filePath], {
+        cwd: this.tempDir,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: timeoutMs
+      })
+      let stdout = ''
+      let stderr = ''
+      child.stdout.on('data', (d) => { stdout += d.toString() })
+      child.stderr.on('data', (d) => { stderr += d.toString() })
+      const timer = setTimeout(() => {
+        child.kill()
+        reject(new Error('Execution timeout'))
+      }, timeoutMs)
+      child.on('error', reject)
+      child.on('close', (code) => {
+        clearTimeout(timer)
+        resolve({ stdout, stderr, code })
+      })
+      child.stdin.write(stdinStr, (err) => {
+        if (err) {
+          clearTimeout(timer)
+          child.kill()
+          reject(err)
+        } else {
+          child.stdin.end()
+        }
+      })
     })
   }
 
