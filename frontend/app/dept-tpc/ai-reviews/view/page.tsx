@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
 import { getApiBaseUrl } from '@/utils/api'
@@ -11,10 +11,9 @@ import { ArrowLeft, Loader2, Sparkles, RefreshCw, AlertCircle } from 'lucide-rea
 import { useSearchParams } from 'next/navigation'
 
 /**
- * Dept TPC view a single AI code review (department students only).
- * Route: /dept-tpc/ai-reviews/view?submissionId=...
+ * Inner content that uses useSearchParams – must be wrapped in Suspense.
  */
-export default function DeptTPCAIReviewViewPage() {
+function DeptTPCAIReviewViewContent() {
   const searchParams = useSearchParams()
   const submissionId = searchParams.get('submissionId')
 
@@ -159,5 +158,26 @@ export default function DeptTPCAIReviewViewPage() {
         </div>
       </div>
     </DepartmentTPCLayout>
+  )
+}
+
+/**
+ * Dept TPC view a single AI code review (department students only).
+ * Route: /dept-tpc/ai-reviews/view?submissionId=...
+ */
+export default function DeptTPCAIReviewViewPage() {
+  return (
+    <Suspense
+      fallback={
+        <DepartmentTPCLayout>
+          <div className="h-[calc(100vh-5rem)] flex flex-col items-center justify-center gap-3 text-neutral-500">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p>Loading...</p>
+          </div>
+        </DepartmentTPCLayout>
+      }
+    >
+      <DeptTPCAIReviewViewContent />
+    </Suspense>
   )
 }
