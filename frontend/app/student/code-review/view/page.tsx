@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getAuthHeader } from '@/utils/auth'
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { CodeReviewContent } from '@/components/coding/CodeReviewContent'
 import { ArrowLeft, Loader2, Sparkles, RefreshCw, AlertCircle } from 'lucide-react'
 
-export default function CodeReviewViewPage() {
+function CodeReviewViewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const submissionId = searchParams.get('submissionId')
@@ -150,5 +150,22 @@ export default function CodeReviewViewPage() {
         </div>
       </div>
     </StudentLayout>
+  )
+}
+
+export default function CodeReviewViewPage() {
+  return (
+    <Suspense
+      fallback={
+        <StudentLayout>
+          <div className="h-[calc(100vh-5rem)] flex flex-col items-center justify-center gap-3 text-neutral-500">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p>Loading...</p>
+          </div>
+        </StudentLayout>
+      }
+    >
+      <CodeReviewViewContent />
+    </Suspense>
   )
 }
