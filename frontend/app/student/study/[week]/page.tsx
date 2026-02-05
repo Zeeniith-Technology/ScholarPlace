@@ -55,8 +55,11 @@ function WeekStudyContent() {
   const params = useParams()
   const searchParams = useSearchParams()
 
-  // Get week number from URL params
-  const weekNum = parseInt(params?.week as string) || 1
+  // Get week number from URL params (e.g. "week-2" -> 2, "2" -> 2)
+  const weekParam = (params?.week as string) || ''
+  const weekNum = weekParam.startsWith('week-')
+    ? parseInt(weekParam.replace(/^week-/, ''), 10) || 1
+    : parseInt(weekParam, 10) || 1
 
   // Week 1 has pre-week, Week 2+ starts from day-1
   const defaultDay = weekNum === 1 ? 'pre-week' : 'day-1'
@@ -477,7 +480,7 @@ function WeekStudyContent() {
     const totalTests = 1
     const totalItems = totalDays + totalAssignments + totalTests
 
-    const daysCompleted = dbProgress.days_completed?.length || 0
+    const daysCompleted = (dbProgress?.verified_days ?? dbProgress?.days_completed)?.length || 0
     const assignmentsCompleted = dbProgress.assignments_completed || 0
     const testsCompleted = dbProgress.tests_completed || 0
 
@@ -1119,7 +1122,8 @@ function WeekStudyContent() {
   }
 
   const currentDay = days[currentDayIndex]
-  const isDayCompleted = dbProgress?.days_completed?.includes(selectedDay) || false
+  const completedDays = (dbProgress?.verified_days ?? dbProgress?.days_completed) || []
+  const isDayCompleted = completedDays.includes(selectedDay) || false
 
   return (
     <StudentLayout>
@@ -1151,7 +1155,7 @@ function WeekStudyContent() {
 
               <div className="space-y-1">
                 {days.map((day, idx) => {
-                  const isCompleted = dbProgress?.days_completed?.includes(day.id) || false
+                  const isCompleted = completedDays.includes(day.id) || false
                   const isActive = selectedDay === day.id
 
                   return (

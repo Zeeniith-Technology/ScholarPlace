@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -29,6 +30,7 @@ import { getAuthHeader } from '@/utils/auth'
  * Route: /student/tests
  */
 export default function StudentTestsPage() {
+  const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<'all' | 'upcoming' | 'completed' | 'locked'>('all')
   const [isMounted, setIsMounted] = useState(false)
   const [tests, setTests] = useState<any[]>([])
@@ -129,7 +131,7 @@ export default function StudentTestsPage() {
 
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.data) {
+        if (data.success && data.data && data.data.length > 0) {
           // Transform API data to match UI format
           const transformedTests = data.data.map((exam: any, index: number) => {
             const examDate = exam.exam_date ? new Date(exam.exam_date) : new Date()
@@ -185,7 +187,55 @@ export default function StudentTestsPage() {
             averageScore: avgScore,
           })
         } else {
-          setTests([])
+          // No exams in DB: show fallback – daily tests of current week + Capstone + Weekly Aptitude
+          const authHeader = getAuthHeader()
+          let currentWeek = 1
+          if (authHeader) {
+            try {
+              const summaryRes = await fetch(`${apiBaseUrl}/student-progress/summary`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                body: JSON.stringify({}),
+              })
+              if (summaryRes.ok) {
+                const summaryData = await summaryRes.json()
+                if (summaryData.success && summaryData.data?.currentWeek != null) {
+                  currentWeek = Math.min(6, Math.max(1, summaryData.data.currentWeek))
+                }
+              }
+            } catch (_) { /* keep currentWeek 1 */ }
+          }
+          const baseDate = new Date()
+          baseDate.setDate(baseDate.getDate() + 1)
+          const dateStr = baseDate.toISOString().split('T')[0]
+          const fallbackTests: any[] = []
+          // Daily tests for current week (Day 1–5) – link to Learning for that day
+          const studyBase = currentWeek === 1 ? '/student/study/week-1' : `/student/study/${currentWeek}`
+          for (let d = 1; d <= 5; d++) {
+            fallbackTests.push({
+              id: `daily-${currentWeek}-day-${d}`,
+              title: `Week ${currentWeek} Day ${d} Test`,
+              type: 'daily',
+              date: dateStr,
+              time: '—',
+              modules: ['DSA & Aptitude'],
+              difficulty: 'Mixed',
+              status: 'upcoming',
+              duration: '—',
+              questions: 0,
+              isWeeklyTest: false,
+              eligibility: null,
+              href: `${studyBase}?day=day-${d}`,
+            })
+          }
+          // Capstone + Weekly Aptitude
+          fallbackTests.push(
+            { id: 'capstone-fallback', title: `Week ${currentWeek} Capstone Project`, type: 'weekly', date: dateStr, time: '—', modules: ['DSA'], difficulty: 'Coding', status: 'upcoming', duration: '—', questions: 2, isWeeklyTest: true, eligibility: null, href: `/student/capstone-test/week-${currentWeek}` },
+            { id: 'aptitude-fallback', title: `Week ${currentWeek} Aptitude Test`, type: 'weekly', date: dateStr, time: '—', modules: ['Aptitude'], difficulty: 'Mixed', status: 'upcoming', duration: '60 minutes', questions: 50, isWeeklyTest: true, eligibility, href: `/student/aptitude/weekly/${currentWeek}` },
+          )
+          setTests(fallbackTests)
+          setStats({ completed: 0, upcoming: fallbackTests.length, locked: 0, averageScore: 0 })
         }
       } else {
         setTests([])
@@ -362,7 +412,7 @@ export default function StudentTestsPage() {
                             }
                             className="text-xs"
                           >
-                            {test.type === 'weekly' ? 'Weekly' : 'Mini-Test'}
+                            {test.type === 'weekly' ? 'Weekly' : test.type === 'daily' ? 'Daily' : 'Mini-Test'}
                           </Badge>
                           {test.status === 'locked' && (
                             <Badge variant="default" className="text-xs">
@@ -455,12 +505,27 @@ export default function StudentTestsPage() {
                         View Results
                       </Button>
                     )}
-                    {test.status === 'upcoming' && (
+                    {test.status === 'upcoming' && (test.href ? (
+                      <Button
+                        variant="primary"
+                        className="text-xs sm:text-sm"
+                        onClick={() => {
+                          if (test.href.includes('capstone-test')) {
+                            window.open(test.href, 'Capstone', 'width=1200,height=800,scrollbars=yes,resizable=yes')
+                          } else {
+                            router.push(test.href)
+                          }
+                        }}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Test
+                      </Button>
+                    ) : (
                       <Button variant="primary" className="text-xs sm:text-sm">
                         <Play className="w-4 h-4 mr-2" />
                         Start Test
                       </Button>
-                    )}
+                    ))}
                     {test.status === 'locked' && (
                       <div className="flex items-center text-xs text-neutral-light">
                         <AlertCircle className="w-4 h-4 mr-1" />

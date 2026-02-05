@@ -19,6 +19,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  Hash,
+  X,
 } from 'lucide-react'
 
 interface ProfileData {
@@ -37,13 +41,6 @@ interface ProfileData {
   updatedAt: string
 }
 
-interface ProfileStats {
-  testsCompleted: number
-  overallProgress: number
-  dayStreak: number
-  currentRank: number
-}
-
 /**
  * Student Profile Page
  * User profile information and settings
@@ -55,15 +52,11 @@ export default function StudentProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [currentPasswordVerified, setCurrentPasswordVerified] = useState(false)
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
-  const [stats, setStats] = useState<ProfileStats>({
-    testsCompleted: 0,
-    overallProgress: 0,
-    dayStreak: 7,
-    currentRank: 0,
-  })
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -78,7 +71,6 @@ export default function StudentProfilePage() {
     console.log('[Profile] Current user from token:', currentUser)
 
     fetchProfile()
-    fetchStats()
   }, [])
 
   const fetchProfile = async () => {
@@ -124,43 +116,53 @@ export default function StudentProfilePage() {
     }
   }
 
-  const fetchStats = async () => {
+  const resetPasswordSection = () => {
+    setShowPasswordChange(false)
+    setCurrentPasswordVerified(false)
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    setError(null)
+  }
+
+  const handleVerifyCurrentPassword = async () => {
+    if (!passwordData.currentPassword.trim()) {
+      setError('Enter your current password to continue')
+      return
+    }
     try {
+      setIsVerifyingPassword(true)
+      setError(null)
+      setSuccess(null)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-
       if (!authHeader) {
-        console.error('[Profile] No auth token found')
+        setError('Authentication required. Please login again.')
         return
       }
-
-      // Fetch progress summary for statistics
-      const progressResponse = await fetch(`${apiBaseUrl}/student-progress/summary`, {
+      const response = await fetch(`${apiBaseUrl}/profile/verify-password`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ currentPassword: passwordData.currentPassword }),
       })
-
-      if (progressResponse.ok) {
-        const progressData = await progressResponse.json()
-        if (progressData.success && progressData.data) {
-          const progress = progressData.data
-          setStats({
-            testsCompleted: progress.totalPracticeTests || 0,
-            overallProgress: progress.totalWeeks > 0
-              ? Math.round((progress.weeksCompleted / progress.totalWeeks) * 100)
-              : 0,
-            dayStreak: 7, // TODO: Calculate from last accessed dates
-            currentRank: 0, // TODO: Calculate from all students
-          })
-        }
+      const data = await response.json()
+      const errorMessage =
+        data?.message ||
+        (typeof data?.error === 'string' ? data.error : data?.error?.message) ||
+        'Current password is incorrect'
+      if (response.ok && data.success) {
+        setCurrentPasswordVerified(true)
+        setError(null)
+      } else {
+        setError(errorMessage)
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      console.error('Error verifying password:', error)
+      setError('Failed to verify password. Please try again.')
+    } finally {
+      setIsVerifyingPassword(false)
     }
   }
 
@@ -206,12 +208,7 @@ export default function StudentProfilePage() {
         const data = await response.json()
         if (data.success) {
           setSuccess('Password changed successfully!')
-          setPasswordData({
-            currentPassword: '',
-            newPassword: '',
-            confirmPassword: '',
-          })
-          setShowPasswordChange(false)
+          resetPasswordSection()
           setTimeout(() => setSuccess(null), 3000)
         } else {
           setError(data.message || 'Failed to change password')
@@ -261,255 +258,270 @@ export default function StudentProfilePage() {
   return (
     <StudentLayout>
       <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-6">
-        {/* Success/Error Messages */}
+        {/* Toast-like success/error messages */}
         {success && (
-          <Card className="bg-green-500/10 border-green-500/30">
-            <div className="p-4 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <p className="text-green-600 font-medium">{success}</p>
+          <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/30 shadow-lg flex items-center justify-between gap-4 p-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <p className="text-emerald-800 font-medium">{success}</p>
             </div>
-          </Card>
+            <button
+              onClick={() => setSuccess(null)}
+              className="p-1 rounded-lg hover:bg-emerald-500/20 text-emerald-700"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
         {error && (
-          <Card className="bg-red-500/10 border-red-500/30">
-            <div className="p-4 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <p className="text-red-600 font-medium">{error}</p>
+          <div className="rounded-xl bg-red-500/15 border border-red-500/30 shadow-lg flex items-center justify-between gap-4 p-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <p className="text-red-800 font-medium">{error}</p>
             </div>
-          </Card>
+            <button
+              onClick={() => setError(null)}
+              className="p-1 rounded-lg hover:bg-red-500/20 text-red-700"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
 
-        {/* Debug Info - Show current user from token (client-only to avoid hydration mismatch) */}
+        {/* Debug (dev only) */}
         {process.env.NODE_ENV === 'development' && isMounted && (
-          <Card className="bg-yellow-50/50 border-yellow-200/50">
+          <Card className="bg-amber-50/80 border-amber-200/60">
             <div className="p-4">
-              <p className="text-xs font-semibold text-yellow-800 mb-2">🔍 Debug Info (Development Only)</p>
-              <div className="text-xs text-yellow-700 space-y-1">
-                <p>Current User ID from Token: <strong>{getCurrentUserFromToken()?.id || 'Not found'}</strong></p>
-                <p>Current Email from Token: <strong>{getCurrentUserFromToken()?.email || 'Not found'}</strong></p>
-                <p>Current Role from Token: <strong>{getCurrentUserFromToken()?.role || 'Not found'}</strong></p>
-                <p className="text-yellow-600 mt-2">
-                  💡 If you see old data, click &quot;Logout&quot; and login again with your new account.
-                </p>
+              <p className="text-xs font-semibold text-amber-800 mb-2">🔍 Debug (Development)</p>
+              <div className="text-xs text-amber-700 space-y-1">
+                <p>User ID: <strong>{getCurrentUserFromToken()?.id || '—'}</strong></p>
+                <p>Email: <strong>{getCurrentUserFromToken()?.email || '—'}</strong></p>
+                <p>Role: <strong>{getCurrentUserFromToken()?.role || '—'}</strong></p>
+                <p className="text-amber-600 mt-2">Log out and sign in again if data looks stale.</p>
               </div>
             </div>
           </Card>
         )}
 
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-gray-900 mb-2">
-              Profile Settings
-            </h1>
-            <p className="text-gray-600">
-              Manage your profile information and preferences
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowPasswordChange(!showPasswordChange)}
-              className="flex items-center justify-center gap-2 min-w-[140px] px-5 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow-md shrink-0"
-            >
-              <Lock className="w-4 h-4 shrink-0" />
-              Change Password
-            </button>
-            <button
-              onClick={() => {
-                clearAuth()
-                window.location.href = '/auth/login'
-              }}
-              className="flex items-center justify-center gap-2 min-w-[140px] px-5 py-2.5 h-11 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow-md shrink-0"
-            >
-              <LogOut className="w-4 h-4 shrink-0" />
-              Logout
-            </button>
-          </div>
-        </div>
-
-        {/* Password Change Section */}
-        {showPasswordChange && (
-          <Card className="border-2 border-primary/20">
-            <div className="p-6">
-              <h2 className="text-xl font-heading font-bold text-neutral mb-4 flex items-center gap-2">
-                <Lock className="w-5 h-5 text-primary" />
-                Change Password
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral mb-2">
-                    Current Password
-                  </label>
-                  <Input
-                    type="password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                    placeholder="Enter current password"
-                  />
+        {/* Hero / Profile header with quick stats */}
+        <Card className="overflow-hidden p-0 border-0 shadow-xl bg-gradient-to-br from-primary/10 via-background-surface to-secondary/10">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div className="relative shrink-0">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/25 ring-4 ring-white/80">
+                  <span className="text-3xl sm:text-4xl font-heading font-bold text-white">
+                    {profileData.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral mb-2">
-                    New Password
-                  </label>
-                  <Input
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    placeholder="Enter new password (min 6 characters)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral mb-2">
-                    Confirm New Password
-                  </label>
-                  <Input
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    placeholder="Confirm new password"
-                  />
-                </div>
-                <div className="flex gap-2">
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl font-heading font-bold text-neutral mb-1">
+                  {profileData.name}
+                </h1>
+                <p className="text-neutral-light mb-2">
+                  {profileData.semester ? `${profileData.semester} Semester` : 'Student'}
+                  {profileData.department && ` · ${profileData.department}`}
+                </p>
+                <Badge variant="secondary" className="mb-4">
+                  {profileData.role}
+                </Badge>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-4">
                   <Button
                     variant="primary"
-                    onClick={handlePasswordChange}
-                    disabled={isChangingPassword}
+                    size="sm"
+                    onClick={() => setShowPasswordChange(!showPasswordChange)}
+                    className="gap-2"
                   >
-                    {isChangingPassword ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Changing...
-                      </>
-                    ) : (
-                      'Change Password'
-                    )}
+                    <Lock className="w-4 h-4" />
+                    Change Password
                   </Button>
-                  <Button variant="secondary" onClick={() => {
-                    setShowPasswordChange(false)
-                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-                    setError(null)
-                  }}>
-                    Cancel
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      clearAuth()
+                      window.location.href = '/auth/login'
+                    }}
+                    className="gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
                   </Button>
                 </div>
               </div>
             </div>
-          </Card>
-        )}
+          </div>
+        </Card>
 
-        {/* Profile Picture Section */}
-        <Card>
-          <div className="flex flex-col items-center text-center py-6">
-            <div className="relative mb-4">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-4xl font-heading font-bold text-white">
-                  {profileData.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            </div>
-            <h2 className="text-2xl font-heading font-bold text-neutral mb-1">
-              {profileData.name}
+        {/* Collapsible password change */}
+        <Card className={showPasswordChange ? 'border-2 border-primary/25' : ''}>
+          <button
+            type="button"
+            onClick={() => setShowPasswordChange(!showPasswordChange)}
+            className="w-full flex items-center justify-between gap-4 p-2 -m-2 rounded-xl hover:bg-neutral-light/5 transition-colors text-left"
+          >
+            <h2 className="text-lg font-heading font-bold text-neutral flex items-center gap-2">
+              <Lock className="w-5 h-5 text-primary" />
+              Change Password
             </h2>
-            <p className="text-neutral-light">
-              {profileData.semester ? `${profileData.semester} Semester` : 'Student'}
-              {profileData.department && ` • ${profileData.department}`}
-            </p>
-            <Badge variant="secondary" className="mt-2">
-              {profileData.role}
-            </Badge>
-          </div>
+            {showPasswordChange ? (
+              <ChevronUp className="w-5 h-5 text-neutral-light" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-neutral-light" />
+            )}
+          </button>
+          {showPasswordChange && (
+            <div className="mt-6 pt-6 border-t border-neutral-light/20 space-y-4 animate-fade-in">
+              {error && (
+                <div className="rounded-lg bg-red-500/15 border border-red-500/30 flex items-center gap-3 p-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <p className="text-sm font-medium text-red-800 flex-1">{error}</p>
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="p-1 rounded hover:bg-red-500/20 text-red-700"
+                    aria-label="Dismiss"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              {!currentPasswordVerified ? (
+                <>
+                  <p className="text-sm text-neutral-light mb-2">
+                    Enter your current password to continue. You can only change your password after verifying it.
+                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral mb-1.5">Current password</label>
+                    <Input
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      placeholder="Enter your current password"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={handleVerifyCurrentPassword}
+                      disabled={isVerifyingPassword || !passwordData.currentPassword.trim()}
+                      className="gap-2"
+                    >
+                      {isVerifyingPassword ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Verifying…
+                        </>
+                      ) : (
+                        'Verify & continue'
+                      )}
+                    </Button>
+                    <Button variant="ghost" onClick={resetPasswordSection}>
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-secondary font-medium flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Current password verified. Enter your new password below.
+                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral mb-1.5">New password (min 6 characters)</label>
+                    <Input
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral mb-1.5">Confirm new password</label>
+                    <Input
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={handlePasswordChange}
+                      disabled={isChangingPassword}
+                      className="gap-2"
+                    >
+                      {isChangingPassword ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Changing…
+                        </>
+                      ) : (
+                        'Update password'
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setCurrentPasswordVerified(false)
+                        setPasswordData({ ...passwordData, newPassword: '', confirmPassword: '' })
+                      }}
+                    >
+                      Back
+                    </Button>
+                    <Button variant="ghost" onClick={resetPasswordSection}>
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </Card>
 
-        {/* Personal Information */}
+        {/* Personal information – icon-led rows */}
         <Card>
-          <h2 className="text-xl font-heading font-bold text-neutral mb-6">
-            Personal Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                <User className="w-4 h-4 inline mr-2" />
-                Full Name
-              </label>
-              <p className="text-neutral">{profileData.name}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                <Mail className="w-4 h-4 inline mr-2" />
-                Email
-              </label>
-              <p className="text-neutral">{profileData.email}</p>
-              <p className="text-xs text-neutral-light mt-1">Email cannot be changed</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                <GraduationCap className="w-4 h-4 inline mr-2" />
-                College Name
-              </label>
-              <p className="text-neutral">{profileData.college_name || 'Not set'}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Semester
-              </label>
-              <p className="text-neutral">{profileData.semester ? `${profileData.semester} Semester` : 'Not set'}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                Enrollment Number
-              </label>
-              <p className="text-neutral">{profileData.enrollment_number || 'Not set'}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                <Phone className="w-4 h-4 inline mr-2" />
-                Phone Number
-              </label>
-              <p className="text-neutral">{profileData.contact_number || 'Not set'}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral mb-2">
-                Department
-              </label>
-              <p className="text-neutral">{profileData.department || 'Not set'}</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Account Statistics */}
-        <Card>
-          <h2 className="text-xl font-heading font-bold text-neutral mb-6">
-            Account Statistics
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-background-elevated rounded-lg">
-              <p className="text-2xl font-heading font-bold text-primary mb-1">{stats.testsCompleted}</p>
-              <p className="text-sm text-neutral-light">Tests Completed</p>
-            </div>
-            <div className="text-center p-4 bg-background-elevated rounded-lg">
-              <p className="text-2xl font-heading font-bold text-secondary mb-1">{stats.overallProgress}%</p>
-              <p className="text-sm text-neutral-light">Overall Progress</p>
-            </div>
-            <div className="text-center p-4 bg-background-elevated rounded-lg">
-              <p className="text-2xl font-heading font-bold text-accent mb-1">{stats.dayStreak}</p>
-              <p className="text-sm text-neutral-light">Day Streak</p>
-            </div>
-            <div className="text-center p-4 bg-background-elevated rounded-lg">
-              <p className="text-2xl font-heading font-bold text-primary mb-1">
-                {stats.currentRank > 0 ? `#${stats.currentRank}` : 'N/A'}
-              </p>
-              <p className="text-sm text-neutral-light">Current Rank</p>
-            </div>
+          <h2 className="text-xl font-heading font-bold text-neutral mb-5">Personal information</h2>
+          <div className="space-y-0 divide-y divide-neutral-light/15">
+            <InfoRow icon={User} label="Full name" value={profileData.name} />
+            <InfoRow icon={Mail} label="Email" value={profileData.email} sub="Email cannot be changed" />
+            <InfoRow icon={GraduationCap} label="College" value={profileData.college_name || 'Not set'} />
+            <InfoRow icon={Calendar} label="Semester" value={profileData.semester ? `${profileData.semester} Semester` : 'Not set'} />
+            <InfoRow icon={Hash} label="Enrollment number" value={profileData.enrollment_number || 'Not set'} />
+            <InfoRow icon={Phone} label="Phone" value={profileData.contact_number || 'Not set'} />
+            <InfoRow icon={BookOpen} label="Department" value={profileData.department || 'Not set'} />
           </div>
         </Card>
       </div>
     </StudentLayout>
   )
 }
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  value: string
+  sub?: string
+}) {
+  return (
+    <div className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+        <Icon className="w-5 h-5 text-primary" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-neutral-light">{label}</p>
+        <p className="text-neutral font-medium mt-0.5">{value}</p>
+        {sub && <p className="text-xs text-neutral-light mt-1">{sub}</p>}
+      </div>
+    </div>
+  )
+}
+

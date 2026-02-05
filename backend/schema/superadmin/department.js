@@ -9,7 +9,8 @@ const department = {
     department_tpc_id: { type: String }, // TPC ID/Email for department TPC login
     department_tpc_password: { type: String }, // TPC Password (will be hashed when creating user)
     department_tpc_contact: { type: String }, // TPC Contact Number
-    department_college_id: { type: String }, // Reference to college (for creating TPC user)
+    department_college_id: { type: String }, // Reference to college (tblCollage._id)
+    collage_name: { type: String }, // College name for display (set when linked to college)
     // created_at: Auto-added by executeData
     // updated_at: Auto-added by executeData
     deleted: { type: Boolean, default: false }, // For soft delete

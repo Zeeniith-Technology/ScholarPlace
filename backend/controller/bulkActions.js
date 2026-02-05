@@ -142,38 +142,42 @@ class BulkActionsController {
                 return next();
             }
 
-            // Get user role
-            const personRes = await fetchData('tblPersonMaster', {}, { _id: userId });
+            // Get user role + tenant (single source of truth: tblPersonMaster)
+            const personRes = await fetchData(
+                'tblPersonMaster',
+                { person_role: 1, person_collage_id: 1, department_id: 1, department: 1, person_deleted: 1 },
+                { _id: userId, person_deleted: false }
+            );
             if (!personRes.success || !personRes.data || personRes.data.length === 0) {
                 res.locals.responseData = { success: false, status: 404, message: 'User not found' };
                 return next();
             }
 
-            const role = personRes.data[0].person_role;
-            let filter = {};
+            const me = personRes.data[0];
+            const role = (me.person_role || '').toString();
+            const myCollegeId = me.person_collage_id?.toString?.() || me.person_collage_id || null;
+            const myDeptId = me.department_id?.toString?.() || me.department_id || null;
 
-            // If DeptTPC, filter by department
-            if (role === 'DeptTPC') {
-                const deptTPC = await fetchData('tblDeptTPC', {}, { person_id: userId });
-                if (deptTPC.success && deptTPC.data && deptTPC.data.length > 0) {
-                    filter.person_department = deptTPC.data[0].department_id;
-                }
-            } else if (role === 'TPC') {
-                // TPC can see all students in their college
-                const tpc = await fetchData('tblTPC', {}, { person_id: userId });
-                if (tpc.success && tpc.data && tpc.data.length > 0) {
-                    filter.person_collage = tpc.data[0].college_id;
-                }
+            // Build tenant-safe student filter (use existing keys only)
+            const studentFilter = {
+                person_deleted: false,
+                person_role: { $regex: /^student$/i },
+                ...(myCollegeId ? { person_collage_id: myCollegeId } : {}),
+            };
+            // DeptTPC: restrict to their department by default
+            if (role.toLowerCase() === 'depttpc' && myDeptId) {
+                studentFilter.department_id = myDeptId;
             }
-
-            // Additional filter by department if provided
+            // Optional extra department filter from request (TPC may filter by dept)
             if (department_id) {
-                filter.person_department = department_id;
+                studentFilter.department_id = department_id;
             }
 
-            // Fetch students
-            filter.person_role = 'Student';
-            const studentsRes = await fetchData('tblPersonMaster', {}, filter);
+            const studentsRes = await fetchData(
+                'tblPersonMaster',
+                { _id: 1, person_name: 1, person_email: 1, person_rollno: 1, enrollment_number: 1, department_id: 1, person_collage_id: 1, contact_number: 1, created_at: 1, createdAt: 1 },
+                studentFilter
+            );
 
             if (!studentsRes.success || !studentsRes.data) {
                 res.locals.responseData = { success: false, status: 500, message: 'Failed to fetch students' };
@@ -184,9 +188,23 @@ class BulkActionsController {
 
             // Fetch additional data (progress, departments)
             const studentsWithDetails = await Promise.all(students.map(async (student) => {
-                const progressRes = await fetchData('tblStudentProgress', {}, { student_id: student._id.toString() });
-                const deptRes = student.person_department
-                    ? await fetchData('tblDepartment', {}, { _id: student.person_department })
+                const sid = student._id?.toString?.() || student._id;
+                const sCollege = student.person_collage_id?.toString?.() || student.person_collage_id || myCollegeId;
+                const sDept = student.department_id?.toString?.() || student.department_id || null;
+
+                // Tenant confirmation on progress (new fields)
+                const progressRes = await fetchData(
+                    'tblStudentProgress',
+                    {},
+                    {
+                        student_id: sid,
+                        ...(sCollege ? { college_id: sCollege } : {}),
+                        ...(sDept ? { department_id: sDept } : {}),
+                    }
+                );
+
+                const deptRes = sDept
+                    ? await fetchData('tblDepartments', { department_name: 1, department_code: 1 }, { _id: sDept, deleted: false })
                     : { success: false };
 
                 return {
@@ -195,13 +213,16 @@ class BulkActionsController {
                     email: student.person_email,
                     roll_number: student.person_rollno || '',
                     department: deptRes.success && deptRes.data && deptRes.data.length > 0
-                        ? deptRes.data[0].department_name
+                        ? (deptRes.data[0].department_name || deptRes.data[0].department_code)
                         : 'N/A',
-                    phone: student.person_phone || '',
+                    phone: student.contact_number || '',
                     total_progress: progressRes.success && progressRes.data && progressRes.data.length > 0
                         ? progressRes.data.length
                         : 0,
-                    created_at: student.created_at || new Date()
+                    created_at: (() => {
+                        const t = student.created_at || student.createdAt;
+                        return t ? (t instanceof Date ? t.toISOString() : t) : new Date().toISOString();
+                    })()
                 };
             }));
 

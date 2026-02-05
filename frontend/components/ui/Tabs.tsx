@@ -10,6 +10,8 @@ interface TabItem {
   name: string
   href: string
   icon: LucideIcon
+  /** Optional full name for tooltip when label is shortened */
+  title?: string
 }
 
 interface TabsProps {
@@ -29,6 +31,7 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
   useEffect(() => {
     const index = items.findIndex(item => {
       if (item.href === pathname) return true
+      if (item.href === '/student/code-review' && pathname.startsWith('/student/code-review')) return true
       // Study Help: own section, must not be treated as Learning
       if (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) return true
       // Learning: /student/study and sub-routes, but NOT /student/study-help
@@ -118,6 +121,7 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
       {items.map((item, index) => {
         const Icon = item.icon
         const isActive = pathname === item.href ||
+          (item.href === '/student/code-review' && pathname.startsWith('/student/code-review')) ||
           (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) ||
           (item.href === '/student/coding' && pathname.startsWith('/student/coding')) ||
           (item.href === '/student/study' && (
@@ -129,6 +133,7 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
           <Link
             key={item.href}
             href={item.href}
+            title={item.title ?? item.name}
             ref={(el) => {
               tabRefs.current[index] = el
             }}
@@ -154,7 +159,7 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
                 isActive ? 'text-primary' : 'text-inherit opacity-80 group-hover:opacity-100'
               )}
             />
-            <span className={cn(isPremium ? 'font-semibold' : 'font-medium', isActive && isPremium && 'text-primary')}>
+            <span className={cn('shrink-0', isPremium ? 'font-semibold' : 'font-medium', isActive && isPremium && 'text-primary')}>
               {item.name}
             </span>
           </Link>

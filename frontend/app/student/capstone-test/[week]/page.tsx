@@ -17,12 +17,15 @@ import {
     XCircle,
     Loader2,
     Lock,
-    Terminal
+    Terminal,
+    Sparkles
 } from 'lucide-react'
+import { CodeReviewDisplay } from '@/components/coding/CodeReviewDisplay'
 
 
 interface CodingProblem {
     _id: string
+    question_id?: string
     title: string
     description?: string
     problem_statement?: string | any
@@ -31,7 +34,7 @@ interface CodingProblem {
     constraints?: string[]
     function_signature?: string
     test_cases?: any[]
-    difficulty: string // Restored
+    difficulty: string
     status?: 'pending' | 'passed' | 'failed'
 }
 
@@ -48,12 +51,41 @@ export default function CapstoneTestPage() {
     const [timeLeft, setTimeLeft] = useState(3600) // 1 Hour default
     const [warningCount, setWarningCount] = useState(0)
     const [selectedLanguage, setSelectedLanguage] = useState<'javascript' | 'python' | 'cpp' | 'c'>('cpp')
-    const [canSubmit, setCanSubmit] = useState(false)
     const [showModal, setShowModal] = useState(false)
+    const [isSubmittingCapstone, setIsSubmittingCapstone] = useState(false)
     const [modalContent, setModalContent] = useState({ title: '', message: '', type: 'info' as 'info' | 'success' | 'error' })
+    // Persist code per problem so switching problems doesn't lose code
+    const [codeByProblemId, setCodeByProblemId] = useState<Record<string, string>>({})
+    // Track which problems have passed all test cases (required before final submit)
+    const [problemPassedState, setProblemPassedState] = useState<Record<string, boolean>>({})
+    // After capstone submit: submission_id per problem (for "View code review")
+    const [submissionIdByProblemKey, setSubmissionIdByProblemKey] = useState<Record<string, string>>({})
+    const [showCodeReviewModal, setShowCodeReviewModal] = useState(false)
+    const [codeReviewSubmissionId, setCodeReviewSubmissionId] = useState<string | null>(null)
 
     // Timer Ref
     const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+    const getDefaultCode = useCallback((problem: CodingProblem) => {
+        const sig = problem.function_signature || ''
+        if (selectedLanguage === 'cpp') {
+            return `#include <iostream>\n#include <vector>\n#include <string>\n\nusing namespace std;\n\n${sig} {\n    // Write your solution here\n    \n}\n\nint main() {\n    // You can test your function here\n    return 0;\n}`
+        }
+        if (selectedLanguage === 'c') {
+            return `#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n// ${sig}\n\nvoid solve() {\n    // Write your solution here\n}\n\nint main() {\n    solve();\n    return 0;\n}`
+        }
+        if (selectedLanguage === 'python') {
+            return `import sys\nimport math\n\n# ${sig}\n\ndef solve():\n    # Write your solution here\n    pass\n\nif __name__ == "__main__":\n    solve()`
+        }
+        if (selectedLanguage === 'javascript') {
+            return `/**\n * ${sig}\n */\n\nfunction solve() {\n    // Write your solution here\n}\n\n// console.log(solve());`
+        }
+        return sig
+    }, [selectedLanguage])
+
+    const allProblemsPassed = problems.length > 0 && problems.every(p => problemPassedState[p._id])
+    const allProblemsHaveCode = problems.length > 0 && problems.every(p => ((codeByProblemId[p._id] ?? '').trim().length > 0))
+    const canSubmitCapstone = allProblemsPassed && allProblemsHaveCode
 
     // Check Eligibility & Block Status
     const checkStatus = useCallback(async () => {
@@ -300,24 +332,107 @@ export default function CapstoneTestPage() {
                 <div className={`text-2xl font-mono font-bold ${timeLeft < 300 ? 'text-red-400 animate-pulse' : 'text-primary'}`}>
                     {formatTime(timeLeft)}
                 </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white/70 hover:text-white"
-                    onClick={() => {
-                        if (confirm("Are you sure you want to exit? Your progress may be lost.")) {
-                            document.exitFullscreen().catch(() => { })
-                            // If opened in a new window/popup, close it. Otherwise, navigate back.
-                            if (window.opener) {
-                                window.close();
-                            } else {
-                                router.push(`/student/study/week-${weekNum}`)
+                <div className="flex items-center gap-2">
+                    <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+                        disabled={!canSubmitCapstone || isSubmittingCapstone}
+                        onClick={async () => {
+                            if (!canSubmitCapstone || isSubmittingCapstone) return
+                            if (!confirm('Submit capstone? Both solutions will be saved. You cannot change them after submission.')) return
+                            setIsSubmittingCapstone(true)
+                            try {
+                                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+                                const authHeader = getAuthHeader()
+                                if (!authHeader) {
+                                    setModalContent({ title: 'Error', message: 'Authentication required.', type: 'error' })
+                                    setShowModal(true)
+                                    return
+                                }
+                                // 1) Submit code for each problem (saves submission + triggers AI review when passed)
+                                const submitPayloads = problems.map((p) => ({
+                                    problemId: p.question_id || p._id,
+                                    solution: codeByProblemId[p._id] ?? '',
+                                    language: selectedLanguage,
+                                }))
+                                const submitResults = await Promise.all(
+                                    submitPayloads.map((payload) =>
+                                        fetch(`${apiBaseUrl}/coding-problems/submit`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                                            body: JSON.stringify(payload),
+                                        }).then((r) => r.json())
+                                    )
+                                )
+                                const submissionIds: Record<string, string> = {}
+                                submitResults.forEach((res: any, i: number) => {
+                                    const p = problems[i]
+                                    if (p && res.submission_id) {
+                                        const sid = typeof res.submission_id === 'string' ? res.submission_id : String(res.submission_id)
+                                        submissionIds[p._id] = sid
+                                    }
+                                })
+                                setSubmissionIdByProblemKey(submissionIds)
+                                // 2) Mark each problem as completed for progress
+                                const completeResults = await Promise.all(
+                                    problems.map((p) =>
+                                        fetch(`${apiBaseUrl}/student-progress/complete-coding-problem`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                                            body: JSON.stringify({ week: weekNum, problem_id: p.question_id || p._id }),
+                                        }).then((r) => r.json())
+                                    )
+                                )
+                                const allOk = completeResults.every((r: any) => r.success)
+                                if (allOk) {
+                                    setModalContent({
+                                        title: 'Success!',
+                                        message: 'Capstone submitted successfully. You can proceed to Week 2.',
+                                        type: 'success',
+                                    })
+                                    setProblems(prev => prev.map(p => ({ ...p, status: 'passed' })))
+                                    if (activeProblem) setActiveProblem(prev => prev ? { ...prev, status: 'passed' } : null)
+                                } else {
+                                    setModalContent({
+                                        title: 'Submission Failed',
+                                        message: 'One or more solutions could not be saved. Please try again.',
+                                        type: 'error',
+                                    })
+                                }
+                                setShowModal(true)
+                            } catch (e) {
+                                console.error(e)
+                                setModalContent({
+                                    title: 'Error',
+                                    message: 'An error occurred while submitting. Please try again.',
+                                    type: 'error',
+                                })
+                                setShowModal(true)
+                            } finally {
+                                setIsSubmittingCapstone(false)
                             }
-                        }
-                    }}
-                >
-                    Exit Test
-                </Button>
+                        }}
+                    >
+                        {isSubmittingCapstone ? 'Submitting…' : 'Submit Capstone'}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white/70 hover:text-white"
+                        onClick={() => {
+                            if (confirm("Are you sure you want to exit? Your progress may be lost.")) {
+                                document.exitFullscreen().catch(() => { })
+                                if (window.opener) {
+                                    window.close();
+                                } else {
+                                    router.push(`/student/study/week-${weekNum}`)
+                                }
+                            }
+                        }}
+                    >
+                        Exit Test
+                    </Button>
+                </div>
             </div>
 
             {/* Main Content Area */}
@@ -427,101 +542,24 @@ export default function CapstoneTestPage() {
                                 </div>
                             </div>
 
-                            {/* Code Editor (Right) */}
-                            <div className="flex-1 relative overflow-hidden bg-[#1e1e1e] border-l border-gray-800">
+                            {/* Code Editor (Right) - controlled value so switching problems keeps code */}
+                            <div className="flex-1 relative overflow-hidden bg-[#1e1e1e] border-l border-gray-800 flex flex-col">
                                 <CodeEditor
                                     key={`${activeProblem._id}-${selectedLanguage}`}
                                     problemId={activeProblem._id}
-                                    defaultValue={(() => {
-                                        const sig = activeProblem.function_signature || "";
-
-                                        if (selectedLanguage === 'cpp') {
-                                            return `#include <iostream>\n#include <vector>\n#include <string>\n\nusing namespace std;\n\n${sig} {\n    // Write your solution here\n    \n}\n\nint main() {\n    // You can test your function here\n    return 0;\n}`;
-                                        }
-
-                                        if (selectedLanguage === 'c') {
-                                            return `#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n// Warning: Signature below is C++ style. Update for C.\n// ${sig}\n\nvoid solve() {\n    // Write your solution here\n}\n\nint main() {\n    solve();\n    return 0;\n}`;
-                                        }
-
-                                        if (selectedLanguage === 'python') {
-                                            return `import sys\nimport math\n\n# ${sig}\n\ndef solve():\n    # Write your solution here\n    pass\n\nif __name__ == "__main__":\n    solve()`;
-                                        }
-
-                                        if (selectedLanguage === 'javascript') {
-                                            return `/**\n * ${sig}\n */\n\nfunction solve() {\n    // Write your solution here\n}\n\n// console.log(solve());`;
-                                        }
-
-                                        return sig;
-                                    })()}
+                                    value={codeByProblemId[activeProblem._id] ?? getDefaultCode(activeProblem)}
+                                    defaultValue={getDefaultCode(activeProblem)}
+                                    onChange={(code) => setCodeByProblemId(prev => ({ ...prev, [activeProblem._id]: code }))}
                                     language={selectedLanguage}
                                     onTestComplete={(results) => {
-                                        const allPassed = results.every(r => r.passed);
-                                        setCanSubmit(allPassed);
+                                        const allPassed = results.every((r: any) => r.passed);
+                                        setProblemPassedState(prev => ({ ...prev, [activeProblem._id]: allPassed }));
                                     }}
                                     testCases={(activeProblem.test_cases || []).map((tc: any) => ({
                                         ...tc,
                                         expectedOutput: tc.expectedOutput || tc.output || tc.expected_output
                                     }))}
-                                    onSubmit={async () => {
-                                        if (!canSubmit) {
-                                            setModalContent({
-                                                title: 'Tests Not Passed',
-                                                message: 'Please run your code and ensure ALL test cases pass before submitting.',
-                                                type: 'error'
-                                            });
-                                            setShowModal(true);
-                                            return;
-                                        }
-
-                                        try {
-                                            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-                                            const authHeader = getAuthHeader()
-
-                                            // Call backend to save
-                                            const response = await fetch(`${apiBaseUrl}/student-progress/complete-coding-problem`, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                    'Authorization': authHeader!
-                                                },
-                                                body: JSON.stringify({
-                                                    week: weekNum,
-                                                    problem_id: activeProblem._id
-                                                })
-                                            });
-
-                                            const data = await response.json();
-
-                                            if (data.success) {
-                                                setModalContent({
-                                                    title: 'Success!',
-                                                    message: 'Solution Submitted & Saved Successfully! 🚀',
-                                                    type: 'success'
-                                                });
-                                                setShowModal(true);
-
-                                                setProblems(prev => prev.map(p =>
-                                                    p._id === activeProblem._id ? { ...p, status: 'passed' } : p
-                                                ));
-                                                setActiveProblem(prev => prev ? { ...prev, status: 'passed' } : null);
-                                            } else {
-                                                setModalContent({
-                                                    title: 'Submission Failed',
-                                                    message: "Failed to save progress: " + data.message,
-                                                    type: 'error'
-                                                });
-                                                setShowModal(true);
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                            setModalContent({
-                                                title: 'Error',
-                                                message: "An error occurred while submitting solution.",
-                                                type: 'error'
-                                            });
-                                            setShowModal(true);
-                                        }
-                                    }}
+                                    hideSubmitButton
                                 />
                             </div>
                         </div>
@@ -562,14 +600,51 @@ export default function CapstoneTestPage() {
 
                     <p className="text-neutral text-lg mb-6">{modalContent.message}</p>
 
+                    {modalContent.type === 'success' && Object.keys(submissionIdByProblemKey).length > 0 && (
+                        <div className="w-full mb-4 flex flex-col gap-2">
+                            <span className="text-sm font-medium text-neutral-600">View AI code review:</span>
+                            {problems.map((p, idx) => {
+                                const sid = submissionIdByProblemKey[p._id]
+                                if (!sid) return null
+                                return (
+                                    <Button
+                                        key={p._id}
+                                        variant="secondary"
+                                        className="w-full gap-2"
+                                        onClick={() => {
+                                            setCodeReviewSubmissionId(sid)
+                                            setShowCodeReviewModal(true)
+                                        }}
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        Problem {idx + 1}: {p.title}
+                                    </Button>
+                                )
+                            })}
+                        </div>
+                    )}
+
                     <Button
-                        onClick={() => setShowModal(false)}
+                        onClick={() => {
+                            setShowModal(false)
+                            if (modalContent.type === 'success' && modalContent.message.includes('proceed to Week 2')) {
+                                document.exitFullscreen().catch(() => {})
+                                if (typeof window !== 'undefined' && window.opener) window.close()
+                                else router.push(`/student/study/week-${weekNum}`)
+                            }
+                        }}
                         className={modalContent.type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary-dark'}
                     >
-                        {modalContent.type === 'error' ? 'Try Again' : 'Close'}
+                        {modalContent.type === 'error' ? 'Try Again' : (modalContent.type === 'success' && modalContent.message.includes('proceed to Week 2') ? 'Proceed to Week 2' : 'Close')}
                     </Button>
                 </div>
             </Modal>
+
+            <CodeReviewDisplay
+                isOpen={showCodeReviewModal}
+                onClose={() => setShowCodeReviewModal(false)}
+                submissionId={codeReviewSubmissionId}
+            />
         </div>
     )
 }

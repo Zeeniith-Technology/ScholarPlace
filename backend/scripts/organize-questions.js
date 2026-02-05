@@ -164,7 +164,7 @@ async function organizeQuestions() {
                     $set: {
                         week: mapping.week,
                         day: mapping.day,
-                        updated_at: new Date()
+                        updated_at: new Date().toISOString()
                     }
                 }
             );

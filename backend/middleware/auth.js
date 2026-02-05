@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { getDB } from '../methods.js';
+import { getDB, fetchData } from '../methods.js';
 
 /**
  * JWT Authentication Middleware
@@ -53,6 +53,28 @@ export const auth = async (req, res, next) => {
                 email: decoded.email,
                 role: decoded.role
             });
+
+            // If user belongs to a college (TPC, Dept TPC, Student), verify college still exists and is not deleted
+            // So that when a college is deleted, these users get 401 on next request (automatic logout)
+            const collegeIdFromToken = decoded.college_id;
+            const roleFromToken = (decoded.role || '').toLowerCase();
+            const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
+            if (collegeIdFromToken && isCollegeUser) {
+                const { ObjectId } = await import('mongodb');
+                const collegeFilter = typeof collegeIdFromToken === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdFromToken)
+                    ? { _id: new ObjectId(collegeIdFromToken), deleted: false }
+                    : { _id: collegeIdFromToken, deleted: false };
+                const collegeCheck = await fetchData('tblCollage', { _id: 1 }, collegeFilter, {});
+                if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
+                    res.locals.responseData = {
+                        success: false,
+                        status: 401,
+                        message: 'Your college account has been removed. Please contact administrator.',
+                        error: 'College deleted'
+                    };
+                    return next();
+                }
+            }
 
             // Get role from JWT token (primary source of truth)
             let userRole = decoded.role;
@@ -146,6 +168,54 @@ export const auth = async (req, res, next) => {
             message: 'Authentication middleware error',
             error: error.message
         };
+        next();
+    }
+};
+
+/**
+ * Optional JWT auth: sets req.user when a valid token is present, never returns 401.
+ * Use for routes that work for both anonymous and authenticated users (e.g. collage list for signup vs superadmin).
+ */
+export const optionalAuth = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return next();
+        }
+        const token = authHeader.substring(7);
+        if (!token) return next();
+
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const decoded = jwt.verify(token, secret);
+
+        const collegeIdFromToken = decoded.college_id;
+        const roleFromToken = (decoded.role || '').toLowerCase();
+        const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
+        if (collegeIdFromToken && isCollegeUser) {
+            const { ObjectId } = await import('mongodb');
+            const collegeFilter = typeof collegeIdFromToken === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdFromToken)
+                ? { _id: new ObjectId(collegeIdFromToken), deleted: false }
+                : { _id: collegeIdFromToken, deleted: false };
+            const collegeCheck = await fetchData('tblCollage', { _id: 1 }, collegeFilter, {});
+            if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
+                return next();
+            }
+        }
+
+        req.user = {
+            ...decoded,
+            id: decoded.id || decoded.userId || decoded.person_id,
+            userId: decoded.id || decoded.userId || decoded.person_id,
+            person_id: decoded.id || decoded.userId || decoded.person_id,
+            role: (decoded.role || '').toLowerCase(),
+            department: decoded.department,
+            department_id: decoded.department_id || null,
+            college_name: decoded.college_name,
+            college_id: decoded.college_id,
+        };
+        req.userId = req.user.id;
+        next();
+    } catch (err) {
         next();
     }
 };

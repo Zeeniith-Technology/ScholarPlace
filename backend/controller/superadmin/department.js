@@ -114,7 +114,19 @@ export default class departmentController {
     async insertdepartment(req, res, next) {
         try {
             const { create_tpc_account, department_tpc_name, department_tpc_id, department_tpc_password, department_tpc_contact, department_college_id, ...departmentData } = req.body;
-            
+
+            if (department_college_id) {
+                departmentData.department_college_id = typeof department_college_id === 'string' ? department_college_id : (department_college_id?.toString?.() || department_college_id);
+                const { ObjectId } = await import('mongodb');
+                const collegeIdFilter = typeof department_college_id === 'string' && /^[0-9a-fA-F]{24}$/.test(department_college_id)
+                    ? new ObjectId(department_college_id)
+                    : department_college_id;
+                const collegeRes = await fetchData('tblCollage', { collage_name: 1 }, { _id: collegeIdFilter, deleted: false }, {});
+                if (collegeRes.success && collegeRes.data && collegeRes.data.length > 0) {
+                    departmentData.collage_name = collegeRes.data[0].collage_name || '';
+                }
+            }
+
             // Insert department
             const response = await executeData(tablename, departmentData, 'i', departmentSchema);
             

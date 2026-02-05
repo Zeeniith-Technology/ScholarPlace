@@ -50,8 +50,8 @@ async function run() {
 
                 version: 1,
                 status: 'active',
-                created_at: new Date(),
-                updated_at: new Date(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
                 deleted: false
             };
         });

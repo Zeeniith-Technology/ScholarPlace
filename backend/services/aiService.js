@@ -140,9 +140,12 @@ Provide detailed feedback on:
 4. Efficiency - Can it be optimized?
 5. Learning Points - What concepts does this demonstrate?
 
+Focus on: what could be done in a better way, and which way is the ideal or perfect way to write this code (best practice, clearest, most maintainable).
+
 Format your response as:
 - Strengths: [what's good]
-- Issues: [what needs improvement]
+- What could be better: [improvements and better approaches]
+- Ideal / best way to write this code: [recommended approach or pattern]
 - Suggestions: [how to improve]
 - Learning: [key concepts to understand]`;
 

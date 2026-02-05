@@ -17,7 +17,11 @@ import {
   Users,
   TrendingUp,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  User,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 /**
  * Department TPC Reports Page
@@ -33,6 +37,7 @@ export default function DepartmentTPCReportsPage() {
   const [reportType, setReportType] = useState<'performance' | 'test-results'>('performance')
   const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
   const [departmentName, setDepartmentName] = useState('')
+  const [expandedTestKeys, setExpandedTestKeys] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     checkAuth()
@@ -118,14 +123,16 @@ export default function DepartmentTPCReportsPage() {
       }
 
       const data = await res.json()
-      if (data.success) {
+      if (data.success && data.data) {
         setReportData(data.data)
         showToast('Report generated successfully', 'success')
       } else {
+        setReportData(null)
         showToast(data.message || 'Failed to generate report', 'error')
       }
     } catch (error) {
       console.error('[Reports] Error generating report:', error)
+      setReportData(null)
       showToast('Failed to generate report', 'error')
     } finally {
       setIsGenerating(false)
@@ -138,35 +145,83 @@ export default function DepartmentTPCReportsPage() {
     let csvContent = ''
     
     if (reportType === 'performance' && reportData.students) {
-      // CSV header
       csvContent = 'Name,Email,Department,Enrollment Number,Average Score,Days Completed,Tests Completed,Status\n'
-      
-      // CSV rows
       reportData.students.forEach((student: any) => {
-        csvContent += `"${student.name}","${student.email}","${student.department}","${student.enrollmentNumber}",${student.averageScore},${student.daysCompleted},${student.testsCompleted},"${student.status}"\n`
+        csvContent += `"${(student.name || '').replace(/"/g, '""')}","${(student.email || '').replace(/"/g, '""')}","${(student.department || '').replace(/"/g, '""')}","${(student.enrollmentNumber || '').replace(/"/g, '""')}",${student.averageScore},${student.daysCompleted},${student.testsCompleted},"${(student.status || '').replace(/"/g, '""')}"\n`
       })
     } else if (reportType === 'test-results' && reportData.tests) {
-      // CSV header for test results
-      csvContent = 'Test Name,Week,Day,Total Attempts,Average Score,Students Participated\n'
-      
-      // CSV rows
+      // Full report with student details: one row per student per test
+      csvContent = 'Test Name,Week,Day,Student Name,Email,Enrollment Number,Score,Total Questions,Correct Answers,Completed At\n'
       reportData.tests.forEach((test: any) => {
-        csvContent += `"${test.testName}",${test.week},${test.day},${test.totalAttempts},${test.averageScore},${test.results?.length || 0}\n`
+        (test.results || []).forEach((r: any) => {
+          const dateStr = r.completedAt ? new Date(r.completedAt).toLocaleString() : ''
+          csvContent += `"${(test.testName || '').replace(/"/g, '""')}",${test.week},${test.day},"${(r.studentName || '').replace(/"/g, '""')}","${(r.studentEmail || '').replace(/"/g, '""')}","${(r.enrollmentNumber || '').replace(/"/g, '""')}",${r.score},${r.totalQuestions || ''},${r.correctAnswers || ''},"${dateStr}"\n`
+        })
       })
     }
 
-    // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
     link.setAttribute('href', url)
     link.setAttribute('download', `dept-report-${reportType}-${new Date().toISOString().split('T')[0]}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+    URL.revokeObjectURL(url)
     showToast('Report exported successfully', 'success')
+  }
+
+  const downloadStudentReport = (student: any) => {
+    if (!student) return
+    let csvContent = 'Student Name,Email,Enrollment Number,Test Name,Week,Day,Score,Total Questions,Correct Answers,Completed At\n'
+    const name = (student.studentName || '').replace(/"/g, '""')
+    const email = (student.studentEmail || '').replace(/"/g, '""')
+    const enrollment = (student.enrollmentNumber || '').replace(/"/g, '""')
+    ;(student.tests || []).forEach((t: any) => {
+      const dateStr = t.completedAt ? new Date(t.completedAt).toLocaleString() : ''
+      csvContent += `"${name}","${email}","${enrollment}","${(t.testName || '').replace(/"/g, '""')}",${t.week},${t.day},${t.score},${t.totalQuestions || ''},${t.correctAnswers || ''},"${dateStr}"\n`
+    })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `student-report-${(student.studentName || 'student').replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast(`Downloaded report for ${student.studentName}`, 'success')
+  }
+
+  const downloadBatch = () => {
+    if (reportType === 'test-results' && reportData?.studentWiseReport?.length) {
+      let csvContent = 'Student Name,Email,Enrollment Number,Tests Count,Test Name,Week,Day,Score,Completed At\n'
+      reportData.studentWiseReport.forEach((student: any) => {
+        const name = (student.studentName || '').replace(/"/g, '""')
+        const email = (student.studentEmail || '').replace(/"/g, '""')
+        const enrollment = (student.enrollmentNumber || '').replace(/"/g, '""')
+        ;(student.tests || []).forEach((t: any) => {
+          const dateStr = t.completedAt ? new Date(t.completedAt).toLocaleString() : ''
+          csvContent += `"${name}","${email}","${enrollment}",${student.testsCount},"${(t.testName || '').replace(/"/g, '""')}",${t.week},${t.day},${t.score},"${dateStr}"\n`
+        })
+      })
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `dept-test-results-batch-${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      showToast('Batch report downloaded', 'success')
+    } else {
+      exportToCSV()
+    }
   }
 
   const exportToJSON = () => {
@@ -301,10 +356,12 @@ export default function DepartmentTPCReportsPage() {
                     {reportType === 'performance' ? 'Performance Summary Report' : 'Test Results Report'}
                   </h2>
                   <p className="text-sm text-neutral-light">
-                    Generated on {new Date(reportData.generatedAt).toLocaleString()}
+                    {reportData.generatedAt
+                      ? `Generated on ${new Date(reportData.generatedAt).toLocaleString()}`
+                      : 'Report generated'}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={exportToCSV}
                     className="px-4 py-2 bg-background-elevated text-neutral rounded-lg hover:bg-background-surface transition-colors flex items-center gap-2"
@@ -312,6 +369,15 @@ export default function DepartmentTPCReportsPage() {
                     <Download className="w-4 h-4" />
                     Export CSV
                   </button>
+                  {reportType === 'test-results' && reportData?.studentWiseReport?.length > 0 && (
+                    <button
+                      onClick={downloadBatch}
+                      className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download batch
+                    </button>
+                  )}
                   <button
                     onClick={exportToJSON}
                     className="px-4 py-2 bg-background-elevated text-neutral rounded-lg hover:bg-background-surface transition-colors flex items-center gap-2"
@@ -322,25 +388,25 @@ export default function DepartmentTPCReportsPage() {
                 </div>
               </div>
 
-              {reportType === 'performance' && reportData.students ? (
+              {reportType === 'performance' && Array.isArray(reportData.students) ? (
                 <>
                   {/* Summary Stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                     <div className="p-4 bg-background-elevated rounded-lg">
                       <div className="text-xs text-neutral-light mb-1">Total Students</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.totalStudents}</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.totalStudents ?? 0}</div>
                     </div>
                     <div className="p-4 bg-background-elevated rounded-lg">
                       <div className="text-xs text-neutral-light mb-1">Active Students</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.activeStudents}</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.activeStudents ?? 0}</div>
                     </div>
                     <div className="p-4 bg-background-elevated rounded-lg">
                       <div className="text-xs text-neutral-light mb-1">Average Score</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.averageScore}%</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.averageScore ?? 0}%</div>
                     </div>
                     <div className="p-4 bg-background-elevated rounded-lg">
                       <div className="text-xs text-neutral-light mb-1">Total Tests</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.totalTests}</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.totalTests ?? 0}</div>
                     </div>
                   </div>
 
@@ -359,7 +425,13 @@ export default function DepartmentTPCReportsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {reportData.students.map((student: any, index: number) => (
+                        {reportData.students.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-neutral-light">
+                              No students in your department for this report.
+                            </td>
+                          </tr>
+                        ) : reportData.students.map((student: any, index: number) => (
                           <tr
                             key={index}
                             className="border-b border-neutral-light/10 hover:bg-background-elevated"
@@ -391,29 +463,36 @@ export default function DepartmentTPCReportsPage() {
                     </table>
                   </div>
                 </>
-              ) : reportType === 'test-results' && reportData.tests ? (
+              ) : reportType === 'test-results' && Array.isArray(reportData.tests) ? (
                 <>
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                  {/* Summary Stats - Total Students = all in department; Students with test activity = who took tests */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                     <div className="p-4 bg-background-elevated rounded-lg">
                       <div className="text-xs text-neutral-light mb-1">Total Tests</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.totalTests}</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.totalTests ?? 0}</div>
                     </div>
                     <div className="p-4 bg-background-elevated rounded-lg">
                       <div className="text-xs text-neutral-light mb-1">Unique Tests</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.uniqueTests}</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.uniqueTests ?? 0}</div>
                     </div>
                     <div className="p-4 bg-background-elevated rounded-lg">
-                      <div className="text-xs text-neutral-light mb-1">Total Students</div>
-                      <div className="text-2xl font-bold text-neutral">{reportData.summary.totalStudents}</div>
+                      <div className="text-xs text-neutral-light mb-1">Total Students (Dept)</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.totalStudents ?? 0}</div>
+                      <div className="text-xs text-neutral-light mt-0.5">in your department</div>
+                    </div>
+                    <div className="p-4 bg-background-elevated rounded-lg">
+                      <div className="text-xs text-neutral-light mb-1">Students with test activity</div>
+                      <div className="text-2xl font-bold text-neutral">{reportData.summary?.studentsWithTestActivity ?? 0}</div>
+                      <div className="text-xs text-neutral-light mt-0.5">took at least one test</div>
                     </div>
                   </div>
 
-                  {/* Tests Table */}
+                  {/* Tests Table with expandable student details */}
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-neutral-light/20">
+                          <th className="w-8 py-2 px-1" />
                           <th className="text-left py-2 px-3 text-neutral-light font-medium">Test Name</th>
                           <th className="text-center py-2 px-3 text-neutral-light font-medium">Week</th>
                           <th className="text-center py-2 px-3 text-neutral-light font-medium">Day</th>
@@ -422,28 +501,115 @@ export default function DepartmentTPCReportsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {reportData.tests.map((test: any, index: number) => (
-                          <tr
-                            key={index}
-                            className="border-b border-neutral-light/10 hover:bg-background-elevated"
-                          >
-                            <td className="py-2 px-3 font-medium text-neutral">{test.testName}</td>
-                            <td className="py-2 px-3 text-center text-neutral-light">{test.week}</td>
-                            <td className="py-2 px-3 text-center text-neutral-light">{test.day}</td>
-                            <td className="py-2 px-3 text-right text-neutral-light">{test.totalAttempts}</td>
-                            <td className="py-2 px-3 text-right">
-                              <span className={`font-semibold ${
-                                test.averageScore >= 70 ? 'text-green-500' :
-                                test.averageScore >= 50 ? 'text-yellow-500' : 'text-red-500'
-                              }`}>
-                                {test.averageScore}%
-                              </span>
+                        {reportData.tests.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center">
+                              <p className="text-neutral-light">No test results in your department for this date range.</p>
+                              {(dateFilter.from || dateFilter.to) && (
+                                <p className="text-sm text-primary/80 mt-2">Try clearing the date range and generate again to include all results.</p>
+                              )}
                             </td>
                           </tr>
-                        ))}
+                        ) : reportData.tests.map((test: any, index: number) => {
+                          const testKey = `${test.week}-${test.day}`
+                          const isExpanded = expandedTestKeys.has(testKey)
+                          const results = test.results || []
+                          return (
+                            <React.Fragment key={index}>
+                              <tr
+                                className="border-b border-neutral-light/10 hover:bg-background-elevated cursor-pointer"
+                                onClick={() => setExpandedTestKeys((prev) => {
+                                  const next = new Set(prev)
+                                  if (next.has(testKey)) next.delete(testKey)
+                                  else next.add(testKey)
+                                  return next
+                                })}
+                              >
+                                <td className="py-2 px-1 text-neutral-light">
+                                  {results.length > 0 ? (isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />) : null}
+                                </td>
+                                <td className="py-2 px-3 font-medium text-neutral">{test.testName}</td>
+                                <td className="py-2 px-3 text-center text-neutral-light">{test.week}</td>
+                                <td className="py-2 px-3 text-center text-neutral-light">{test.day}</td>
+                                <td className="py-2 px-3 text-right text-neutral-light">{test.totalAttempts}</td>
+                                <td className="py-2 px-3 text-right">
+                                  <span className={cn(
+                                    'font-semibold',
+                                    test.averageScore >= 70 ? 'text-green-500' : test.averageScore >= 50 ? 'text-yellow-500' : 'text-red-500'
+                                  )}>
+                                    {test.averageScore}%
+                                  </span>
+                                </td>
+                              </tr>
+                              {isExpanded && results.length > 0 && (
+                                <tr className="bg-neutral-50/80">
+                                  <td colSpan={6} className="py-3 px-4">
+                                    <div className="text-xs font-medium text-neutral-light mb-2 px-2">Students</div>
+                                    <table className="w-full text-sm border border-neutral-light/20 rounded-lg overflow-hidden">
+                                      <thead>
+                                        <tr className="bg-neutral-light/10">
+                                          <th className="text-left py-2 px-3 font-medium">Name</th>
+                                          <th className="text-left py-2 px-3 font-medium">Email</th>
+                                          <th className="text-left py-2 px-3 font-medium">Enrollment</th>
+                                          <th className="text-right py-2 px-3 font-medium">Score</th>
+                                          <th className="text-right py-2 px-3 font-medium">Date</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {results.map((r: any, i: number) => (
+                                          <tr key={i} className="border-t border-neutral-light/10">
+                                            <td className="py-2 px-3 font-medium text-neutral">{r.studentName || '-'}</td>
+                                            <td className="py-2 px-3 text-neutral-light">{r.studentEmail || '-'}</td>
+                                            <td className="py-2 px-3 text-neutral-light">{r.enrollmentNumber || '-'}</td>
+                                            <td className="py-2 px-3 text-right font-semibold">{r.score}%</td>
+                                            <td className="py-2 px-3 text-right text-neutral-light">
+                                              {r.completedAt ? new Date(r.completedAt).toLocaleDateString() : '-'}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Students with test activity - download per student */}
+                  {reportData.studentWiseReport?.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-neutral-light/20">
+                      <h3 className="text-base font-heading font-bold text-neutral mb-3 flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Students with test activity
+                      </h3>
+                      <p className="text-sm text-neutral-light mb-4">Download an individual student&apos;s test report.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {reportData.studentWiseReport.map((student: any, idx: number) => (
+                          <div
+                            key={student.studentId || idx}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background-elevated border border-neutral-light/10"
+                          >
+                            <div>
+                              <p className="font-medium text-neutral text-sm">{student.studentName}</p>
+                              <p className="text-xs text-neutral-light">{student.studentEmail || student.enrollmentNumber || '—'}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => downloadStudentReport(student)}
+                              className="shrink-0 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:opacity-90 transition-colors flex items-center gap-1"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>

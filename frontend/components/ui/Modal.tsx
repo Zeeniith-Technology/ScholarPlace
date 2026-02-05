@@ -33,19 +33,19 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         onClick={onClose}
       />
 
-      {/* Modal Content */}
+      {/* Modal Content - fixed height so inner scroll works */}
       <div
         className={cn(
           'relative bg-background-surface rounded-xl shadow-2xl border-2 border-neutral-light/20',
           'transform transition-all duration-300',
-          'w-full',
+          'w-full flex flex-col',
           sizeClasses[size],
-          'max-h-[90vh] overflow-hidden flex flex-col'
+          'h-[85vh] max-h-[900px]'
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-light/20 bg-gradient-to-r from-background-surface to-background-elevated">
+        {/* Header - shrink-0 */}
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-neutral-light/20 bg-gradient-to-r from-background-surface to-background-elevated">
           <h2 className="text-xl font-heading font-bold text-neutral">{title}</h2>
           <button
             onClick={onClose}
@@ -56,8 +56,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Content - flex-1 min-h-0 overflow-y-auto for one scroll */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6">
           {children}
         </div>
       </div>

@@ -48,7 +48,7 @@ interface AnswerState {
 
 /**
  * Aptitude Week 1 Practice Test Page
- * Route: /student/practice/aptitude-week-1?day=day-1|day-2|day-3|day-4|day-5
+ * Route: /student/practice/aptitude-week-2?day=day-1|day-2|day-3|day-4|day-5
  */
 function AptitudeWeek2PracticeContent() {
     const router = useRouter()
@@ -336,7 +336,7 @@ function AptitudeWeek2PracticeContent() {
                             Aptitude questions for {days[day as keyof typeof days]?.title} are not available yet.
                         </p>
                         <button
-                            onClick={() => router.push(`/student/study/aptitude-week-1?day=${day}`)}
+                            onClick={() => router.push(`/student/study/aptitude-week-2?day=${day}`)}
                             className="px-6 py-2 bg-accent text-white rounded-lg hover:bg-accent/80 transition-colors"
                         >
                             Back to Study
@@ -400,7 +400,7 @@ function AptitudeWeek2PracticeContent() {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => router.push(`/student/study/aptitude-week-1?day=${day}`)}
+                                    onClick={() => router.push(`/student/study/aptitude-week-2?day=${day}`)}
                                     className="px-6 py-3 bg-background-elevated hover:bg-background-elevated/80 text-neutral rounded-lg font-semibold transition-all flex items-center gap-2"
                                 >
                                     <BookOpen className="w-5 h-5" />
@@ -451,7 +451,7 @@ function AptitudeWeek2PracticeContent() {
                         </button>
 
                         <button
-                            onClick={() => router.push(`/student/study/aptitude-week-1?day=${day}`)}
+                            onClick={() => router.push(`/student/study/aptitude-week-2?day=${day}`)}
                             className="w-full mt-3 px-6 py-3 bg-background-elevated hover:bg-background-elevated/80 text-neutral rounded-lg font-semibold transition-all"
                         >
                             Back to Study

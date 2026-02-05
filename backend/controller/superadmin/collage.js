@@ -1,11 +1,15 @@
 import { executeData, fetchData, getDB } from '../../methods.js';
 import collageSchema from '../../schema/superadmin/collage.js';
+import departmentSchema from '../../schema/superadmin/department.js';
 import rolesSchema from '../../schema/roles.js';
+import personMasterSchema from '../../schema/PersonMaster.js';
 import { ObjectId } from 'mongodb';
 import tpcManagementController from '../tpcManagement.js';
 
 const tablename = "tblCollage";
+const departmentTable = "tblDepartments";
 const rolesTable = "tblRoles";
+const personTable = "tblPersonMaster";
 const tpcManagement = new tpcManagementController();
 
 export default class collagecontroller {
@@ -72,12 +76,13 @@ export default class collagecontroller {
                 data.collage_subscription_status = 'active';
             }
 
-            // Validate departments if provided
+            // Validate departments if provided and keep response to populate departments array
+            let departmentsResponse = null;
             if (data.collage_departments && Array.isArray(data.collage_departments) && data.collage_departments.length > 0) {
-                // Verify all departments exist
-                const departmentsResponse = await fetchData(
+                // Verify all departments exist and fetch _id + name for embedding
+                departmentsResponse = await fetchData(
                     'tblDepartments',
-                    { department_id: 1 },
+                    { _id: 1, department_id: 1, department_name: 1, department_code: 1 },
                     {
                         department_id: { $in: data.collage_departments },
                         department_status: 1,
@@ -112,6 +117,17 @@ export default class collagecontroller {
             // Initialize arrays for new structure
             collegeData.tpc_users = [];
             collegeData.departments = [];
+
+            // Populate departments with dedicated _id and name from validated collage_departments
+            if (departmentsResponse?.success && departmentsResponse?.data?.length) {
+                collegeData.departments = departmentsResponse.data.map(d => ({
+                    _id: d._id,
+                    name: d.department_name || d.department_code || '',
+                    department_id: d._id,
+                    department_name: d.department_name,
+                    department_code: d.department_code || ''
+                }));
+            }
 
             // Create College TPC user if requested (using PersonMaster as single source of truth)
             let tpcPersonId = null;
@@ -171,9 +187,11 @@ export default class collagecontroller {
                     // Get the PersonMaster._id (this is the PRIMARY ID used everywhere)
                     tpcPersonId = tpcResponse.data?.insertedId || tpcResponse.data?._id;
 
-                    // Create TPC user reference to add to college document (just person_id, no duplicate data)
+                    // Create TPC user reference with dedicated _id and name for display
                     const tpcUserReference = {
-                        person_id: tpcPersonId, // Reference to tblPersonMaster._id
+                        _id: tpcPersonId,
+                        person_id: tpcPersonId,
+                        name: collage_tpc_person.trim(),
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
                     };
@@ -213,6 +231,28 @@ export default class collagecontroller {
             }
 
             const collegeId = response.data?.insertedId || response.data?._id;
+
+            // Set department_college_id and collage_name on each department linked to this college
+            if (data.collage_departments && Array.isArray(data.collage_departments) && data.collage_departments.length > 0) {
+                const deptIds = data.collage_departments.map(id =>
+                    typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id
+                );
+                try {
+                    await executeData(
+                        departmentTable,
+                        {
+                            department_college_id: collegeId?.toString?.() || collegeId,
+                            collage_name: collegeData.collage_name || ''
+                        },
+                        'u',
+                        departmentSchema,
+                        { _id: { $in: deptIds } },
+                        { many: true, force: true }
+                    );
+                } catch (deptErr) {
+                    console.error('Error updating department college links:', deptErr.message);
+                }
+            }
 
             // Update TPC user's person_collage_id now that college is created
             if (tpcPersonId) {
@@ -347,7 +387,8 @@ export default class collagecontroller {
                 filter: filter
             });
 
-            // Validate departments if being updated
+            // Validate departments if being updated (keep response to sync departments array)
+            let departmentsResponseUpdate = null;
             if (collegeData.collage_departments && Array.isArray(collegeData.collage_departments) && collegeData.collage_departments.length > 0) {
                 // Convert department IDs to ObjectId if they're strings
                 const departmentIds = collegeData.collage_departments.map(id => {
@@ -357,10 +398,10 @@ export default class collagecontroller {
                     return id;
                 });
 
-                // Verify all departments exist (check by _id, not department_id)
-                const departmentsResponse = await fetchData(
+                // Verify all departments exist and fetch name for embedding
+                departmentsResponseUpdate = await fetchData(
                     'tblDepartments',
-                    { _id: 1 },
+                    { _id: 1, department_name: 1, department_code: 1 },
                     {
                         _id: { $in: departmentIds },
                         department_status: 1,
@@ -368,12 +409,12 @@ export default class collagecontroller {
                     }
                 );
 
-                if (!departmentsResponse.success || !departmentsResponse.data ||
-                    departmentsResponse.data.length !== collegeData.collage_departments.length) {
+                if (!departmentsResponseUpdate.success || !departmentsResponseUpdate.data ||
+                    departmentsResponseUpdate.data.length !== collegeData.collage_departments.length) {
                     console.error('Department validation failed:', {
                         requested: collegeData.collage_departments,
-                        found: departmentsResponse.data?.map(d => d._id) || [],
-                        count: departmentsResponse.data?.length || 0
+                        found: departmentsResponseUpdate.data?.map(d => d._id) || [],
+                        count: departmentsResponseUpdate.data?.length || 0
                     });
                     res.locals.responseData = {
                         success: false,
@@ -435,6 +476,27 @@ export default class collagecontroller {
             }
 
             const college = collegeCheck.data[0];
+
+            // When collage_departments is updated, sync departments array with dedicated _id and name (preserve existing dept_tpc)
+            if (departmentsResponseUpdate?.success && departmentsResponseUpdate?.data?.length) {
+                const currentCollegeRes = await fetchData(tablename, { departments: 1 }, { ...processedFilter });
+                const currentDepartments = currentCollegeRes?.data?.[0]?.departments || [];
+                collegeData.departments = departmentsResponseUpdate.data.map(d => {
+                    const existing = currentDepartments.find(ed =>
+                        String(ed.department_id || ed._id) === String(d._id)
+                    );
+                    return {
+                        _id: d._id,
+                        name: d.department_name || d.department_code || '',
+                        department_id: d._id,
+                        department_name: d.department_name,
+                        department_code: d.department_code || '',
+                        ...(existing?.dept_tpc && { dept_tpc: existing.dept_tpc }),
+                        created_at: existing?.created_at || new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+                });
+            }
             console.log('College found:', college._id, college.collage_name);
             console.log('College _id type from fetchData:', typeof college._id, college._id);
 
@@ -484,6 +546,27 @@ export default class collagecontroller {
                     });
 
                     response = await executeData(tablename, collegeData, 'u', collageSchema, updateFilter, options || {});
+
+                    if (response.success && collegeData.collage_departments && Array.isArray(collegeData.collage_departments) && collegeData.collage_departments.length > 0) {
+                        const deptIds = collegeData.collage_departments.map(id =>
+                            typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id
+                        );
+                        try {
+                            await executeData(
+                                departmentTable,
+                                {
+                                    department_college_id: college._id?.toString?.() || college._id,
+                                    collage_name: college.collage_name || ''
+                                },
+                                'u',
+                                departmentSchema,
+                                { _id: { $in: deptIds } },
+                                { many: true, force: true }
+                            );
+                        } catch (deptErr) {
+                            console.error('Error updating department college links:', deptErr.message);
+                        }
+                    }
 
                     if (!response.success) {
                         console.error('College update error:', response.error, response);
@@ -656,6 +739,13 @@ export default class collagecontroller {
         }
     }
 
+    /**
+         * Delete College (soft delete by default).
+         * Cascade: 1) Soft-delete its departments (tblDepartments.deleted = true)
+         *           2) Soft-deactivate TPC, Dept TPC, and Students (PersonMaster: person_deleted, person_status inactive)
+         *           3) Soft-delete the college (tblCollage.deleted = true)
+         * Use hardDelete: true in body to physically remove documents instead.
+         */
     async deletecollage(req, res, next) {
         try {
             const { filter, hardDelete, options } = req.body;
@@ -670,9 +760,15 @@ export default class collagecontroller {
                 return next();
             }
 
+            // Normalize _id to ObjectId so string IDs from the frontend match
+            const deleteFilter = { ...filter };
+            if (deleteFilter._id && typeof deleteFilter._id === 'string' && /^[0-9a-fA-F]{24}$/.test(deleteFilter._id)) {
+                deleteFilter._id = new ObjectId(deleteFilter._id);
+            }
+
             // 1. Fetch the college first to identify related data
             const db = getDB();
-            const college = await db.collection(tablename).findOne(filter); // or fetch via executeData if needed
+            const college = await db.collection(tablename).findOne(deleteFilter);
 
             if (!college) {
                 res.locals.responseData = {
@@ -692,8 +788,7 @@ export default class collagecontroller {
                 ...(options || {})
             };
 
-            // 2. Cascade Delete/Soft-Delete Departments
-            // Departments have 'department_college_id' which is usually a string
+            // 2. Cascade: Soft-delete (or hard-delete) all departments linked to this college
             const deptFilter = {
                 $or: [
                     { department_college_id: collegeIdString },
@@ -701,37 +796,48 @@ export default class collagecontroller {
                 ]
             };
 
-            await executeData('tblDepartment', null, 'd', null, deptFilter, {
-                ...deleteOptions,
-                many: true,
-                force: true // Force delete even if filter implies multiple
-            });
-
-
-            // 3. Cascade Delete/Soft-Delete TPC Users (College TPC & Dept TPC)
-            // TPC Users have 'college_id' in tblPersonMaster
-            const tpcFilter = {
-                $or: [
-                    { college_id: collegeIdString },
-                    { college_id: collegeId }
-                ]
-            };
-
-            await executeData('tblPersonMaster', null, 'd', null, tpcFilter, {
+            const deptDeleteRes = await executeData(departmentTable, null, 'd', null, deptFilter, {
                 ...deleteOptions,
                 many: true,
                 force: true
             });
 
+            // 3. Cascade: Soft-deactivate TPC, Dept TPC, and Students (PersonMaster) so they cannot login
+            // So they are logged out and cannot login again (login checks person_deleted and person_status)
+            // PersonMaster uses person_collage_id (not college_id)
+            const personFilter = {
+                $or: [
+                    { person_collage_id: collegeIdString },
+                    { person_collage_id: collegeId }
+                ]
+            };
 
-            // 4. Finally Delete the College itself
-            const response = await executeData(tablename, null, 'd', collageSchema, filter, deleteOptions);
+            const personDeactivateRes = await executeData(
+                personTable,
+                { person_deleted: true, person_status: 'inactive' },
+                'u',
+                personMasterSchema,
+                personFilter,
+                { many: true, force: true }
+            );
+
+            if (personDeactivateRes.modifiedCount !== undefined) {
+                console.log('[deletecollage] Deactivated users (TPC/Dept TPC/Students):', personDeactivateRes.modifiedCount);
+            }
+
+
+            // 4. Finally Delete the College itself (use normalized filter with ObjectId)
+            const response = await executeData(tablename, null, 'd', collageSchema, deleteFilter, deleteOptions);
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
-                message: 'College and its related data (Departments, TPCs) deleted successfully',
-                data: response.data || { deletedCount: response.deletedCount }
+                message: 'College soft-deleted. Its departments and all linked TPCs, Dept TPCs, and Students have been soft-deleted or deactivated and cannot login again.',
+                data: {
+                    ...(response.data || {}),
+                    departmentsAffected: deptDeleteRes?.modifiedCount ?? deptDeleteRes?.deletedCount ?? 0,
+                    deactivatedUsers: personDeactivateRes?.modifiedCount ?? personDeactivateRes?.matchedCount ?? 0
+                }
             };
             next();
         } catch (error) {

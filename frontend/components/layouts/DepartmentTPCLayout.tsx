@@ -17,6 +17,7 @@ import {
   BookOpen,
   Shield,
   Code,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAuthHeader } from '@/utils/auth'
@@ -83,6 +84,7 @@ const navigation = [
   { name: 'Students', href: '/dept-tpc/students', icon: Users },
   { name: 'Aptitude Monitoring', href: '/dept-tpc/practice-monitoring', icon: Calendar },
   { name: 'Coding Monitoring', href: '/dept-tpc/coding-monitoring', icon: Code },
+  { name: 'AI Reviews', href: '/dept-tpc/ai-reviews', icon: Sparkles },
   { name: 'Tests', href: '/dept-tpc/tests', icon: FileText },
   { name: 'Test Approvals', href: '/dept-tpc/test-approvals', icon: Shield },
   { name: 'Analytics', href: '/dept-tpc/analytics', icon: BarChart3 },

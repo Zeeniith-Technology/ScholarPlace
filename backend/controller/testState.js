@@ -87,7 +87,7 @@ export default class testStateController {
                 is_active: isActive !== undefined ? isActive : true,
                 timestamp: timestamp || Date.now(),
                 tab_count: tabCount || 1,
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             };
 
             let response;

@@ -1,5 +1,6 @@
 import { executeData, fetchData } from '../methods.js';
 import studentProgressSchema from '../schema/studentProgress.js';
+import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
 
 export default class studentProgressController {
 
@@ -114,6 +115,48 @@ export default class studentProgressController {
                 } : 'None'
             });
 
+            // Attach verified_days per week (days where student passed ALL daily coding problems)
+            if (response.data?.length > 0 && studentIdString) {
+                try {
+                    const weeksInResponse = [...new Set(response.data.map(r => r.week).filter(Boolean))];
+                    const problemsRes = await fetchData(
+                        'tblCodingProblem',
+                        { week: 1, day: 1, question_id: 1 },
+                        { week: { $in: weeksInResponse }, is_capstone: false, day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] }, deleted: { $ne: true } },
+                        {}
+                    );
+                    const subsRes = await fetchData(
+                        'tblCodingSubmissions',
+                        { problem_id: 1 },
+                        { ...finalFilter, status: 'passed' },
+                        {}
+                    );
+                    const allDaily = problemsRes.data || [];
+                    const passedIds = new Set((subsRes.data || []).map(s => s.problem_id).filter(Boolean));
+                    const dayKey = (w, d) => `${w}-${typeof d === 'number' && d >= 1 && d <= 5 ? 'day-' + d : String(d || '')}`;
+                    const problemsByDay = {};
+                    allDaily.forEach(p => {
+                        const key = dayKey(p.week, p.day);
+                        if (!problemsByDay[key]) problemsByDay[key] = [];
+                        problemsByDay[key].push(p.question_id);
+                    });
+                    const verifiedByWeek = {};
+                    Object.entries(problemsByDay).forEach(([key, qIds]) => {
+                        if (qIds.length > 0 && qIds.every(id => passedIds.has(id))) {
+                            const dayPart = key.replace(/^\d+-/, '');
+                            const weekNum = parseInt(key.split('-')[0], 10);
+                            if (!verifiedByWeek[weekNum]) verifiedByWeek[weekNum] = [];
+                            if (!verifiedByWeek[weekNum].includes(dayPart)) verifiedByWeek[weekNum].push(dayPart);
+                        }
+                    });
+                    response.data.forEach(record => {
+                        record.verified_days = verifiedByWeek[record.week] || [];
+                    });
+                } catch (err) {
+                    console.warn('[StudentProgress] List verified_days attach failed:', err.message);
+                }
+            }
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -187,7 +230,7 @@ export default class studentProgressController {
             let response;
             if (existing.data && existing.data.length > 0) {
                 // Update existing
-                progressData.updated_at = new Date();
+                progressData.updated_at = new Date().toISOString();
                 response = await executeData(
                     'tblStudentProgress',
                     progressData,
@@ -198,8 +241,11 @@ export default class studentProgressController {
             } else {
                 // Insert new
                 progressData.student_id = progressData.student_id || userId;
-                progressData.created_at = new Date();
-                progressData.updated_at = new Date();
+                progressData.created_at = new Date().toISOString();
+                progressData.updated_at = new Date().toISOString();
+                const tenant = await getCollegeAndDepartmentForStudent(progressData.student_id, req, fetchData);
+                if (tenant.college_id) progressData.college_id = tenant.college_id;
+                if (tenant.department_id) progressData.department_id = tenant.department_id;
                 response = await executeData(
                     'tblStudentProgress',
                     progressData,
@@ -415,7 +461,7 @@ export default class studentProgressController {
                 practice_tests_completed: practiceTestsCompleted,
                 last_accessed: new Date(),
                 completed_at: status === 'completed' ? new Date() : undefined,
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             };
 
             // Check if progress already exists - use $or to match both formats
@@ -433,7 +479,7 @@ export default class studentProgressController {
                     $addToSet: { days_completed: day },
                     $set: {
                         last_accessed: new Date(),
-                        updated_at: new Date(),
+                        updated_at: new Date().toISOString(),
                         status: status, // This might be slightly stale if calculated before add, but acceptable for now
                         progress_percentage: progressPercentage,
                         assignments_completed: assignmentsCompleted,
@@ -459,7 +505,10 @@ export default class studentProgressController {
                 );
             } else {
                 // Insert new (keep as is)
-                progressData.created_at = new Date();
+                progressData.created_at = new Date().toISOString();
+                const tenant = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
+                if (tenant.college_id) progressData.college_id = tenant.college_id;
+                if (tenant.department_id) progressData.department_id = tenant.department_id;
                 response = await executeData(
                     'tblStudentProgress',
                     progressData,
@@ -628,7 +677,7 @@ export default class studentProgressController {
                         status: status,
                         progress_percentage: progressPercentage,
                         completed_at: status === 'completed' ? new Date() : currentProgress.completed_at,
-                        updated_at: new Date()
+                        updated_at: new Date().toISOString()
                     },
                     'u',
                     studentProgressSchema,
@@ -766,7 +815,7 @@ export default class studentProgressController {
                 practice_test_scores: practiceTestScores,
                 assignments_completed: assignmentsCompleted,
                 last_accessed: new Date(),
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             };
 
             // Check if progress already exists - use $or to match both formats
@@ -797,10 +846,13 @@ export default class studentProgressController {
                 );
             } else {
                 // Insert new
-                progressData.created_at = new Date();
+                progressData.created_at = new Date().toISOString();
                 progressData.status = 'in_progress';
                 progressData.progress_percentage = 0;
                 progressData.days_completed = [];
+                const tenantDay = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
+                if (tenantDay.college_id) progressData.college_id = tenantDay.college_id;
+                if (tenantDay.department_id) progressData.department_id = tenantDay.department_id;
                 response = await executeData(
                     'tblStudentProgress',
                     progressData,
@@ -921,21 +973,76 @@ export default class studentProgressController {
 
             // Syllabus has 6 weeks; use for progress denominator
             const SYLLABUS_TOTAL_WEEKS = 6;
-            const weeksCompleted = progressData.filter(p => p.status === 'completed').length;
             const totalWeeks = Math.max(SYLLABUS_TOTAL_WEEKS, progressData.length > 0 ? Math.max(...progressData.map(p => p.week)) : 0);
             const currentWeek = progressData.find(p => p.status === 'in_progress' || p.status === 'start')?.week || 1;
 
             const totalTimeSpent = progressData.reduce((sum, p) => sum + (p.time_spent || 0), 0);
-            const totalDaysCompleted = progressData.reduce((sum, p) => sum + (p.days_completed?.length || 0), 0);
+
+            // Verified days completed: count (week, day) where student has passed ALL daily coding problems for that day
+            let totalDaysCompleted = 0;
+            let weeksCompleted = 0;
+            try {
+                const problemsRes = await fetchData(
+                    'tblCodingProblem',
+                    { week: 1, day: 1, question_id: 1 },
+                    { is_capstone: false, day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] }, deleted: { $ne: true } },
+                    {}
+                );
+                const allDailyProblems = problemsRes.data || [];
+                const subsRes = await fetchData(
+                    'tblCodingSubmissions',
+                    { problem_id: 1 },
+                    { ...progressFilter, status: 'passed' },
+                    {}
+                );
+                const submissions = subsRes.data || [];
+                const passedProblemIds = new Set(submissions.map(s => s.problem_id).filter(Boolean));
+
+                // Group problems by (week, day) -> list of question_ids
+                const dayKey = (w, d) => {
+                    const dayStr = typeof d === 'number' && d >= 1 && d <= 5 ? `day-${d}` : String(d || '');
+                    return `${w}-${dayStr}`;
+                };
+                const problemsByDay = {};
+                allDailyProblems.forEach(p => {
+                    const key = dayKey(p.week, p.day);
+                    if (!problemsByDay[key]) problemsByDay[key] = [];
+                    problemsByDay[key].push(p.question_id);
+                });
+
+                // A day is verified only if ALL its problems are passed
+                const verifiedDays = Object.entries(problemsByDay).filter(([, qIds]) =>
+                    qIds.length > 0 && qIds.every(id => passedProblemIds.has(id))
+                );
+                totalDaysCompleted = verifiedDays.length;
+
+                // Weeks completed = count of weeks where all 5 days (day-1..day-5) are verified
+                const maxWeek = progressData.length > 0 ? Math.max(...progressData.map(p => p.week), 1) : 1;
+                const totalWeeksNum = Math.max(SYLLABUS_TOTAL_WEEKS, maxWeek);
+                for (let w = 1; w <= totalWeeksNum; w++) {
+                    const allFive = [1, 2, 3, 4, 5].every(d => {
+                        const key = `${w}-day-${d}`;
+                        const qIds = problemsByDay[key];
+                        return qIds && qIds.length > 0 && qIds.every(id => passedProblemIds.has(id));
+                    });
+                    if (allFive) weeksCompleted++;
+                }
+            } catch (err) {
+                console.warn('[StudentProgress] Verified days computation failed, falling back to tblStudentProgress:', err.message);
+                totalDaysCompleted = progressData.reduce((sum, p) => sum + (p.days_completed?.length || 0), 0);
+                weeksCompleted = progressData.filter(p => p.status === 'completed').length;
+            }
 
             // Actual practice test count and streak from tblPracticeTest
             let totalPracticeTests = 0;
             let averagePracticeScore = 0;
             let currentStreak = 0;
+            let aptitudeWeeksCompleted = 0;
+            let overallProgressPercent = totalWeeks > 0 ? Math.round((weeksCompleted / totalWeeks) * 100) : 0;
             try {
                 const practiceRes = await fetchData(
                     'tblPracticeTest',
-                    { score: 1, completed_at: 1, created_at: 1 },
+                    { score: 1, completed_at: 1, created_at: 1, week: 1, category: 1 },
                     progressFilter,
                     { sort: { completed_at: -1, created_at: -1 } }
                 );
@@ -943,6 +1050,20 @@ export default class studentProgressController {
                 totalPracticeTests = tests.length;
                 const scores = tests.map(t => t.score).filter(s => s != null);
                 averagePracticeScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+                // Aptitude weeks completed: distinct weeks where student passed Aptitude weekly test (score > 75)
+                const aptitudePassedWeeks = new Set();
+                tests.forEach(t => {
+                    const cat = (t.category || '').toString().toLowerCase();
+                    if (cat === 'aptitude' && t.score != null && t.score > 75 && t.week != null) {
+                        aptitudePassedWeeks.add(t.week);
+                    }
+                });
+                aptitudeWeeksCompleted = aptitudePassedWeeks.size;
+                // Overall progress = average of DSA % and Aptitude % (both tracks)
+                const totalWeeksNum = Math.max(totalWeeks, 1);
+                const dsaPercent = (weeksCompleted / totalWeeksNum) * 100;
+                const aptitudePercent = (aptitudeWeeksCompleted / totalWeeksNum) * 100;
+                overallProgressPercent = Math.round((dsaPercent + aptitudePercent) / 2);
                 // Consecutive days streak from completed_at
                 const sortedByDate = [...tests].filter(t => t.completed_at || t.created_at).sort((a, b) => {
                     const da = new Date(a.completed_at || a.created_at).getTime();
@@ -979,6 +1100,7 @@ export default class studentProgressController {
                 message: 'Progress summary fetched successfully',
                 data: {
                     weeksCompleted,
+                    aptitudeWeeksCompleted,
                     totalWeeks,
                     currentWeek,
                     totalPracticeTests,
@@ -986,6 +1108,7 @@ export default class studentProgressController {
                     totalTimeSpent,
                     totalDaysCompleted,
                     currentStreak,
+                    overallProgressPercent,
                     progressByWeek: progressData
                 }
             };
@@ -1084,40 +1207,73 @@ export default class studentProgressController {
             // CRITICAL: Normalize student_id to string format
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
-            // Update progress
-            const progressData = {
-                student_id: studentIdString, // ALWAYS string format
-                week: week,
-                coding_problems_completed: codingProblemsCompleted,
-                updated_at: new Date()
-            };
+            // Update progress: set status to 'in_progress' when at least one problem is completed (so week shows "Continue")
+            const currentStatus = existing.data?.[0]?.status || 'start';
+            const newStatus = (codingProblemsCompleted.length > 0 && currentStatus !== 'completed') ? 'in_progress' : currentStatus;
 
-            const result = await executeData(
-                'tblStudentProgress',
-                progressData,
-                existing.data && existing.data.length > 0 ? 'u' : 'i',
-                studentProgressSchema,
-                existing.data && existing.data.length > 0 ? { week: week, ...studentIdFilter } : {}
-            );
-
-            if (result.success) {
-                res.locals.responseData = {
-                    success: true,
-                    status: 200,
-                    message: 'Coding problem marked as completed',
-                    data: {
-                        coding_problems_completed: codingProblemsCompleted,
-                        total_completed: codingProblemsCompleted.length
-                    }
-                };
+            if (existing.data && existing.data.length > 0) {
+                // Partial update: only set these fields so we don't overwrite days_completed, etc.
+                const result = await executeData(
+                    'tblStudentProgress',
+                    {
+                        $set: {
+                            coding_problems_completed: codingProblemsCompleted,
+                            status: newStatus,
+                            updated_at: new Date().toISOString()
+                        }
+                    },
+                    'u',
+                    null,
+                    { week: week, ...studentIdFilter }
+                );
+                if (!result.success) {
+                    res.locals.responseData = {
+                        success: false,
+                        status: 500,
+                        message: 'Failed to update coding problem completion',
+                        error: result.error || 'Database error'
+                    };
+                    return next();
+                }
             } else {
-                res.locals.responseData = {
-                    success: false,
-                    status: 500,
-                    message: 'Failed to update coding problem completion',
-                    error: result.error || 'Database error'
+                // Insert new progress record
+                const progressData = {
+                    student_id: studentIdString,
+                    week: week,
+                    coding_problems_completed: codingProblemsCompleted,
+                    status: newStatus,
+                    updated_at: new Date().toISOString()
                 };
+                const tenant = await getCollegeAndDepartmentForStudent(studentIdString, req, fetchData);
+                if (tenant.college_id) progressData.college_id = tenant.college_id;
+                if (tenant.department_id) progressData.department_id = tenant.department_id;
+                const result = await executeData(
+                    'tblStudentProgress',
+                    progressData,
+                    'i',
+                    studentProgressSchema,
+                    {}
+                );
+                if (!result.success) {
+                    res.locals.responseData = {
+                        success: false,
+                        status: 500,
+                        message: 'Failed to save coding problem completion',
+                        error: result.error || 'Database error'
+                    };
+                    return next();
+                }
             }
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Coding problem marked as completed',
+                data: {
+                    coding_problems_completed: codingProblemsCompleted,
+                    total_completed: codingProblemsCompleted.length
+                }
+            };
             next();
         } catch (error) {
             res.locals.responseData = {
@@ -1234,10 +1390,12 @@ export default class studentProgressController {
                 const test = latestTestsByDay[day];
                 const attemptCount = attemptsByDay[day] || 0;
 
+                // Weekly test (aptitude) requires >75%; other practice days require >=70%
+                const threshold = day === 'weekly-test' ? 75 : 70;
                 if (!test) {
                     practiceTestEligibility.missing.push(day);
                     practiceTestEligibility.eligible = false;
-                } else if (test.score < 70) {
+                } else if (test.score < threshold) {
                     practiceTestEligibility.failed.push({
                         day,
                         score: test.score,
@@ -1276,7 +1434,7 @@ export default class studentProgressController {
                 attempted: weeklyAttemptCount > 0,
                 score: latestWeeklyTest ? latestWeeklyTest.score : 0,
                 completed: !!latestWeeklyTest,
-                passed: latestWeeklyTest ? latestWeeklyTest.score >= 70 : false,
+                passed: latestWeeklyTest ? latestWeeklyTest.score > 75 : false,
                 attempts: weeklyAttemptCount,
                 max_attempts: 3
             };
@@ -1295,6 +1453,7 @@ export default class studentProgressController {
                     weekly_test_status: weeklyTestStatus,
                     requirements: {
                         practice_test_threshold: 70,
+                        weekly_test_threshold: 75,
                         coding_problems_required: 'all'
                     }
                 }
@@ -1580,7 +1739,7 @@ export default class studentProgressController {
                 // Update existing progress with bookmarks - use $or to match both formats
                 await executeData(
                     'tblStudentProgress',
-                    { bookmarks: bookmarks, updated_at: new Date() },
+                    { bookmarks: bookmarks, updated_at: new Date().toISOString() },
                     'u',
                     studentProgressSchema,
                     {
@@ -1598,9 +1757,12 @@ export default class studentProgressController {
                     days_completed: [],
                     time_spent: 0,
                     bookmarks: bookmarks,
-                    created_at: new Date(),
-                    updated_at: new Date()
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 };
+                const tenantBm = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
+                if (tenantBm.college_id) newProgress.college_id = tenantBm.college_id;
+                if (tenantBm.department_id) newProgress.department_id = tenantBm.department_id;
                 await executeData(
                     'tblStudentProgress',
                     newProgress,

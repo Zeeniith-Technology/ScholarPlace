@@ -71,8 +71,8 @@ export default {
         required: false
     },
     created_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     }
 };

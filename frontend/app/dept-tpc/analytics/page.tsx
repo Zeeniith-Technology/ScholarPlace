@@ -19,7 +19,8 @@ import {
   Download,
   PieChart,
   X,
-  Search
+  Search,
+  Code
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 
@@ -207,12 +208,15 @@ export default function DepartmentTPCAnalyticsPage() {
     fetchAnalyticsData()
   }
 
-  // Calculate max score for chart scaling
-  const maxScore = Math.max(
-    performance?.averageScore || 0,
-    ...performanceTrends.map(t => t.averageScore),
-    100
-  )
+  // Data-driven scale so performance trends show visible variation (spikes)
+  const trendScores = performanceTrends.map(t => t.averageScore).filter((s): s is number => typeof s === 'number')
+  const minScore = trendScores.length > 0 ? Math.min(...trendScores) : 0
+  const maxScore = trendScores.length > 0 ? Math.max(...trendScores) : 100
+  const scoreRange = maxScore - minScore
+  const barHeight = (score: number) => {
+    if (scoreRange <= 0) return 50 // all weeks same score: show bar at 50% so it's visible
+    return Math.min(100, Math.max(0, ((score - minScore) / scoreRange) * 100))
+  }
 
   const exportData = () => {
     const data = {
@@ -260,6 +264,10 @@ export default function DepartmentTPCAnalyticsPage() {
       case 'tests_completed':
         title = 'Tests/Problems Activity'
         data = performance.studentDetails.filter((s: any) => s.testsCompleted > 0)
+        break
+      case 'dsa':
+        title = 'DSA Activity'
+        data = performance.studentDetails.filter((s: any) => (s.codingProblemsSolved || 0) > 0)
         break
       default:
         return
@@ -355,7 +363,7 @@ export default function DepartmentTPCAnalyticsPage() {
           <>
             {/* Performance Overview */}
             {performance && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card
                   className="cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => handleCardClick('total_students')}
@@ -400,6 +408,22 @@ export default function DepartmentTPCAnalyticsPage() {
                     <p className="text-2xl font-bold text-neutral">{performance.totalTests || 0}</p>
                     <p className="text-xs text-neutral-light mt-1">
                       {performance.totalDaysCompleted || 0} days completed
+                    </p>
+                  </div>
+                </Card>
+
+                <Card
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleCardClick('dsa')}
+                >
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-neutral-light">DSA Problems Solved</span>
+                      <Code className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold text-neutral">{performance.totalDSAProblemsSolved ?? 0}</p>
+                    <p className="text-xs text-neutral-light mt-1">
+                      {performance.studentsWithDSAActivity ?? 0} students with DSA activity
                     </p>
                   </div>
                 </Card>
@@ -453,7 +477,7 @@ export default function DepartmentTPCAnalyticsPage() {
                     <div className="relative h-64 bg-background-surface rounded-lg p-4">
                       <div className="flex items-end justify-between h-full gap-1">
                         {performanceTrends.map((trend, index) => {
-                          const height = maxScore > 0 ? (trend.averageScore / maxScore) * 100 : 0
+                          const height = barHeight(trend.averageScore ?? 0)
                           return (
                             <div key={index} className="flex-1 flex flex-col items-center gap-2">
                               <div className="relative w-full h-full flex items-end">
@@ -479,6 +503,11 @@ export default function DepartmentTPCAnalyticsPage() {
                           <p className="text-xs text-neutral-light mt-1">
                             {trend.studentsParticipated} students
                           </p>
+                          {typeof (trend as any).dsaProblemsSolved === 'number' && (
+                            <p className="text-xs text-primary mt-0.5">
+                              {(trend as any).dsaProblemsSolved} DSA solved
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>

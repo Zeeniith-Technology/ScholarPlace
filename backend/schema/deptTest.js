@@ -105,12 +105,12 @@ const deptTestSchema = {
     },
 
     created_at: {
-        type: Date,
-        default: Date.now
+        type: String,
+        default: () => new Date().toISOString()
     },
     updated_at: {
-        type: Date,
-        default: Date.now
+        type: String,
+        default: () => new Date().toISOString()
     },
     deleted: {
         type: Boolean,

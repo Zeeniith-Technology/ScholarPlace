@@ -2,6 +2,7 @@ import { executeData, fetchData, getDB } from '../methods.js';
 import practiceTestSchema from '../schema/practiceTest.js';
 import { ObjectId } from 'mongodb';
 import aiService from '../services/aiService.js';
+import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
 import testAnalysisSchema from '../schema/testAnalysis.js';
 
 /** Remove markdown asterisks from AI text */
@@ -77,7 +78,7 @@ export default class practiceTestController {
                 started_at: new Date(),
                 completed_at: new Date(),
                 status: 'completed',
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             };
 
             // If updating, preserve created_at from existing document
@@ -86,6 +87,9 @@ export default class practiceTestController {
             } else {
                 testData.created_at = new Date();
             }
+            const tenant = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
+            if (tenant.college_id) testData.college_id = tenant.college_id;
+            if (tenant.department_id) testData.department_id = tenant.department_id;
 
             let response;
             if (isUpdate) {
@@ -161,6 +165,8 @@ export default class practiceTestController {
                         performance_trend: aiAnalysis.performance_trend || 'new',
                         comparison: aiAnalysis.comparison || null,
                     };
+                    if (tenant.college_id) analysisDoc.college_id = tenant.college_id;
+                    if (tenant.department_id) analysisDoc.department_id = tenant.department_id;
 
                     const analysisResult = await executeData('tblTestAnalysis', analysisDoc, 'i', testAnalysisSchema);
                     analysis = {

@@ -122,7 +122,7 @@ function transformProblem(problem, week, day) {
         complexity_guidance: problem.complexity_guidance || {},
         concepts_tested: [problem.metadata.topic],
         is_capstone: false, // Daily problems
-        created_at: new Date(),
+        created_at: new Date().toISOString(),
     }
 }
 

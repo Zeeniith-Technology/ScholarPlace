@@ -37,8 +37,8 @@ export default {
         enum: ['available', 'attempted', 'expired']
     },
     created_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     }
 };

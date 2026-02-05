@@ -8,6 +8,10 @@ export default {
         type: String,
         required: true
     },
+    /** tblCollage._id - for tenant filtering (optional for backward compat) */
+    college_id: { type: String, required: false },
+    /** tblDepartments._id - for tenant filtering (optional for backward compat) */
+    department_id: { type: String, required: false },
     week: {
         type: Number,
         required: true
@@ -96,14 +100,14 @@ export default {
         // Array of notes: [{ day: 'day-1', note: 'text', timestamp: Date }]
     },
     created_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     },
     updated_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     },
     deleted: {
         type: Boolean,

@@ -586,6 +586,110 @@ export default class profileController {
     }
 
     /**
+     * Verify current password (for two-step change password flow)
+     * Route: POST /profile/verify-password
+     */
+    async verifyPassword(req, res, next) {
+        try {
+            const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
+            const userRole = req.user?.role;
+            const { currentPassword } = req.body;
+
+            if (!userId) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 401,
+                    message: 'User ID is required',
+                    error: 'Authentication required'
+                };
+                return next();
+            }
+
+            if (!currentPassword) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'Current password is required',
+                    error: 'Missing current password'
+                };
+                return next();
+            }
+
+            const isSuperadmin = (userRole && userRole.toLowerCase() === 'superadmin') ||
+                userId === 'superadmin-dev' ||
+                userId?.toString() === 'superadmin-dev';
+
+            if (isSuperadmin) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 403,
+                    message: 'Superadmin password cannot be verified',
+                    error: 'Superadmin is read-only'
+                };
+                return next();
+            }
+
+            const normalizedUserRole = userRole?.toLowerCase();
+
+            if (normalizedUserRole === 'tpc') {
+                const { ObjectId } = await import('mongodb');
+                const userIdFilter = typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId)
+                    ? { _id: new ObjectId(userId), tpc_deleted: false }
+                    : { _id: userId, tpc_deleted: false };
+
+                const userResponse = await fetchData('tblTPC', {}, userIdFilter, {});
+                if (!userResponse.success || !userResponse.data || userResponse.data.length === 0) {
+                    res.locals.responseData = { success: false, status: 404, message: 'User not found', error: 'Profile not found' };
+                    return next();
+                }
+                const isPasswordValid = await bcrypt.compare(currentPassword, userResponse.data[0].tpc_password);
+                res.locals.responseData = isPasswordValid
+                    ? { success: true, status: 200, message: 'Password verified', data: {} }
+                    : { success: false, status: 401, message: 'Current password is incorrect', error: 'Invalid current password' };
+                return next();
+            }
+
+            if (normalizedUserRole === 'depttpc') {
+                const { ObjectId } = await import('mongodb');
+                const userIdFilter = typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId)
+                    ? { _id: new ObjectId(userId), dept_tpc_deleted: false }
+                    : { _id: userId, dept_tpc_deleted: false };
+
+                const userResponse = await fetchData('tblDeptTPC', {}, userIdFilter, {});
+                if (!userResponse.success || !userResponse.data || userResponse.data.length === 0) {
+                    res.locals.responseData = { success: false, status: 404, message: 'User not found', error: 'Profile not found' };
+                    return next();
+                }
+                const isPasswordValid = await bcrypt.compare(currentPassword, userResponse.data[0].dept_tpc_password);
+                res.locals.responseData = isPasswordValid
+                    ? { success: true, status: 200, message: 'Password verified', data: {} }
+                    : { success: false, status: 401, message: 'Current password is incorrect', error: 'Invalid current password' };
+                return next();
+            }
+
+            const userResponse = await fetchData('tblPersonMaster', {}, { _id: userId, person_deleted: false }, {});
+            if (!userResponse.success || !userResponse.data || userResponse.data.length === 0) {
+                res.locals.responseData = { success: false, status: 404, message: 'User not found', error: 'Profile not found' };
+                return next();
+            }
+            const isPasswordValid = await bcrypt.compare(currentPassword, userResponse.data[0].person_password);
+            res.locals.responseData = isPasswordValid
+                ? { success: true, status: 200, message: 'Password verified', data: {} }
+                : { success: false, status: 401, message: 'Current password is incorrect', error: 'Invalid current password' };
+            next();
+        } catch (error) {
+            console.error('[Verify Password] Error:', error);
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Failed to verify password',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    /**
      * Change password
      * Route: POST /profile/change-password
      */

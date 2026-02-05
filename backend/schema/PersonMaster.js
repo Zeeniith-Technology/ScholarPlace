@@ -25,6 +25,15 @@ const personMaster = {
     
     // Additional fields
     contact_number: { type: String },
+    /**
+     * College reference (CRITICAL for multi-tenancy)
+     * Stores tblCollage._id (as stringified ObjectId in most flows; sometimes ObjectId in legacy data)
+     *
+     * - Written on signup (Signup.js)
+     * - Embedded into JWT as `college_id` on login (login.js)
+     * - Used across controllers to scope TPC/DeptTPC/student data to the correct college
+     */
+    person_collage_id: { type: String },
     // Department display value (historically stored as name/code). Keep as String.
     department: { type: String },
     // Department reference id (preferred for joins/filters); stored as stringified ObjectId.

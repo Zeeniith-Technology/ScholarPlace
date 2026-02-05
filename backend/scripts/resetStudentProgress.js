@@ -248,7 +248,7 @@ async function resetStudentProgress() {
                 const updateOperation = {
                     $set: {
                         ...updateData,
-                        updated_at: new Date()
+                        updated_at: new Date().toISOString()
                     }
                 };
                 

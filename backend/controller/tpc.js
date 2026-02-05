@@ -2155,7 +2155,8 @@ export default class tpcController {
                 return next();
             }
 
-            const collegeId = userInfo.user.collage_id;
+            const collegeIdRaw = userInfo.user.person_collage_id || userInfo.user.collage_id || userInfo.user.college_id;
+            const collegeId = collegeIdRaw?.toString?.() || collegeIdRaw;
             if (!collegeId) {
                 res.locals.responseData = {
                     success: false,
@@ -2168,9 +2169,10 @@ export default class tpcController {
 
             // Build student filter
             let studentFilter = {
-                person_collage_id: collegeId,
+                // Confirm tenant by college (tblCollage._id) - support string/ObjectId storage
+                person_collage_id: { $in: [collegeId].filter(Boolean) },
                 person_deleted: false,
-                person_role: 'Student'
+                person_role: { $regex: /^student$/i }
             };
 
             // Apply department filter if provided
@@ -2188,7 +2190,8 @@ export default class tpcController {
             const studentIds = students.map(s => s._id || s.person_id);
 
             // Build filter for practice tests
-            let testFilter = { student_id: { $in: studentIds } };
+            // Tenant confirmation on practice tests too (college_id is now present on docs)
+            let testFilter = { student_id: { $in: studentIds }, college_id: collegeId };
             if (dateFrom || dateTo) {
                 testFilter.completed_at = {};
                 if (dateFrom) testFilter.completed_at.$gte = new Date(dateFrom);
@@ -2225,7 +2228,7 @@ export default class tpcController {
             // Calculate statistics for each group
             const testList = Object.values(testGroups).map(group => {
                 const scores = group.tests.map(t => t.score || 0);
-                const uniqueStudents = new Set(group.tests.map(t => t.student_id));
+                const uniqueStudents = new Set(group.tests.map(t => (t.student_id?.toString?.() || String(t.student_id))));
 
                 return {
                     week: group.week,
@@ -2313,7 +2316,8 @@ export default class tpcController {
                 return next();
             }
 
-            const collegeId = userInfo.user.collage_id;
+            const collegeIdRaw = userInfo.user.person_collage_id || userInfo.user.collage_id || userInfo.user.college_id;
+            const collegeId = collegeIdRaw?.toString?.() || collegeIdRaw;
             if (!collegeId) {
                 res.locals.responseData = {
                     success: false,
@@ -2326,9 +2330,10 @@ export default class tpcController {
 
             // Get students
             let studentFilter = {
-                person_collage_id: collegeId,
+                // Confirm tenant by college (tblCollage._id) - support string/ObjectId storage
+                person_collage_id: { $in: [collegeId].filter(Boolean) },
                 person_deleted: false,
-                person_role: 'Student'
+                person_role: { $regex: /^student$/i }
             };
             if (department && department !== 'all') {
                 studentFilter.department = department;
@@ -2344,6 +2349,8 @@ export default class tpcController {
                 {},
                 {
                     student_id: { $in: studentIds },
+                    // Tenant confirmation: only this college's tests
+                    college_id: collegeId,
                     week: week,
                     day: day
                 },
@@ -2443,7 +2450,8 @@ export default class tpcController {
                 return next();
             }
 
-            const collegeId = userInfo.user.collage_id;
+            const collegeIdRaw = userInfo.user.person_collage_id || userInfo.user.collage_id || userInfo.user.college_id;
+            const collegeId = collegeIdRaw?.toString?.() || collegeIdRaw;
             if (!collegeId) {
                 res.locals.responseData = {
                     success: false,
@@ -2456,9 +2464,10 @@ export default class tpcController {
 
             // Get students
             let studentFilter = {
-                person_collage_id: collegeId,
+                // Tenant confirmation: restrict to this college (tblCollage._id)
+                person_collage_id: { $in: [collegeId].filter(Boolean) },
                 person_deleted: false,
-                person_role: 'Student'
+                person_role: { $regex: /^student$/i }
             };
             if (department && department !== 'all') {
                 studentFilter.department = department;
@@ -2472,12 +2481,16 @@ export default class tpcController {
             const progressResponse = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: { $in: studentIds } }
+                {
+                    student_id: { $in: studentIds },
+                    // Tenant confirmation on progress docs too (new fields)
+                    college_id: collegeId
+                }
             );
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
             // Get practice tests
-            let testFilter = { student_id: { $in: studentIds } };
+            let testFilter = { student_id: { $in: studentIds }, college_id: collegeId };
             if (dateFrom || dateTo) {
                 testFilter.completed_at = {};
                 if (dateFrom) testFilter.completed_at.$gte = new Date(dateFrom);
@@ -2800,11 +2813,11 @@ export default class tpcController {
             }
 
             const user = userInfo.user;
-            const collegeId = user.person_collage_id || user.collage_id;
-            const department = user.department;
-            const departmentId = user.department_id || (typeof user.department === 'string' && user.department.match(/^[0-9a-fA-F]{24}$/) ? user.department : null);
+            let collegeId = user.person_collage_id || user.collage_id;
+            let deptFilter = user.department;
+            let deptIdFilter = user.department_id || (typeof user.department === 'string' && /^[0-9a-fA-F]{24}$/.test(user.department) ? user.department : null);
 
-            if (!collegeId || (!department && !departmentId)) {
+            if (!collegeId || (!deptFilter && !deptIdFilter)) {
                 res.locals.responseData = {
                     success: false,
                     status: 400,
@@ -2814,129 +2827,200 @@ export default class tpcController {
                 return next();
             }
 
-            // Build department filter
-            let departmentFilter = {};
-            if (department && departmentId) {
-                // If we have both, match either (legacy vs new)
-                departmentFilter = { $or: [{ department: department }, { department: departmentId }, { department_id: departmentId }] };
-            } else if (departmentId) {
-                departmentFilter = { $or: [{ department: departmentId }, { department_id: departmentId }] };
-            } else {
-                departmentFilter = { department: department };
+            const { ObjectId } = await import('mongodb');
+            const collegeIdString = collegeId?.toString?.() || collegeId || null;
+            let collegeIdObject = null;
+            if (collegeId && typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)) {
+                collegeIdObject = new ObjectId(collegeId);
+            } else if (collegeId && typeof collegeId === 'object' && collegeId.toString) {
+                collegeIdObject = collegeId;
             }
 
-            // Get all students in department
-            const studentsResponse = await fetchData(
-                'tblPersonMaster',
-                { department: 1, person_name: 1, person_email: 1, person_status: 1 },
-                {
-                    person_collage_id: collegeId,
-                    ...departmentFilter,
-                    person_deleted: false,
-                    person_status: 'active',
-                    person_role: 'Student'
+            // Resolve department_id same as generateDeptTPCReport (PersonMaster, college, tblDepartments)
+            if (deptFilter && typeof deptFilter === 'string') deptFilter = deptFilter.trim();
+            if (!deptIdFilter && deptFilter) {
+                const personMasterResponse = await fetchData('tblPersonMaster', { department_id: 1 }, { _id: userId, person_deleted: false });
+                if (personMasterResponse.success && personMasterResponse.data && personMasterResponse.data.length > 0 && personMasterResponse.data[0].department_id) {
+                    deptIdFilter = personMasterResponse.data[0].department_id;
                 }
-            );
+            }
+            if (!deptIdFilter && deptFilter && collegeIdString) {
+                const collegeResponse = await fetchData('tblCollage', { collage_departments: 1, departments: 1 }, { _id: collegeIdObject || collegeIdString, deleted: false });
+                const college = collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0 ? collegeResponse.data[0] : null;
+                if (college?.departments && Array.isArray(college.departments)) {
+                    const target = deptFilter.trim().toLowerCase();
+                    const match = college.departments.find(d => {
+                        const dn = (d.department_name || '').trim().toLowerCase();
+                        const dc = (d.department_code || '').trim().toLowerCase();
+                        return dn === target || dc === target;
+                    });
+                    if (match?.department_id) deptIdFilter = match.department_id?.toString?.() || match.department_id;
+                }
+                if (!deptIdFilter && college?.collage_departments && Array.isArray(college.collage_departments) && college.collage_departments.length > 0) {
+                    const deptObjectIds = college.collage_departments.map(id => (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id));
+                    const deptListResp = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, { _id: { $in: deptObjectIds }, deleted: false });
+                    if (deptListResp.success && Array.isArray(deptListResp.data)) {
+                        const target = deptFilter.trim().toLowerCase();
+                        const deptMatch = deptListResp.data.find(d => {
+                            const dn = (d.department_name || '').trim().toLowerCase();
+                            const dc = (d.department_code || '').trim().toLowerCase();
+                            return dn === target || dc === target;
+                        });
+                        if (deptMatch?._id) {
+                            deptIdFilter = deptMatch._id?.toString?.() || deptMatch._id;
+                            deptFilter = deptMatch.department_name || deptMatch.department_code || deptFilter;
+                        }
+                    }
+                }
+                if (!deptIdFilter) {
+                    const escaped = deptFilter.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const deptLookupFilter = {
+                        $and: [
+                            { $or: [{ department_name: deptFilter.trim() }, { department_code: deptFilter.trim() }, { department_name: { $regex: new RegExp(`^${escaped}$`, 'i') } }, { department_code: { $regex: new RegExp(`^${escaped}$`, 'i') } }] },
+                            { $or: [{ collage_id: collegeIdString }, { department_college_id: collegeIdString }, ...(collegeIdObject ? [{ collage_id: collegeIdObject }, { department_college_id: collegeIdObject }] : [])] }
+                        ]
+                    };
+                    const deptResponse = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, deptLookupFilter);
+                    if (deptResponse.success && Array.isArray(deptResponse.data) && deptResponse.data.length > 0) {
+                        const dept = deptResponse.data[0];
+                        deptIdFilter = dept._id?.toString?.() || dept._id || null;
+                        deptFilter = dept.department_name || dept.department_code || deptFilter;
+                    }
+                }
+            }
 
+            const department = deptFilter;
+            const studentFilter = {
+                person_deleted: false,
+                person_role: { $regex: /^student$/i }
+            };
+            if (collegeIdString) {
+                studentFilter.person_collage_id = { $in: [...(collegeIdObject ? [collegeIdObject] : []), collegeIdString] };
+            }
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                const deptIdString = deptIdFilter?.toString?.() || deptIdFilter;
+                const deptIdObject = typeof deptIdString === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdString) ? new ObjectId(deptIdString) : null;
+                if (deptIdObject) {
+                    deptOrConditions.push({ department_id: deptIdObject }, { department_id: deptIdString });
+                    deptOrConditions.push({ department: deptIdString });
+                } else {
+                    deptOrConditions.push({ department_id: deptIdString });
+                }
+            }
+            if (deptFilter) {
+                const trimmedDept = (typeof deptFilter === 'string' ? deptFilter : '').trim();
+                if (trimmedDept) {
+                    deptOrConditions.push(
+                        { department: trimmedDept },
+                        { department: { $regex: new RegExp(`^${trimmedDept.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                    );
+                }
+            }
+            if (deptOrConditions.length > 0) {
+                studentFilter.$or = deptOrConditions;
+            } else {
+                studentFilter.$or = [{ department_id: '__NO_DEPT__' }];
+            }
+
+            const studentsResponse = await fetchData('tblPersonMaster', { department: 1, person_name: 1, person_email: 1, person_status: 1 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => (s._id || s.person_id).toString());
-            console.log(`[TPC Analytics] Found ${students.length} students in department ${department}`);
-            console.log(`[TPC Analytics] Student IDs:`, studentIds);
+            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id === 'object' && typeof id.toString === 'function') ? id.toString() : String(id));
+            const studentIdObjectIds = studentIds.filter(id => id && (typeof id === 'object' || (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)))).map(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id).filter(id => id && typeof id === 'object');
 
-            // Get progress data
-            const progressResponse = await fetchData(
-                'tblStudentProgress',
-                {},
-                { student_id: { $in: studentIds } }
-            );
+            const studentIdOrConditions = [];
+            if (studentIdStrings.length) studentIdOrConditions.push({ student_id: { $in: studentIdStrings } });
+            if (studentIdObjectIds.length) studentIdOrConditions.push({ student_id: { $in: studentIdObjectIds } });
+            const progressFilter = studentIdOrConditions.length ? { $or: studentIdOrConditions } : { student_id: '__NO_STUDENT__' };
+            const testFilter = studentIdOrConditions.length ? { $or: [...studentIdOrConditions] } : { student_id: '__NO_STUDENT__' };
+
+            const progressResponse = await fetchData('tblStudentProgress', {}, progressFilter);
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
-            console.log(`[TPC Analytics] Found ${progressData.length} progress records`);
-            if (progressData.length > 0) console.log('[TPC Analytics] Sample Progress:', JSON.stringify(progressData[0], null, 2));
-
-            // Get practice test data
-
-            // Get practice test data
-            const practiceTestResponse = await fetchData(
-                'tblPracticeTest',
-                { student_id: 1, score: 1, week: 1, day: 1 },
-                { student_id: { $in: studentIds } }
-            );
+            const practiceTestResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1, week: 1, day: 1 }, testFilter);
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
+
+            // DSA: Fetch passed coding submissions (source of truth for DSA problems solved)
+            const dsaFilter = studentIdOrConditions.length ? { $and: [{ $or: studentIdOrConditions }, { status: 'passed' }] } : { status: '__none__' };
+            const submissionsResponse = await fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, dsaFilter);
+            const dsaSubmissions = submissionsResponse.success && submissionsResponse.data ? submissionsResponse.data : [];
+            const toStr = (id) => (id && typeof id === 'object' && typeof id.toString === 'function' ? id.toString() : String(id));
+            const dsaByStudent = {};
+            dsaSubmissions.forEach(sub => {
+                const sid = toStr(sub.student_id);
+                if (!dsaByStudent[sid]) dsaByStudent[sid] = new Set();
+                if (sub.problem_id) dsaByStudent[sid].add(sub.problem_id);
+            });
+            const totalDSAProblemsSolved = Object.values(dsaByStudent).reduce((sum, set) => sum + set.size, 0);
+            const studentsWithDSAActivity = Object.keys(dsaByStudent).length;
 
             // Calculate department statistics
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.person_status === 'active').length;
 
-            // Calculate average score (Aptitude + Coding)
+            // Calculate average score (Aptitude + Coding) and build studentDetails
             let totalScore = 0;
             let scoreCount = 0;
             let totalTestsCompleted = 0;
             let totalDaysCompleted = 0;
             let topPerformers = 0;
+            const studentDetails = [];
 
             // Estimated total coding problems per week to calculate percentage
             const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
 
-            progressData.forEach(progress => {
-                let aptitudeScore = null;
+            students.forEach(student => {
+                const sid = toStr(student._id || student.person_id);
+                const progress = progressData.find(p => toStr(p.student_id) === sid);
+                const dsaCount = (dsaByStudent[sid] && dsaByStudent[sid].size) || 0;
+                const progressCodingCount = progress && progress.coding_problems_completed ? new Set(progress.coding_problems_completed).size : 0;
+                const codingProblemsSolved = Math.max(dsaCount, progressCodingCount);
+
+                let aptitudeScore = (progress && progress.average_score !== undefined && progress.average_score !== null) ? progress.average_score : null;
                 let codingScore = null;
-
-                // 1. Aptitude Score
-                if (progress.average_score !== undefined && progress.average_score !== null) {
-                    aptitudeScore = progress.average_score;
+                if (codingProblemsSolved > 0) {
+                    codingScore = Math.min(100, Math.round((codingProblemsSolved / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
                 }
 
-                // 2. Coding Score
-                if (progress.coding_problems_completed && progress.coding_problems_completed.length > 0) {
-                    const uniqueProblems = new Set(progress.coding_problems_completed).size;
-                    // Cap at 100%
-                    codingScore = Math.min(100, Math.round((uniqueProblems / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
-                }
-
-                // 3. Composite Score
-                let studentScore = null;
+                let compositeScore = null;
                 if (aptitudeScore !== null && codingScore !== null) {
-                    studentScore = Math.round((aptitudeScore + codingScore) / 2);
+                    compositeScore = Math.round((aptitudeScore + codingScore) / 2);
                 } else if (aptitudeScore !== null) {
-                    studentScore = aptitudeScore;
+                    compositeScore = aptitudeScore;
                 } else if (codingScore !== null) {
-                    studentScore = codingScore;
+                    compositeScore = codingScore;
                 }
-
-                if (studentScore !== null) {
-                    totalScore += studentScore;
-                    scoreCount++;
-                    if (studentScore >= 85) {
-                        topPerformers++;
+                if (compositeScore === null && practiceTests.length > 0) {
+                    const myTests = practiceTests.filter(t => toStr(t.student_id) === sid);
+                    if (myTests.length > 0) {
+                        const sum = myTests.reduce((a, b) => a + (b.score || 0), 0);
+                        compositeScore = Math.round(sum / myTests.length);
                     }
                 }
 
-                if (progress.total_practice_tests) {
-                    totalTestsCompleted += progress.total_practice_tests;
-                }
-                if (progress.total_days_completed) {
-                    totalDaysCompleted += progress.total_days_completed;
+                if (compositeScore !== null) {
+                    totalScore += compositeScore;
+                    scoreCount++;
+                    if (compositeScore >= 85) topPerformers++;
                 }
 
-                // Count coding problems as "Tests Completed"
-                if (progress.coding_problems_completed?.length > 0) {
-                    const uniqueEncoded = new Set(progress.coding_problems_completed).size;
-                    // Only add if not already counted (avoid double counting if logic changes)
-                    // Here we treat each problem as a "mini test" or just add 1 per set? 
-                    // Let's add total problems solved to "Tests Completed" count to show activity
-                    totalTestsCompleted += uniqueEncoded;
-                }
+                const myPracticeTests = practiceTests.filter(t => toStr(t.student_id) === sid);
+                totalTestsCompleted += myPracticeTests.length + codingProblemsSolved;
+                const daysCompletedVal = progress && (progress.total_days_completed !== undefined || progress.days_completed);
+                const daysCount = !daysCompletedVal ? 0 : (Array.isArray(progress.days_completed) ? progress.days_completed.length : (typeof progress.total_days_completed === 'number' ? progress.total_days_completed : (progress.days_completed?.length || 0)));
+                totalDaysCompleted += daysCount;
+
+                studentDetails.push({
+                    id: sid,
+                    name: student.person_name,
+                    email: student.person_email,
+                    status: student.person_status || 'inactive',
+                    compositeScore: compositeScore ?? 0,
+                    testsCompleted: myPracticeTests.length,
+                    codingProblemsSolved,
+                    daysCompleted: daysCount
+                });
             });
-
-            // Fallback: If no progress data but practice tests exist
-            if (scoreCount === 0 && practiceTests.length > 0) {
-                const testScores = practiceTests.map(t => t.score || 0).filter(s => s > 0);
-                if (testScores.length > 0) {
-                    totalScore = testScores.reduce((a, b) => a + b, 0);
-                    scoreCount = testScores.length;
-                    topPerformers = testScores.filter(s => s >= 85).length;
-                }
-            }
 
             const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
             const engagementRate = totalStudents > 0 ? Math.round((activeStudents / totalStudents) * 100) : 0;
@@ -2950,31 +3034,14 @@ export default class tpcController {
                     totalStudents,
                     activeStudents,
                     averageScore,
-                    totalTests: totalTestsCompleted, // Use the aggregated count
+                    totalTests: totalTestsCompleted,
                     totalDaysCompleted,
                     topPerformers,
                     engagementRate,
-                    // Needs Attention Logic: Students with Composite Score < 50
-                    needsAttention: students.filter(student => {
-                        const progress = progressData.find(p => (p.student_id === student._id || p.student_id === student.person_id));
-                        if (!progress) return true; // No progress = needs attention
-
-                        let aptScore = progress.average_score;
-                        let codeScore = 0;
-                        if (progress.coding_problems_completed?.length > 0) {
-                            const unique = new Set(progress.coding_problems_completed).size;
-                            codeScore = Math.min(100, Math.round((unique / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
-                        }
-
-                        let finalScore = 0;
-                        if (aptScore !== undefined && aptScore !== null) {
-                            finalScore = codeScore > 0 ? (aptScore + codeScore) / 2 : aptScore;
-                        } else {
-                            finalScore = codeScore;
-                        }
-
-                        return finalScore < 50;
-                    }).length
+                    totalDSAProblemsSolved,
+                    studentsWithDSAActivity,
+                    studentDetails,
+                    needsAttention: studentDetails.filter(s => s.compositeScore < 50 && s.status === 'active').length
                 }
             };
             next();
@@ -3031,10 +3098,11 @@ export default class tpcController {
             }
 
             const user = userInfo.user;
-            const collegeId = user.person_collage_id || user.collage_id;
-            const department = user.department;
+            let collegeId = user.person_collage_id || user.collage_id;
+            let deptFilter = user.department;
+            let deptIdFilter = user.department_id || (typeof user.department === 'string' && /^[0-9a-fA-F]{24}$/.test(user.department) ? user.department : null);
 
-            if (!collegeId || !department) {
+            if (!collegeId || (!deptFilter && !deptIdFilter)) {
                 res.locals.responseData = {
                     success: false,
                     status: 400,
@@ -3044,55 +3112,163 @@ export default class tpcController {
                 return next();
             }
 
-            // Get students in department
-            const studentsResponse = await fetchData(
-                'tblPersonMaster',
-                {},
-                {
-                    person_collage_id: collegeId,
-                    department: department,
-                    person_deleted: false,
-                    person_role: 'Student'
+            const { ObjectId } = await import('mongodb');
+            const collegeIdString = collegeId?.toString?.() || collegeId || null;
+            let collegeIdObject = null;
+            if (collegeId && typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)) {
+                collegeIdObject = new ObjectId(collegeId);
+            } else if (collegeId && typeof collegeId === 'object' && collegeId.toString) {
+                collegeIdObject = collegeId;
+            }
+            if (deptFilter && typeof deptFilter === 'string') deptFilter = deptFilter.trim();
+            if (!deptIdFilter && deptFilter) {
+                const personMasterResponse = await fetchData('tblPersonMaster', { department_id: 1 }, { _id: userId, person_deleted: false });
+                if (personMasterResponse.success && personMasterResponse.data && personMasterResponse.data.length > 0 && personMasterResponse.data[0].department_id) {
+                    deptIdFilter = personMasterResponse.data[0].department_id;
                 }
-            );
+            }
+            if (!deptIdFilter && deptFilter && collegeIdString) {
+                const collegeResponse = await fetchData('tblCollage', { collage_departments: 1, departments: 1 }, { _id: collegeIdObject || collegeIdString, deleted: false });
+                const college = collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0 ? collegeResponse.data[0] : null;
+                if (college?.departments && Array.isArray(college.departments)) {
+                    const target = deptFilter.trim().toLowerCase();
+                    const match = college.departments.find(d => {
+                        const dn = (d.department_name || '').trim().toLowerCase();
+                        const dc = (d.department_code || '').trim().toLowerCase();
+                        return dn === target || dc === target;
+                    });
+                    if (match?.department_id) deptIdFilter = match.department_id?.toString?.() || match.department_id;
+                }
+                if (!deptIdFilter && college?.collage_departments && Array.isArray(college.collage_departments) && college.collage_departments.length > 0) {
+                    const deptObjectIds = college.collage_departments.map(id => (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id));
+                    const deptListResp = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, { _id: { $in: deptObjectIds }, deleted: false });
+                    if (deptListResp.success && Array.isArray(deptListResp.data)) {
+                        const target = deptFilter.trim().toLowerCase();
+                        const deptMatch = deptListResp.data.find(d => {
+                            const dn = (d.department_name || '').trim().toLowerCase();
+                            const dc = (d.department_code || '').trim().toLowerCase();
+                            return dn === target || dc === target;
+                        });
+                        if (deptMatch?._id) {
+                            deptIdFilter = deptMatch._id?.toString?.() || deptMatch._id;
+                            deptFilter = deptMatch.department_name || deptMatch.department_code || deptFilter;
+                        }
+                    }
+                }
+                if (!deptIdFilter) {
+                    const escaped = deptFilter.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const deptLookupFilter = {
+                        $and: [
+                            { $or: [{ department_name: deptFilter.trim() }, { department_code: deptFilter.trim() }, { department_name: { $regex: new RegExp(`^${escaped}$`, 'i') } }, { department_code: { $regex: new RegExp(`^${escaped}$`, 'i') } }] },
+                            { $or: [{ collage_id: collegeIdString }, { department_college_id: collegeIdString }, ...(collegeIdObject ? [{ collage_id: collegeIdObject }, { department_college_id: collegeIdObject }] : [])] }
+                        ]
+                    };
+                    const deptResponse = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, deptLookupFilter);
+                    if (deptResponse.success && Array.isArray(deptResponse.data) && deptResponse.data.length > 0) {
+                        const dept = deptResponse.data[0];
+                        deptIdFilter = dept._id?.toString?.() || dept._id || null;
+                        deptFilter = dept.department_name || dept.department_code || deptFilter;
+                    }
+                }
+            }
+            const studentFilter = {
+                person_deleted: false,
+                person_role: { $regex: /^student$/i }
+            };
+            if (collegeIdString) {
+                studentFilter.person_collage_id = { $in: [...(collegeIdObject ? [collegeIdObject] : []), collegeIdString] };
+            }
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                const deptIdString = deptIdFilter?.toString?.() || deptIdFilter;
+                const deptIdObject = typeof deptIdString === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdString) ? new ObjectId(deptIdString) : null;
+                if (deptIdObject) {
+                    deptOrConditions.push({ department_id: deptIdObject }, { department_id: deptIdString });
+                    deptOrConditions.push({ department: deptIdString });
+                } else {
+                    deptOrConditions.push({ department_id: deptIdString });
+                }
+            }
+            if (deptFilter) {
+                const trimmedDept = (typeof deptFilter === 'string' ? deptFilter : '').trim();
+                if (trimmedDept) {
+                    deptOrConditions.push(
+                        { department: trimmedDept },
+                        { department: { $regex: new RegExp(`^${trimmedDept.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                    );
+                }
+            }
+            if (deptOrConditions.length > 0) {
+                studentFilter.$or = deptOrConditions;
+            } else {
+                studentFilter.$or = [{ department_id: '__NO_DEPT__' }];
+            }
+            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => (s._id || s.person_id).toString());
+            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id === 'object' && typeof id.toString === 'function') ? id.toString() : String(id));
+            const studentIdObjectIds = studentIds.filter(id => id && (typeof id === 'object' || (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)))).map(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id).filter(id => id && typeof id === 'object');
+            const studentIdOrConditions = [];
+            if (studentIdStrings.length) studentIdOrConditions.push({ student_id: { $in: studentIdStrings } });
+            if (studentIdObjectIds.length) studentIdOrConditions.push({ student_id: { $in: studentIdObjectIds } });
+            const studentIdFilter = studentIdOrConditions.length ? { $or: studentIdOrConditions } : { student_id: '__NO_STUDENT__' };
 
-            // 1. Get Practice Tests (Daily)
             const practiceTestResponse = await fetchData(
                 'tblPracticeTest',
                 { week: 1, score: 1, student_id: 1 },
-                {
-                    student_id: { $in: studentIds },
-                    week: { $lte: weeks }
-                }
+                { ...studentIdFilter, week: { $lte: weeks } }
             );
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
 
-            // 2. Get Weekly Test Analysis (Weekly Exams)
             const analysisResponse = await fetchData(
                 'tblTestAnalysis',
                 { week: 1, score: 1, student_id: 1, test_type: 1 },
                 {
-                    student_id: { $in: studentIds },
+                    ...studentIdFilter,
                     week: { $lte: weeks },
                     test_type: 'weekly'
                 }
             );
             const weeklyTests = analysisResponse.success && analysisResponse.data ? analysisResponse.data : [];
 
-            // 3. Get Coding Progress
             const progressResponse = await fetchData(
                 'tblStudentProgress',
                 { week: 1, coding_problems_completed: 1, average_score: 1, student_id: 1 },
-                {
-                    student_id: { $in: studentIds },
-                    week: { $lte: weeks }
-                }
+                { ...studentIdFilter, week: { $lte: weeks } }
             );
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // Group by week
+            // DSA: Fetch passed coding submissions and map problem_id -> week via tblCodingProblem
+            const dsaSubsFilter = studentIdOrConditions.length ? { $and: [{ $or: studentIdOrConditions }, { status: 'passed' }] } : { status: '__none__' };
+            const dsaSubsRes = await fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, dsaSubsFilter);
+            const dsaSubmissions = dsaSubsRes.success && dsaSubsRes.data ? dsaSubsRes.data : [];
+            const problemIds = [...new Set(dsaSubmissions.map(s => s.problem_id).filter(Boolean))];
+            let problemIdToWeek = {};
+            if (problemIds.length > 0) {
+                const problemsRes = await fetchData('tblCodingProblem', { question_id: 1, week: 1 }, { question_id: { $in: problemIds }, deleted: { $ne: true } });
+                const problems = problemsRes.success && problemsRes.data ? problemsRes.data : [];
+                problems.forEach(p => { if (p.question_id && p.week) problemIdToWeek[p.question_id] = p.week; });
+            }
+            const toStr = (id) => (id && typeof id === 'object' && typeof id.toString === 'function' ? id.toString() : String(id));
+            const dsaByWeek = {};
+            for (let w = 1; w <= weeks; w++) dsaByWeek[w] = { submissions: [], students: new Set() };
+            dsaSubmissions.forEach(sub => {
+                const week = problemIdToWeek[sub.problem_id];
+                if (week && week <= weeks) {
+                    dsaByWeek[week].submissions.push(sub);
+                    dsaByWeek[week].students.add(toStr(sub.student_id));
+                }
+            });
+            const dsaByWeekByStudent = {};
+            for (let w = 1; w <= weeks; w++) {
+                dsaByWeekByStudent[w] = {};
+                dsaByWeek[w].submissions.forEach(sub => {
+                    const sid = toStr(sub.student_id);
+                    if (!dsaByWeekByStudent[w][sid]) dsaByWeekByStudent[w][sid] = new Set();
+                    dsaByWeekByStudent[w][sid].add(sub.problem_id);
+                });
+            }
+
             const weeklyTrends = [];
             const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
 
@@ -3101,46 +3277,44 @@ export default class tpcController {
                 const wTests = weeklyTests.filter(t => t.week === week);
                 const wProgress = progressData.filter(p => p.week === week);
 
-                // Identify all participants for this week
                 const participants = new Set([
-                    ...pTests.map(t => t.student_id),
-                    ...wTests.map(t => t.student_id),
-                    ...wProgress.map(p => p.student_id)
+                    ...pTests.map(t => toStr(t.student_id)),
+                    ...wTests.map(t => toStr(t.student_id)),
+                    ...wProgress.map(p => toStr(p.student_id)),
+                    ...dsaByWeek[week].students
                 ]);
 
                 let totalWeekScore = 0;
                 let studentCount = 0;
 
                 participants.forEach(studentId => {
-                    // 1. Practice Score (Average of all daily tests for this student)
-                    const myPTests = pTests.filter(t => t.student_id === studentId);
+                    const myPTests = pTests.filter(t => toStr(t.student_id) === studentId);
                     let practiceScore = null;
                     if (myPTests.length > 0) {
                         practiceScore = myPTests.reduce((a, b) => a + (b.score || 0), 0) / myPTests.length;
                     }
 
-                    // 2. Weekly Test Score
-                    const myWTest = wTests.find(t => t.student_id === studentId); // Assuming 1 weekly test
+                    const myWTest = wTests.find(t => toStr(t.student_id) === studentId);
                     let weeklyScore = myWTest ? myWTest.score : null;
 
-                    // 3. Coding Score
-                    const myProgress = wProgress.find(p => p.student_id === studentId);
+                    const myProgress = wProgress.find(p => toStr(p.student_id) === studentId);
                     let codingScore = null;
                     if (myProgress && myProgress.coding_problems_completed?.length > 0) {
                         const unique = new Set(myProgress.coding_problems_completed).size;
                         codingScore = Math.min(100, Math.round((unique / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
                     }
+                    if (codingScore === null && dsaByWeekByStudent[week] && dsaByWeekByStudent[week][studentId]) {
+                        const dsaCount = dsaByWeekByStudent[week][studentId].size;
+                        if (dsaCount > 0) {
+                            codingScore = Math.min(100, Math.round((dsaCount / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
+                        }
+                    }
 
-                    // Calculate Composite for Student
-                    // Weightage: Weekly Test > Coding > Practice? 
-                    // Or just average all available components?
-                    // Let's Average Available Components
                     let components = [];
                     if (practiceScore !== null) components.push(practiceScore);
                     if (weeklyScore !== null) components.push(weeklyScore);
                     if (codingScore !== null) components.push(codingScore);
 
-                    // Fallback to average_score from progress if nothing else
                     if (components.length === 0 && myProgress && myProgress.average_score) {
                         components.push(myProgress.average_score);
                     }
@@ -3153,13 +3327,15 @@ export default class tpcController {
                 });
 
                 const avgScore = studentCount > 0 ? Math.round(totalWeekScore / studentCount) : 0;
-                const totalActivities = pTests.length + wTests.length + wProgress.filter(p => p.coding_problems_completed?.length > 0).length;
+                const dsaSolvedThisWeek = dsaByWeek[week].submissions.length;
+                const totalActivities = pTests.length + wTests.length + wProgress.filter(p => p.coding_problems_completed?.length > 0).length + dsaSolvedThisWeek;
 
                 weeklyTrends.push({
                     week,
                     averageScore: avgScore,
                     totalTests: totalActivities,
-                    studentsParticipated: participants.size
+                    studentsParticipated: participants.size,
+                    dsaProblemsSolved: dsaSolvedThisWeek
                 });
             }
 
@@ -3222,10 +3398,11 @@ export default class tpcController {
             }
 
             const user = userInfo.user;
-            const collegeId = user.person_collage_id || user.collage_id;
-            const department = user.department;
+            let collegeId = user.person_collage_id || user.collage_id;
+            let deptFilter = user.department;
+            let deptIdFilter = user.department_id || (typeof user.department === 'string' && /^[0-9a-fA-F]{24}$/.test(user.department) ? user.department : null);
 
-            if (!collegeId || !department) {
+            if (!collegeId || (!deptFilter && !deptIdFilter)) {
                 res.locals.responseData = {
                     success: false,
                     status: 400,
@@ -3235,66 +3412,156 @@ export default class tpcController {
                 return next();
             }
 
-            // Get students in department
-            const studentsResponse = await fetchData(
-                'tblPersonMaster',
-                {},
-                {
-                    person_collage_id: collegeId,
-                    department: department,
-                    person_deleted: false,
-                    person_role: 'Student'
+            const { ObjectId } = await import('mongodb');
+            const collegeIdString = collegeId?.toString?.() || collegeId || null;
+            let collegeIdObject = null;
+            if (collegeId && typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)) {
+                collegeIdObject = new ObjectId(collegeId);
+            } else if (collegeId && typeof collegeId === 'object' && collegeId.toString) {
+                collegeIdObject = collegeId;
+            }
+            if (deptFilter && typeof deptFilter === 'string') deptFilter = deptFilter.trim();
+            if (!deptIdFilter && deptFilter) {
+                const personMasterResponse = await fetchData('tblPersonMaster', { department_id: 1 }, { _id: userId, person_deleted: false });
+                if (personMasterResponse.success && personMasterResponse.data && personMasterResponse.data.length > 0 && personMasterResponse.data[0].department_id) {
+                    deptIdFilter = personMasterResponse.data[0].department_id;
                 }
-            );
+            }
+            if (!deptIdFilter && deptFilter && collegeIdString) {
+                const collegeResponse = await fetchData('tblCollage', { collage_departments: 1, departments: 1 }, { _id: collegeIdObject || collegeIdString, deleted: false });
+                const college = collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0 ? collegeResponse.data[0] : null;
+                if (college?.departments && Array.isArray(college.departments)) {
+                    const target = deptFilter.trim().toLowerCase();
+                    const match = college.departments.find(d => {
+                        const dn = (d.department_name || '').trim().toLowerCase();
+                        const dc = (d.department_code || '').trim().toLowerCase();
+                        return dn === target || dc === target;
+                    });
+                    if (match?.department_id) deptIdFilter = match.department_id?.toString?.() || match.department_id;
+                }
+                if (!deptIdFilter && college?.collage_departments && Array.isArray(college.collage_departments) && college.collage_departments.length > 0) {
+                    const deptObjectIds = college.collage_departments.map(id => (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id));
+                    const deptListResp = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, { _id: { $in: deptObjectIds }, deleted: false });
+                    if (deptListResp.success && Array.isArray(deptListResp.data)) {
+                        const target = deptFilter.trim().toLowerCase();
+                        const deptMatch = deptListResp.data.find(d => {
+                            const dn = (d.department_name || '').trim().toLowerCase();
+                            const dc = (d.department_code || '').trim().toLowerCase();
+                            return dn === target || dc === target;
+                        });
+                        if (deptMatch?._id) {
+                            deptIdFilter = deptMatch._id?.toString?.() || deptMatch._id;
+                            deptFilter = deptMatch.department_name || deptMatch.department_code || deptFilter;
+                        }
+                    }
+                }
+                if (!deptIdFilter) {
+                    const escaped = deptFilter.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const deptLookupFilter = {
+                        $and: [
+                            { $or: [{ department_name: deptFilter.trim() }, { department_code: deptFilter.trim() }, { department_name: { $regex: new RegExp(`^${escaped}$`, 'i') } }, { department_code: { $regex: new RegExp(`^${escaped}$`, 'i') } }] },
+                            { $or: [{ collage_id: collegeIdString }, { department_college_id: collegeIdString }, ...(collegeIdObject ? [{ collage_id: collegeIdObject }, { department_college_id: collegeIdObject }] : [])] }
+                        ]
+                    };
+                    const deptResponse = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, deptLookupFilter);
+                    if (deptResponse.success && Array.isArray(deptResponse.data) && deptResponse.data.length > 0) {
+                        const dept = deptResponse.data[0];
+                        deptIdFilter = dept._id?.toString?.() || dept._id || null;
+                        deptFilter = dept.department_name || dept.department_code || deptFilter;
+                    }
+                }
+            }
+            const department = deptFilter;
+            const studentFilter = {
+                person_deleted: false,
+                person_role: { $regex: /^student$/i }
+            };
+            if (collegeIdString) {
+                studentFilter.person_collage_id = { $in: [...(collegeIdObject ? [collegeIdObject] : []), collegeIdString] };
+            }
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                const deptIdString = deptIdFilter?.toString?.() || deptIdFilter;
+                const deptIdObject = typeof deptIdString === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdString) ? new ObjectId(deptIdString) : null;
+                if (deptIdObject) {
+                    deptOrConditions.push({ department_id: deptIdObject }, { department_id: deptIdString });
+                    deptOrConditions.push({ department: deptIdString });
+                } else {
+                    deptOrConditions.push({ department_id: deptIdString });
+                }
+            }
+            if (deptFilter) {
+                const trimmedDept = (typeof deptFilter === 'string' ? deptFilter : '').trim();
+                if (trimmedDept) {
+                    deptOrConditions.push(
+                        { department: trimmedDept },
+                        { department: { $regex: new RegExp(`^${trimmedDept.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                    );
+                }
+            }
+            if (deptOrConditions.length > 0) {
+                studentFilter.$or = deptOrConditions;
+            } else {
+                studentFilter.$or = [{ department_id: '__NO_DEPT__' }];
+            }
+            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => (s._id || s.person_id).toString());
+            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id === 'object' && typeof id.toString === 'function') ? id.toString() : String(id));
+            const studentIdObjectIds = studentIds.filter(id => id && (typeof id === 'object' || (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)))).map(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id).filter(id => id && typeof id === 'object');
+            const studentIdOrConditions = [];
+            if (studentIdStrings.length) studentIdOrConditions.push({ student_id: { $in: studentIdStrings } });
+            if (studentIdObjectIds.length) studentIdOrConditions.push({ student_id: { $in: studentIdObjectIds } });
+            const progressFilter = studentIdOrConditions.length ? { $or: studentIdOrConditions } : { student_id: '__NO_STUDENT__' };
+            const testFilter = studentIdOrConditions.length ? { $or: [...studentIdOrConditions] } : { student_id: '__NO_STUDENT__' };
 
-            // Get progress data
-            const progressResponse = await fetchData(
-                'tblStudentProgress',
-                {},
-                { student_id: { $in: studentIds } }
-            );
+            const progressResponse = await fetchData('tblStudentProgress', {}, progressFilter);
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
-
-            // Get practice test scores
-            const practiceTestResponse = await fetchData(
-                'tblPracticeTest',
-                { score: 1, student_id: 1 },
-                { student_id: { $in: studentIds } }
-            );
+            const practiceTestResponse = await fetchData('tblPracticeTest', { score: 1, student_id: 1 }, testFilter);
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
 
-            // Collect composite scores
+            // DSA: passed coding submissions for composite / distribution
+            const dsaSubsFilterDist = studentIdOrConditions.length ? { $and: [{ $or: studentIdOrConditions }, { status: 'passed' }] } : { status: '__none__' };
+            const dsaSubsResDist = await fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, dsaSubsFilterDist);
+            const dsaSubsDist = dsaSubsResDist.success && dsaSubsResDist.data ? dsaSubsResDist.data : [];
+            const toStrDist = (id) => (id && typeof id === 'object' && typeof id.toString === 'function' ? id.toString() : String(id));
+            const dsaByStudentDist = {};
+            dsaSubsDist.forEach(sub => {
+                const sid = toStrDist(sub.student_id);
+                if (!dsaByStudentDist[sid]) dsaByStudentDist[sid] = new Set();
+                if (sub.problem_id) dsaByStudentDist[sid].add(sub.problem_id);
+            });
+
             const allScores = [];
             const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
 
-            progressData.forEach(progress => {
-                let aptScore = progress.average_score;
-                let codeScore = null;
+            students.forEach(student => {
+                const sid = toStrDist(student._id || student.person_id);
+                const progress = progressData.find(p => toStrDist(p.student_id) === sid);
+                const dsaCount = (dsaByStudentDist[sid] && dsaByStudentDist[sid].size) || 0;
+                const progressCoding = progress && progress.coding_problems_completed ? new Set(progress.coding_problems_completed).size : 0;
+                const codingProblems = Math.max(dsaCount, progressCoding);
 
-                if (progress.coding_problems_completed && progress.coding_problems_completed.length > 0) {
-                    const unique = new Set(progress.coding_problems_completed).size;
-                    codeScore = Math.min(100, Math.round((unique / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
+                let aptScore = (progress && progress.average_score !== undefined && progress.average_score !== null) ? progress.average_score : null;
+                let codeScore = null;
+                if (codingProblems > 0) {
+                    codeScore = Math.min(100, Math.round((codingProblems / ESTIMATED_CODING_PROBLEMS_PER_WEEK) * 10)) * 10;
                 }
 
-                if (aptScore !== undefined && aptScore !== null && codeScore !== null) {
+                if (aptScore !== null && codeScore !== null) {
                     allScores.push(Math.round((aptScore + codeScore) / 2));
-                } else if (aptScore !== undefined && aptScore !== null) {
+                } else if (aptScore !== null) {
                     allScores.push(aptScore);
                 } else if (codeScore !== null) {
                     allScores.push(codeScore);
+                } else {
+                    const myTests = practiceTests.filter(t => toStrDist(t.student_id) === sid);
+                    if (myTests.length > 0) {
+                        const sum = myTests.reduce((a, b) => a + (b.score || 0), 0);
+                        allScores.push(Math.round(sum / myTests.length));
+                    }
                 }
             });
-
-            // If no progress scores, try practice tests
-            if (allScores.length === 0) {
-                practiceTests.forEach(test => {
-                    if (test.score !== undefined && test.score !== null) {
-                        allScores.push(test.score);
-                    }
-                });
-            }
 
             // Calculate distribution
             const distribution = {
@@ -3420,7 +3687,14 @@ export default class tpcController {
             }
 
             // Build filter for practice tests
-            let testFilter = { student_id: { $in: studentIds } };
+            const collegeIdStr = collegeId?.toString?.() || collegeId;
+            const deptIdStr = departmentId?.toString?.() || departmentId;
+            let testFilter = {
+                student_id: { $in: studentIds },
+                // Tenant confirmation on practice tests
+                ...(collegeIdStr ? { college_id: collegeIdStr } : {}),
+                ...(deptIdStr ? { department_id: deptIdStr } : {}),
+            };
             if (dateFrom || dateTo) {
                 testFilter.completed_at = {};
                 if (dateFrom) testFilter.completed_at.$gte = new Date(dateFrom);
@@ -3457,7 +3731,7 @@ export default class tpcController {
             // Calculate statistics for each group
             const testList = Object.values(testGroups).map(group => {
                 const scores = group.tests.map(t => t.score || 0);
-                const uniqueStudents = new Set(group.tests.map(t => t.student_id));
+                const uniqueStudents = new Set(group.tests.map(t => (t.student_id?.toString?.() || String(t.student_id))));
 
                 return {
                     week: group.week,
@@ -3548,6 +3822,7 @@ export default class tpcController {
             const user = userInfo.user;
             const collegeId = user.person_collage_id || user.collage_id;
             const department = user.department;
+            const departmentId = user.department_id || (typeof user.department === 'string' && user.department.match(/^[0-9a-fA-F]{24}$/) ? user.department : null);
 
             if (!collegeId || !department) {
                 res.locals.responseData = {
@@ -3579,6 +3854,9 @@ export default class tpcController {
                 {},
                 {
                     student_id: { $in: studentIds },
+                    // Tenant confirmation on practice tests
+                    ...(collegeId ? { college_id: (collegeId?.toString?.() || collegeId) } : {}),
+                    ...(departmentId ? { department_id: (departmentId?.toString?.() || departmentId) } : {}),
                     week: week,
                     day: day
                 },
@@ -3644,8 +3922,8 @@ export default class tpcController {
      */
     async generateDeptTPCReport(req, res, next) {
         try {
-            const userId = req.userId || req.user?.id;
-            const userRole = req.user?.role;
+            const userId = req.userId || req.user?.id || req.user?.person_id;
+            const userRole = (req.user?.role || req.user?.person_role || '').toString();
             const { reportType, dateFrom, dateTo } = req.body || {};
 
             if (!userId) {
@@ -3658,7 +3936,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -3680,10 +3958,11 @@ export default class tpcController {
             }
 
             const user = userInfo.user;
-            const collegeId = user.person_collage_id || user.collage_id;
-            const department = user.department;
+            let collegeId = user.person_collage_id || user.collage_id;
+            let deptFilter = user.department;
+            let deptIdFilter = user.department_id || (typeof user.department === 'string' && /^[0-9a-fA-F]{24}$/.test(user.department) ? user.department : null);
 
-            if (!collegeId || !department) {
+            if (!collegeId || (!deptFilter && !deptIdFilter)) {
                 res.locals.responseData = {
                     success: false,
                     status: 400,
@@ -3693,30 +3972,137 @@ export default class tpcController {
                 return next();
             }
 
-            // Get students in department
-            const studentsResponse = await fetchData(
-                'tblPersonMaster',
-                {},
-                {
-                    person_collage_id: collegeId,
-                    department: department,
-                    person_deleted: false,
-                    person_role: 'Student'
+            const { ObjectId } = await import('mongodb');
+            const collegeIdString = collegeId?.toString?.() || collegeId || null;
+            let collegeIdObject = null;
+            if (collegeId && typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)) {
+                collegeIdObject = new ObjectId(collegeId);
+            } else if (collegeId && typeof collegeId === 'object' && collegeId.toString) {
+                collegeIdObject = collegeId;
+            }
+
+            // Resolve department_id same as getStudentsList (PersonMaster, then college departments / tblDepartments)
+            if (deptFilter && typeof deptFilter === 'string') deptFilter = deptFilter.trim();
+            if (!deptIdFilter && deptFilter) {
+                const personMasterResponse = await fetchData('tblPersonMaster', { department_id: 1 }, { _id: userId, person_deleted: false });
+                if (personMasterResponse.success && personMasterResponse.data && personMasterResponse.data.length > 0 && personMasterResponse.data[0].department_id) {
+                    deptIdFilter = personMasterResponse.data[0].department_id;
                 }
-            );
+            }
+            if (!deptIdFilter && deptFilter && collegeIdString) {
+                const collegeResponse = await fetchData('tblCollage', { collage_departments: 1, departments: 1 }, { _id: collegeIdObject || collegeIdString, deleted: false });
+                const college = collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0 ? collegeResponse.data[0] : null;
+                if (college?.departments && Array.isArray(college.departments)) {
+                    const target = deptFilter.trim().toLowerCase();
+                    const match = college.departments.find(d => {
+                        const dn = (d.department_name || '').trim().toLowerCase();
+                        const dc = (d.department_code || '').trim().toLowerCase();
+                        return dn === target || dc === target;
+                    });
+                    if (match?.department_id) deptIdFilter = match.department_id?.toString?.() || match.department_id;
+                }
+                if (!deptIdFilter && college?.collage_departments && Array.isArray(college.collage_departments) && college.collage_departments.length > 0) {
+                    const deptObjectIds = college.collage_departments.map(id => (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id));
+                    const deptListResp = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, { _id: { $in: deptObjectIds }, deleted: false });
+                    if (deptListResp.success && Array.isArray(deptListResp.data)) {
+                        const target = deptFilter.trim().toLowerCase();
+                        const deptMatch = deptListResp.data.find(d => {
+                            const dn = (d.department_name || '').trim().toLowerCase();
+                            const dc = (d.department_code || '').trim().toLowerCase();
+                            return dn === target || dc === target;
+                        });
+                        if (deptMatch?._id) {
+                            deptIdFilter = deptMatch._id?.toString?.() || deptMatch._id;
+                            deptFilter = deptMatch.department_name || deptMatch.department_code || deptFilter;
+                        }
+                    }
+                }
+                if (!deptIdFilter) {
+                    const escaped = deptFilter.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const deptLookupFilter = {
+                        $and: [
+                            { $or: [{ department_name: deptFilter.trim() }, { department_code: deptFilter.trim() }, { department_name: { $regex: new RegExp(`^${escaped}$`, 'i') } }, { department_code: { $regex: new RegExp(`^${escaped}$`, 'i') } }] },
+                            { $or: [{ collage_id: collegeIdString }, { department_college_id: collegeIdString }, ...(collegeIdObject ? [{ collage_id: collegeIdObject }, { department_college_id: collegeIdObject }] : [])] }
+                        ]
+                    };
+                    const deptResponse = await fetchData('tblDepartments', { _id: 1, department_name: 1, department_code: 1 }, deptLookupFilter);
+                    if (deptResponse.success && Array.isArray(deptResponse.data) && deptResponse.data.length > 0) {
+                        const dept = deptResponse.data[0];
+                        deptIdFilter = dept._id?.toString?.() || dept._id || null;
+                        deptFilter = dept.department_name || dept.department_code || deptFilter;
+                    }
+                }
+            }
+
+            // Build student filter same as getStudentsList (person_collage_id $in, person_role regex, $or for department)
+            const studentFilter = {
+                person_deleted: false,
+                person_role: { $regex: /^student$/i }
+            };
+            if (collegeIdString) {
+                studentFilter.person_collage_id = { $in: [...(collegeIdObject ? [collegeIdObject] : []), collegeIdString] };
+            }
+            const deptOrConditions = [];
+            if (deptIdFilter) {
+                const deptIdString = deptIdFilter?.toString?.() || deptIdFilter;
+                const deptIdObject = typeof deptIdString === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdString) ? new ObjectId(deptIdString) : null;
+                if (deptIdObject) {
+                    deptOrConditions.push({ department_id: deptIdObject }, { department_id: deptIdString });
+                    deptOrConditions.push({ department: deptIdString });
+                } else {
+                    deptOrConditions.push({ department_id: deptIdString });
+                }
+            }
+            if (deptFilter) {
+                const trimmedDept = (typeof deptFilter === 'string' ? deptFilter : '').trim();
+                if (trimmedDept) {
+                    deptOrConditions.push(
+                        { department: trimmedDept },
+                        { department: { $regex: new RegExp(`^${trimmedDept.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+                    );
+                }
+            }
+            if (deptOrConditions.length > 0) {
+                studentFilter.$or = deptOrConditions;
+            } else {
+                studentFilter.$or = [{ department_id: '__NO_DEPT__' }];
+            }
+
+            const department = deptFilter; // for report payload labels
+
+            // Get students in department (all students, not just active)
+            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => s._id || s.person_id);
+            // tblStudentProgress and tblPracticeTest may store student_id as string or ObjectId
+            const studentIdStrings = studentIds.map(id => (id && typeof id === 'object' && typeof id.toString === 'function') ? id.toString() : String(id));
+            const studentIdObjectIds = studentIds.filter(id => id && (typeof id === 'object' || (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)))).map(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id).filter(id => id && typeof id === 'object');
+
+            // Match both string and ObjectId (mixed storage in DB); only add non-empty $in
+            const studentIdOrConditions = [];
+            if (studentIdStrings.length) studentIdOrConditions.push({ student_id: { $in: studentIdStrings } });
+            if (studentIdObjectIds.length) studentIdOrConditions.push({ student_id: { $in: studentIdObjectIds } });
+            // Tenant confirmation on activity collections (new fields): college_id + department_id
+            const progressFilterBase = studentIdOrConditions.length ? { $or: studentIdOrConditions } : { student_id: '__NO_STUDENT__' };
+            let testFilterBase = studentIdOrConditions.length ? { $or: [...studentIdOrConditions] } : { student_id: '__NO_STUDENT__' };
+            const collegeIdTenant = collegeIdString;
+            const deptIdTenant = deptIdFilter?.toString?.() || deptIdFilter || null;
+            const tenantClauses = [
+                ...(collegeIdTenant ? [{ college_id: collegeIdTenant }] : []),
+                ...(deptIdTenant ? [{ department_id: deptIdTenant }] : []),
+            ];
+            const progressFilter = tenantClauses.length ? { $and: [progressFilterBase, ...tenantClauses] } : progressFilterBase;
+            let testFilter = tenantClauses.length ? { $and: [testFilterBase, ...tenantClauses] } : testFilterBase;
 
             // Get progress data
             const progressResponse = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: { $in: studentIds } }
+                progressFilter
             );
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // Get practice tests
-            let testFilter = { student_id: { $in: studentIds } };
+            // Get practice tests (match both string and ObjectId)
             if (dateFrom || dateTo) {
                 testFilter.completed_at = {};
                 if (dateFrom) testFilter.completed_at.$gte = new Date(dateFrom);
@@ -3730,14 +4116,12 @@ export default class tpcController {
             let reportData = {};
 
             if (reportType === 'performance' || !reportType) {
-                // Performance Summary Report
+                // Performance Summary Report (student_id in DB may be string or ObjectId)
+                const toStr = (id) => (id && typeof id === 'object' && typeof id.toString === 'function' ? id.toString() : String(id));
                 const studentsWithProgress = students.map(student => {
-                    const progress = progressData.find(p =>
-                        (p.student_id === student._id || p.student_id === student.person_id)
-                    );
-                    const studentTests = practiceTests.filter(t =>
-                        (t.student_id === student._id || t.student_id === student.person_id)
-                    );
+                    const sid = toStr(student._id || student.person_id);
+                    const progress = progressData.find(p => toStr(p.student_id) === sid);
+                    const studentTests = practiceTests.filter(t => toStr(t.student_id) === sid);
                     const avgTestScore = studentTests.length > 0
                         ? Math.round(studentTests.reduce((sum, t) => sum + (t.score || 0), 0) / studentTests.length)
                         : 0;
@@ -3770,10 +4154,25 @@ export default class tpcController {
                     students: studentsWithProgress.sort((a, b) => b.averageScore - a.averageScore)
                 };
             } else if (reportType === 'test-results') {
-                // Test Results Report
+                // Build student id -> details map (normalize id to string for lookup)
+                const toStr = (id) => (id && typeof id === 'object' && typeof id.toString === 'function' ? id.toString() : String(id));
+                const studentMap = {};
+                students.forEach(s => {
+                    const sid = toStr(s._id || s.person_id);
+                    studentMap[sid] = {
+                        studentId: sid,
+                        studentName: s.person_name || 'Unknown',
+                        studentEmail: s.person_email || '',
+                        enrollmentNumber: s.enrollment_number || s.person_rollno || ''
+                    };
+                });
+
+                // Test Results Report with student details in each result
                 const testResultsByWeek = {};
                 practiceTests.forEach(test => {
                     const key = `Week ${test.week} - Day ${test.day}`;
+                    const sid = toStr(test.student_id);
+                    const studentInfo = studentMap[sid] || { studentName: 'Unknown', studentEmail: '', enrollmentNumber: '' };
                     if (!testResultsByWeek[key]) {
                         testResultsByWeek[key] = {
                             week: test.week,
@@ -3785,7 +4184,10 @@ export default class tpcController {
                         };
                     }
                     testResultsByWeek[key].results.push({
-                        studentId: test.student_id,
+                        studentId: sid,
+                        studentName: studentInfo.studentName,
+                        studentEmail: studentInfo.studentEmail,
+                        enrollmentNumber: studentInfo.enrollmentNumber,
                         score: test.score || 0,
                         totalQuestions: test.total_questions || 0,
                         correctAnswers: test.correct_answers || 0,
@@ -3802,6 +4204,30 @@ export default class tpcController {
                         : 0;
                 });
 
+                const uniqueStudentIdsInTests = new Set(practiceTests.map(t => toStr(t.student_id)));
+                // Student-wise summary for "download this student" and batch export
+                const studentWiseReport = [];
+                uniqueStudentIdsInTests.forEach(sid => {
+                    const info = studentMap[sid] || { studentName: 'Unknown', studentEmail: '', enrollmentNumber: '' };
+                    const studentTests = practiceTests.filter(t => toStr(t.student_id) === sid).map(t => ({
+                        week: t.week,
+                        day: t.day,
+                        testName: `Week ${t.week} - Day ${t.day}`,
+                        score: t.score || 0,
+                        totalQuestions: t.total_questions || 0,
+                        correctAnswers: t.correct_answers || 0,
+                        completedAt: t.completed_at || t.created_at
+                    }));
+                    studentWiseReport.push({
+                        studentId: sid,
+                        studentName: info.studentName,
+                        studentEmail: info.studentEmail,
+                        enrollmentNumber: info.enrollmentNumber,
+                        testsCount: studentTests.length,
+                        tests: studentTests
+                    });
+                });
+
                 reportData = {
                     reportType: 'test-results',
                     generatedAt: new Date().toISOString(),
@@ -3810,9 +4236,11 @@ export default class tpcController {
                     summary: {
                         totalTests: practiceTests.length,
                         uniqueTests: Object.keys(testResultsByWeek).length,
-                        totalStudents: students.length
+                        totalStudents: students.length,
+                        studentsWithTestActivity: uniqueStudentIdsInTests.size
                     },
-                    tests: Object.values(testResultsByWeek)
+                    tests: Object.values(testResultsByWeek),
+                    studentWiseReport
                 };
             }
 

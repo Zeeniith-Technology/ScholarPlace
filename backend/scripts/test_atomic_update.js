@@ -38,7 +38,7 @@ async function testAtomicUpdate() {
             $addToSet: { days_completed: dayToAdd },
             $set: {
                 last_accessed: new Date(),
-                updated_at: new Date(),
+                updated_at: new Date().toISOString(),
                 status: 'in_progress' // dummy
             }
         };

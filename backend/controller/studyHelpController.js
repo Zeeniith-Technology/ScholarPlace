@@ -88,14 +88,14 @@ export default class studyHelpController {
                 topic: session.topic,
             }, history);
 
-            const studentTurn = { role: 'student', content: question.trim(), created_at: new Date() };
-            const assistantTurn = { role: 'assistant', content: stripAsterisks(answerResult.answer || ''), created_at: new Date() };
+            const studentTurn = { role: 'student', content: question.trim(), created_at: new Date().toISOString() };
+            const assistantTurn = { role: 'assistant', content: stripAsterisks(answerResult.answer || ''), created_at: new Date().toISOString() };
 
             await coll.updateOne(
                 { _id: sid, student_id: userId.toString() },
                 {
                     $push: { conversation: { $each: [studentTurn, assistantTurn] } },
-                    $set: { updated_at: new Date() },
+                    $set: { updated_at: new Date().toISOString() },
                 }
             );
 
@@ -247,7 +247,7 @@ export default class studyHelpController {
 
             await coll.updateOne(
                 { _id: sid, student_id: userId.toString() },
-                { $set: { status: 'practice_generated', updated_at: new Date() } }
+                { $set: { status: 'practice_generated', updated_at: new Date().toISOString() } }
             );
 
             res.locals.responseData = {

@@ -166,7 +166,7 @@ export default function PracticeAnalyticsPage() {
                         <h3 className="text-xl font-semibold text-neutral mb-2">No Practice Data Yet</h3>
                         <p className="text-neutral-light mb-6">Start practicing to see your progress and analytics!</p>
                         <button
-                            onClick={() => router.push('/student/practice')}
+                            onClick={() => router.push('/student/study')}
                             className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-all"
                         >
                             Start Practicing

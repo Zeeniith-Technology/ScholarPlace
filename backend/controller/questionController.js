@@ -418,7 +418,7 @@ export default class questionController {
 
             const response = await executeData(
                 'tblQuestion',
-                { deleted: true, updated_at: new Date() },
+                { deleted: true, updated_at: new Date().toISOString() },
                 'u',
                 questionSchema,
                 { _id: typeof _id === 'string' ? new ObjectId(_id) : _id }
@@ -500,8 +500,8 @@ export default class questionController {
                 status: q.status || 'active',
                 version: q.version || 1,
                 deleted: false,
-                created_at: new Date(),
-                updated_at: new Date()
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             }));
 
             const result = await collection.insertMany(questionsWithDefaults);

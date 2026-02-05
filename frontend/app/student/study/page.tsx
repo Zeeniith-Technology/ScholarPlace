@@ -124,6 +124,7 @@ export default function LearningPage() {
   }
 
   // Helper function to get student's status for a week
+  // Show "Continue" when: at least one DSA problem solved (e.g. day 1), or at least one Aptitude daily practice done (e.g. day 1)
   const getStudentWeekStatus = (weekNumber: number) => {
     if (!isWeekUnlocked(weekNumber)) {
       return 'locked'
@@ -134,16 +135,20 @@ export default function LearningPage() {
       return 'start'
     }
 
-    // If status is 'in_progress' but no actual progress made, treat it as 'start'
-    // This ensures "Start" button shows until actual progress made
     const hasDaysCompleted = progress.days_completed && progress.days_completed.length > 0
     const hasAssignmentsCompleted = progress.assignments_completed && progress.assignments_completed > 0
     const hasTestsCompleted = progress.tests_completed && progress.tests_completed > 0
+    const hasDsaProgress = (progress.coding_problems_completed && progress.coding_problems_completed.length > 0) ||
+      (progress.verified_days && progress.verified_days.length > 0)
+    const hasAptitudeProgress = (progress.practice_tests_completed && progress.practice_tests_completed > 0) ||
+      (progress.practice_test_scores && progress.practice_test_scores.length > 0)
 
-    if (progress.status === 'in_progress' && !hasDaysCompleted && !hasAssignmentsCompleted && !hasTestsCompleted) {
-      return 'start'
+    if (progress.status === 'completed') {
+      return 'completed'
     }
-    // If we're here, the week is unlocked by rule. Ensure we don't return 'locked'.
+    if (hasDaysCompleted || hasAssignmentsCompleted || hasTestsCompleted || hasDsaProgress || hasAptitudeProgress) {
+      return 'in_progress'
+    }
     const status = progress.status || 'start'
     return status === 'locked' ? 'start' : status
   }
@@ -170,20 +175,24 @@ export default function LearningPage() {
     }
   }
 
+  // Practicals: 2 per week (static for all weeks)
+  const practicalsPerWeek = 2
+
   const defaultWeeks = [
-    { week: 1, title: 'Fundamentals', assignments: 6, tests: 1 },
-    { week: 2, title: 'Advanced Concepts', assignments: 0, tests: 0 },
-    { week: 3, title: 'Data Structures', assignments: 0, tests: 0 },
-    { week: 4, title: 'Algorithms', assignments: 0, tests: 0 },
-    { week: 5, title: 'Problem Solving', assignments: 0, tests: 0 },
-    { week: 6, title: 'Interview Prep', assignments: 0, tests: 0 },
-    { week: 7, title: 'Mock Tests', assignments: 0, tests: 0, isComingSoon: true },
-    { week: 8, title: 'Final Review', assignments: 0, tests: 0, isComingSoon: true },
+    { week: 1, title: 'Fundamentals', tests: 1 },
+    { week: 2, title: 'Advanced Concepts', tests: 1 },
+    { week: 3, title: 'Data Structures', tests: 0 },
+    { week: 4, title: 'Algorithms', tests: 0 },
+    { week: 5, title: 'Problem Solving', tests: 0 },
+    { week: 6, title: 'Interview Prep', tests: 0 },
+    { week: 7, title: 'Mock Tests', tests: 0, isComingSoon: true },
+    { week: 8, title: 'Final Review', tests: 0, isComingSoon: true },
   ]
 
   const weeklySchedule = defaultWeeks.map((week) => {
     const apiWeek = syllabusData.find((item: any) => item.week === week.week)
-    return apiWeek ? { ...week, ...apiWeek } : week
+    const merged = apiWeek ? { ...week, ...apiWeek } : week
+    return { ...merged, practicals: practicalsPerWeek }
   })
 
   return (
@@ -241,7 +250,7 @@ export default function LearningPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">WEEK</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ASSIGNMENTS</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">PRACTICALS</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">STATUS</th>
                   </tr>
                 </thead>
@@ -305,7 +314,7 @@ export default function LearningPage() {
                           </div>
                         </td>
 
-                        {/* ASSIGNMENTS Column */}
+                        {/* PRACTICALS Column */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className={cn(
@@ -316,7 +325,7 @@ export default function LearningPage() {
                             </div>
                             <div className="flex flex-col gap-1">
                               <div className="text-sm font-semibold text-gray-900">
-                                {week.week === 1 ? '6' : (week.assignments || 0)} practice assignments
+                                {week.practicals ?? 2} practicals
                               </div>
                               {isActive && !isComingSoon && (
                                 <Badge

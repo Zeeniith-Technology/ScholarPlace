@@ -23,6 +23,8 @@ import {
 import { getAuthHeader } from '@/utils/auth'
 import Editor from '@monaco-editor/react'
 import { ProblemCompleted } from '@/components/coding/ProblemCompleted'
+import { CodeReviewDisplay } from '@/components/coding/CodeReviewDisplay'
+import { Sparkles } from 'lucide-react'
 
 interface TestCase {
     input: string
@@ -81,6 +83,9 @@ export default function CodingProblemPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [runResult, setRunResult] = useState<SubmissionResult | null>(null)
     const [canSubmit, setCanSubmit] = useState(false) // Only true if All Tests Passed in Run
+    const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null)
+    const [showCodeReviewModal, setShowCodeReviewModal] = useState(false)
+    const [codeReviewSubmissionId, setCodeReviewSubmissionId] = useState<string | null>(null)
 
     const BOILERPLATES: Record<string, string> = {
         cpp: `#include <iostream>
@@ -248,13 +253,29 @@ ${problem.function_signature} {
             const result = await response.json()
 
             if (response.ok) {
-                // NO ALERT, NO REDIRECT
-                // Instead, mark as passed to show the ProblemCompleted component
+                // Store submission_id for "View code review" (AI review runs after pass)
+                const sid = result.submission_id
+                if (sid) setLastSubmissionId(typeof sid === 'string' ? sid : String(sid))
+                // Mark as passed to show the ProblemCompleted component
                 if (problem) {
                     setProblem({
                         ...problem,
                         status: 'passed'
                     });
+                }
+                // Record DSA progress so week shows "Continue" (at least one problem solved)
+                const weekNum = problem?.week
+                if (weekNum && (result.status === 'passed' || result.success)) {
+                    try {
+                        await fetch(`${apiBaseUrl}/student-progress/complete-coding-problem`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': authHeader || '',
+                            },
+                            body: JSON.stringify({ week: weekNum, problem_id: problemId }),
+                        })
+                    } catch (_) { /* non-blocking */ }
                 }
             } else {
                 alert(result.message || 'Error submitting solution')
@@ -471,7 +492,37 @@ ${problem.function_signature} {
                             </h2>
 
                             {isProblemCompleted ? (
-                                <ProblemCompleted week={problem.week} day={problem.day} />
+                                <div className="space-y-4">
+                                    <ProblemCompleted week={problem.week} day={problem.day} />
+                                    <Button
+                                        onClick={async () => {
+                                            let sid = lastSubmissionId
+                                            if (!sid) {
+                                                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+                                                const authHeader = getAuthHeader()
+                                                const r = await fetch(`${apiBaseUrl}/coding-problems/review/get-by-problem`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json', 'Authorization': authHeader || '' },
+                                                    body: JSON.stringify({ problemId }),
+                                                })
+                                                const d = await r.json()
+                                                if (d.success && d.review?.submission_id) sid = typeof d.review.submission_id === 'string' ? d.review.submission_id : String(d.review.submission_id)
+                                            }
+                                            if (sid) {
+                                                setLastSubmissionId(sid)
+                                                setCodeReviewSubmissionId(sid)
+                                                setShowCodeReviewModal(true)
+                                            } else {
+                                                alert('No code review found for this problem yet.')
+                                            }
+                                        }}
+                                        variant="secondary"
+                                        className="w-full gap-2"
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        View AI Code Review
+                                    </Button>
+                                </div>
                             ) : (
                                 <>
                                     {/* Language Selector */}
@@ -648,6 +699,12 @@ ${problem.function_signature} {
                     </div>
                 </div>
             </div>
+
+            <CodeReviewDisplay
+                isOpen={showCodeReviewModal}
+                onClose={() => setShowCodeReviewModal(false)}
+                submissionId={codeReviewSubmissionId}
+            />
         </StudentLayout>
     )
 }

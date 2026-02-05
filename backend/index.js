@@ -19,6 +19,8 @@ if (process.env.NODE_ENV === 'production') {
     }
 }
 
+import cluster from 'node:cluster';
+import os from 'node:os';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -29,6 +31,24 @@ import { connectDB } from './methods.js';
 import router from './router.js';
 // Initialize AI Service at startup to ensure it's ready
 import './services/aiService.js';
+
+// Cluster: set USE_CLUSTER=true to run multiple workers (resilience + load spread). Default off for local dev.
+const useCluster = process.env.USE_CLUSTER === 'true';
+const numWorkers = Math.max(1, parseInt(process.env.CLUSTER_WORKERS, 10) || Math.min(os.cpus().length, 4));
+
+if (useCluster && cluster.isPrimary) {
+    console.log(`🔄 Primary ${process.pid}: spawning ${numWorkers} worker(s)`);
+    for (let i = 0; i < numWorkers; i++) cluster.fork();
+    cluster.on('exit', (worker, code, signal) => {
+        console.log(`⚠️ Worker ${worker.process.pid} exited (${code || signal}). Restarting.`);
+        cluster.fork();
+    });
+    // Primary process does not start the HTTP server; workers do.
+} else {
+    // Worker process (or single-process when USE_CLUSTER is not set): start the server
+    if (useCluster && cluster.isWorker && !process.env.MONGO_MAX_POOL_SIZE) {
+        process.env.MONGO_MAX_POOL_SIZE = String(Math.max(25, Math.floor(200 / numWorkers)));
+    }
 
 const app = express();
 const httpServer = createServer(app);
@@ -48,8 +68,9 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser()); // Parse cookies
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Allow larger payloads for code submissions (default 100kb can be tight)
+app.use(express.json({ limit: process.env.BODY_JSON_LIMIT || '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.BODY_URLENC_LIMIT || '2mb' }));
 
 // Socket.io connection handling
 io.use((socket, next) => {
@@ -184,3 +205,4 @@ connectDB()
         console.error('Failed to start server:', error);
         process.exit(1);
     });
+} // end cluster worker / single-process block

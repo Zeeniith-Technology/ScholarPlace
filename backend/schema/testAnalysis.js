@@ -9,6 +9,10 @@ export default {
         type: String,
         required: true
     },
+    /** tblCollage._id - for tenant filtering (optional for backward compat) */
+    college_id: { type: String, required: false },
+    /** tblDepartments._id - for tenant filtering (optional for backward compat) */
+    department_id: { type: String, required: false },
     /** test_type: 'practice' (daily) | 'weekly' */
     test_type: {
         type: String,
@@ -89,8 +93,8 @@ export default {
         // e.g., { previous_score: 65, improvement: 10, trend: 'improving' }
     },
     created_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     }
 };

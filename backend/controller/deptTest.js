@@ -68,7 +68,7 @@ export default class DeptTestController {
                 scheduled_end: new Date(scheduled_end),
 
                 status: 'active',
-                created_at: new Date()
+                created_at: new Date().toISOString()
             };
 
             // 5. Save to DB
@@ -101,10 +101,20 @@ export default class DeptTestController {
             const userId = req.userId || req.user?.id;
             if (!userId) return this.sendError(res, 401, 'Unauthorized');
 
+            // Confirm tenant (college + department) from DB
+            const userInfo = await this.getDeptTPCInfo(userId);
+            if (!userInfo) return this.sendError(res, 403, 'User is not a valid Department TPC');
+
             const tests = await fetchData(
                 'tblDeptTest',
                 {},
-                { created_by: userId, deleted: false },
+                {
+                    created_by: userId,
+                    deleted: false,
+                    // tenant confirmation (tblCollage._id / tblDepartments._id)
+                    college_id: userInfo.person_collage_id,
+                    department_id: userInfo.department_id,
+                },
                 { sort: { created_at: -1 } }
             );
 
@@ -144,8 +154,11 @@ export default class DeptTestController {
                 status: 'active',
                 deleted: false,
                 scheduled_end: { $gte: new Date() }, // Only future/current tests
+                // Tenant confirmation: only tests in student's college
+                college_id: user.person_collage_id,
                 $or: [
-                    { assignment_type: 'department', department_id: user.department_id }, // All dept students
+                    // All dept students (confirm same department)
+                    { assignment_type: 'department', department_id: user.department_id },
                     { assignment_type: 'batch', assigned_to: user.semester }, // Matches semester in array
                     { assignment_type: 'student', assigned_to: userId.toString() } // Matches ID in array
                 ]
@@ -186,19 +199,28 @@ export default class DeptTestController {
             const userInfo = await this.getDeptTPCInfo(userId);
             if (!userInfo) return this.sendError(res, 403, 'Unauthorized');
 
-            const query = {
-                person_role: { $in: ['Student', 'student'] },
-                department_id: userInfo.department_id,
+            const baseQuery = {
+                person_role: { $regex: /^student$/i },
                 person_deleted: false,
-                status: { $in: ['active', 'Active'] }
+                person_status: { $regex: /^active$/i },
+                // Tenant confirmation
+                person_collage_id: userInfo.person_collage_id,
+                department_id: userInfo.department_id,
             };
 
-            if (search) {
-                query.$or = [
-                    { person_name: { $regex: search, $options: 'i' } },
-                    { person_email: { $regex: search, $options: 'i' } }
-                ];
-            }
+            const query = search
+                ? {
+                    $and: [
+                        baseQuery,
+                        {
+                            $or: [
+                                { person_name: { $regex: search, $options: 'i' } },
+                                { person_email: { $regex: search, $options: 'i' } }
+                            ]
+                        }
+                    ]
+                }
+                : baseQuery;
 
             const students = await fetchData(
                 'tblPersonMaster',
@@ -341,7 +363,7 @@ export default class DeptTestController {
             scheduled_start: start,
             scheduled_end: end,
             status: 'active',
-            created_at: new Date()
+            created_at: new Date().toISOString()
         };
     }
 

@@ -57,7 +57,7 @@ async function fixDuplicates() {
                 {
                     $set: {
                         days_completed: mergedDays,
-                        updated_at: new Date()
+                        updated_at: new Date().toISOString()
                     }
                 }
             );

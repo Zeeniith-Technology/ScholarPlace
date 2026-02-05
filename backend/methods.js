@@ -14,7 +14,13 @@ export async function connectDB() {
         if (!process.env.MONGO_URI) {
             throw new Error('MONGO_URI not found in environment variables');
         }
-        client = new MongoClient(process.env.MONGO_URI);
+        // Connection pool for high concurrency (e.g. 300+ simultaneous submits)
+        const maxPoolSize = parseInt(process.env.MONGO_MAX_POOL_SIZE, 10) || 200;
+        const waitQueueTimeoutMS = parseInt(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS, 10) || 30000;
+        client = new MongoClient(process.env.MONGO_URI, {
+            maxPoolSize,
+            waitQueueTimeoutMS,
+        });
         await client.connect();
         if(!process.env.DB_NAME){
             throw new Error('DB_NAME not found in environment variables');
@@ -322,14 +328,14 @@ export async function executeData(collectionName, data, operation, schema = null
                         ...data,
                         $set: {
                             ...data.$set,
-                            updated_at: new Date()
+                            updated_at: new Date().toISOString()
                         }
                     };
                 } else {
                     updateData = {
                         ...data,
                         $set: {
-                            updated_at: new Date()
+                            updated_at: new Date().toISOString()
                         }
                     };
                 }
@@ -342,7 +348,7 @@ export async function executeData(collectionName, data, operation, schema = null
                 updateData = {
                     $set: {
                         ...schemaAppliedData,
-                        updated_at: new Date()
+                        updated_at: new Date().toISOString()
                     }
                 };
             }

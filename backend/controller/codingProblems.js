@@ -3,11 +3,62 @@
  * Handles API requests for coding/programming problems
  */
 
-import { getDB } from '../methods.js';
+import { getDB, fetchData } from '../methods.js';
+import { ObjectId } from 'mongodb';
+import aiService from '../services/aiService.js';
 import fs from 'fs';
 import path from 'path';
 
 const COLLECTION_NAME = 'tblCodingProblem';
+const CODE_REVIEW_COLLECTION = 'tblCodeReview';
+
+// Concurrency cap + queue so no student gets 503 under normal load (requests wait in queue until a slot is free)
+const MAX_CONCURRENT_CODING_SUBMITS = parseInt(process.env.MAX_CONCURRENT_CODING_SUBMITS, 10) || 100;
+const MAX_SUBMIT_QUEUE_SIZE = parseInt(process.env.MAX_SUBMIT_QUEUE_SIZE, 10) || 2000;
+let activeCodingSubmits = 0;
+const submitQueue = [];
+
+/**
+ * Trigger AI code review when submission passes all test cases.
+ * Runs async (fire-and-forget) so submit response is not delayed.
+ * Saves result to tblCodeReview with person_id, department_id, college_id for multi-tenant.
+ */
+async function triggerCodeReview(params) {
+    const { db, submissionId, personId, departmentId, collegeId, problemId, solution, language, problem } = params;
+    try {
+        const problemDesc = problem?.problem_statement?.description
+            || problem?.problem_statement
+            || (typeof problem?.problem_statement === 'string' ? problem.problem_statement : '')
+            || (problem?.title ? `Problem: ${problem.title}` : 'Coding problem');
+        const problemContext = `${problem?.title || 'Problem'}\n\n${problemDesc}`;
+
+        const aiReview = await aiService.reviewCode(solution, language, problemContext);
+
+        const reviewDoc = {
+            person_id: String(personId),
+            department_id: departmentId ? String(departmentId) : null,
+            college_id: collegeId ? String(collegeId) : null,
+            submission_id: submissionId,
+            problem_id: problemId,
+            week: problem?.week ?? null,
+            day: problem?.day ?? null,
+            is_capstone: problem?.is_capstone ?? false,
+            problem_title: problem?.title || problem?.metadata?.title || 'Coding Problem',
+            problem_description: typeof problemDesc === 'string' ? problemDesc : JSON.stringify(problemDesc),
+            submitted_code: solution,
+            language: language,
+            ai_review: aiReview,
+            created_at: new Date().toISOString(),
+            deleted: false,
+        };
+
+        const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
+        await reviewCollection.insertOne(reviewDoc);
+        console.log(`[CodeReview] Saved review for submission ${submissionId}, problem ${problemId}`);
+    } catch (err) {
+        console.error('[CodeReview] Failed to generate/save review:', err);
+    }
+}
 
 /**
  * Get all coding problems for a specific week
@@ -298,29 +349,29 @@ async function executeWithPiston(language, code, stdin) {
 }
 
 /**
- * Submit solution for evaluation with real execution
- * POST /coding-problems/submit
+ * Process one submit job (called by queue worker). Sends response to client.
  */
-export async function submitSolution(req, res) {
+async function doSubmit(req, res) {
     try {
-        const { problemId, solution, language } = req.body;
+        const { problemId, solution: solutionBody, code, language } = req.body;
+        const solution = solutionBody || code; // Support both "solution" and "code" (capstone UI)
         const studentId = req.user.id; // Corrected: Get student ID from auth middleware
 
         if (!problemId || !solution) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
-                message: 'Problem ID and solution are required'
+                message: 'Problem ID and solution/code are required'
             });
+            return;
         }
 
         const db = getDB();
         const problemsCollection = db.collection(COLLECTION_NAME);
-
-        // 1. Get the problem and its test cases
         const problem = await problemsCollection.findOne({ question_id: problemId });
 
         if (!problem) {
-            return res.status(404).json({ success: false, message: 'Problem not found' });
+            res.status(404).json({ success: false, message: 'Problem not found' });
+            return;
         }
 
         // Handle nested structure legacy issue
@@ -378,6 +429,8 @@ export async function submitSolution(req, res) {
         const status = totalCases > 0 && passedCases === totalCases ? 'passed' : 'failed';
 
         const submissionsCollection = db.collection('tblCodingSubmissions');
+        const collegeId = req.user?.college_id ?? req.user?.person_collage_id ?? null;
+        const departmentId = req.user?.department_id ?? null;
         const submission = {
             student_id: studentId,
             problem_id: problemId,
@@ -386,17 +439,38 @@ export async function submitSolution(req, res) {
             submitted_at: new Date(),
             status: status,
             test_results: testResults,
-            score: totalCases > 0 ? (passedCases / totalCases) * 100 : 0
+            score: totalCases > 0 ? (passedCases / totalCases) * 100 : 0,
+            ...(collegeId != null && collegeId !== '' && { college_id: typeof collegeId === 'string' ? collegeId : collegeId?.toString?.() }),
+            ...(departmentId != null && departmentId !== '' && { department_id: typeof departmentId === 'string' ? departmentId : departmentId?.toString?.() }),
         };
 
-        await submissionsCollection.insertOne(submission);
+        const insertResult = await submissionsCollection.insertOne(submission);
+        const submissionId = insertResult.insertedId;
+
+        // When all test cases pass, trigger AI code review (async, do not block response)
+        if (status === 'passed') {
+            const personId = req.user?.id || req.user?.person_id || studentId;
+            const departmentId = req.user?.department_id ?? null;
+            const collegeId = req.user?.college_id ?? req.user?.collegeId ?? null;
+            triggerCodeReview({
+                db,
+                submissionId,
+                personId,
+                departmentId,
+                collegeId,
+                problemId,
+                solution,
+                language,
+                problem,
+            }).catch((err) => console.error('[CodeReview] Trigger error:', err));
+        }
 
         res.status(200).json({
             success: true,
             message: status === 'passed' ? 'All test cases passed!' : `Passed ${passedCases}/${totalCases} test cases`,
             status: status,
             testResults: testResults,
-            submission_id: submission._id
+            submission_id: submissionId
         });
 
     } catch (error) {
@@ -407,6 +481,38 @@ export async function submitSolution(req, res) {
             error: error.message
         });
     }
+}
+
+/**
+ * Drain submit queue up to concurrency cap.
+ */
+function processSubmitQueue() {
+    while (activeCodingSubmits < MAX_CONCURRENT_CODING_SUBMITS && submitQueue.length > 0) {
+        const { req, res } = submitQueue.shift();
+        activeCodingSubmits++;
+        doSubmit(req, res).finally(() => {
+            activeCodingSubmits = Math.max(0, activeCodingSubmits - 1);
+            processSubmitQueue();
+        });
+    }
+}
+
+/**
+ * Submit solution for evaluation with real execution.
+ * Requests are queued when at cap so no student gets 503 under normal load (up to MAX_SUBMIT_QUEUE_SIZE).
+ * POST /coding-problems/submit
+ */
+export async function submitSolution(req, res) {
+    if (submitQueue.length >= MAX_SUBMIT_QUEUE_SIZE) {
+        res.setHeader('Retry-After', '30');
+        return res.status(503).json({
+            success: false,
+            message: 'Server is very busy. Please try again in a minute.',
+            code: 'QUEUE_FULL'
+        });
+    }
+    submitQueue.push({ req, res });
+    processSubmitQueue();
 }
 
 /**
@@ -532,6 +638,318 @@ export async function getStudentSubmissions(req, res) {
         res.status(500).json({
             success: false,
             message: 'Error fetching submissions',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Get code review by submission ID (for Code Review UI).
+ * Students: only their own. Dept TPC: only reviews for their department's students.
+ * POST /coding-problems/review/get-by-submission
+ */
+export async function getCodeReviewBySubmissionId(req, res) {
+    try {
+        const { submissionId } = req.body || req.params;
+        const personId = String(req.user?.id || req.user?.person_id || req.user?.userId || '');
+        const role = (req.user?.role || req.user?.person_role || '').toString().toLowerCase();
+
+        if (!personId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+        if (!submissionId) {
+            return res.status(400).json({ success: false, message: 'submissionId is required' });
+        }
+
+        const db = getDB();
+        const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
+
+        let submissionObjectId;
+        try {
+            submissionObjectId = typeof submissionId === 'string' ? new ObjectId(submissionId) : submissionId;
+        } catch (e) {
+            return res.status(400).json({ success: false, message: 'Invalid submissionId' });
+        }
+
+        let review;
+        if (role === 'depttpc') {
+            review = await reviewCollection.findOne({
+                submission_id: submissionObjectId,
+                deleted: { $ne: true }
+            });
+            if (!review) {
+                return res.status(200).json({ success: true, review: null, message: 'Review not found.' });
+            }
+            let deptId = req.user?.department_id ?? null;
+            if (!deptId) {
+                const personRes = await fetchData('tblPersonMaster', { department_id: 1 }, { _id: personId }, { limit: 1 });
+                if (personRes.success && personRes.data?.length) deptId = personRes.data[0].department_id ?? null;
+            }
+            const reviewDept = review.department_id?.toString?.() || review.department_id;
+            const match = deptId && (reviewDept === deptId || reviewDept === (deptId.toString?.() || deptId));
+            if (!match) {
+                return res.status(403).json({ success: false, message: 'You can only view reviews for students in your department.' });
+            }
+        } else {
+            review = await reviewCollection.findOne({
+                submission_id: submissionObjectId,
+                person_id: personId,
+                deleted: { $ne: true }
+            });
+        }
+
+        if (!review) {
+            return res.status(200).json({
+                success: true,
+                review: null,
+                message: 'Review not found or still generating. Check back in a moment.'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            review: {
+                _id: review._id,
+                submission_id: review.submission_id,
+                problem_id: review.problem_id,
+                problem_title: review.problem_title,
+                problem_description: review.problem_description,
+                submitted_code: review.submitted_code,
+                language: review.language,
+                ai_review: review.ai_review,
+                week: review.week,
+                day: review.day,
+                is_capstone: review.is_capstone,
+                created_at: review.created_at,
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching code review by submission:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching code review',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Get latest code review for a problem for current user (for "View review" from problem list).
+ * Scoped by person_id (and department_id/college_id in DB for multi-tenant).
+ * POST /coding-problems/review/get-by-problem
+ */
+export async function getCodeReviewByProblemId(req, res) {
+    try {
+        const { problemId } = req.body || req.params;
+        const personId = String(req.user?.id || req.user?.person_id || req.user?.userId || '');
+
+        if (!personId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+        if (!problemId) {
+            return res.status(400).json({ success: false, message: 'problemId is required' });
+        }
+
+        const db = getDB();
+        const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
+
+        const review = await reviewCollection.findOne(
+            {
+                problem_id: problemId,
+                person_id: personId,
+                deleted: { $ne: true }
+            },
+            { sort: { created_at: -1 } }
+        );
+
+        if (!review) {
+            return res.status(200).json({
+                success: true,
+                review: null,
+                message: 'No review found for this problem.'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            review: {
+                _id: review._id,
+                submission_id: review.submission_id,
+                problem_id: review.problem_id,
+                problem_title: review.problem_title,
+                problem_description: review.problem_description,
+                submitted_code: review.submitted_code,
+                language: review.language,
+                ai_review: review.ai_review,
+                week: review.week,
+                day: review.day,
+                is_capstone: review.is_capstone,
+                created_at: review.created_at,
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching code review by problem:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching code review',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * List code reviews for current user, optionally by week and/or day.
+ * POST /coding-problems/review/list
+ * Body: { week?: number, day?: number }
+ */
+export async function listCodeReviews(req, res) {
+    try {
+        const personId = String(req.user?.id || req.user?.person_id || req.user?.userId || '');
+        if (!personId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+
+        const { week, day } = req.body || {};
+        const db = getDB();
+        const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
+
+        const filter = {
+            person_id: personId,
+            deleted: { $ne: true }
+        };
+        if (week != null && week !== '') {
+            const w = parseInt(week);
+            if (!isNaN(w)) filter.week = w;
+        }
+        if (day != null && day !== '') {
+            const d = parseInt(day);
+            if (!isNaN(d)) filter.day = d;
+        }
+
+        const reviews = await reviewCollection.find(filter)
+            .sort({ week: 1, day: 1, created_at: -1 })
+            .project({
+                submission_id: 1,
+                problem_id: 1,
+                problem_title: 1,
+                week: 1,
+                day: 1,
+                is_capstone: 1,
+                created_at: 1,
+                language: 1
+            })
+            .toArray();
+
+        const list = reviews.map(r => ({
+            _id: r._id,
+            submission_id: r.submission_id ? String(r.submission_id) : r.submission_id,
+            problem_id: r.problem_id,
+            problem_title: r.problem_title,
+            week: r.week,
+            day: r.day,
+            is_capstone: r.is_capstone || false,
+            created_at: r.created_at,
+            language: r.language
+        }));
+
+        res.status(200).json({
+            success: true,
+            reviews: list,
+            count: list.length
+        });
+    } catch (error) {
+        console.error('Error listing code reviews:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error listing code reviews',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * List AI code reviews for Dept TPC: only their department's students.
+ * Returns reviews with student name, week, day, capstone for clear UI.
+ * POST /tpc-dept/coding-reviews/list
+ */
+export async function listCodeReviewsForDeptTPC(req, res) {
+    try {
+        const userId = String(req.user?.id || req.user?.person_id || req.user?.userId || '');
+        const role = (req.user?.role || req.user?.person_role || '').toString().toLowerCase();
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+        if (role !== 'depttpc') {
+            return res.status(403).json({ success: false, message: 'Dept TPC only' });
+        }
+
+        let departmentId = req.user?.department_id ?? null;
+        if (!departmentId) {
+            const personRes = await fetchData('tblPersonMaster', { department_id: 1, department: 1 }, { _id: userId }, { limit: 1 });
+            if (personRes.success && personRes.data?.length) {
+                departmentId = personRes.data[0].department_id ?? personRes.data[0].department ?? null;
+            }
+        }
+        if (departmentId != null && typeof departmentId !== 'string') departmentId = departmentId.toString();
+
+        const db = getDB();
+        const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
+        const personCollection = db.collection('tblPersonMaster');
+
+        const filter = { deleted: { $ne: true } };
+        if (departmentId) {
+            filter.$or = [{ department_id: departmentId }];
+            if (/^[0-9a-fA-F]{24}$/.test(departmentId)) {
+                filter.$or.push({ department_id: new ObjectId(departmentId) });
+            }
+        } else {
+            return res.status(200).json({ success: true, reviews: [], count: 0 });
+        }
+
+        const reviews = await reviewCollection.find(filter)
+            .sort({ week: 1, day: 1, created_at: -1 })
+            .project({
+                submission_id: 1,
+                problem_id: 1,
+                problem_title: 1,
+                week: 1,
+                day: 1,
+                is_capstone: 1,
+                created_at: 1,
+                language: 1,
+                person_id: 1
+            })
+            .toArray();
+
+        const personIds = [...new Set(reviews.map(r => r.person_id).filter(Boolean))];
+        let nameMap = {};
+        if (personIds.length) {
+            const persons = await personCollection.find({ _id: { $in: personIds.map(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id) } })
+                .project({ _id: 1, person_name: 1 })
+                .toArray();
+            persons.forEach(p => { nameMap[p._id.toString()] = p.person_name || 'Student'; });
+        }
+
+        const list = reviews.map(r => ({
+            _id: r._id,
+            submission_id: r.submission_id ? String(r.submission_id) : r.submission_id,
+            problem_id: r.problem_id,
+            problem_title: r.problem_title,
+            week: r.week,
+            day: r.day,
+            is_capstone: r.is_capstone || false,
+            created_at: r.created_at,
+            language: r.language,
+            student_name: nameMap[r.person_id?.toString?.() || r.person_id] || 'Student'
+        }));
+
+        res.status(200).json({ success: true, reviews: list, count: list.length });
+    } catch (error) {
+        console.error('Error listing code reviews for Dept TPC:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error listing code reviews',
             error: error.message
         });
     }

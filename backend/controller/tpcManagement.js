@@ -131,18 +131,25 @@ export default class tpcManagementController {
             // Get the PersonMaster._id (this is the PRIMARY ID used everywhere)
             const personId = personResponse.data?.insertedId || personResponse.data?._id;
 
-            // STEP 2: Add reference to college document (just the person_id, no duplicate data)
+            // STEP 2: Add reference to college document with dedicated _id and name
             const tpcUserReference = {
-                person_id: personId, // Reference to tblPersonMaster._id
+                _id: personId,
+                person_id: personId,
+                name: tpc_name.trim(),
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
 
-            // Update college document to add TPC user reference
+            // Update college document: add TPC to tpc_users and set legacy display fields so frontend shows name/email/contact
             const updateFilter = { _id: college._id };
             const updateData = {
                 $push: { tpc_users: tpcUserReference },
-                $set: { updated_at: new Date().toISOString() }
+                $set: {
+                    updated_at: new Date().toISOString(),
+                    collage_tpc_person: tpc_name.trim(),
+                    collage_tpc_email: normalizedEmail,
+                    collage_tpc_contact: (tpc_contact || '').trim() || null
+                }
             };
 
             let updateResponse;
@@ -489,9 +496,11 @@ export default class tpcManagementController {
             // Get the PersonMaster._id (this is the PRIMARY ID used everywhere)
             const personId = personResponse.data?.insertedId || personResponse.data?._id;
 
-            // STEP 2: Add reference to college document (just the person_id, no duplicate data)
+            // STEP 2: Add reference to college document (person_id + name + email for display in DB/UI)
             const deptTpcReference = {
-                person_id: personId, // Reference to tblPersonMaster._id
+                person_id: personId,
+                name: dept_tpc_name.trim(),
+                dept_tpc_email: normalizedEmail,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -556,6 +565,8 @@ export default class tpcManagementController {
             // If department doesn't exist in college, add it with DeptTPC reference
             if (!departmentExists) {
                 const departmentEntry = {
+                    _id: deptObjectId,
+                    name: department.department_name || department.department_code || '',
                     department_id: deptObjectId,
                     department_name: department.department_name,
                     department_code: department.department_code,
@@ -786,26 +797,44 @@ export default class tpcManagementController {
     /**
      * List Department TPC Accounts
      * POST /tpc-management/list-dept-tpc
+     * Returns Dept TPCs from PersonMaster (single source of truth) in shape expected by frontend (department_id, dept_tpc_name, dept_tpc_email, dept_tpc_contact). Legacy tblDeptTPC is empty.
      */
     async listDeptTpc(req, res, next) {
         try {
-            const { projection, filter, options } = req.body;
+            const personTable = 'tblPersonMaster';
+            const personFilter = { person_role: { $regex: /^depttpc$/i }, person_deleted: false };
+            const personProjection = { _id: 1, person_name: 1, person_email: 1, contact_number: 1, department_id: 1 };
 
-            const defaultFilter = { dept_tpc_deleted: false };
-            const mergedFilter = { ...defaultFilter, ...(filter || {}) };
-
-            const response = await fetchData(
-                deptTpcTable,
-                projection || {},
-                mergedFilter,
-                options || {}
+            const personResponse = await fetchData(
+                personTable,
+                personProjection,
+                personFilter,
+                { sort: { person_name: 1 } }
             );
+
+            const fromPersonMaster = (personResponse.success && personResponse.data ? personResponse.data : []).map(p => ({
+                _id: p._id,
+                department_id: p.department_id,
+                dept_tpc_name: p.person_name,
+                dept_tpc_email: p.person_email,
+                dept_tpc_contact: p.contact_number || null
+            }));
+
+            // Legacy: merge with tblDeptTPC if any records exist
+            const legacyFilter = { dept_tpc_deleted: false };
+            const legacyResponse = await fetchData(deptTpcTable, {}, legacyFilter, {});
+            const legacyList = legacyResponse.success && legacyResponse.data ? legacyResponse.data : [];
+            const legacyIds = new Set(legacyList.map(l => l.department_id?.toString()));
+            const combined = [
+                ...fromPersonMaster,
+                ...legacyList.filter(l => !fromPersonMaster.some(p => (p.department_id?.toString() || '') === (l.department_id?.toString() || '')))
+            ];
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 message: 'Department TPC accounts fetched successfully',
-                data: response.data
+                data: combined
             };
             next();
         } catch (error) {
@@ -1238,9 +1267,10 @@ export default class tpcManagementController {
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(tpc_password, saltRounds);
 
-            // Create TPC user object to add to college's tpc_users array (NEW STRUCTURE)
+            // Create TPC user object to add to college's tpc_users array (dedicated _id and name)
             const tpcUser = {
                 _id: new ObjectId(),
+                name: tpc_name.trim(),
                 tpc_name: tpc_name.trim(),
                 tpc_email: tpc_email.toLowerCase().trim(),
                 tpc_contact: tpc_contact ? tpc_contact.trim() : null,
@@ -1525,9 +1555,11 @@ export default class tpcManagementController {
             // Get the PersonMaster._id (this is the PRIMARY ID used everywhere)
             const personId = personResponse.data?.insertedId || personResponse.data?._id;
 
-            // STEP 2: Add reference to college document (just person_id, no duplicate data)
+            // STEP 2: Add reference to college document (person_id + name + email for display in DB/UI)
             const deptTpcReference = {
-                person_id: personId, // Reference to tblPersonMaster._id
+                person_id: personId,
+                name: dept_tpc_name.trim(),
+                dept_tpc_email: normalizedEmail,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -1583,6 +1615,8 @@ export default class tpcManagementController {
             // If department doesn't exist in college, add it with DeptTPC reference
             if (!departmentExists) {
                 const departmentEntry = {
+                    _id: deptObjectId,
+                    name: department.department_name || department.department_code || '',
                     department_id: deptObjectId,
                     department_name: department.department_name,
                     department_code: department.department_code,

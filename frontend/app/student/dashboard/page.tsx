@@ -7,6 +7,7 @@ import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
 import {
   Target,
   Award,
@@ -20,6 +21,7 @@ import {
   BarChart3,
   FileText,
   RefreshCw,
+  Brain,
 } from 'lucide-react'
 
 /**
@@ -73,9 +75,53 @@ export default function StudentDashboardPage() {
     averagePracticeScore: 0,
     totalTimeSpent: 0,
     totalDaysCompleted: 0,
-    progressByWeek: []
+    progressByWeek: [] as any[],
+    overallProgressPercent: undefined as number | undefined,
+    currentStreak: undefined as number | undefined,
+    aptitudeWeeksCompleted: undefined as number | undefined,
   })
   const [isLoadingProgress, setIsLoadingProgress] = useState(true)
+  const [showProgressDetail, setShowProgressDetail] = useState(false)
+  const [showTestsDetail, setShowTestsDetail] = useState(false)
+  const [testsDetailList, setTestsDetailList] = useState<any[]>([])
+  const [loadingTestsDetail, setLoadingTestsDetail] = useState(false)
+
+  // Fetch completed tests list when Tests detail modal opens
+  useEffect(() => {
+    if (!showTestsDetail) return
+    const fetchTestsDetail = async () => {
+      setLoadingTestsDetail(true)
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+        const authHeader = getAuthHeader()
+        if (!authHeader) {
+          setTestsDetailList([])
+          return
+        }
+        const response = await fetch(`${apiBaseUrl}/practice-test/list`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({
+            filter: {},
+            projection: { week: 1, day: 1, score: 1, category: 1, completed_at: 1, total_questions: 1, correct_answers: 1 },
+            options: { sort: { completed_at: -1 }, limit: 100 },
+          }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setTestsDetailList(data.success && data.data ? data.data : [])
+        } else {
+          setTestsDetailList([])
+        }
+      } catch (_) {
+        setTestsDetailList([])
+      } finally {
+        setLoadingTestsDetail(false)
+      }
+    }
+    fetchTestsDetail()
+  }, [showTestsDetail])
 
   // Fetch student progress summary
   const fetchProgressSummary = async () => {
@@ -258,29 +304,49 @@ export default function StudentDashboardPage() {
     }
   }
   
+  // Use profile API for display name so dashboard greeting matches profile page (same source: DB person_name)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const auth = localStorage.getItem('auth')
-      if (auth) {
-        try {
-          const authData = JSON.parse(auth)
-          if (authData.user?.name) {
-            setUserName(authData.user.name)
-          } else if (authData.email) {
-            const emailName = authData.email.split('@')[0]
-            setUserName(emailName.split('.').map((n: string) => n.charAt(0).toUpperCase() + n.slice(1)).join(' '))
-          }
-        } catch (e) {
-          // Ignore parse errors
+    if (typeof window === 'undefined') return
+    const authHeader = getAuthHeader()
+    if (!authHeader) return
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    fetch(`${apiBaseUrl}/profile/get`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+      body: JSON.stringify({}),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data?.name) {
+          setUserName(data.data.name)
+          return
         }
-      }
-    }
+        const auth = localStorage.getItem('auth')
+        if (auth) {
+          try {
+            const authData = JSON.parse(auth)
+            if (authData.user?.name) setUserName(authData.user.name)
+          } catch (_) { /* ignore */ }
+        }
+      })
+      .catch(() => {
+        const auth = localStorage.getItem('auth')
+        if (auth) {
+          try {
+            const authData = JSON.parse(auth)
+            if (authData.user?.name) setUserName(authData.user.name)
+          } catch (_) { /* ignore */ }
+        }
+      })
   }, [])
 
-  // Calculate progress percentage
-  const progressPercentage = progressData.totalWeeks > 0
-    ? Math.round((progressData.weeksCompleted / progressData.totalWeeks) * 100)
-    : 0
+  // Overall progress = combined DSA + Aptitude (from API when available)
+  const progressPercentage = progressData.overallProgressPercent != null
+    ? progressData.overallProgressPercent
+    : progressData.totalWeeks > 0
+      ? Math.round((progressData.weeksCompleted / progressData.totalWeeks) * 100)
+      : 0
 
   // Stats from progress API (all from DB)
   const stats = {
@@ -292,8 +358,19 @@ export default function StudentDashboardPage() {
     totalDaysCompleted: progressData.totalDaysCompleted ?? 0,
   }
 
-  // Upcoming tests: not yet in DB; show empty. Can be extended later with syllabus-based upcoming.
-  const upcomingTests: Array<{ id: number; title: string; date: string; time: string; modules: string[]; difficulty: string; status: string }> = []
+  // Upcoming: DSA = Capstone only (no MCQ); Aptitude = weekly MCQ test
+  const upcomingTests = React.useMemo(() => {
+    const cw = progressData.currentWeek ?? 1
+    const tw = Math.max(1, progressData.totalWeeks ?? 6)
+    if (cw > tw) return []
+    const baseDate = new Date()
+    baseDate.setDate(baseDate.getDate() + 1)
+    const dateStr = baseDate.toISOString().split('T')[0]
+    return [
+      { id: 1, title: `Week ${cw} Capstone Project`, date: dateStr, time: '—', modules: ['DSA'], difficulty: 'Coding', status: 'upcoming', href: `/student/capstone-test/week-${cw}` },
+      { id: 2, title: `Week ${cw} Aptitude Test`, date: dateStr, time: '—', modules: ['Aptitude'], difficulty: 'Mixed', status: 'upcoming', href: `/student/aptitude/weekly/${cw}` },
+    ]
+  }, [progressData.currentWeek, progressData.totalWeeks])
 
   const progressCount = useCountUp(stats.progress, 1500)
   const testsCount = useCountUp(stats.testsCompleted, 1200)
@@ -348,7 +425,13 @@ export default function StudentDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 animate-smooth-appear" style={{ animationDelay: '0ms' }}>
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowProgressDetail(true)}
+          onKeyDown={(e) => e.key === 'Enter' && setShowProgressDetail(true)}
+          className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 animate-smooth-appear cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30" style={{ animationDelay: '0ms' }}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -362,7 +445,13 @@ export default function StudentDashboardPage() {
           </div>
         </Card>
 
-        <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-secondary/10 hover:-translate-y-0.5 animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowTestsDetail(true)}
+          onKeyDown={(e) => e.key === 'Enter' && setShowTestsDetail(true)}
+          className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-secondary/10 hover:-translate-y-0.5 animate-smooth-appear cursor-pointer focus:outline-none focus:ring-2 focus:ring-secondary/30" style={{ animationDelay: '100ms' }}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative">
             <div className="flex items-center justify-between mb-2">
@@ -475,11 +564,18 @@ export default function StudentDashboardPage() {
                           ))}
                         </div>
                       </div>
-                      {test.status === 'upcoming' && (
+                      {test.status === 'upcoming' && ('href' in test && test.href ? (
+                        <Link
+                          href={test.href}
+                          className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap inline-block"
+                        >
+                          View Details
+                        </Link>
+                      ) : (
                         <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap">
                           View Details
                         </button>
-                      )}
+                      ))}
                     </div>
                   </div>
                 ))
@@ -531,20 +627,174 @@ export default function StudentDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/student/profile">
-          <Card className="group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer animate-smooth-appear" style={{ animationDelay: '1100ms' }}>
+        <Link href="/student/analytics">
+          <Card className="group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer animate-smooth-appear border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" style={{ animationDelay: '1050ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-lg bg-primary/20 group-hover:bg-primary/30 transition-all duration-300 group-hover:scale-110">
-                <Users className="w-5 h-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+                <Brain className="w-5 h-5 text-primary transition-transform duration-300 group-hover:scale-110" />
               </div>
               <div>
-                <h3 className="font-semibold text-neutral text-sm sm:text-base">Profile</h3>
-                <p className="text-xs text-neutral-light">View settings</p>
+                <h3 className="font-semibold text-neutral text-sm sm:text-base">AI Analysis</h3>
+                <p className="text-xs text-neutral-light">Personalized insights & guidance</p>
               </div>
             </div>
           </Card>
         </Link>
       </div>
+
+      <Modal
+        isOpen={showProgressDetail}
+        onClose={() => setShowProgressDetail(false)}
+        title="Progress details"
+        size="lg"
+      >
+        <div className="p-6 space-y-5">
+          <p className="text-sm text-neutral-light">Overall progress combines DSA (daily coding + Capstone) and Aptitude (weekly tests).</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-xs font-medium text-neutral-light mb-1">Overall progress</p>
+              <p className="text-2xl font-bold text-primary">{progressCount}%</p>
+            </div>
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-xs font-medium text-neutral-light mb-1">DSA weeks completed</p>
+              <p className="text-2xl font-bold text-primary">{progressData.weeksCompleted ?? 0} / {totalWeeksForDisplay}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-xs font-medium text-neutral-light mb-1">Aptitude weeks completed</p>
+              <p className="text-2xl font-bold text-primary">{progressData.aptitudeWeeksCompleted ?? 0} / {totalWeeksForDisplay}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-xs font-medium text-neutral-light mb-1">Days completed</p>
+              <p className="text-2xl font-bold text-primary">{stats.totalDaysCompleted}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-xs font-medium text-neutral-light mb-1">Current week</p>
+              <p className="text-2xl font-bold text-primary">Week {stats.currentWeek}</p>
+            </div>
+          </div>
+          <div className="border-t border-neutral-light/20 pt-4 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-neutral-light">Tests completed</span>
+              <span className="font-semibold text-neutral">{stats.testsCompleted}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-neutral-light">Average practice score</span>
+              <span className="font-semibold text-neutral">{progressData.averagePracticeScore ?? 0}%</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-neutral-light">Current streak</span>
+              <span className="font-semibold text-neutral">{stats.streak} days</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-neutral-light">Total time spent</span>
+              <span className="font-semibold text-neutral">{progressData.totalTimeSpent ? `${Math.round(progressData.totalTimeSpent / 60)} min` : '0 min'}</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showTestsDetail}
+        onClose={() => setShowTestsDetail(false)}
+        title="Tests completed – details"
+        size="xl"
+      >
+        <div className="p-6">
+          {loadingTestsDetail ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-10 h-10 border-2 border-secondary border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-sm text-neutral-light">Loading tests…</p>
+            </div>
+          ) : testsDetailList.length === 0 ? (
+            <p className="text-neutral-light text-center py-8">No tests completed yet.</p>
+          ) : (
+            <>
+              <p className="text-xs text-neutral-light mb-4">DSA is assessed via coding (daily problems + Capstone). Listed below are Aptitude MCQ tests and any practice tests.</p>
+              <div className="max-h-[65vh] overflow-y-auto space-y-6">
+              {(() => {
+                const byWeek: Record<number, { dsa: any[]; aptitude: any[] }> = {}
+                testsDetailList.forEach((t: any) => {
+                  const w = t.week != null ? Number(t.week) : 0
+                  if (!byWeek[w]) byWeek[w] = { dsa: [], aptitude: [] }
+                  const cat = (t.category || '').toString().toLowerCase()
+                  // DSA = coding only; only explicitly 'dsa' goes to DSA. All MCQ-style tests (incl. no category) = Aptitude
+                  if (cat === 'dsa') byWeek[w].dsa.push(t)
+                  else byWeek[w].aptitude.push(t)
+                })
+                const weeks = Object.keys(byWeek).map(Number).sort((a, b) => a - b)
+                return weeks.map((weekNum) => {
+                  const { dsa, aptitude } = byWeek[weekNum]
+                  const hasDSA = dsa.length > 0
+                  const hasAptitude = aptitude.length > 0
+                  if (!hasDSA && !hasAptitude) return null
+                  return (
+                    <div key={weekNum} className="rounded-xl border-2 border-neutral-light/20 overflow-hidden bg-background-elevated/30">
+                      <div className="px-4 py-3 bg-primary/10 border-b border-neutral-light/20">
+                        <h3 className="font-bold text-neutral text-base">Week {weekNum}</h3>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        {hasDSA && (
+                          <div>
+                            <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-primary" /> DSA
+                            </p>
+                            <ul className="space-y-2">
+                              {dsa.map((t: any, idx: number) => {
+                                const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+                                return (
+                                  <li key={t._id || `dsa-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-neutral text-sm">{t.day || 'Test'}</p>
+                                      <p className="text-xs text-neutral-light">{dateStr}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                      {t.total_questions != null && (
+                                        <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
+                                      )}
+                                      <span className="font-bold text-primary min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
+                                    </div>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                        {hasAptitude && (
+                          <div>
+                            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2 flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-orange-500" /> Aptitude
+                            </p>
+                            <ul className="space-y-2">
+                              {aptitude.map((t: any, idx: number) => {
+                                const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+                                return (
+                                  <li key={t._id || `apt-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40">
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-neutral text-sm">{t.day || 'Weekly Test'}</p>
+                                      <p className="text-xs text-neutral-light">{dateStr}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                      {t.total_questions != null && (
+                                        <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
+                                      )}
+                                      <span className="font-bold text-orange-600 min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
+                                    </div>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 

@@ -120,7 +120,10 @@ export default class tpcCodingController {
             // 4. Fetch Coding Submissions for these students
             // Optimization: Only fetch essential fields
             const submissionFilter = {
-                student_id: { $in: studentIds } // Assuming string IDs in submissions table
+                student_id: { $in: studentIds }, // Assuming string IDs in submissions table
+                // Tenant confirmation (new fields on submissions)
+                ...(collegeId ? { college_id: (collegeId?.toString?.() || String(collegeId)) } : {}),
+                ...(role === 'depttpc' && departmentId ? { department_id: (departmentId?.toString?.() || String(departmentId)) } : {}),
             };
 
             // Time Range Filter

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { renderMarkdown } from '@/lib/renderMarkdown'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -150,10 +151,8 @@ export function CodeReview({
 
         {review && !isLoading && (
           <div className="space-y-4">
-            <div className="prose prose-sm max-w-none">
-              <div className="whitespace-pre-wrap text-sm text-neutral leading-relaxed">
-                {review}
-              </div>
+            <div className="prose prose-sm max-w-none text-neutral text-sm leading-relaxed">
+              {renderMarkdown(review)}
             </div>
 
             <div className="flex gap-2 pt-4 border-t border-neutral-light/20">

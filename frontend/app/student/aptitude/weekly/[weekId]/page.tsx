@@ -445,7 +445,7 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
                             </div>
                             <div className="p-4 bg-background-surface rounded-xl border border-neutral-light/10">
                                 <p className="text-xs text-neutral-light uppercase tracking-wide font-semibold mb-1">Passing Score</p>
-                                <p className="text-2xl font-bold text-neutral">70%</p>
+                                <p className="text-2xl font-bold text-neutral">75%</p>
                             </div>
                         </div>
 
@@ -480,10 +480,17 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
                         </div>
 
                         <div className="flex items-center justify-center mb-10">
-                            <div className="relative w-48 h-48 flex items-center justify-center rounded-full border-8 border-primary/20">
-                                <div className="text-5xl font-bold text-primary">{percentage}%</div>
+                            <div className={`relative w-48 h-48 flex items-center justify-center rounded-full border-8 ${percentage > 75 ? 'border-primary/20' : 'border-amber-500/30'}`}>
+                                <div className={`text-5xl font-bold ${percentage > 75 ? 'text-primary' : 'text-amber-600'}`}>{percentage}%</div>
                             </div>
                         </div>
+
+                        {percentage <= 75 && (
+                            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-left">
+                                <p className="text-amber-800 font-medium">You need more than 75% to pass.</p>
+                                <p className="text-amber-700 text-sm mt-1">Please re-appear for the test from your study page.</p>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-3 gap-6 mb-10">
                             <div className="p-6 bg-green-500/10 rounded-xl border border-green-500/20">

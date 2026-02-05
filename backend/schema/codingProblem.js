@@ -117,14 +117,14 @@ const codingProblemSchema = {
         default: 'active'
     },
     created_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     },
     updated_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     },
     deleted: {
         type: Boolean,

@@ -35,13 +35,13 @@ export default {
         enum: ['active', 'practice_generated', 'closed']
     },
     created_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     },
     updated_at: {
-        type: Date,
+        type: String,
         required: false,
-        default: Date.now
+        default: () => new Date().toISOString()
     }
 };

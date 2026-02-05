@@ -98,7 +98,7 @@ class PasswordResetController {
                 expires_at: expiresAt,
                 used: false,
                 attempts: 0,
-                created_at: new Date()
+                created_at: new Date().toISOString()
             };
 
             await executeData('tblPasswordReset', resetData, 'i', passwordResetSchema);

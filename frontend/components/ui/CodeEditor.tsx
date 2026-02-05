@@ -31,6 +31,8 @@ export interface CodeEditorProps {
   height?: string
   disablePaste?: boolean
   problemId?: string
+  /** When true, hide the Submit button (e.g. capstone uses a single "Submit Capstone" instead) */
+  hideSubmitButton?: boolean
 }
 
 export interface TestCase {
@@ -63,7 +65,8 @@ export function CodeEditor({
   readOnly = false,
   height = '100%',
   disablePaste = false,
-  problemId
+  problemId,
+  hideSubmitButton = false
 }: CodeEditorProps) {
   // Internal state for uncontrolled mode
   const [internalCode, setInternalCode] = useState(defaultValue)
@@ -270,7 +273,7 @@ export function CodeEditor({
             Run
           </button>
 
-          {onSubmit && (
+          {!hideSubmitButton && onSubmit && (
             <button
               onClick={onSubmit}
               disabled={isRunning || isSubmitting}

@@ -27,7 +27,7 @@ import BulkActionsController from './controller/bulkActions.js';
 import DeptTestController from './controller/deptTest.js';
 import * as codingProblemsController from './controller/codingProblems.js';
 import { responsedata } from './methods.js';
-import { auth, requireRole } from './middleware/auth.js';
+import { auth, requireRole, optionalAuth } from './middleware/auth.js';
 import tpcCodingController from './controller/tpcCoding.js';
 
 const router = express.Router();
@@ -83,8 +83,8 @@ router.post('/exam/list', auth, exam.listexam, responsedata);
 router.post('/collage/insert', auth, requireRole('Superadmin'), collage.insertcollage, responsedata);
 router.post('/collage/update', auth, requireRole('Superadmin'), collage.updatecollage, responsedata);
 router.post('/collage/delete', auth, requireRole('Superadmin'), collage.deletecollage, responsedata);
-// College list: Allow public access for signup, but require Superadmin for full access
-router.post('/collage/list', collage.listcollage, responsedata);
+// College list: optionalAuth so signup gets active-only; superadmin gets full filter (e.g. Inactive)
+router.post('/collage/list', optionalAuth, collage.listcollage, responsedata);
 router.post('/collage/update-subscription', auth, requireRole('Superadmin'), collage.updateSubscription.bind(collage), responsedata);
 
 // Department routes (superadmin only)
@@ -167,6 +167,11 @@ router.post('/coding-problems/run', auth, codingProblemsController.runSolution, 
 // Get weekly coding progress (check capstone eligibility): All authenticated users
 router.post('/coding-problems/progress/:weekNum', auth, codingProblemsController.getWeeklyCodingProgress, responsedata);
 
+// Code review: get by submission ID or by problem ID (for Code Review UI)
+router.post('/coding-problems/review/get-by-submission', auth, codingProblemsController.getCodeReviewBySubmissionId, responsedata);
+router.post('/coding-problems/review/get-by-problem', auth, codingProblemsController.getCodeReviewByProblemId, responsedata);
+router.post('/coding-problems/review/list', auth, codingProblemsController.listCodeReviews, responsedata);
+
 // Generic route last
 // Get coding problem by ID: All authenticated users
 router.post('/coding-problems/:problemId', auth, codingProblemsController.getCodingProblemById, responsedata);
@@ -207,6 +212,7 @@ router.post('/profile/get', auth, profile.getProfile, responsedata);
 // Update profile: All authenticated users can update their own
 router.post('/profile/update', auth, profile.updateProfile, responsedata);
 // Change password: All authenticated users
+router.post('/profile/verify-password', auth, profile.verifyPassword, responsedata);
 router.post('/profile/change-password', auth, profile.changePassword, responsedata);
 
 // Practice Test routes (Detailed test data)
@@ -313,6 +319,7 @@ router.post('/tpc-dept/student/details', auth, requireRole('DeptTPC'), tpc.getSt
 router.post('/tpc-dept/approve-test-retake', auth, requireRole('DeptTPC'), tpc.approveTestRetake.bind(tpc), responsedata);
 // Get blocked students: DeptTPC can view students needing approval
 router.post('/tpc-dept/blocked-students', auth, requireRole('DeptTPC'), tpc.getBlockedStudents.bind(tpc), responsedata);
+router.post('/tpc-dept/coding-reviews/list', auth, requireRole('DeptTPC'), codingProblemsController.listCodeReviewsForDeptTPC, responsedata);
 router.post('/tpc-dept/tests/list', auth, requireRole('DeptTPC'), tpc.getDeptTPCTestsList.bind(tpc), responsedata);
 router.post('/tpc-dept/tests/results', auth, requireRole('DeptTPC'), tpc.getDeptTPCTestResults.bind(tpc), responsedata);
 router.post('/tpc-dept/reports/generate', auth, requireRole('DeptTPC'), tpc.generateDeptTPCReport.bind(tpc), responsedata);

@@ -38,6 +38,7 @@ interface College {
   collage_tpc_email?: string
   collage_tpc_password?: string
   collage_tpc_contact?: string
+  tpc_users?: Array<{ _id?: string; person_id?: string; name?: string }>
   collage_email: string
   collage_website: string
   collage_logo: string
@@ -951,7 +952,7 @@ export default function CollegesManagementPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">👤</span>
-                    <span>TPC: {college.collage_tpc_person}</span>
+                    <span>TPC: {college.tpc_users?.[0]?.name ?? college.collage_tpc_person ?? '—'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">🏛️</span>
@@ -1019,15 +1020,15 @@ export default function CollegesManagementPage() {
                         setSelectedCollegeForTpc(college)
                         setTpcOperationMode('update')
                         setCollegeTpcData({
-                          name: college.collage_tpc_person || '',
-                          email: college.collage_tpc_email || '',
+                          name: college.tpc_users?.[0]?.name ?? college.collage_tpc_person ?? '',
+                          email: college.collage_tpc_email ?? '',
                           password: '',
-                          contact: college.collage_tpc_contact || '',
+                          contact: college.collage_tpc_contact ?? '',
                         })
                         setShowCollegeTpcModal(true)
                       }}
                       className="px-3 text-xs"
-                      disabled={!college.collage_tpc_email}
+                      disabled={!(college.collage_tpc_email || college.tpc_users?.[0])}
                     >
                       Update TPC
                     </Button>
@@ -1071,7 +1072,7 @@ export default function CollegesManagementPage() {
                         }
                       }}
                       className="px-3 text-xs text-red-600 hover:text-red-700"
-                      disabled={!college.collage_tpc_email || formLoading}
+                      disabled={!(college.collage_tpc_email || college.tpc_users?.[0]) || formLoading}
                     >
                       Delete TPC
                     </Button>
@@ -1305,6 +1306,7 @@ export default function CollegesManagementPage() {
                   <h3 className="text-lg font-semibold text-neutral">Available Departments</h3>
                   <Button
                     variant="primary"
+                    size="sm"
                     onClick={() => setShowCreateDeptModal(true)}
                     className="px-4 text-sm"
                   >
@@ -1312,17 +1314,24 @@ export default function CollegesManagementPage() {
                   </Button>
                 </div>
 
-                <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
-                  {departments.length === 0 ? (
-                    <p className="text-center text-neutral-dark py-8">No departments found. Create one to get started.</p>
-                  ) : (
-                    departments.map((dept) => {
+                <div className="space-y-3 max-h-96 overflow-y-auto mb-4">
+                  {(() => {
+                    // Only show departments that belong to this college or are unassigned (no other college)
+                    const collegeId = selectedCollegeForDept._id?.toString?.() || selectedCollegeForDept._id
+                    const departmentsForThisCollege = departments.filter((dept) => {
+                      const deptCollegeId = dept.department_college_id?.toString?.() || dept.department_college_id
+                      return !deptCollegeId || deptCollegeId === collegeId
+                    })
+                    if (departmentsForThisCollege.length === 0) {
+                      return <p className="text-center text-neutral-dark py-8">No departments for this college yet. Create one to get started.</p>
+                    }
+                    return departmentsForThisCollege.map((dept) => {
                       const isAssigned = selectedCollegeForDept.collage_departments?.includes(dept._id || '')
                       return (
-                        <div
-                          key={dept._id}
-                          className="flex items-center justify-between p-3 border border-neutral-light/20 rounded-lg hover:bg-background-elevated"
-                        >
+<div
+                        key={dept._id}
+                        className="flex items-center justify-between p-4 border border-neutral-light/20 rounded-xl bg-background-surface/50 hover:bg-background-elevated hover:border-neutral-light/30 transition-colors"
+                      >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-neutral">{dept.department_name}</span>
@@ -1338,86 +1347,92 @@ export default function CollegesManagementPage() {
                             {dept.department_description && (
                               <p className="text-sm text-neutral-dark mt-1">{dept.department_description}</p>
                             )}
-                            {dept.department_tpc_name && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-xs text-neutral-dark">TPC:</span>
-                                <span className="text-xs font-medium text-neutral">{dept.department_tpc_name}</span>
-                              </div>
+                            {/* Only show TPC details when this department is assigned to the college we're managing */}
+                            {isAssigned && (
+                              <>
+                                {dept.department_tpc_name && (
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs text-neutral-dark">TPC:</span>
+                                    <span className="text-xs font-medium text-neutral">{dept.department_tpc_name}</span>
+                                  </div>
+                                )}
+                                {dept.department_tpc_id && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-neutral-dark">TPC Email:</span>
+                                    <span className="text-xs font-mono text-neutral">{dept.department_tpc_id}</span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(dept.department_tpc_id || '')
+                                        showToast('TPC Email copied to clipboard', 'success')
+                                      }}
+                                      className="text-primary hover:text-primary/80 ml-1"
+                                      title="Copy TPC Email"
+                                    >
+                                      📋
+                                    </button>
+                                  </div>
+                                )}
+                                {dept.department_tpc_password && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-neutral-dark">TPC Password:</span>
+                                    <span className="text-xs font-mono text-neutral">
+                                      {showPassword[dept._id || ''] ? dept.department_tpc_password : '••••••••'}
+                                    </span>
+                                    <button
+                                      onClick={() => setShowPassword({ ...showPassword, [dept._id || '']: !showPassword[dept._id || ''] })}
+                                      className="text-primary hover:text-primary/80 ml-1"
+                                      title="Toggle password visibility"
+                                    >
+                                      {showPassword[dept._id || ''] ? '👁️' : '👁️‍🗨️'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(dept.department_tpc_password || '')
+                                        showToast('TPC Password copied to clipboard', 'success')
+                                      }}
+                                      className="text-primary hover:text-primary/80 ml-1"
+                                      title="Copy password"
+                                    >
+                                      📋
+                                    </button>
+                                  </div>
+                                )}
+                                {dept.department_tpc_contact && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-neutral-dark">TPC Contact:</span>
+                                    <span className="text-xs text-neutral">{dept.department_tpc_contact}</span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(dept.department_tpc_contact || '')
+                                        showToast('TPC Contact copied to clipboard', 'success')
+                                      }}
+                                      className="text-primary hover:text-primary/80 ml-1"
+                                      title="Copy Contact"
+                                    >
+                                      📋
+                                    </button>
+                                  </div>
+                                )}
+                                {/* Show message if no TPC account exists (only when assigned to this college) */}
+                                {!dept.department_tpc_name && !dept.department_tpc_id && (
+                                  <div className="mt-2 text-xs text-neutral-dark italic">
+                                    No DeptTPC account created yet
+                                  </div>
+                                )}
+                              </>
                             )}
-                            {dept.department_tpc_id && (
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-neutral-dark">TPC Email:</span>
-                                <span className="text-xs font-mono text-neutral">{dept.department_tpc_id}</span>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(dept.department_tpc_id || '')
-                                    showToast('TPC Email copied to clipboard', 'success')
-                                  }}
-                                  className="text-primary hover:text-primary/80 ml-1"
-                                  title="Copy TPC Email"
-                                >
-                                  📋
-                                </button>
-                              </div>
-                            )}
-                            {dept.department_tpc_password && (
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-neutral-dark">TPC Password:</span>
-                                <span className="text-xs font-mono text-neutral">
-                                  {showPassword[dept._id || ''] ? dept.department_tpc_password : '••••••••'}
-                                </span>
-                                <button
-                                  onClick={() => setShowPassword({ ...showPassword, [dept._id || '']: !showPassword[dept._id || ''] })}
-                                  className="text-primary hover:text-primary/80 ml-1"
-                                  title="Toggle password visibility"
-                                >
-                                  {showPassword[dept._id || ''] ? '👁️' : '👁️‍🗨️'}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(dept.department_tpc_password || '')
-                                    showToast('TPC Password copied to clipboard', 'success')
-                                  }}
-                                  className="text-primary hover:text-primary/80 ml-1"
-                                  title="Copy password"
-                                >
-                                  📋
-                                </button>
-                              </div>
-                            )}
-                            {dept.department_tpc_contact && (
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-neutral-dark">TPC Contact:</span>
-                                <span className="text-xs text-neutral">{dept.department_tpc_contact}</span>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(dept.department_tpc_contact || '')
-                                    showToast('TPC Contact copied to clipboard', 'success')
-                                  }}
-                                  className="text-primary hover:text-primary/80 ml-1"
-                                  title="Copy Contact"
-                                >
-                                  📋
-                                </button>
-                              </div>
-                            )}
-                            {/* Show message if no TPC account exists */}
-                            {!dept.department_tpc_name && !dept.department_tpc_id && (
-                              <div className="mt-2 text-xs text-neutral-dark italic">
-                                No DeptTPC account created yet
-                              </div>
-                            )}
-                            {/* Delete DeptTPC button */}
+                            {/* Delete DeptTPC button - destructive style for clarity */}
                             {isAssigned && (dept.department_tpc_name || dept.department_tpc_id) && (
                               <div className="mt-2">
                                 <Button
-                                  variant="secondary"
+                                  variant="destructive"
+                                  size="sm"
                                   onClick={async () => {
                                     if (confirm(`Are you sure you want to delete the DeptTPC account for ${dept.department_name}? This action cannot be undone.`)) {
                                       await handleDeleteDeptTpc(dept._id!, dept.department_tpc_id)
                                     }
                                   }}
-                                  className="px-3 text-xs text-red-600 hover:text-red-700"
+                                  className="px-3 text-xs"
                                   disabled={formLoading}
                                 >
                                   Delete DeptTPC
@@ -1425,9 +1440,10 @@ export default function CollegesManagementPage() {
                               </div>
                             )}
                           </div>
-                          <div className="flex flex-col gap-2 ml-4">
+                          <div className="flex flex-col gap-2 ml-4 shrink-0">
                             <Button
-                              variant={isAssigned ? 'primary' : 'secondary'}
+                              variant={isAssigned ? 'secondary' : 'primary'}
+                              size="sm"
                               onClick={async () => {
                                 await toggleDepartmentAssignment(dept._id!, !!isAssigned)
                               }}
@@ -1440,10 +1456,10 @@ export default function CollegesManagementPage() {
                         </div>
                       )
                     })
-                  )}
+                })()}
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t">
+                <div className="flex gap-4 pt-4 border-t border-neutral-light/20">
                   <Button
                     variant="secondary"
                     onClick={() => {
