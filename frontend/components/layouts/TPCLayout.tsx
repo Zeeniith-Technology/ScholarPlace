@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -38,13 +38,41 @@ export function TPCLayout({ children }: TPCLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
 
+  // Close sidebar on route change so overlay never gets stuck
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
+
+  // Close sidebar when resizing to desktop
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)')
+    const handler = () => {
+      if (mql.matches) setSidebarOpen(false)
+    }
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+
+  // Close sidebar on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close menu"
           className="fixed inset-0 bg-neutral/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => e.key === 'Enter' && setSidebarOpen(false)}
         />
       )}
 

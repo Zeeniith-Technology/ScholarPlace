@@ -147,6 +147,7 @@ export default function DepartmentTPCDashboardPage() {
       const apiBaseUrl = getApiBaseUrl()
       const authHeader = getAuthHeader()
       if (!authHeader) {
+        setIsLoading(false)
         window.location.href = '/auth/login'
         return
       }

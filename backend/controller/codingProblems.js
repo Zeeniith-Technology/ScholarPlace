@@ -977,10 +977,10 @@ export async function getWeeklyCodingProgress(req, res) {
         const db = getDB();
 
         // 1. Get all daily problems for this week (day-wise: day-1..day-5 only; exclude pre-week)
-        // Support both string days ('day-1', ...) and numeric days (1..5) for compatibility
+        // Support both string days ('day-1', ...) and numeric days (1..5); week as number or string for DB compatibility
         const problemsCollection = db.collection(COLLECTION_NAME);
         const dailyProblems = await problemsCollection.find({
-            week: week,
+            week: { $in: [week, String(week)] },
             day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
             is_capstone: false,
             deleted: { $ne: true }
@@ -990,16 +990,26 @@ export async function getWeeklyCodingProgress(req, res) {
         const dailyProblemIds = dailyProblems.map(p => p.question_id);
 
         // 2. Get user's submissions for these problems
+        // Match student_id as string or ObjectId (production may store either)
         const submissionsCollection = db.collection('tblCodingSubmissions');
+        const studentIdString = String(studentId);
+        let studentIdObj = null;
+        try {
+            studentIdObj = new ObjectId(studentIdString);
+        } catch (_) { /* not a valid ObjectId */ }
 
-        // Convert studentId to string for consistent matching
-        // (Assuming student_id in submissions is stored as string like in other collections)
-        const studentIdString = studentId.toString();
+        const studentIdConditions = [
+            { student_id: studentIdString },
+            { student_id: studentIdString.trim() }
+        ];
+        if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
 
         const submissions = await submissionsCollection.find({
-            student_id: studentIdString,
-            problem_id: { $in: dailyProblemIds },
-            status: 'passed' // Only count passed submissions
+            $and: [
+                { problem_id: { $in: dailyProblemIds } },
+                { status: 'passed' },
+                { $or: studentIdConditions }
+            ]
         }).project({ problem_id: 1 }).toArray();
 
         // Count unique completed problems

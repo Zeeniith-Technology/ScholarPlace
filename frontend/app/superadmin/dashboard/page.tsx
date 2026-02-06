@@ -185,6 +185,7 @@ export default function SuperadminDashboardPage() {
       const authHeader = getAuthHeader()
       if (!authHeader) {
         console.log('[Dashboard] No auth token in fetchDashboardData, redirecting to login')
+        setIsLoading(false)
         router.push('/superadmin/login')
         return
       }
