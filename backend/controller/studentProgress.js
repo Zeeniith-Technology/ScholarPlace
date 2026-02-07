@@ -1543,6 +1543,7 @@ export default class studentProgressController {
             }
 
             const weekNum = parseInt(week, 10);
+            const weekStored = Number.isNaN(weekNum) ? week : weekNum;
             const weekFilter = Number.isNaN(weekNum) ? week : { $in: [weekNum, String(weekNum)] };
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
@@ -1666,7 +1667,8 @@ export default class studentProgressController {
                 return next();
             }
 
-            const weekNum = parseInt(week);
+            const weekNum = parseInt(week, 10);
+            const weekFilter = Number.isNaN(weekNum) ? week : { $in: [weekNum, String(weekNum)] };
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
             // Query week progress
@@ -1724,7 +1726,7 @@ export default class studentProgressController {
                             const nextStatus = existing?.status === 'completed' ? 'completed' : 'in_progress';
 
                             await progressCollection.updateOne(
-                                { week: weekNum, ...studentIdFilter },
+                                { week: weekFilter, ...studentIdFilter },
                                 {
                                     $set: {
                                         capstone_completed: true,
@@ -1733,7 +1735,7 @@ export default class studentProgressController {
                                     },
                                     $setOnInsert: {
                                         student_id: studentIdString,
-                                        week: weekNum,
+                                        week: weekStored,
                                         created_at: new Date()
                                     }
                                 },
@@ -1742,7 +1744,7 @@ export default class studentProgressController {
                             await logProgressAudit(req, 'check-week-completion-capstone-fallback', {
                                 userId,
                                 student_id: studentIdString,
-                                week: weekNum,
+                                week: weekStored,
                                 before: summarizeProgress(existing),
                                 after: summarizeProgress({ ...(existing || {}), capstone_completed: true, status: nextStatus }),
                                 meta: { source: 'check-week-completion' }
@@ -1767,7 +1769,7 @@ export default class studentProgressController {
                 success: true,
                 status: 200,
                 data: {
-                    week: weekNum,
+                    week: weekStored,
                     isCompleted: finalCompleted,
                     capstoneCompleted: capstoneCompleted,
                     status: finalCompleted
