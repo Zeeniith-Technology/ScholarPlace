@@ -1434,11 +1434,14 @@ export default class studentProgressController {
      */
     async checkAndMarkWeekCompletion(userId, weekNum, req = null) {
         try {
-            console.log(`[WeekCompletion] Checking requirements for User ${userId} Week ${weekNum}`);
+            const weekNumber = parseInt(weekNum, 10);
+            const weekFilter = Number.isNaN(weekNumber) ? weekNum : { $in: [weekNumber, String(weekNumber)] };
+            const weekLog = Number.isNaN(weekNumber) ? weekNum : weekNumber;
+            console.log(`[WeekCompletion] Checking requirements for User ${userId} Week ${weekLog}`);
 
             // 1. Get Student Progress
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
-            const progressRes = await fetchData('tblStudentProgress', {}, { week: weekNum, ...studentIdFilter });
+            const progressRes = await fetchData('tblStudentProgress', {}, { week: weekFilter, ...studentIdFilter });
             const progress = progressRes.data?.[0];
 
             if (!progress) {
@@ -1461,7 +1464,7 @@ export default class studentProgressController {
             // Using student_id as string to be safe
             const aptitudeRes = await fetchData('tblPracticeTest', { _id: 1, score: 1 }, {
                 student_id: studentIdString,
-                week: weekNum,
+                week: weekFilter,
                 day: 'weekly-test',
                 score: { $gte: 75 }
             });
@@ -1489,7 +1492,7 @@ export default class studentProgressController {
                 await logProgressAudit(req, 'mark-week-completed', {
                     userId,
                     student_id: studentIdString,
-                    week: weekNum,
+                    week: weekLog,
                     before: summarizeProgress(progress),
                     after: summarizeProgress({
                         status: 'completed',
@@ -1539,7 +1542,8 @@ export default class studentProgressController {
                 return next();
             }
 
-            const weekNum = parseInt(week);
+            const weekNum = parseInt(week, 10);
+            const weekFilter = Number.isNaN(weekNum) ? week : { $in: [weekNum, String(weekNum)] };
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
             // Get student's college and department
@@ -1669,7 +1673,7 @@ export default class studentProgressController {
             const progressResult = await fetchData(
                 'tblStudentProgress',
                 {},
-                { week: weekNum, ...studentIdFilter },
+                { week: weekFilter, ...studentIdFilter },
                 {}
             );
 
@@ -1750,14 +1754,25 @@ export default class studentProgressController {
                 }
             }
 
+            let fullyCompleted = false;
+            try {
+                fullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum, req);
+            } catch (err) {
+                console.error('[checkWeekCompletion] Failed to auto-mark completion:', err.message);
+            }
+
+            const finalCompleted = isCompleted || fullyCompleted;
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 data: {
                     week: weekNum,
-                    isCompleted: isCompleted,
+                    isCompleted: finalCompleted,
                     capstoneCompleted: capstoneCompleted,
-                    status: (progressResult.data?.find((r) => r.status === 'completed')?.status || progressResult.data?.[0]?.status || 'not_started')
+                    status: finalCompleted
+                        ? 'completed'
+                        : (progressResult.data?.find((r) => r.status === 'completed')?.status || progressResult.data?.[0]?.status || 'not_started')
                 }
             };
             next();

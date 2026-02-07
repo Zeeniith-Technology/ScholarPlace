@@ -107,6 +107,32 @@ export default function LearningPage() {
           result.data.forEach((progress: any) => {
             progressMap[progress.week] = progress
           })
+          // If Week 1 is done but status wasn't updated (legacy), sync completion once.
+          if (progressMap[1]?.status !== 'completed') {
+            try {
+              const completionRes = await fetch(`${apiBaseUrl}/student-progress/check-week-completion`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': authHeader,
+                },
+                body: JSON.stringify({ week: 1 }),
+              })
+              if (completionRes.ok) {
+                const completion = await completionRes.json()
+                if (completion?.success && completion?.data?.isCompleted) {
+                  progressMap[1] = {
+                    ...(progressMap[1] || { week: 1 }),
+                    status: 'completed'
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('[Student Progress] Week completion sync failed:', err)
+            }
+          }
+
           setStudentProgressByWeek(progressMap)
         }
       }
