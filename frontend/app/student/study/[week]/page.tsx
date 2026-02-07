@@ -401,12 +401,10 @@ function WeekStudyContent() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('[fetchCodingProblems] API response:', result)
-        if (result.success && result.problems) {
-          console.log(`[fetchCodingProblems] Setting ${result.problems.length} problems for week ${weekNum}`)
-          setCodingProblems(result.problems)
+        const problems = result?.problems ?? result?.data?.problems
+        if (result?.success && Array.isArray(problems)) {
+          setCodingProblems(problems)
         } else {
-          console.log('[fetchCodingProblems] No problems in response')
           setCodingProblems([])
         }
       } else {
@@ -1183,21 +1181,30 @@ function WeekStudyContent() {
 
 
               {/* Capstone Coding Challenges - Only show on day-5 */}
-              {selectedDay === 'day-5' && (
+              {selectedDay === 'day-5' && (() => {
+                const eligible = weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production'
+                const capstoneCompleted = codingProblems.length > 0 && codingProblems.every((p: any) => p?.status === 'passed')
+                const canOpen = eligible || capstoneCompleted
+                return (
                 <div className="mt-6 pt-6 border-t border-neutral-light/20">
                   <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Capstone Project</h3>
                   <div
                     onClick={() => {
-                      // Allow access if eligible OR in development mode
-                      if (weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production') {
-                        const width = window.screen.width;
-                        const height = window.screen.height;
-                        window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`);
+                      if (capstoneCompleted) {
+                        const width = window.screen.width
+                        const height = window.screen.height
+                        window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
+                        return
+                      }
+                      if (eligible) {
+                        const width = window.screen.width
+                        const height = window.screen.height
+                        window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
                       } else {
                         setShowCapstoneUnlockModal(true)
                       }
                     }}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production'
+                    className={`w-full text-left p-3 rounded-lg transition-all ${canOpen
                       ? 'bg-primary/10 border-2 border-primary/30 cursor-pointer hover:bg-primary/20'
                       : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-not-allowed'
                       }`}
@@ -1205,19 +1212,27 @@ function WeekStudyContent() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <Trophy className={`w-4 h-4 ${weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production' ? 'text-primary' : 'text-neutral-light'}`} />
+                          {capstoneCompleted ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Trophy className={`w-4 h-4 ${eligible ? 'text-primary' : 'text-neutral-light'}`} />
+                          )}
                           <div className="font-semibold text-sm">Capstone Projects</div>
                         </div>
                         <div className="text-xs opacity-80">
-                          {weeklyTestEligibility?.coding_problems?.eligible
-                            ? `${codingProblems.length} projects available`
-                            : process.env.NODE_ENV !== 'production'
-                              ? "Unlocked (Development)"
-                              : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} daily completed`
+                          {capstoneCompleted
+                            ? 'Completed'
+                            : eligible
+                              ? `${codingProblems.length} projects available`
+                              : process.env.NODE_ENV !== 'production'
+                                ? 'Unlocked (Development)'
+                                : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} daily completed`
                           }
                         </div>
                       </div>
-                      {weeklyTestEligibility?.coding_problems?.eligible ? (
+                      {capstoneCompleted ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      ) : eligible ? (
                         <Play className="w-4 h-4 text-primary flex-shrink-0" />
                       ) : (
                         <Lock className="w-4 h-4 text-neutral-light flex-shrink-0" />
@@ -1225,7 +1240,7 @@ function WeekStudyContent() {
                     </div>
                   </div>
                 </div>
-              )}
+              )})()}
 
               {/* Capstone unlock requirement modal (no alert) */}
               <Modal

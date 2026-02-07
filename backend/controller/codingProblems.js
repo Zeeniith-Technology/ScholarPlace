@@ -80,9 +80,10 @@ export async function getCodingProblemsByWeek(req, res) {
         const db = getDB();
         const collection = db.collection(COLLECTION_NAME);
 
+        // Capstone: match is_capstone as true, 1, or 'true' for DB compatibility
         const problems = await collection.find({
             week: { $in: [week, String(week)] },
-            is_capstone: true // Only capstone problems for weekly test
+            is_capstone: { $in: [true, 1, 'true'] }
         }).sort({ question_id: 1 }).toArray();
 
         // Check for submissions (match student_id as string or ObjectId for production)
@@ -98,13 +99,15 @@ export async function getCodingProblemsByWeek(req, res) {
         ];
         if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
 
-        // Enhance problems with status
+        // Enhance problems with status (support question_id or problem_id for submission lookup)
+        const problemIdField = (p) => p.question_id ?? p.problem_id;
         const problemsWithStatus = await Promise.all(problems.map(async (problem) => {
-            const passedSubmission = await submissionsCollection.findOne({
-                problem_id: problem.question_id,
+            const pid = problemIdField(problem);
+            const passedSubmission = pid ? await submissionsCollection.findOne({
+                problem_id: pid,
                 status: 'passed',
                 $or: studentIdConditions
-            });
+            }) : null;
             return {
                 ...problem,
                 status: passedSubmission ? 'passed' : 'pending'
