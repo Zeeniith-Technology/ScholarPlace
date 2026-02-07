@@ -34,13 +34,17 @@ export default class practiceTestController {
                 return next();
             }
 
+            const weekNum = parseInt(week, 10);
+            const weekFilter = Number.isNaN(weekNum) ? week : { $in: [weekNum, String(weekNum)] };
+            const weekStored = Number.isNaN(weekNum) ? week : weekNum;
+
             // Check if a document already exists for this student, week, and day
             const existingTest = await fetchData(
                 'tblPracticeTest',
                 {},
                 {
                     student_id: userId,
-                    week: week,
+                    week: weekFilter,
                     day: day
                 },
                 {
@@ -66,7 +70,7 @@ export default class practiceTestController {
             // Prepare test data with all schema fields
             const testData = {
                 student_id: studentIdString, // ALWAYS string format
-                week: week,
+                week: weekStored,
                 day: day,
                 category: category || 'Aptitude', // Default to Aptitude if not provided
                 attempt: attemptNumber,
@@ -140,7 +144,7 @@ export default class practiceTestController {
                         { score: 1, completed_at: 1 },
                         {
                             student_id: userId.toString(),
-                            week: week,
+                            week: weekFilter,
                             day: day,
                             _id: { $ne: testId }
                         },

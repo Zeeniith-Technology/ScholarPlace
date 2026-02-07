@@ -1910,7 +1910,7 @@ export default class studentProgressController {
             const practiceTestResult = await fetchData(
                 'tblPracticeTest',
                 {},
-                { student_id: userId, week: weekNum },
+                { student_id: userId, week: { $in: [weekNum, String(weekNum)] } },
                 { sort: { day: 1, attempt: -1 } } // Get latest attempt for each day
             );
 
@@ -2069,7 +2069,7 @@ export default class studentProgressController {
                 attempted: weeklyAttemptCount > 0,
                 score: latestWeeklyTest ? latestWeeklyTest.score : 0,
                 completed: !!latestWeeklyTest,
-                passed: latestWeeklyTest ? latestWeeklyTest.score > 75 : false,
+                passed: latestWeeklyTest ? latestWeeklyTest.score >= 75 : false,
                 attempts: weeklyAttemptCount,
                 max_attempts: 3
             };
