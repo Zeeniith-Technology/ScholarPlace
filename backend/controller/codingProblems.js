@@ -965,11 +965,16 @@ export async function getWeeklyCodingProgress(req, res) {
 
         // 1. Get all daily problems for this week (day-wise: day-1..day-5 only; exclude pre-week)
         // Support both string days ('day-1', ...) and numeric days (1..5); week as number or string for DB compatibility
+        // FIXED: Daily problems have is_daily: 1, not is_capstone: false. Query by is_daily with fallback.
         const problemsCollection = db.collection(COLLECTION_NAME);
         const dailyProblems = await problemsCollection.find({
             week: { $in: [week, String(week)] },
             day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
-            is_capstone: { $ne: true } // daily: false or field missing (no deleted filter - match getDailyCodingProblems)
+            $or: [
+                { is_daily: 1 },  // Primary: explicitly marked as daily (production schema)
+                { is_daily: true },  // Fallback: boolean true variant
+                { $and: [{ is_capstone: { $ne: true } }, { is_daily: { $exists: false } }] }  // Legacy: old schema without is_daily field
+            ]
         }).project({ question_id: 1, problem_id: 1, title: 1, day: 1, question_number: 1 }).toArray();
 
         const totalDailyProblems = dailyProblems.length;
