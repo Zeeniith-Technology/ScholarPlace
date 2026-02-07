@@ -158,59 +158,36 @@ export async function getDailyCodingProblems(req, res) {
         const db = getDB();
         const collection = db.collection(COLLECTION_NAME);
 
+        // Match week/day as number or string (DB may store week: 1 or "1", day: 5 or "day-5")
+        const dayValues = [day, String(day), `day-${day}`];
         const problems = await collection.find({
-            week: week,
-            day: day,
-            is_capstone: false // Only daily problems, not capstone
+            week: { $in: [week, String(week)] },
+            day: { $in: dayValues },
+            is_capstone: { $ne: true } // daily: false or field missing
         }).sort({ question_id: 1 }).toArray();
 
-        // Check for submissions
+        // Check for submissions (match student_id as string or ObjectId)
         const submissionsCollection = db.collection('tblCodingSubmissions');
+        const studentIdString = String(studentId);
+        let studentIdObj = null;
+        try {
+            studentIdObj = new ObjectId(studentIdString);
+        } catch (_) { /* not a valid ObjectId */ }
+        const studentIdConditions = [
+            { student_id: studentIdString },
+            { student_id: studentIdString.trim() }
+        ];
+        if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
 
-        // Enhance problems with status
         const problemsWithStatus = await Promise.all(problems.map(async (problem) => {
-            // Find the latest passed submission for this student and problem
-            const studentIdString = studentId.toString();
-            let studentIdObj;
-            try {
-                // Import ObjectId if not already available in scope
-                const { ObjectId } = await import('mongodb');
-                studentIdObj = new ObjectId(studentIdString);
-            } catch (e) {
-                // Ignore if invalid object id
-            }
-
-            const query = {
+            const passedSubmission = await submissionsCollection.findOne({
                 problem_id: problem.question_id,
                 status: 'passed',
-                $or: [
-                    { student_id: studentIdString },
-                    // Also check for trimmed version just in case of whitespace
-                    { student_id: studentIdString.trim() }
-                ]
-            };
-
-            if (studentIdObj) {
-                query.$or.push({ student_id: studentIdObj });
-            }
-
-            // DEBUG LOGGING
-            if (problem.title === 'Even or Odd' || problem.question_number === 'Q006') {
-                console.log(`[StatusCheck] Checking for problem: ${problem.title}`);
-                console.log(`[StatusCheck] Query:`, JSON.stringify(query));
-            }
-
-            const passedSubmission = await submissionsCollection.findOne(query);
-
-            if ((problem.title === 'Even or Odd' || problem.question_number === 'Q006') && passedSubmission) {
-                console.log(`[StatusCheck] FOUND passed submission for ${problem.title}`);
-            } else if (problem.title === 'Even or Odd' || problem.question_number === 'Q006') {
-                console.log(`[StatusCheck] NO passed submission found for ${problem.title}`);
-            }
-
+                $or: studentIdConditions
+            });
             return {
                 ...problem,
-                status: passedSubmission ? 'passed' : 'pending' // 'passed' if ANY passed submission exists
+                status: passedSubmission ? 'passed' : 'pending'
             };
         }));
 
@@ -989,7 +966,7 @@ export async function getWeeklyCodingProgress(req, res) {
         const dailyProblems = await problemsCollection.find({
             week: { $in: [week, String(week)] },
             day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
-            is_capstone: false,
+            is_capstone: { $ne: true }, // daily: false or field missing
             deleted: { $ne: true }
         }).project({ question_id: 1, title: 1, day: 1, question_number: 1 }).toArray();
 
