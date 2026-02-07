@@ -112,7 +112,7 @@ export default function WeeklyAptitudeTestsPage() {
                             'Content-Type': 'application/json',
                             'Authorization': authHeader,
                         },
-                        body: JSON.stringify({ week: test.weekNumber }),
+                        body: JSON.stringify({ week: test.weekNumber, track: 'aptitude' }),
                     })
 
                     if (response.ok) {

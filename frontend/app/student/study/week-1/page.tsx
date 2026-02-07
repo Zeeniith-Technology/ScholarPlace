@@ -468,7 +468,7 @@ function Week1StudyContent() {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
         },
-        body: JSON.stringify({ week: weekNum }),
+        body: JSON.stringify({ week: weekNum, track: 'dsa' }),
       })
 
       if (response.ok) {

@@ -92,7 +92,7 @@ export default function StudentTestsPage() {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
         },
-        body: JSON.stringify({ week }),
+        body: JSON.stringify({ week, track: 'dsa' }),
       })
 
       if (response.ok) {

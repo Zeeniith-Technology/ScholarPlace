@@ -1915,9 +1915,11 @@ export default class studentProgressController {
 
             // Get all coding problems for this week from DATABASE (not static file)
             // Define required practice-test days: aptitude has no pre-week, only day-1..day-5
+            const baseDays = ['day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
+            const requirePreWeekPractice = process.env.REQUIRE_PRE_WEEK_PRACTICE === 'true';
             const weekDays = track === 'aptitude'
-                ? ['day-1', 'day-2', 'day-3', 'day-4', 'day-5']
-                : ['pre-week', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
+                ? baseDays
+                : (weekNum === 1 && requirePreWeekPractice ? ['pre-week', ...baseDays] : baseDays);
             let allCodingProblems = [];
 
             // FIXED: Query database instead of importing static file (which may be outdated/empty)
@@ -1948,7 +1950,48 @@ export default class studentProgressController {
 
             const progress = progressResult.data && progressResult.data.length > 0 ? progressResult.data[0] : null;
             const practiceTests = practiceTestResult.data || [];
-            const codingProblemsCompleted = progress?.coding_problems_completed || [];
+
+            // Resolve coding problems completed from submissions (more reliable than progress cache)
+            let codingProblemsCompleted = progress?.coding_problems_completed || [];
+            if (track !== 'aptitude' && allCodingProblems.length > 0) {
+                try {
+                    const db = getDB();
+                    const submissionsCollection = db.collection('tblCodingSubmissions');
+                    const studentIdString = userId.toString();
+                    const { ObjectId } = await import('mongodb');
+                    let studentIdObj = null;
+                    try { studentIdObj = new ObjectId(studentIdString); } catch (_) { /* not ObjectId */ }
+                    const studentIdConditions = [
+                        { student_id: studentIdString },
+                        { student_id: studentIdString.trim() }
+                    ];
+                    if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
+
+                    const passedSubs = await submissionsCollection.find({
+                        problem_id: { $in: allCodingProblems },
+                        status: 'passed',
+                        $or: studentIdConditions
+                    }).project({ problem_id: 1 }).toArray();
+
+                    const completedFromSubs = passedSubs.map(s => s.problem_id).filter(Boolean);
+                    const merged = Array.from(new Set([...(codingProblemsCompleted || []), ...completedFromSubs]));
+                    codingProblemsCompleted = merged;
+
+                    // Persist merged completions if it adds new items
+                    if ((progress?.coding_problems_completed?.length || 0) < codingProblemsCompleted.length) {
+                        const { filter: studentIdFilter } = await this._normalizeStudentId(userId);
+                        await executeData(
+                            'tblStudentProgress',
+                            { $set: { coding_problems_completed: codingProblemsCompleted, updated_at: new Date().toISOString() } },
+                            'u',
+                            null,
+                            { week: weekNum, ...studentIdFilter }
+                        );
+                    }
+                } catch (error) {
+                    console.error('[checkWeeklyTestEligibility] Failed to resolve coding submissions:', error);
+                }
+            }
 
             // Check practice test scores (>= 70% for each day)
             const practiceTestEligibility = {
@@ -2007,10 +2050,11 @@ export default class studentProgressController {
             // Check coding problems completion
             // If no coding problems exist for this week, or track is 'aptitude' (no coding in aptitude), consider requirement met
             const codingRequired = track !== 'aptitude';
+            const completedRequired = allCodingProblems.filter(id => codingProblemsCompleted.includes(id));
             const codingProblemsEligibility = {
                 eligible: !codingRequired || allCodingProblems.length === 0 || allCodingProblems.every(id => codingProblemsCompleted.includes(id)),
                 total: allCodingProblems.length,
-                completed: codingProblemsCompleted.length,
+                completed: completedRequired.length,
                 missing: allCodingProblems.filter(id => !codingProblemsCompleted.includes(id))
             };
 
