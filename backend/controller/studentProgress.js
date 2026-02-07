@@ -1328,7 +1328,8 @@ export default class studentProgressController {
             console.log(`[WeekCompletion] Checking requirements for User ${userId} Week ${weekNum}`);
 
             // 1. Get Student Progress
-            const progressRes = await fetchData('tblStudentProgress', {}, { student_id: userId, week: weekNum });
+            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
+            const progressRes = await fetchData('tblStudentProgress', {}, { week: weekNum, ...studentIdFilter });
             const progress = progressRes.data?.[0];
 
             if (!progress) {
@@ -1350,7 +1351,7 @@ export default class studentProgressController {
             // Query tblPracticeTest for this week + weekly-test + score >= 75
             // Using student_id as string to be safe
             const aptitudeRes = await fetchData('tblPracticeTest', { _id: 1, score: 1 }, {
-                student_id: userId.toString(),
+                student_id: studentIdString,
                 week: weekNum,
                 day: 'weekly-test',
                 score: { $gte: 75 }
@@ -1415,6 +1416,7 @@ export default class studentProgressController {
             }
 
             const weekNum = parseInt(week);
+            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
             // Get student's college and department
             const { college_id, department_id } = await getCollegeAndDepartmentForStudent(userId);
@@ -1423,14 +1425,14 @@ export default class studentProgressController {
             const existing = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: weekNum },
+                { week: weekNum, ...studentIdFilter },
                 { limit: 1 }
             );
 
             if (!existing.data || existing.data.length === 0) {
                 // Create new progress record with capstone_completed = true
                 const newProgress = {
-                    student_id: userId,
+                    student_id: studentIdString,
                     week: weekNum,
                     status: 'in_progress', // Not completed yet
                     progress_percentage: 50, // Partial progress
@@ -1464,7 +1466,7 @@ export default class studentProgressController {
                     },
                     'u',
                     studentProgressSchema,
-                    { student_id: userId, week: weekNum }
+                    { week: weekNum, ...studentIdFilter }
                 );
             }
 
@@ -1522,12 +1524,13 @@ export default class studentProgressController {
             }
 
             const weekNum = parseInt(week);
+            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
             // Query week progress
             const progressResult = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: weekNum },
+                { week: weekNum, ...studentIdFilter },
                 {}
             );
 
@@ -1581,15 +1584,67 @@ export default class studentProgressController {
 
             // FIXED: Enforce numeric week
             const weekNum = parseInt(week, 10);
+            const isAptitude = test_type === 'aptitude' || !test_type; // Default to aptitude if not specified
+            const category = isAptitude ? 'aptitude' : 'coding'; // 'coding' weekly tests handled separately usually, but good fallback
 
-            // TODO: Implement full grading/storage logic here.
-            // For now, return success to prevent crash and verify flow.
+            // 1. Save Test Result to tblPracticeTest
+            // We use 'weekly-test' as the day identifier for weekly tests
+            const testResult = {
+                student_id: userId.toString(),
+                week: weekNum,
+                day: 'weekly-test',
+                category: category,
+                score: score,
+                total_questions: answers ? answers.length : 0,
+                // store answers if needed, or just score
+                answers: answers,
+                updated_at: new Date()
+            };
+
+            // Check if record already exists
+            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
+            const queryFilter = {
+                ...studentIdFilter,
+                week: weekNum,
+                day: 'weekly-test'
+            };
+
+            const existingTest = await fetchData('tblPracticeTest', { _id: 1 }, queryFilter);
+
+            if (existingTest.data && existingTest.data.length > 0) {
+                // Update existing
+                await executeData(
+                    'tblPracticeTest',
+                    testResult,
+                    'u',
+                    null,
+                    queryFilter
+                );
+            } else {
+                // Insert new
+                testResult.created_at = new Date();
+                await executeData(
+                    'tblPracticeTest',
+                    testResult,
+                    'i',
+                    null,
+                    {}
+                );
+            }
+
+            // 2. Check and Mark Week Completion
+            // This checks if Capstone is done AND this Aptitude test is passed (>=75)
+            const isFullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum);
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
-                message: 'Weekly test submitted successfully (Placeholder)',
-                data: { week: weekNum, score: score }
+                message: 'Weekly test submitted successfully',
+                data: {
+                    week: weekNum,
+                    score: score,
+                    week_completed: isFullyCompleted
+                }
             };
             return next();
         } catch (error) {

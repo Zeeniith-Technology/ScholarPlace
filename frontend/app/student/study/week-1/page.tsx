@@ -72,6 +72,7 @@ function Week1StudyContent() {
   const [codingProblems, setCodingProblems] = useState<any[]>([]) // Capstone coding problems for Day 5
   const [dailyCodingProblems, setDailyCodingProblems] = useState<any[]>([]) // Daily coding problems for current day
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
+  const [capstoneWeekCompleted, setCapstoneWeekCompleted] = useState(false)
   const [showRequirementsModal, setShowRequirementsModal] = useState(false)
   const [showCapstoneUnlockModal, setShowCapstoneUnlockModal] = useState(false)
   const sessionStartTime = useRef<number | null>(null)
@@ -153,6 +154,7 @@ function Week1StudyContent() {
     fetchDailyCodingProblems(selectedDay) // Fetch daily problems for current day
     fetchCodingProblems(selectedDay) // Fetch capstone problems for day 5
     checkWeeklyTestEligibility()
+    checkCapstoneCompletion()
     fetchWeeklyProgress() // Check capstone eligibility
     fetchBookmarks()
   }, [])
@@ -414,6 +416,37 @@ function Week1StudyContent() {
     } catch (error) {
       console.error('[fetchCodingProblems] Error fetching coding problems:', error)
       setCodingProblems([])
+    }
+  }
+
+  // Check if capstone week is completed (persisted in tblStudentProgress)
+  const checkCapstoneCompletion = async () => {
+    try {
+      const authHeader = getAuthHeader()
+      if (!authHeader) {
+        console.log('[Capstone Check] No auth header')
+        return
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/student-progress/check-week-completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+        },
+        body: JSON.stringify({ week: weekNum }),
+      })
+
+      const data = await response.json()
+      if (data.success && data.data) {
+        // Use specific capstone status if available, else fallback to week completion
+        const isDone = data.data.capstoneCompleted !== undefined
+          ? data.data.capstoneCompleted
+          : (data.data.isCompleted || false)
+        setCapstoneWeekCompleted(!!isDone)
+      }
+    } catch (error) {
+      console.error('Error checking capstone completion:', error)
     }
   }
 
@@ -1133,7 +1166,7 @@ function Week1StudyContent() {
               {/* Capstone Coding Challenges - Only show on day-5 */}
               {selectedDay === 'day-5' && (() => {
                 const eligible = weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production'
-                const capstoneCompleted = codingProblems.length > 0 && codingProblems.every((p: any) => p?.status === 'passed')
+                const capstoneCompleted = capstoneWeekCompleted || (codingProblems.length > 0 && codingProblems.every((p: any) => p?.status === 'passed'))
                 const canOpen = eligible || capstoneCompleted
                 return (
                 <div className="mt-6 pt-6 border-t border-neutral-light/20">
@@ -1629,4 +1662,3 @@ export default function Week1StudyPage() {
     </Suspense>
   )
 }
-

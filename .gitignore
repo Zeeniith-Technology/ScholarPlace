@@ -55,5 +55,8 @@ backend/mongodb-backup/
 frontend/mongodb-backup/
 *.bson
 *.json-export/
-
+# docs
 docs
+
+# security reviews
+security_review.pdf
