@@ -1,4 +1,4 @@
-import { executeData, fetchData } from '../methods.js';
+import { executeData, fetchData, getDB } from '../methods.js';
 import studentProgressSchema from '../schema/studentProgress.js';
 import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
 
@@ -1267,7 +1267,7 @@ export default class studentProgressController {
                 // Insert new progress record
                 const progressData = {
                     student_id: studentIdString,
-                    week: week,
+                    week: weekNum,
                     coding_problems_completed: codingProblemsCompleted,
                     status: newStatus,
                     updated_at: new Date().toISOString()
@@ -1537,8 +1537,71 @@ export default class studentProgressController {
             const isCompleted = progressResult.data && progressResult.data.length > 0 &&
                 progressResult.data.some((record) => record.status === 'completed');
 
-            const capstoneCompleted = progressResult.data && progressResult.data.length > 0 &&
+            let capstoneCompleted = progressResult.data && progressResult.data.length > 0 &&
                 progressResult.data.some((record) => record.capstone_completed === true);
+
+            // Fallback: if capstone_completed is false/missing, compute from submissions and persist
+            if (!capstoneCompleted) {
+                try {
+                    const db = getDB();
+                    const problemsCollection = db.collection('tblCodingProblem');
+                    const capstoneProblems = await problemsCollection.find({
+                        week: { $in: [weekNum, String(weekNum)] },
+                        is_capstone: { $in: [true, 1, 'true'] }
+                    }).project({ question_id: 1, problem_id: 1 }).toArray();
+
+                    const capstoneIds = capstoneProblems
+                        .map(p => p.question_id ?? p.problem_id)
+                        .filter(Boolean);
+
+                    if (capstoneIds.length > 0) {
+                        const { ObjectId } = await import('mongodb');
+                        const submissionsCollection = db.collection('tblCodingSubmissions');
+                        let studentIdObj = null;
+                        try { studentIdObj = new ObjectId(studentIdString); } catch (_) { /* not ObjectId */ }
+                        const studentIdConditions = [
+                            { student_id: studentIdString },
+                            { student_id: studentIdString.trim() }
+                        ];
+                        if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
+
+                        const passedSubs = await submissionsCollection.find({
+                            problem_id: { $in: capstoneIds },
+                            status: 'passed',
+                            $or: studentIdConditions
+                        }).project({ problem_id: 1 }).toArray();
+
+                        const passedIds = new Set(passedSubs.map(s => s.problem_id));
+                        if (passedIds.size >= capstoneIds.length) {
+                            capstoneCompleted = true;
+
+                            // Persist capstone_completed so refreshes stay consistent
+                            const progressCollection = db.collection('tblStudentProgress');
+                            const existing = progressResult.data?.[0];
+                            const nextStatus = existing?.status === 'completed' ? 'completed' : 'in_progress';
+
+                            await progressCollection.updateOne(
+                                { week: weekNum, ...studentIdFilter },
+                                {
+                                    $set: {
+                                        capstone_completed: true,
+                                        status: nextStatus,
+                                        updated_at: new Date()
+                                    },
+                                    $setOnInsert: {
+                                        student_id: studentIdString,
+                                        week: weekNum,
+                                        created_at: new Date()
+                                    }
+                                },
+                                { upsert: true }
+                            );
+                        }
+                    }
+                } catch (err) {
+                    console.error('[checkWeekCompletion] Capstone fallback check failed:', err);
+                }
+            }
 
             res.locals.responseData = {
                 success: true,
