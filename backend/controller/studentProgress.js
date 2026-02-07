@@ -1668,6 +1668,7 @@ export default class studentProgressController {
             }
 
             const weekNum = parseInt(week, 10);
+            const weekStored = Number.isNaN(weekNum) ? week : weekNum;
             const weekFilter = Number.isNaN(weekNum) ? week : { $in: [weekNum, String(weekNum)] };
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
