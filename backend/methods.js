@@ -147,7 +147,12 @@ function applySchema(data, schema, isUpdate = false) {
                 continue;
             }
 
-            // Apply default value if field is missing
+            // On UPDATE: do NOT apply defaults (prevents resetting existing fields)
+            if (isUpdate) {
+                continue;
+            }
+
+            // Apply default value if field is missing (INSERT only)
             if (fieldSchema.default !== undefined) {
                 if (typeof fieldSchema.default === 'function') {
                     processed[fieldName] = fieldSchema.default();

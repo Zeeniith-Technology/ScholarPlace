@@ -1922,9 +1922,8 @@ export default class studentProgressController {
 
             // FIXED: Query database instead of importing static file (which may be outdated/empty)
             try {
-                const { getDB } = await import('../config/database.js');
                 const db = getDB();
-                const problemsCollection = db.collection('tblCodingProblems');
+                const problemsCollection = db.collection('tblCodingProblem');
 
                 // Query for daily problems using same logic as getWeeklyCodingProgress
                 const dailyProblems = await problemsCollection.find({
