@@ -75,6 +75,7 @@ function WeekStudyContent() {
   const [codingProblems, setCodingProblems] = useState<any[]>([]) // Capstone coding problems for Day 5
   const [dailyCodingProblems, setDailyCodingProblems] = useState<any[]>([]) // Daily coding problems for current day
   const [weeklyTestEligibility, setWeeklyTestEligibility] = useState<any>(null)
+  const [capstoneWeekCompleted, setCapstoneWeekCompleted] = useState<boolean>(false)
   const [showCapstoneUnlockModal, setShowCapstoneUnlockModal] = useState(false)
   const [showRequirementsModal, setShowRequirementsModal] = useState(false)
   const sessionStartTime = useRef<number | null>(null)
@@ -450,6 +451,40 @@ function WeekStudyContent() {
     }
   }
 
+  // Check if capstone week is completed
+  const checkCapstoneCompletion = async () => {
+    try {
+      const authHeader = getAuthHeader()
+      if (!authHeader) {
+        console.log('[Capstone Check] No auth header')
+        return
+      }
+
+      console.log('[Capstone Check] Checking week:', weekNum)
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/student-progress/check-week-completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+        },
+        body: JSON.stringify({ week: weekNum }),
+      })
+
+      const data = await response.json()
+      console.log('[checkCapstoneCompletion] Response:', data)
+      if (data.success && data.data) {
+        // Use specific capstone status if available, else fallback to week completion
+        const isDone = data.data.capstoneCompleted !== undefined
+          ? data.data.capstoneCompleted
+          : (data.data.isCompleted || false)
+        setCapstoneWeekCompleted(isDone)
+      }
+    } catch (error) {
+      console.error('Error checking capstone completion:', error)
+    }
+  }
+
   // Handle weekly test button click
   const handleWeeklyTestClick = () => {
     // Check if eligible first
@@ -569,6 +604,7 @@ function WeekStudyContent() {
     const dayIndex = days.findIndex(d => d.id === dayParam)
     setCurrentDayIndex(dayIndex >= 0 ? dayIndex : 0)
     fetchStudyContent(dayParam)
+    checkCapstoneCompletion()
 
     sessionStartTime.current = Date.now()
     startStudySession(weekNum, dayParam)
@@ -669,11 +705,11 @@ function WeekStudyContent() {
 
     const normalizeHeaderText = (t: string) => t.trim().replace(/^\s*[^\w\s&:-]+/g, '').trim()
     const isRedundantDayHeader = (t: string) => {
-        const n = normalizeHeaderText(t)
-        return /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(n) ||
-          /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(n) ||
-          /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(n)
-      }
+      const n = normalizeHeaderText(t)
+      return /^DAY\s*\d+\s*(?:\([^)]+\))?\s*:.*/i.test(n) ||
+        /^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)\s*:.*/i.test(n) ||
+        /^TITLE\s+DAY\s*\d+\s+(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)/i.test(n)
+    }
     const getHeaderText = (l: string, prefix: string) => l.startsWith(prefix) ? l.replace(prefix, '').trim() : ''
 
     lines.forEach((line, index) => {
@@ -1183,64 +1219,66 @@ function WeekStudyContent() {
               {/* Capstone Coding Challenges - Only show on day-5 */}
               {selectedDay === 'day-5' && (() => {
                 const eligible = weeklyTestEligibility?.coding_problems?.eligible || process.env.NODE_ENV !== 'production'
-                const capstoneCompleted = codingProblems.length > 0 && codingProblems.every((p: any) => p?.status === 'passed')
+                // ONLY use backend completion status - local problem status is unreliable
+                const capstoneCompleted = capstoneWeekCompleted
                 const canOpen = eligible || capstoneCompleted
                 return (
-                <div className="mt-6 pt-6 border-t border-neutral-light/20">
-                  <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Capstone Project</h3>
-                  <div
-                    onClick={() => {
-                      if (capstoneCompleted) {
-                        const width = window.screen.width
-                        const height = window.screen.height
-                        window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
-                        return
-                      }
-                      if (eligible) {
-                        const width = window.screen.width
-                        const height = window.screen.height
-                        window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
-                      } else {
-                        setShowCapstoneUnlockModal(true)
-                      }
-                    }}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${canOpen
-                      ? 'bg-primary/10 border-2 border-primary/30 cursor-pointer hover:bg-primary/20'
-                      : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-not-allowed'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          {capstoneCompleted ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Trophy className={`w-4 h-4 ${eligible ? 'text-primary' : 'text-neutral-light'}`} />
-                          )}
-                          <div className="font-semibold text-sm">Capstone Projects</div>
+                  <div className="mt-6 pt-6 border-t border-neutral-light/20">
+                    <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Capstone Project</h3>
+                    <div
+                      onClick={() => {
+                        if (capstoneCompleted) {
+                          const width = window.screen.width
+                          const height = window.screen.height
+                          window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
+                          return
+                        }
+                        if (eligible) {
+                          const width = window.screen.width
+                          const height = window.screen.height
+                          window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
+                        } else {
+                          setShowCapstoneUnlockModal(true)
+                        }
+                      }}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${canOpen
+                        ? 'bg-primary/10 border-2 border-primary/30 cursor-pointer hover:bg-primary/20'
+                        : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-not-allowed'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {capstoneCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Trophy className={`w-4 h-4 ${eligible ? 'text-primary' : 'text-neutral-light'}`} />
+                            )}
+                            <div className="font-semibold text-sm">Capstone Projects</div>
+                          </div>
+                          <div className="text-xs opacity-80">
+                            {capstoneCompleted
+                              ? 'Completed'
+                              : eligible
+                                ? `${codingProblems.length} projects available`
+                                : process.env.NODE_ENV !== 'production'
+                                  ? 'Unlocked (Development)'
+                                  : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} daily completed`
+                            }
+                          </div>
                         </div>
-                        <div className="text-xs opacity-80">
-                          {capstoneCompleted
-                            ? 'Completed'
-                            : eligible
-                              ? `${codingProblems.length} projects available`
-                              : process.env.NODE_ENV !== 'production'
-                                ? 'Unlocked (Development)'
-                                : `${weeklyTestEligibility?.coding_problems?.completedCount ?? 0}/${weeklyTestEligibility?.coding_problems?.requiredToUnlock ?? weeklyTestEligibility?.coding_problems?.totalCount ?? 0} daily completed`
-                          }
-                        </div>
+                        {capstoneCompleted ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        ) : eligible ? (
+                          <Play className="w-4 h-4 text-primary flex-shrink-0" />
+                        ) : (
+                          <Lock className="w-4 h-4 text-neutral-light flex-shrink-0" />
+                        )}
                       </div>
-                      {capstoneCompleted ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-                      ) : eligible ? (
-                        <Play className="w-4 h-4 text-primary flex-shrink-0" />
-                      ) : (
-                        <Lock className="w-4 h-4 text-neutral-light flex-shrink-0" />
-                      )}
                     </div>
                   </div>
-                </div>
-              )})()}
+                )
+              })()}
 
               {/* Capstone unlock requirement modal (no alert) */}
               <Modal

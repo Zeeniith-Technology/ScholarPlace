@@ -212,6 +212,11 @@ export default class studentProgressController {
             const studentIdString = progressData.student_id.toString();
             const isObjectId = typeof progressData.student_id === 'string' && /^[0-9a-fA-F]{24}$/.test(progressData.student_id);
 
+            // FIXED: Enforce week is a number to match DB consistency and prevent duplicate "1" vs 1 records
+            if (progressData.week) {
+                progressData.week = parseInt(progressData.week, 10);
+            }
+
             const existingFilter = {
                 week: progressData.week,
                 $or: [
@@ -307,11 +312,14 @@ export default class studentProgressController {
                 return next();
             }
 
+            // FIXED: Enforce week is a number to prevent duplicates
+            const weekNum = parseInt(week, 10);
+
             // Fetch syllabus data to get week structure
             const syllabusResponse = await fetchData(
                 'tblSyllabus',
                 {},
-                { week: week },
+                { week: weekNum },
                 {}
             );
 
@@ -329,7 +337,7 @@ export default class studentProgressController {
                     expectedDays = syllabus.days.map(d => d.id || d.day_id || d.day).filter(Boolean);
                 } else {
                     // Fallback: For Week 1, we know it's 6 days (pre-week + day-1 to day-5)
-                    if (week === 1) {
+                    if (weekNum === 1) {
                         totalDays = 6;
                         expectedDays = ['pre-week', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
                     } else {
@@ -342,7 +350,7 @@ export default class studentProgressController {
                 requiredTests = syllabus.tests || 0;
             } else {
                 // Fallback for Week 1 if syllabus not found
-                if (week === 1) {
+                if (weekNum === 1) {
                     totalDays = 6;
                     expectedDays = ['pre-week', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
                     requiredAssignments = 6; // Week 1 has 6 practice assignments
@@ -367,7 +375,7 @@ export default class studentProgressController {
             }
 
             const existingFilter = {
-                week: week,
+                week: weekNum,
                 ...studentIdFilter
             };
 
@@ -450,7 +458,7 @@ export default class studentProgressController {
             // Upsert progress
             const progressData = {
                 student_id: studentIdString, // ALWAYS string format (already normalized above)
-                week: week,
+                week: weekNum,
                 status: status,
                 progress_percentage: progressPercentage,
                 days_completed: daysCompleted,
@@ -468,7 +476,7 @@ export default class studentProgressController {
             const existingCheck = await fetchData(
                 'tblStudentProgress',
                 {},
-                { week: week, ...studentIdFilter },
+                { week: weekNum, ...studentIdFilter },
                 {}
             );
 
@@ -501,7 +509,7 @@ export default class studentProgressController {
                     // executeData handles operators by skipping schema wrapping, but applies defaults?
                     // Let's pass null to be safe and rely on manual construction
                     null,
-                    { week: week, ...studentIdFilter }
+                    { week: weekNum, ...studentIdFilter }
                 );
             } else {
                 // Insert new (keep as is)
@@ -509,12 +517,26 @@ export default class studentProgressController {
                 const tenant = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
                 if (tenant.college_id) progressData.college_id = tenant.college_id;
                 if (tenant.department_id) progressData.department_id = tenant.department_id;
-                response = await executeData(
-                    'tblStudentProgress',
-                    progressData,
-                    'i',
-                    studentProgressSchema
-                );
+
+                try {
+                    response = await executeData(
+                        'tblStudentProgress',
+                        progressData,
+                        'i',
+                        studentProgressSchema
+                    );
+                } catch (insertError) {
+                    console.error('[StudentProgress] Insert failed (likely duplicate):', insertError.message);
+                    // Try to update instead if insert failed due to duplicate
+                    // This is a safety fallback
+                    response = await executeData(
+                        'tblStudentProgress',
+                        progressData, // minimal update
+                        'u',
+                        null,
+                        { week: weekNum, ...studentIdFilter }
+                    );
+                }
             }
 
             // Check and update week completion status after day completion
@@ -522,7 +544,7 @@ export default class studentProgressController {
             try {
                 // Call the helper method using stored controller reference
                 if (controller && typeof controller.checkAndUpdateWeekCompletion === 'function') {
-                    completionStatus = await controller.checkAndUpdateWeekCompletion(userId, week);
+                    completionStatus = await controller.checkAndUpdateWeekCompletion(userId, weekNum);
                 } else {
                     console.error('checkAndUpdateWeekCompletion not available, controller:', controller);
                     throw new Error('checkAndUpdateWeekCompletion method not available');
@@ -541,7 +563,7 @@ export default class studentProgressController {
             const io = req.app.get('io');
             if (io) {
                 io.to(`user:${userId}`).emit('progress-updated', {
-                    week,
+                    week: weekNum,
                     day,
                     action: 'day-completed',
                     progressData: {
@@ -719,6 +741,9 @@ export default class studentProgressController {
                 return next();
             }
 
+            // FIXED: Enforce week is a number to prevent duplicates
+            const weekNum = parseInt(week, 10);
+
             // Get existing progress
             const existing = await fetchData(
                 'tblStudentProgress',
@@ -810,7 +835,7 @@ export default class studentProgressController {
             // Upsert progress
             const progressData = {
                 student_id: studentIdString, // ALWAYS string format
-                week: week,
+                week: weekNum,
                 practice_tests_completed: practiceTestsCompleted,
                 practice_test_scores: practiceTestScores,
                 assignments_completed: assignmentsCompleted,
@@ -822,7 +847,7 @@ export default class studentProgressController {
             const existingCheck = await fetchData(
                 'tblStudentProgress',
                 {},
-                { week: week, ...studentIdFilter },
+                { week: weekNum, ...studentIdFilter },
                 {}
             );
 
@@ -842,7 +867,7 @@ export default class studentProgressController {
                     mergedData,
                     'u',
                     studentProgressSchema,
-                    { week: week, ...studentIdFilter }
+                    { week: weekNum, ...studentIdFilter }
                 );
             } else {
                 // Insert new
@@ -867,7 +892,7 @@ export default class studentProgressController {
             try {
                 // Call the helper method using stored controller reference
                 if (controller && typeof controller.checkAndUpdateWeekCompletion === 'function') {
-                    completionStatus = await controller.checkAndUpdateWeekCompletion(userId, week);
+                    completionStatus = await controller.checkAndUpdateWeekCompletion(userId, weekNum);
                 } else {
                     console.error('checkAndUpdateWeekCompletion not available, controller:', controller);
                     throw new Error('checkAndUpdateWeekCompletion method not available');
@@ -1181,11 +1206,14 @@ export default class studentProgressController {
                 return next();
             }
 
+            // FIXED: Enforce week is a number to prevent duplicates
+            const weekNum = parseInt(week, 10);
+
             // Get existing progress
             const existing = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: week },
+                { student_id: userId, week: weekNum },
                 {}
             );
 
@@ -1224,7 +1252,7 @@ export default class studentProgressController {
                     },
                     'u',
                     null,
-                    { week: week, ...studentIdFilter }
+                    { week: weekNum, ...studentIdFilter }
                 );
                 if (!result.success) {
                     res.locals.responseData = {
@@ -1287,6 +1315,297 @@ export default class studentProgressController {
     }
 
     /**
+     * Mark capstone week as completed
+     * Called after student successfully submits all capstone problems
+     * POST /student-progress/complete-capstone-week
+     */
+    /**
+     * Helper to check and mark week as completed if ALL requirements are met
+     * Requirements: Capstone Completed AND Aptitude Weekly Test Passed (>=75%)
+     */
+    async checkAndMarkWeekCompletion(userId, weekNum) {
+        try {
+            console.log(`[WeekCompletion] Checking requirements for User ${userId} Week ${weekNum}`);
+
+            // 1. Get Student Progress
+            const progressRes = await fetchData('tblStudentProgress', {}, { student_id: userId, week: weekNum });
+            const progress = progressRes.data?.[0];
+
+            if (!progress) {
+                console.log('[WeekCompletion] No progress record found');
+                return false;
+            }
+
+            // If already completed, don't revert
+            if (progress.status === 'completed') {
+                console.log('[WeekCompletion] Week already completed');
+                return true;
+            }
+
+            // 2. Check Capstone Status
+            // Trust the flag if set, otherwise check if they have submitted solutions (legacy check could be added here if needed)
+            const isCapstoneDone = progress.capstone_completed === true;
+
+            // 3. Check Aptitude Status
+            // Query tblPracticeTest for this week + weekly-test + score >= 75
+            // Using student_id as string to be safe
+            const aptitudeRes = await fetchData('tblPracticeTest', { _id: 1, score: 1 }, {
+                student_id: userId.toString(),
+                week: weekNum,
+                day: 'weekly-test',
+                score: { $gte: 75 }
+            });
+            const isAptitudeDone = aptitudeRes.data && aptitudeRes.data.length > 0;
+
+            console.log(`[WeekCompletion] Status - Capstone: ${isCapstoneDone}, Aptitude: ${isAptitudeDone}`);
+
+            // 4. Mark Completed if BOTH are done
+            // Note: If Week 7+ requirements differ, add logic here. For now assuming explicit week-based structure.
+            if (isCapstoneDone && isAptitudeDone) {
+                console.log('[WeekCompletion] All requirements met! Marking week as COMPLETED.');
+
+                await executeData(
+                    'tblStudentProgress',
+                    {
+                        status: 'completed',
+                        progress_percentage: 100,
+                        completed_at: new Date(),
+                        updated_at: new Date()
+                    },
+                    'u',
+                    studentProgressSchema,
+                    { _id: progress._id } // Use _id to ensure unique update
+                );
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error('[WeekCompletion] Error checking completion:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Mark capstone week as completed
+     * Called after student successfully submits all capstone problems
+     * POST /student-progress/complete-capstone-week
+     */
+    async completeCapstoneWeek(req, res, next) {
+        try {
+            const { week } = req.body;
+            const userId = res.locals.person_id || req.userId || req.user?.id;
+
+            if (!userId) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 401,
+                    message: 'Authentication required'
+                };
+                return next();
+            }
+
+            if (!week) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'Week number is required'
+                };
+                return next();
+            }
+
+            const weekNum = parseInt(week);
+
+            // Get student's college and department
+            const { college_id, department_id } = await getCollegeAndDepartmentForStudent(userId);
+
+            // Check if progress record exists
+            const existing = await fetchData(
+                'tblStudentProgress',
+                {},
+                { student_id: userId, week: weekNum },
+                { limit: 1 }
+            );
+
+            if (!existing.data || existing.data.length === 0) {
+                // Create new progress record with capstone_completed = true
+                const newProgress = {
+                    student_id: userId,
+                    week: weekNum,
+                    status: 'in_progress', // Not completed yet
+                    progress_percentage: 50, // Partial progress
+                    capstone_completed: true, // Mark capstone done
+                    days_completed: [],
+                    coding_problems_completed: [],
+                    assignments_completed: 0,
+                    tests_completed: 0,
+                    completed_at: null, // Not completed yet
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                    ...(college_id && { college_id }),
+                    ...(department_id && { department_id })
+                };
+
+                await executeData(
+                    'tblStudentProgress',
+                    newProgress,
+                    'i',
+                    studentProgressSchema,
+                    {}
+                );
+            } else {
+                // Update existing record to mark capstone completed
+                // We do NOT mark the whole week as completed blindly
+                const updateResult = await executeData(
+                    'tblStudentProgress',
+                    {
+                        capstone_completed: true,
+                        updated_at: new Date()
+                    },
+                    'u',
+                    studentProgressSchema,
+                    { student_id: userId, week: weekNum }
+                );
+            }
+
+            // 2. Check for FULL Week Completion (Capstone + Aptitude)
+            const isFullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum);
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: isFullyCompleted ? 'Week completed successfully' : 'Capstone marked as completed. Pending Aptitude Test.',
+                data: {
+                    week: weekNum,
+                    status: isFullyCompleted ? 'completed' : 'in_progress',
+                    capstone_completed: true
+                }
+            };
+            next();
+        } catch (error) {
+            console.error('Error marking capstone week as completed:', error);
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Error marking capstone week as completed',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    /**
+     * Check if a specific week is completed
+     * POST /student-progress/check-week-completion
+     */
+    async checkWeekCompletion(req, res, next) {
+        try {
+            const { week } = req.body;
+            const userId = res.locals.person_id || req.userId || req.user?.id;
+
+            if (!userId) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 401,
+                    message: 'Authentication required'
+                };
+                return next();
+            }
+
+            if (!week) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'Week number is required'
+                };
+                return next();
+            }
+
+            const weekNum = parseInt(week);
+
+            // Query week progress
+            const progressResult = await fetchData(
+                'tblStudentProgress',
+                {},
+                { student_id: userId, week: weekNum },
+                {}
+            );
+
+            const isCompleted = progressResult.data && progressResult.data.length > 0 &&
+                progressResult.data.some((record) => record.status === 'completed');
+
+            const capstoneCompleted = progressResult.data && progressResult.data.length > 0 &&
+                progressResult.data.some((record) => record.capstone_completed === true);
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                data: {
+                    week: weekNum,
+                    isCompleted: isCompleted,
+                    capstoneCompleted: capstoneCompleted,
+                    status: (progressResult.data?.find((r) => r.status === 'completed')?.status || progressResult.data?.[0]?.status || 'not_started')
+                }
+            };
+            next();
+        } catch (error) {
+            console.error('Error checking week completion:', error);
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Error checking week completion',
+                error: error.message
+            };
+            next();
+        }
+    }
+    /**
+     * Submit weekly test (Aptitude/Coding)
+     * Route: POST /student-progress/submit-weekly-test
+     */
+    async submitWeeklyTest(req, res, next) {
+        try {
+            const { week, test_type, answers, score } = req.body;
+            const userId = req.userId || req.user?.id || req.headers['x-user-id'];
+
+            if (!userId || !week) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'User ID and week are required'
+                };
+                return next();
+            }
+
+            console.log('[submitWeeklyTest] Received submission:', { userId, week, test_type, score });
+
+            // FIXED: Enforce numeric week
+            const weekNum = parseInt(week, 10);
+
+            // TODO: Implement full grading/storage logic here.
+            // For now, return success to prevent crash and verify flow.
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Weekly test submitted successfully (Placeholder)',
+                data: { week: weekNum, score: score }
+            };
+            return next();
+        } catch (error) {
+            console.error('[submitWeeklyTest] Error:', error);
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Error submitting weekly test',
+                error: error.message
+            };
+            return next();
+        }
+    }
+
+
+    /**
      * Check if student is eligible to take weekly test
      * Route: POST /student-progress/check-weekly-test-eligibility
      * Requirements:
@@ -1310,11 +1629,14 @@ export default class studentProgressController {
                 return next();
             }
 
+            // FIXED: Enforce week is a number for consistent querying
+            const weekNum = parseInt(week, 10);
+
             // Get student progress
             const progressResult = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: week },
+                { student_id: userId, week: weekNum },
                 {}
             );
 
@@ -1322,7 +1644,7 @@ export default class studentProgressController {
             const practiceTestResult = await fetchData(
                 'tblPracticeTest',
                 {},
-                { student_id: userId, week: week },
+                { student_id: userId, week: weekNum },
                 { sort: { day: 1, attempt: -1 } } // Get latest attempt for each day
             );
 
@@ -1341,7 +1663,7 @@ export default class studentProgressController {
 
                 // Query for daily problems using same logic as getWeeklyCodingProgress
                 const dailyProblems = await problemsCollection.find({
-                    week: { $in: [week, String(week)] },
+                    week: { $in: [weekNum, String(weekNum)] },
                     day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
                     $or: [
                         { is_daily: 1 },  // Primary: explicitly marked as daily (production schema)
@@ -1353,7 +1675,7 @@ export default class studentProgressController {
                 // Extract problem IDs (support both question_id and problem_id)
                 allCodingProblems = dailyProblems.map(p => p.question_id ?? p.problem_id).filter(Boolean);
 
-                console.log(`[checkWeeklyTestEligibility] Found ${allCodingProblems.length} daily problems for week ${week} from database`);
+                console.log(`[checkWeeklyTestEligibility] Found ${allCodingProblems.length} daily problems for week ${weekNum} from database`);
             } catch (error) {
                 console.error('[checkWeeklyTestEligibility] Error loading coding problems from database:', error);
                 // Fallback to empty array - will show as eligible if no problems loaded

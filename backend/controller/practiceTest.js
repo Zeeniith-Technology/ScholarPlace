@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import aiService from '../services/aiService.js';
 import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
 import testAnalysisSchema from '../schema/testAnalysis.js';
+import studentProgressController from './studentProgress.js';
 
 /** Remove markdown asterisks from AI text */
 function stripAsterisks(s) {
@@ -118,6 +119,17 @@ export default class practiceTestController {
 
             if (response.success) {
                 const testId = (isUpdate ? existingDocumentId : (response.data?.insertedId || response.data?._id))?.toString?.();
+
+                // Check if this is a passing weekly aptitude test and if it completes the week
+                // Using loose check for week/score to be safe
+                if (day === 'weekly-test' && (testData.score >= 75 || score >= 75)) {
+                    try {
+                        console.log(`[PracticeTest] Weekly test passed for Week ${week}. Checking week completion...`);
+                        await studentProgressController.checkAndMarkWeekCompletion(userId, week);
+                    } catch (err) {
+                        console.error('[PracticeTest] Error auto-completing week:', err);
+                    }
+                }
 
                 // Generate AI analysis
                 let analysis = null;

@@ -125,9 +125,9 @@ export default function CapstoneTestPage() {
             if (probData.success) {
                 const list = probData.problems || probData.data || []
                 setProblems(list)
-                // If all problems already passed, mark capstone as completed (no retake)
-                const allPassed = list.length > 0 && list.every((p: CodingProblem) => p.status === 'passed')
-                setCapstoneAlreadyCompleted(!!allPassed)
+                // TODO: Check completion status from backend week progress, not problem status
+                // const allPassed = list.length > 0 && list.every((p: CodingProblem) => p.status === 'passed')
+                // setCapstoneAlreadyCompleted(!!allPassed)
                 // Initialize passed state from API so UI shows checkmarks for completed problems
                 if (list.length > 0) {
                     setProblemPassedState(prev => {
@@ -138,6 +138,38 @@ export default function CapstoneTestPage() {
                         return next
                     })
                 }
+            }
+
+            // Check if capstone week is actually completed via backend
+            try {
+                console.log('[CAPSTONE DEBUG] Checking completion status for week:', weekNum)
+                const progressRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/student-progress/check-week-completion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authHeader
+                    },
+                    body: JSON.stringify({ week: weekNum })
+                })
+                const progressData = await progressRes.json()
+                console.log('[CAPSTONE DEBUG] Progress data received:', progressData)
+                if (progressData.success && progressData.data) {
+                    // Use specific capstone status if available, else fallback to week completion
+                    const isDone = progressData.data.capstoneCompleted !== undefined
+                        ? progressData.data.capstoneCompleted
+                        : (progressData.data.isCompleted || false)
+
+                    console.log('[CAPSTONE DEBUG] Week status:', progressData.data.status, 'isCompleted:', progressData.data.isCompleted, 'capstoneCompleted:', progressData.data.capstoneCompleted)
+
+                    if (isDone) {
+                        console.log('[CAPSTONE DEBUG] Capstone is completed! Setting capstoneAlreadyCompleted = true')
+                        setCapstoneAlreadyCompleted(true)
+                    } else {
+                        console.log('[CAPSTONE DEBUG] Capstone is NOT completed')
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking completion status:', err)
             }
 
         } catch (error) {
@@ -423,13 +455,28 @@ export default function CapstoneTestPage() {
                                 )
                                 const allOk = completeResults.every((r: any) => r.success)
                                 if (allOk) {
+                                    // Mark entire week as completed
+                                    try {
+                                        console.log('[CAPSTONE DEBUG] Calling complete-capstone-week for week:', weekNum)
+                                        const completeWeekRes = await fetch(`${apiBaseUrl}/student-progress/complete-capstone-week`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                                            body: JSON.stringify({ week: weekNum }),
+                                        })
+                                        const completeWeekData = await completeWeekRes.json()
+                                        console.log('[CAPSTONE DEBUG] complete-capstone-week response:', completeWeekData)
+                                    } catch (err) {
+                                        console.error('Error marking week as completed:', err)
+                                    }
+
                                     setModalContent({
                                         title: 'Success!',
-                                        message: 'Capstone submitted successfully. You can proceed to Week 2.',
+                                        message: `Capstone completed successfully! Week ${weekNum} DSA module marked as complete. You can proceed to the next week.`,
                                         type: 'success',
                                     })
                                     setProblems(prev => prev.map(p => ({ ...p, status: 'passed' })))
                                     if (activeProblem) setActiveProblem(prev => prev ? { ...prev, status: 'passed' } : null)
+                                    setCapstoneAlreadyCompleted(true) // Prevent retake
                                 } else {
                                     setModalContent({
                                         title: 'Submission Failed',
@@ -666,7 +713,7 @@ export default function CapstoneTestPage() {
                         onClick={() => {
                             setShowModal(false)
                             if (modalContent.type === 'success' && modalContent.message.includes('proceed to Week 2')) {
-                                document.exitFullscreen().catch(() => {})
+                                document.exitFullscreen().catch(() => { })
                                 if (typeof window !== 'undefined' && window.opener) window.close()
                                 else router.push(`/student/study/week-${weekNum}`)
                             }

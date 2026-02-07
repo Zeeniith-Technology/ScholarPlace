@@ -191,6 +191,10 @@ router.post('/student-progress/complete-day', auth, studentProgress.completeDay.
 router.post('/student-progress/update-practice-score', auth, studentProgress.updatePracticeScore.bind(studentProgress), responsedata);
 // Mark coding problem as completed: Students mark coding problems as solved
 router.post('/student-progress/complete-coding-problem', auth, studentProgress.completeCodingProblem.bind(studentProgress), responsedata);
+// Mark capstone week as completed: Students mark entire week as complete after capstone submission
+router.post('/student-progress/complete-capstone-week', auth, studentProgress.completeCapstoneWeek.bind(studentProgress), responsedata);
+// Check if specific week is completed
+router.post('/student-progress/check-week-completion', auth, studentProgress.checkWeekCompletion.bind(studentProgress), responsedata);
 // Check weekly test eligibility: Check if student can take weekly test
 router.post('/student-progress/check-weekly-test-eligibility', auth, studentProgress.checkWeeklyTestEligibility.bind(studentProgress), responsedata);
 // Block student from retaking test: After window switch violation
