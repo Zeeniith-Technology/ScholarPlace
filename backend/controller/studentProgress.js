@@ -2,6 +2,71 @@ import { executeData, fetchData, getDB } from '../methods.js';
 import studentProgressSchema from '../schema/studentProgress.js';
 import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
 
+const isProgressAuditEnabled = () =>
+    process.env.PROGRESS_AUDIT_LOG === 'true' || process.env.PROGRESS_UPSERT_AUDIT === 'true';
+
+const normalizeAuditId = (value) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value === 'string') return value;
+    try {
+        return value.toString();
+    } catch (_) {
+        return value;
+    }
+};
+
+const summarizeProgress = (doc) => {
+    if (!doc || typeof doc !== 'object') return {};
+    return {
+        status: doc.status,
+        capstone_completed: doc.capstone_completed,
+        progress_percentage: doc.progress_percentage,
+        days_completed_count: Array.isArray(doc.days_completed) ? doc.days_completed.length : undefined,
+        assignments_completed: doc.assignments_completed,
+        tests_completed: doc.tests_completed,
+        practice_tests_completed: doc.practice_tests_completed,
+        coding_problems_completed_count: Array.isArray(doc.coding_problems_completed) ? doc.coding_problems_completed.length : undefined
+    };
+};
+
+async function logProgressAudit(req, action, details = {}) {
+    if (!isProgressAuditEnabled()) return;
+
+    const userId = details.userId
+        ?? req?.userId
+        ?? req?.user?.id
+        ?? req?.user?.userId
+        ?? req?.user?.person_id
+        ?? req?.headers?.['x-user-id'];
+
+    const entry = {
+        timestamp: new Date().toISOString(),
+        action,
+        route: req?.originalUrl || req?.path || 'internal',
+        method: req?.method,
+        user_id: normalizeAuditId(userId),
+        student_id: normalizeAuditId(details.student_id || details.studentId),
+        week: details.week,
+        incoming_keys: details.incomingKeys,
+        before: details.before,
+        after: details.after,
+        meta: details.meta,
+        ip: req?.ip || req?.connection?.remoteAddress || req?.socket?.remoteAddress,
+        user_agent: req?.headers?.['user-agent']
+    };
+
+    console.warn('[ProgressAudit]', entry);
+
+    if (process.env.PROGRESS_AUDIT_DB === 'true') {
+        try {
+            const db = getDB();
+            await db.collection('tblProgressAudit').insertOne(entry);
+        } catch (err) {
+            console.warn('[ProgressAudit] Failed to persist audit log:', err.message);
+        }
+    }
+}
+
 export default class studentProgressController {
 
     /**
@@ -235,22 +300,58 @@ export default class studentProgressController {
             let response;
             if (existing.data && existing.data.length > 0) {
                 // Update existing
-                progressData.updated_at = new Date().toISOString();
+                // IMPORTANT: Do NOT apply schema defaults on partial updates (it can reset status to "locked")
+                // Only set fields provided by client + updated_at, keep existing fields intact.
+                const existingDoc = existing.data[0] || {};
+                await logProgressAudit(req, 'upsert-update', {
+                    userId,
+                    student_id: studentIdString,
+                    week: progressData.week,
+                    incomingKeys: Object.keys(progressData || {}),
+                    before: summarizeProgress(existingDoc),
+                    after: summarizeProgress(progressData),
+                    meta: {
+                        existingStudentId: existingDoc.student_id
+                    }
+                });
+                const updateSet = {};
+                Object.keys(progressData || {}).forEach((key) => {
+                    if (progressData[key] !== undefined) {
+                        updateSet[key] = progressData[key];
+                    }
+                });
+                updateSet.updated_at = new Date().toISOString();
                 response = await executeData(
                     'tblStudentProgress',
-                    progressData,
+                    { $set: updateSet },
                     'u',
-                    studentProgressSchema,
-                    { student_id: progressData.student_id, week: progressData.week }
+                    null,
+                    existingFilter
                 );
             } else {
                 // Insert new
+                if (auditEnabled) {
+                    console.warn('[StudentProgress][UpsertAudit] INSERT', {
+                        route: req.originalUrl || req.path,
+                        method: req.method,
+                        userId,
+                        week: progressData.week,
+                        incomingKeys: Object.keys(progressData || {})
+                    });
+                }
                 progressData.student_id = progressData.student_id || userId;
                 progressData.created_at = new Date().toISOString();
                 progressData.updated_at = new Date().toISOString();
                 const tenant = await getCollegeAndDepartmentForStudent(progressData.student_id, req, fetchData);
                 if (tenant.college_id) progressData.college_id = tenant.college_id;
                 if (tenant.department_id) progressData.department_id = tenant.department_id;
+                await logProgressAudit(req, 'upsert-insert', {
+                    userId,
+                    student_id: progressData.student_id,
+                    week: progressData.week,
+                    incomingKeys: Object.keys(progressData || {}),
+                    after: summarizeProgress(progressData)
+                });
                 response = await executeData(
                     'tblStudentProgress',
                     progressData,
@@ -1293,6 +1394,14 @@ export default class studentProgressController {
                 }
             }
 
+            await logProgressAudit(req, 'complete-coding-problem', {
+                userId,
+                student_id: studentIdString,
+                week: weekNum,
+                after: summarizeProgress({ status: newStatus, coding_problems_completed: codingProblemsCompleted }),
+                meta: { problem_id }
+            });
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -1323,7 +1432,7 @@ export default class studentProgressController {
      * Helper to check and mark week as completed if ALL requirements are met
      * Requirements: Capstone Completed AND Aptitude Weekly Test Passed (>=75%)
      */
-    async checkAndMarkWeekCompletion(userId, weekNum) {
+    async checkAndMarkWeekCompletion(userId, weekNum, req = null) {
         try {
             console.log(`[WeekCompletion] Checking requirements for User ${userId} Week ${weekNum}`);
 
@@ -1377,6 +1486,21 @@ export default class studentProgressController {
                     studentProgressSchema,
                     { _id: progress._id } // Use _id to ensure unique update
                 );
+                await logProgressAudit(req, 'mark-week-completed', {
+                    userId,
+                    student_id: studentIdString,
+                    week: weekNum,
+                    before: summarizeProgress(progress),
+                    after: summarizeProgress({
+                        status: 'completed',
+                        progress_percentage: 100,
+                        capstone_completed: progress.capstone_completed
+                    }),
+                    meta: {
+                        capstone_completed: isCapstoneDone,
+                        aptitude_completed: isAptitudeDone
+                    }
+                });
                 return true;
             }
 
@@ -1455,6 +1579,13 @@ export default class studentProgressController {
                     studentProgressSchema,
                     {}
                 );
+                await logProgressAudit(req, 'complete-capstone-week', {
+                    userId,
+                    student_id: studentIdString,
+                    week: weekNum,
+                    after: summarizeProgress(newProgress),
+                    meta: { created: true }
+                });
             } else {
                 // Update existing record to mark capstone completed
                 // We do NOT mark the whole week as completed blindly
@@ -1468,10 +1599,18 @@ export default class studentProgressController {
                     studentProgressSchema,
                     { week: weekNum, ...studentIdFilter }
                 );
+                await logProgressAudit(req, 'complete-capstone-week', {
+                    userId,
+                    student_id: studentIdString,
+                    week: weekNum,
+                    before: summarizeProgress(existing.data?.[0]),
+                    after: summarizeProgress({ ...(existing.data?.[0] || {}), capstone_completed: true }),
+                    meta: { created: false }
+                });
             }
 
             // 2. Check for FULL Week Completion (Capstone + Aptitude)
-            const isFullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum);
+            const isFullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum, req);
 
             res.locals.responseData = {
                 success: true,
@@ -1596,6 +1735,14 @@ export default class studentProgressController {
                                 },
                                 { upsert: true }
                             );
+                            await logProgressAudit(req, 'check-week-completion-capstone-fallback', {
+                                userId,
+                                student_id: studentIdString,
+                                week: weekNum,
+                                before: summarizeProgress(existing),
+                                after: summarizeProgress({ ...(existing || {}), capstone_completed: true, status: nextStatus }),
+                                meta: { source: 'check-week-completion' }
+                            });
                         }
                     }
                 } catch (err) {
@@ -1697,7 +1844,7 @@ export default class studentProgressController {
 
             // 2. Check and Mark Week Completion
             // This checks if Capstone is done AND this Aptitude test is passed (>=75)
-            const isFullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum);
+            const isFullyCompleted = await this.checkAndMarkWeekCompletion(userId, weekNum, req);
 
             res.locals.responseData = {
                 success: true,

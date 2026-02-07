@@ -125,7 +125,7 @@ export default class practiceTestController {
                 if (day === 'weekly-test' && (testData.score >= 75 || score >= 75)) {
                     try {
                         console.log(`[PracticeTest] Weekly test passed for Week ${week}. Checking week completion...`);
-                        await studentProgressController.checkAndMarkWeekCompletion(userId, week);
+                        await studentProgressController.checkAndMarkWeekCompletion(userId, week, req);
                     } catch (err) {
                         console.error('[PracticeTest] Error auto-completing week:', err);
                     }

@@ -12,6 +12,54 @@ import path from 'path';
 const COLLECTION_NAME = 'tblCodingProblem';
 const CODE_REVIEW_COLLECTION = 'tblCodeReview';
 
+const isProgressAuditEnabled = () =>
+    process.env.PROGRESS_AUDIT_LOG === 'true' || process.env.PROGRESS_UPSERT_AUDIT === 'true';
+
+const normalizeAuditId = (value) => {
+    if (value === undefined || value === null) return value;
+    if (typeof value === 'string') return value;
+    try {
+        return value.toString();
+    } catch (_) {
+        return value;
+    }
+};
+
+async function logProgressAudit(req, db, details = {}) {
+    if (!isProgressAuditEnabled()) return;
+    const userId = details.userId
+        ?? req?.userId
+        ?? req?.user?.id
+        ?? req?.user?.userId
+        ?? req?.user?.person_id
+        ?? req?.headers?.['x-user-id'];
+
+    const entry = {
+        timestamp: new Date().toISOString(),
+        action: details.action || 'progress-update',
+        route: req?.originalUrl || req?.path || 'internal',
+        method: req?.method,
+        user_id: normalizeAuditId(userId),
+        student_id: normalizeAuditId(details.student_id || details.studentId),
+        week: details.week,
+        before: details.before,
+        after: details.after,
+        meta: details.meta,
+        ip: req?.ip || req?.connection?.remoteAddress || req?.socket?.remoteAddress,
+        user_agent: req?.headers?.['user-agent']
+    };
+
+    console.warn('[ProgressAudit]', entry);
+
+    if (process.env.PROGRESS_AUDIT_DB === 'true' && db) {
+        try {
+            await db.collection('tblProgressAudit').insertOne(entry);
+        } catch (err) {
+            console.warn('[ProgressAudit] Failed to persist audit log:', err.message);
+        }
+    }
+}
+
 // Concurrency cap + queue so no student gets 503 under normal load (requests wait in queue until a slot is free)
 const MAX_CONCURRENT_CODING_SUBMITS = parseInt(process.env.MAX_CONCURRENT_CODING_SUBMITS, 10) || 100;
 const MAX_SUBMIT_QUEUE_SIZE = parseInt(process.env.MAX_SUBMIT_QUEUE_SIZE, 10) || 2000;
@@ -339,7 +387,7 @@ async function executeWithPiston(language, code, stdin) {
  * If all capstone problems for the week are passed by the student,
  * mark capstone_completed in tblStudentProgress (server-side persistence).
  */
-async function tryMarkCapstoneCompleted({ db, studentId, week, collegeId, departmentId }) {
+async function tryMarkCapstoneCompleted({ db, studentId, week, collegeId, departmentId, req }) {
     try {
         const weekNum = parseInt(week, 10);
         if (!weekNum || isNaN(weekNum)) return false;
@@ -406,6 +454,15 @@ async function tryMarkCapstoneCompleted({ db, studentId, week, collegeId, depart
             },
             { upsert: true }
         );
+        await logProgressAudit(req, db, {
+            action: 'capstone-auto-complete',
+            userId: studentId,
+            student_id: studentIdString,
+            week: weekNum,
+            before: { status: existing?.status, capstone_completed: existing?.capstone_completed },
+            after: { status: nextStatus, capstone_completed: true },
+            meta: { source: 'coding-problems/submit' }
+        });
 
         return true;
     } catch (err) {
@@ -536,7 +593,8 @@ async function doSubmit(req, res) {
                 studentId,
                 week: problem?.week ?? null,
                 collegeId,
-                departmentId
+                departmentId,
+                req
             });
         }
 
