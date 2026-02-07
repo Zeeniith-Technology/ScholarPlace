@@ -62,6 +62,8 @@ export default function CapstoneTestPage() {
     const [submissionIdByProblemKey, setSubmissionIdByProblemKey] = useState<Record<string, string>>({})
     const [showCodeReviewModal, setShowCodeReviewModal] = useState(false)
     const [codeReviewSubmissionId, setCodeReviewSubmissionId] = useState<string | null>(null)
+    // True when API returns all problems with status 'passed' (already completed this capstone)
+    const [capstoneAlreadyCompleted, setCapstoneAlreadyCompleted] = useState(false)
 
     // Timer Ref
     const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -121,8 +123,21 @@ export default function CapstoneTestPage() {
             const probData = await probRes.json()
 
             if (probData.success) {
-                // Backend returns 'problems' array, not 'data'
-                setProblems(probData.problems || probData.data || [])
+                const list = probData.problems || probData.data || []
+                setProblems(list)
+                // If all problems already passed, mark capstone as completed (no retake)
+                const allPassed = list.length > 0 && list.every((p: CodingProblem) => p.status === 'passed')
+                setCapstoneAlreadyCompleted(!!allPassed)
+                // Initialize passed state from API so UI shows checkmarks for completed problems
+                if (list.length > 0) {
+                    setProblemPassedState(prev => {
+                        const next = { ...prev }
+                        list.forEach((p: CodingProblem) => {
+                            if (p.status === 'passed' && p._id) next[p._id] = true
+                        })
+                        return next
+                    })
+                }
             }
 
         } catch (error) {
@@ -275,6 +290,29 @@ export default function CapstoneTestPage() {
                 </Card>
             </div>
         )
+    }
+
+    if (capstoneAlreadyCompleted) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-base-100 p-4">
+                <Card className="max-w-md w-full p-8 text-center border-green-500/30 bg-green-50/10">
+                    <CheckCircle2 className="w-16 h-16 mx-auto text-green-600 mb-4" />
+                    <h1 className="text-2xl font-bold text-green-700 mb-2">Capstone Completed</h1>
+                    <p className="text-neutral-600 mb-6">
+                        You have already passed and submitted this week&apos;s capstone project. You cannot submit again.
+                    </p>
+                    <Button
+                        className="w-full bg-primary hover:bg-primary-dark text-white"
+                        onClick={() => {
+                            if (typeof window !== 'undefined' && window.opener) window.close();
+                            else router.push(`/student/study/week-${weekNum}`);
+                        }}
+                    >
+                        Back to Study
+                    </Button>
+                </Card>
+            </div>
+        );
     }
 
     if (!hasStarted) {
