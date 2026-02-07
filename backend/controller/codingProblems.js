@@ -966,12 +966,12 @@ export async function getWeeklyCodingProgress(req, res) {
         const dailyProblems = await problemsCollection.find({
             week: { $in: [week, String(week)] },
             day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
-            is_capstone: { $ne: true }, // daily: false or field missing
-            deleted: { $ne: true }
-        }).project({ question_id: 1, title: 1, day: 1, question_number: 1 }).toArray();
+            is_capstone: { $ne: true } // daily: false or field missing (no deleted filter - match getDailyCodingProblems)
+        }).project({ question_id: 1, problem_id: 1, title: 1, day: 1, question_number: 1 }).toArray();
 
         const totalDailyProblems = dailyProblems.length;
-        const dailyProblemIds = dailyProblems.map(p => p.question_id);
+        // Support both question_id and problem_id (production may use either)
+        const dailyProblemIds = dailyProblems.map(p => p.question_id ?? p.problem_id).filter(Boolean);
 
         // 2. Get user's submissions for these problems
         // Match student_id as string or ObjectId (production may store either)
@@ -1007,11 +1007,12 @@ export async function getWeeklyCodingProgress(req, res) {
             return m ? parseInt(m[1], 10) : 0;
         };
 
-        // Identify pending problems
+        // Identify pending problems (use question_id ?? problem_id for id consistency)
+        const problemId = (p) => p.question_id ?? p.problem_id;
         const pendingProblems = dailyProblems
-            .filter(p => !completedProblemIds.has(p.question_id))
+            .filter(p => !completedProblemIds.has(problemId(p)))
             .map(p => ({
-                question_id: p.question_id,
+                question_id: problemId(p),
                 title: p.title,
                 day: p.day,
                 question_number: p.question_number
