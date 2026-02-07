@@ -1326,34 +1326,38 @@ export default class studentProgressController {
                 { sort: { day: 1, attempt: -1 } } // Get latest attempt for each day
             );
 
-            // Get all coding problems for this week
+            // Get all coding problems for this week from DATABASE (not static file)
             // Define required practice-test days: aptitude has no pre-week, only day-1..day-5
             const weekDays = track === 'aptitude'
                 ? ['day-1', 'day-2', 'day-3', 'day-4', 'day-5']
                 : ['pre-week', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
-            const allCodingProblems = [];
+            let allCodingProblems = [];
 
-            // Import coding problems data
+            // FIXED: Query database instead of importing static file (which may be outdated/empty)
             try {
-                const codingProblemsData = await import('../data/codingProblems.js');
-                const allProblems = codingProblemsData.default || [];
+                const { getDB } = await import('../config/database.js');
+                const db = getDB();
+                const problemsCollection = db.collection('tblCodingProblems');
 
-                // Filter problems for this week
-                // For Week 1, all problems in the file are for Week 1
-                const weekProblems = week === 1
-                    ? allProblems
-                    : allProblems.filter(p => p.week === week);
+                // Query for daily problems using same logic as getWeeklyCodingProgress
+                const dailyProblems = await problemsCollection.find({
+                    week: { $in: [week, String(week)] },
+                    day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
+                    $or: [
+                        { is_daily: 1 },  // Primary: explicitly marked as daily (production schema)
+                        { is_daily: true },  // Fallback: boolean true variant
+                        { $and: [{ is_capstone: { $ne: true } }, { is_daily: { $exists: false } }] }  // Legacy: old schema without is_daily field
+                    ]
+                }).project({ question_id: 1, problem_id: 1 }).toArray();
 
-                // Get unique problem IDs
-                weekProblems.forEach(problem => {
-                    if (problem.problem_id && !allCodingProblems.includes(problem.problem_id)) {
-                        allCodingProblems.push(problem.problem_id);
-                    }
-                });
+                // Extract problem IDs (support both question_id and problem_id)
+                allCodingProblems = dailyProblems.map(p => p.question_id ?? p.problem_id).filter(Boolean);
+
+                console.log(`[checkWeeklyTestEligibility] Found ${allCodingProblems.length} daily problems for week ${week} from database`);
             } catch (error) {
-                console.error('Error loading coding problems data:', error);
-                // If import fails, try to get from questions controller
-                // For now, we'll continue with empty array and let the check proceed
+                console.error('[checkWeeklyTestEligibility] Error loading coding problems from database:', error);
+                // Fallback to empty array - will show as eligible if no problems loaded
+                allCodingProblems = [];
             }
 
             const progress = progressResult.data && progressResult.data.length > 0 ? progressResult.data[0] : null;
