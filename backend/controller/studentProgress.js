@@ -1882,7 +1882,8 @@ export default class studentProgressController {
             const { week, track } = req.body;
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
 
-            console.log('[StudentProgress] Check weekly test eligibility request:', { userId, week, track });
+            const trackNorm = (track || '').toString().toLowerCase();
+            console.log('[StudentProgress] Check weekly test eligibility request:', { userId, week, track: trackNorm || undefined });
 
             if (!userId || !week) {
                 res.locals.responseData = {
@@ -1917,7 +1918,7 @@ export default class studentProgressController {
             // Define required practice-test days: aptitude has no pre-week, only day-1..day-5
             const baseDays = ['day-1', 'day-2', 'day-3', 'day-4', 'day-5'];
             const requirePreWeekPractice = process.env.REQUIRE_PRE_WEEK_PRACTICE === 'true';
-            const weekDays = track === 'aptitude'
+            const weekDays = trackNorm === 'aptitude'
                 ? baseDays
                 : (weekNum === 1 && requirePreWeekPractice ? ['pre-week', ...baseDays] : baseDays);
             let allCodingProblems = [];
@@ -1953,7 +1954,7 @@ export default class studentProgressController {
 
             // Resolve coding problems completed from submissions (more reliable than progress cache)
             let codingProblemsCompleted = progress?.coding_problems_completed || [];
-            if (track !== 'aptitude' && allCodingProblems.length > 0) {
+            if (trackNorm !== 'aptitude' && allCodingProblems.length > 0) {
                 try {
                     const db = getDB();
                     const submissionsCollection = db.collection('tblCodingSubmissions');
@@ -2049,7 +2050,7 @@ export default class studentProgressController {
 
             // Check coding problems completion
             // If no coding problems exist for this week, or track is 'aptitude' (no coding in aptitude), consider requirement met
-            const codingRequired = track !== 'aptitude';
+            const codingRequired = trackNorm !== 'aptitude';
             const completedRequired = allCodingProblems.filter(id => codingProblemsCompleted.includes(id));
             const codingProblemsEligibility = {
                 eligible: !codingRequired || allCodingProblems.length === 0 || allCodingProblems.every(id => codingProblemsCompleted.includes(id)),
