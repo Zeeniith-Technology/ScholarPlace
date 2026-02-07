@@ -192,6 +192,9 @@ function AptitudeWeek2Content() {
   }
 
   const handleWeeklyTestClick = async () => {
+    if (weeklyTestEligibility?.weekly_test_status?.passed) {
+      return
+    }
     if (!weeklyTestEligibility?.eligible) {
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
         console.log('Development mode: Bypassing eligibility check')
@@ -454,9 +457,12 @@ function AptitudeWeek2Content() {
                   <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Test</h3>
                   <button
                     onClick={handleWeeklyTestClick}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.eligible
-                      ? 'bg-secondary/10 hover:bg-secondary/20 border-2 border-secondary/30 cursor-pointer'
-                      : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-pointer'
+                    disabled={!!weeklyTestEligibility?.weekly_test_status?.passed}
+                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.weekly_test_status?.passed
+                      ? 'bg-green-500/10 border-2 border-green-500/20 cursor-not-allowed'
+                      : weeklyTestEligibility?.eligible
+                        ? 'bg-secondary/10 hover:bg-secondary/20 border-2 border-secondary/30 cursor-pointer'
+                        : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-pointer'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -466,7 +472,12 @@ function AptitudeWeek2Content() {
                           <div className="font-semibold text-sm">Week 2 Aptitude Test</div>
                         </div>
                         <div className="text-xs opacity-80">
-                          {weeklyTestEligibility?.eligible ? '50 questions • 60 minutes' : 'Click to check eligibility'}
+                          {weeklyTestEligibility?.weekly_test_status?.passed
+                            ? `Completed ??? ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
+                            : weeklyTestEligibility?.eligible
+                              ? '50 questions ??? 60 minutes'
+                              : 'Click to check eligibility'
+                          }
                         </div>
                         {weeklyTestEligibility && !weeklyTestEligibility.eligible && (
                           <div className="mt-1.5 text-xs opacity-70">
@@ -479,7 +490,9 @@ function AptitudeWeek2Content() {
                           </div>
                         )}
                       </div>
-                      {weeklyTestEligibility?.eligible ? (
+                      {weeklyTestEligibility?.weekly_test_status?.passed ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      ) : weeklyTestEligibility?.eligible ? (
                         <Play className="w-4 h-4 text-secondary flex-shrink-0" />
                       ) : (
                         <Lock className="w-4 h-4 text-neutral-light flex-shrink-0" />

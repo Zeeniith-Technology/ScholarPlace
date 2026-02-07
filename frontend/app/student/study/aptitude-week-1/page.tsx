@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -61,11 +61,11 @@ function AptitudeWeek1Content() {
   const [showBlockedModal, setShowBlockedModal] = useState(false)
 
   const days = [
-    { id: 'day-1', label: 'Day 1', title: 'Integers – Understanding Numbers Above & Below Zero', dayNum: 1 },
-    { id: 'day-2', label: 'Day 2', title: 'Factors – Breaking Numbers Into Building Blocks', dayNum: 2 },
-    { id: 'day-3', label: 'Day 3', title: 'Divisibility – Checking Without Division', dayNum: 3 },
-    { id: 'day-4', label: 'Day 4', title: 'HCF & LCM – Sharing and Grouping', dayNum: 4 },
-    { id: 'day-5', label: 'Day 5', title: 'BODMAS/VBODMAS – Discipline in Calculation', dayNum: 5 },
+    { id: 'day-1', label: 'Day 1', title: 'Integers â€“ Understanding Numbers Above & Below Zero', dayNum: 1 },
+    { id: 'day-2', label: 'Day 2', title: 'Factors â€“ Breaking Numbers Into Building Blocks', dayNum: 2 },
+    { id: 'day-3', label: 'Day 3', title: 'Divisibility â€“ Checking Without Division', dayNum: 3 },
+    { id: 'day-4', label: 'Day 4', title: 'HCF & LCM â€“ Sharing and Grouping', dayNum: 4 },
+    { id: 'day-5', label: 'Day 5', title: 'BODMAS/VBODMAS â€“ Discipline in Calculation', dayNum: 5 },
   ]
 
   useEffect(() => {
@@ -276,7 +276,7 @@ function AptitudeWeek1Content() {
     }
   }
 
-  // Check if student is blocked from retaking (tab switch etc.) — must pass before opening test
+  // Check if student is blocked from retaking (tab switch etc.) â€” must pass before opening test
   const checkBlockedRetake = async (): Promise<boolean> => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
@@ -301,6 +301,9 @@ function AptitudeWeek1Content() {
 
   // Handle weekly test button click
   const handleWeeklyTestClick = async () => {
+    if (weeklyTestEligibility?.weekly_test_status?.passed) {
+      return
+    }
     // Check if eligible first
     if (!weeklyTestEligibility?.eligible) {
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
@@ -311,7 +314,7 @@ function AptitudeWeek1Content() {
       }
     }
 
-    // Blocked from retake (e.g. tab switch) — require Dept TPC approval before opening test
+    // Blocked from retake (e.g. tab switch) â€” require Dept TPC approval before opening test
     const blocked = await checkBlockedRetake()
     if (blocked) {
       setShowBlockedModal(true)
@@ -390,7 +393,7 @@ function AptitudeWeek1Content() {
         continue
       }
 
-      // Skip redundant "DAY N: Topic" header (same as main card title). Normalize so leading emoji (e.g. 📅) doesn't prevent match.
+      // Skip redundant "DAY N: Topic" header (same as main card title). Normalize so leading emoji (e.g. ðŸ“…) doesn't prevent match.
       const normalizeHeaderText = (t: string) => t.trim().replace(/^\s*[^\w\s&:-]+/g, '').trim()
       const isRedundantDayHeader = (t: string) => {
         const n = normalizeHeaderText(t)
@@ -594,9 +597,12 @@ function AptitudeWeek1Content() {
                   <h3 className="text-sm font-semibold text-neutral mb-2">Weekly Test</h3>
                   <button
                     onClick={handleWeeklyTestClick}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.eligible
-                      ? 'bg-secondary/10 hover:bg-secondary/20 border-2 border-secondary/30 cursor-pointer'
-                      : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-pointer'
+                    disabled={!!weeklyTestEligibility?.weekly_test_status?.passed}
+                    className={`w-full text-left p-3 rounded-lg transition-all ${weeklyTestEligibility?.weekly_test_status?.passed
+                      ? 'bg-green-500/10 border-2 border-green-500/20 cursor-not-allowed'
+                      : weeklyTestEligibility?.eligible
+                        ? 'bg-secondary/10 hover:bg-secondary/20 border-2 border-secondary/30 cursor-pointer'
+                        : 'bg-neutral-light/10 border-2 border-neutral-light/20 opacity-60 cursor-pointer'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -605,10 +611,12 @@ function AptitudeWeek1Content() {
                           <Trophy className={`w-4 h-4 ${weeklyTestEligibility?.eligible ? 'text-secondary' : 'text-neutral-light'}`} />
                           <div className="font-semibold text-sm">Week 1 Aptitude Test</div>
                         </div>
-                        <div className="text-xs opacity-80">
-                          {weeklyTestEligibility?.eligible
-                            ? '50 questions • 60 minutes'
-                            : 'Click to check eligibility'
+                                                <div className="text-xs opacity-80">
+                          {weeklyTestEligibility?.weekly_test_status?.passed
+                            ? `Completed â€¢ ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
+                            : weeklyTestEligibility?.eligible
+                              ? '50 questions â€¢ 60 minutes'
+                              : 'Click to check eligibility'
                           }
                         </div>
                         {weeklyTestEligibility && !weeklyTestEligibility.eligible && (
@@ -616,13 +624,15 @@ function AptitudeWeek1Content() {
                             {weeklyTestEligibility.practice_tests && !weeklyTestEligibility.practice_tests.eligible && (
                               <div className="flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3" />
-                                <span>Practice tests required (≥70%)</span>
+                                <span>Practice tests required (â‰¥70%)</span>
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                      {weeklyTestEligibility?.eligible ? (
+                      {weeklyTestEligibility?.weekly_test_status?.passed ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      ) : weeklyTestEligibility?.eligible ? (
                         <Play className="w-4 h-4 text-secondary flex-shrink-0" />
                       ) : (
                         <Lock className="w-4 h-4 text-neutral-light flex-shrink-0" />
@@ -708,7 +718,7 @@ function AptitudeWeek1Content() {
                               if (attempts > 0) {
                                 return (
                                   <p className="text-xs mt-1 font-semibold text-neutral-light/80">
-                                    Attempts: {attempts}/3 • Score: {dayStats?.score || 0}%
+                                    Attempts: {attempts}/3 â€¢ Score: {dayStats?.score || 0}%
                                   </p>
                                 )
                               }
@@ -829,7 +839,7 @@ function AptitudeWeek1Content() {
             You must complete all requirements before taking the weekly test:
           </p>
           <ul className="list-disc list-inside text-neutral-light space-y-1">
-            <li>Score ≥70% on all practice tests</li>
+            <li>Score â‰¥70% on all practice tests</li>
             {weeklyTestEligibility?.coding_problems && !weeklyTestEligibility.coding_problems.eligible && (
               <li>Complete all coding problems</li>
             )}
@@ -880,3 +890,4 @@ export default function AptitudeWeek1Page() {
     </Suspense>
   )
 }
+

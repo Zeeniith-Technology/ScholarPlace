@@ -201,16 +201,18 @@ export default function WeeklyAptitudeTestsPage() {
                     {weeklyTests.map((test) => {
                         const eligibility = weekEligibility[test.weekNumber]
                         const isEligible = eligibility?.eligible || false
+                        const isPassed = eligibility?.weekly_test_status?.passed || false
                         const isLoaded = !isLoading && eligibility !== undefined
 
                         // Test mode override for development
                         const testMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true' || process.env.NODE_ENV === 'development'
-                        const canStartTest = testMode || isEligible
+                        const canStartTest = testMode || (isEligible && !isPassed)
+                        const isCardActive = testMode || isEligible || isPassed
 
                         return (
                             <Card key={test.id} className={cn(
                                 "flex flex-col h-full transition-all duration-300",
-                                canStartTest ? "hover:shadow-lg" : "opacity-75"
+                                isCardActive ? "hover:shadow-lg" : "opacity-75"
                             )}>
                                 <div className="p-6 flex-1">
                                     <div className="flex justify-between items-start mb-4">
@@ -269,7 +271,7 @@ export default function WeeklyAptitudeTestsPage() {
                                         </div>
 
                                         {/* Eligibility Requirements (if locked) */}
-                                        {isLoaded && !canStartTest && eligibility && (
+                                        {isLoaded && !canStartTest && eligibility && !isPassed && (
                                             <div className="mt-4 p-3 bg-background-elevated rounded-lg border border-neutral-light/10">
                                                 <div className="flex items-start gap-2">
                                                     <Lock className="w-4 h-4 text-neutral-light mt-0.5 flex-shrink-0" />
@@ -318,7 +320,16 @@ export default function WeeklyAptitudeTestsPage() {
                                 </div>
 
                                 <div className="p-4 bg-background-surface/50 border-t border-neutral-light/10 mt-auto">
-                                    {canStartTest ? (
+                                    {isPassed ? (
+                                        <Button
+                                            className="w-full gap-2 font-semibold"
+                                            variant="secondary"
+                                            disabled
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" />
+                                            Completed
+                                        </Button>
+                                    ) : canStartTest ? (
                                         <div className="space-y-2">
                                             {eligibility?.weekly_test_status?.attempted && (
                                                 <div className="text-xs text-center text-neutral-light mb-1">

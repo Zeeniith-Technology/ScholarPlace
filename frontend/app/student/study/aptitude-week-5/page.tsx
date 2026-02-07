@@ -191,6 +191,9 @@ function AptitudeWeek5Content() {
   }
 
   const handleWeeklyTestClick = async () => {
+    if (weeklyTestEligibility?.weekly_test_status?.passed) {
+      return
+    }
     if (!weeklyTestEligibility?.eligible) {
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
         console.log('Development mode: Bypassing eligibility check')
@@ -448,7 +451,14 @@ function AptitudeWeek5Content() {
                           <Trophy className={`w-4 h-4 ${weeklyTestEligibility?.eligible ? 'text-secondary' : 'text-neutral-light'}`} />
                           <div className="font-semibold text-sm">Week 5 Aptitude Test</div>
                         </div>
-                        <div className="text-xs opacity-80">{weeklyTestEligibility?.eligible ? '50 questions • 60 minutes' : 'Click to check eligibility'}</div>
+                        <div className="text-xs opacity-80">
+                          {weeklyTestEligibility?.weekly_test_status?.passed
+                            ? `Completed ??? ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
+                            : weeklyTestEligibility?.eligible
+                              ? '50 questions ??? 60 minutes'
+                              : 'Click to check eligibility'
+                          }
+                        </div>
                         {weeklyTestEligibility && !weeklyTestEligibility.eligible && (
                           <div className="mt-1.5 text-xs opacity-70">
                             {weeklyTestEligibility.practice_tests && !weeklyTestEligibility.practice_tests.eligible && (
@@ -457,7 +467,9 @@ function AptitudeWeek5Content() {
                           </div>
                         )}
                       </div>
-                      {weeklyTestEligibility?.eligible ? (
+                      {weeklyTestEligibility?.weekly_test_status?.passed ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      ) : weeklyTestEligibility?.eligible ? (
                         <Play className="w-4 h-4 text-secondary flex-shrink-0" />
                       ) : (
                         <Lock className="w-4 h-4 text-neutral-light flex-shrink-0" />
