@@ -336,6 +336,85 @@ async function executeWithPiston(language, code, stdin) {
 }
 
 /**
+ * If all capstone problems for the week are passed by the student,
+ * mark capstone_completed in tblStudentProgress (server-side persistence).
+ */
+async function tryMarkCapstoneCompleted({ db, studentId, week, collegeId, departmentId }) {
+    try {
+        const weekNum = parseInt(week, 10);
+        if (!weekNum || isNaN(weekNum)) return false;
+        if (!studentId) return false;
+
+        const problemsCollection = db.collection(COLLECTION_NAME);
+        const capstoneProblems = await problemsCollection.find({
+            week: { $in: [weekNum, String(weekNum)] },
+            is_capstone: { $in: [true, 1, 'true'] }
+        }).project({ question_id: 1, problem_id: 1 }).toArray();
+
+        const capstoneIds = capstoneProblems
+            .map(p => p.question_id ?? p.problem_id)
+            .filter(Boolean);
+
+        if (capstoneIds.length === 0) return false;
+
+        const studentIdString = String(studentId);
+        let studentIdObj = null;
+        try { studentIdObj = new ObjectId(studentIdString); } catch (_) { /* not ObjectId */ }
+        const studentIdConditions = [
+            { student_id: studentIdString },
+            { student_id: studentIdString.trim() }
+        ];
+        if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
+
+        const submissionsCollection = db.collection('tblCodingSubmissions');
+        const passedSubs = await submissionsCollection.find({
+            problem_id: { $in: capstoneIds },
+            status: 'passed',
+            $or: studentIdConditions
+        }).project({ problem_id: 1 }).toArray();
+
+        const passedIds = new Set(passedSubs.map(s => s.problem_id));
+        if (passedIds.size < capstoneIds.length) return false;
+
+        const progressCollection = db.collection('tblStudentProgress');
+        const existing = await progressCollection.findOne({
+            week: weekNum,
+            $or: studentIdConditions
+        }, { projection: { status: 1 } });
+
+        const nextStatus = existing?.status === 'completed' ? 'completed' : 'in_progress';
+        await progressCollection.updateOne(
+            { week: weekNum, $or: studentIdConditions },
+            {
+                $set: {
+                    capstone_completed: true,
+                    status: nextStatus,
+                    updated_at: new Date()
+                },
+                $setOnInsert: {
+                    student_id: studentIdString,
+                    week: weekNum,
+                    progress_percentage: 50,
+                    days_completed: [],
+                    coding_problems_completed: capstoneIds,
+                    assignments_completed: 0,
+                    tests_completed: 0,
+                    created_at: new Date(),
+                    ...(collegeId != null && collegeId !== '' && { college_id: typeof collegeId === 'string' ? collegeId : collegeId?.toString?.() }),
+                    ...(departmentId != null && departmentId !== '' && { department_id: typeof departmentId === 'string' ? departmentId : departmentId?.toString?.() })
+                }
+            },
+            { upsert: true }
+        );
+
+        return true;
+    } catch (err) {
+        console.error('[Capstone Completion] Failed to mark capstone_completed:', err);
+        return false;
+    }
+}
+
+/**
  * Process one submit job (called by queue worker). Sends response to client.
  */
 async function doSubmit(req, res) {
@@ -450,6 +529,15 @@ async function doSubmit(req, res) {
                 language,
                 problem,
             }).catch((err) => console.error('[CodeReview] Trigger error:', err));
+
+            // Server-side persistence: if all capstone problems are passed, mark capstone_completed
+            await tryMarkCapstoneCompleted({
+                db,
+                studentId,
+                week: problem?.week ?? null,
+                collegeId,
+                departmentId
+            });
         }
 
         res.status(200).json({
