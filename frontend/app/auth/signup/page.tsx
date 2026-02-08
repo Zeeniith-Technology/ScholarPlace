@@ -504,77 +504,75 @@ export default function SignupPage() {
                     )}
                   </button>
                 </div>
-                {formData.password && (
-                  <div className="mt-2 p-3 rounded-lg bg-background-surface border border-neutral-light/20">
-                    <p className="text-xs font-medium text-neutral mb-2">Password must contain:</p>
-                    <div className="space-y-1.5">
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${formData.password.length >= 8 ? 'text-green-600' : 'text-neutral-light'
+                <div className="mt-2 p-3 rounded-lg bg-background-surface border border-neutral-light/20">
+                  <p className="text-xs font-medium text-neutral mb-2">Password must contain:</p>
+                  <div className="space-y-1.5">
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${formData.password.length >= 8 ? 'text-green-600' : 'text-neutral-light'
+                      }`}>
+                      <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${formData.password.length >= 8
+                        ? 'bg-green-600 border-green-600'
+                        : 'border-neutral-light bg-transparent'
                         }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${formData.password.length >= 8
-                          ? 'bg-green-600 border-green-600'
-                          : 'border-neutral-light bg-transparent'
-                          }`}>
-                          {formData.password.length >= 8 && (
-                            <span className="text-white text-[10px] font-bold">✓</span>
-                          )}
-                        </span>
-                        <span>At least 8 characters</span>
-                      </div>
+                        {formData.password.length >= 8 && (
+                          <span className="text-white text-[10px] font-bold">✓</span>
+                        )}
+                      </span>
+                      <span>At least 8 characters</span>
+                    </div>
 
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                      }`}>
+                      <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[A-Z]/.test(formData.password)
+                        ? 'bg-green-600 border-green-600'
+                        : 'border-neutral-light bg-transparent'
                         }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[A-Z]/.test(formData.password)
-                          ? 'bg-green-600 border-green-600'
-                          : 'border-neutral-light bg-transparent'
-                          }`}>
-                          {/[A-Z]/.test(formData.password) && (
-                            <span className="text-white text-[10px] font-bold">✓</span>
-                          )}
-                        </span>
-                        <span>One capital letter (A-Z)</span>
-                      </div>
+                        {/[A-Z]/.test(formData.password) && (
+                          <span className="text-white text-[10px] font-bold">✓</span>
+                        )}
+                      </span>
+                      <span>One capital letter (A-Z)</span>
+                    </div>
 
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                      }`}>
+                      <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[a-z]/.test(formData.password)
+                        ? 'bg-green-600 border-green-600'
+                        : 'border-neutral-light bg-transparent'
                         }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[a-z]/.test(formData.password)
-                          ? 'bg-green-600 border-green-600'
-                          : 'border-neutral-light bg-transparent'
-                          }`}>
-                          {/[a-z]/.test(formData.password) && (
-                            <span className="text-white text-[10px] font-bold">✓</span>
-                          )}
-                        </span>
-                        <span>One lowercase letter (a-z)</span>
-                      </div>
+                        {/[a-z]/.test(formData.password) && (
+                          <span className="text-white text-[10px] font-bold">✓</span>
+                        )}
+                      </span>
+                      <span>One lowercase letter (a-z)</span>
+                    </div>
 
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                      }`}>
+                      <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[0-9]/.test(formData.password)
+                        ? 'bg-green-600 border-green-600'
+                        : 'border-neutral-light bg-transparent'
                         }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[0-9]/.test(formData.password)
-                          ? 'bg-green-600 border-green-600'
-                          : 'border-neutral-light bg-transparent'
-                          }`}>
-                          {/[0-9]/.test(formData.password) && (
-                            <span className="text-white text-[10px] font-bold">✓</span>
-                          )}
-                        </span>
-                        <span>One number (0-9)</span>
-                      </div>
+                        {/[0-9]/.test(formData.password) && (
+                          <span className="text-white text-[10px] font-bold">✓</span>
+                        )}
+                      </span>
+                      <span>One number (0-9)</span>
+                    </div>
 
-                      <div className={`flex items-center gap-2 text-xs transition-colors ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-neutral-light'
+                      }`}>
+                      <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)
+                        ? 'bg-green-600 border-green-600'
+                        : 'border-neutral-light bg-transparent'
                         }`}>
-                        <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)
-                          ? 'bg-green-600 border-green-600'
-                          : 'border-neutral-light bg-transparent'
-                          }`}>
-                          {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) && (
-                            <span className="text-white text-[10px] font-bold">✓</span>
-                          )}
-                        </span>
-                        <span>One special character (!@#$%^&*)</span>
-                      </div>
+                        {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) && (
+                          <span className="text-white text-[10px] font-bold">✓</span>
+                        )}
+                      </span>
+                      <span>One special character (!@#$%^&*)</span>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="relative">

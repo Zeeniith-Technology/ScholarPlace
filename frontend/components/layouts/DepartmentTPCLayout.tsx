@@ -18,6 +18,7 @@ import {
   Shield,
   Code,
   Sparkles,
+  Bug,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAuthHeader } from '@/utils/auth'
@@ -219,7 +220,26 @@ export function DepartmentTPCLayout({ children }: DepartmentTPCLayoutProps) {
               className="h-11 w-auto object-contain"
             />
           </Link>
-          <div className="w-6" /> {/* Spacer for centering */}
+          {/* Bug Report Button - Mobile */}
+          <Link
+            href="/dept-tpc/my-bug-reports"
+            className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+            title="Report Bug"
+          >
+            <Bug className="w-5 h-5" />
+          </Link>
+        </header>
+
+        {/* Desktop header with bug report */}
+        <header className="hidden lg:flex items-center justify-end h-16 px-6 bg-background-surface border-b border-neutral-light/20">
+          <Link
+            href="/dept-tpc/my-bug-reports"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500 hover:border-red-500 text-red-500 hover:text-white transition-all duration-200"
+            title="Report a Bug"
+          >
+            <Bug className="w-4 h-4" />
+            <span className="hidden 2xl:inline text-sm font-medium">Report Bug</span>
+          </Link>
         </header>
 
         {/* Page content */}

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { GraduationCap } from 'lucide-react'
+
 import Link from 'next/link'
 
 interface AuthLayoutProps {
@@ -19,10 +19,17 @@ export function AuthLayout({ children, title, subtitle, heroImage }: AuthLayoutP
       <div className="hidden lg:flex lg:flex-1 relative bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10">
         <div className="absolute inset-0 flex flex-col items-center justify-center p-12 z-10">
           <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-            <GraduationCap className="w-8 h-8 text-primary group-hover:scale-110 transition-transform duration-200" />
-            <span className="font-heading font-bold text-xl text-neutral">Scholarplace</span>
+            <div className="relative h-12 w-48">
+              <Image
+                src="/images/Footer_logo.png"
+                alt="Scholarplace"
+                fill
+                className="object-contain object-left"
+                priority
+              />
+            </div>
           </Link>
-          
+
           {(title || subtitle) && (
             <div className="max-w-md text-center space-y-6">
               {title && (
@@ -38,7 +45,7 @@ export function AuthLayout({ children, title, subtitle, heroImage }: AuthLayoutP
             </div>
           )}
         </div>
-        
+
         {/* Hero Image */}
         <div className="absolute inset-0 opacity-20">
           <Image
@@ -53,7 +60,7 @@ export function AuthLayout({ children, title, subtitle, heroImage }: AuthLayoutP
             }}
           />
         </div>
-        
+
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-secondary/20" />
       </div>
@@ -61,9 +68,16 @@ export function AuthLayout({ children, title, subtitle, heroImage }: AuthLayoutP
       {/* Right side - Form Content */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-12 py-12">
         {/* Mobile Logo */}
-        <Link href="/" className="lg:hidden flex items-center gap-2 mb-8 group">
-          <GraduationCap className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-200" />
-          <span className="font-heading font-bold text-lg text-neutral">Scholarplace</span>
+        <Link href="/" className="lg:hidden flex items-center gap-2 mb-8 group w-fit">
+          <div className="relative h-10 w-40">
+            <Image
+              src="/images/Footer_logo.png"
+              alt="Scholarplace"
+              fill
+              className="object-contain object-left"
+              priority
+            />
+          </div>
         </Link>
 
         {/* Mobile Title */}

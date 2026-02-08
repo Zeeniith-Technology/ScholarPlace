@@ -39,6 +39,8 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
       if (item.href === '/student/study' && pathname.startsWith('/student/practice/')) return true
       // Coding: match sub-routes
       if (item.href === '/student/coding' && pathname.startsWith('/student/coding')) return true
+      // Bug Report: match both list and create pages
+      if (item.href === '/student/my-bug-reports' && (pathname.startsWith('/student/my-bug-reports') || pathname.startsWith('/student/bug-report'))) return true
       return false
     })
     if (index !== -1) {
@@ -124,6 +126,7 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
           (item.href === '/student/code-review' && pathname.startsWith('/student/code-review')) ||
           (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) ||
           (item.href === '/student/coding' && pathname.startsWith('/student/coding')) ||
+          (item.href === '/student/my-bug-reports' && (pathname.startsWith('/student/my-bug-reports') || pathname.startsWith('/student/bug-report'))) ||
           (item.href === '/student/study' && (
             (pathname.startsWith('/student/study') && !pathname.startsWith('/student/study-help') && !pathname.startsWith('/student/coding')) ||
             pathname.startsWith('/student/practice/')

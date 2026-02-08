@@ -18,6 +18,7 @@ import {
   RefreshCw,
   ArrowRight,
   BarChart3,
+  MessageSquare,
   Target,
   Zap,
   Shield,
@@ -34,6 +35,7 @@ import {
   Download as DownloadIcon,
   LogOut,
   Code,
+  Bug,
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -332,11 +334,25 @@ export default function SuperadminDashboardPage() {
       action: () => router.push('/superadmin/syllabus'),
     },
     {
+      title: 'Bug Reports',
+      description: 'Manage and review bug reports from students and staff',
+      icon: Bug,
+      color: 'red',
+      action: () => router.push('/superadmin/bug-reports'),
+    },
+    {
       title: 'System Error Logs',
       description: 'View and investigate system error logs',
       icon: AlertCircle,
       color: 'red',
       action: () => router.push('/superadmin/error-logs'),
+    },
+    {
+      title: 'Contact Inquiries',
+      description: 'View and manage contact form submissions',
+      icon: MessageSquare,
+      color: 'blue',
+      action: () => router.push('/superadmin/contact-inquiries'),
     },
   ]
 

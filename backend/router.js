@@ -29,6 +29,8 @@ import * as codingProblemsController from './controller/codingProblems.js';
 import { responsedata } from './methods.js';
 import { auth, requireRole, optionalAuth } from './middleware/auth.js';
 import tpcCodingController from './controller/tpcCoding.js';
+import bugReportController from './controller/bugReport.js';
+import contactController from './controller/contactController.js';
 
 const router = express.Router();
 
@@ -59,6 +61,7 @@ const bulkActions = new BulkActionsController();
 const deptTest = new DeptTestController();
 const errorLogs = new errorLogController();
 const tpcCoding = new tpcCodingController();
+// bugReportController is already exported as default instance, no need to instantiate
 
 // Default data routes
 router.post('/defaultdata/insertroles', defaultdata.insertroles, responsedata);
@@ -351,6 +354,22 @@ router.post('/tpc-management/update-dept-tpc', auth, requireRole('Superadmin'), 
 router.post('/tpc-management/delete-dept-tpc', auth, requireRole('Superadmin'), tpcManagement.deleteDeptTpc.bind(tpcManagement), responsedata);
 router.post('/tpc-management/list-college-tpc', auth, requireRole('Superadmin'), tpcManagement.listCollegeTpc.bind(tpcManagement), responsedata);
 router.post('/tpc-management/list-dept-tpc', auth, requireRole('Superadmin'), tpcManagement.listDeptTpc.bind(tpcManagement), responsedata);
+
+// Bug Report Routes
+router.post('/bug-report/submit', auth, bugReportController.submitBugReport.bind(bugReportController), responsedata);
+router.post('/bug-report/my-reports', auth, bugReportController.getMyReports.bind(bugReportController), responsedata);
+router.post('/bug-report/view', auth, bugReportController.viewReport.bind(bugReportController), responsedata);
+
+// Superadmin only bug report routes
+router.post('/bug-report/all', auth, requireRole('Superadmin'), bugReportController.getAllReports.bind(bugReportController), responsedata);
+router.post('/bug-report/update-status', auth, requireRole('Superadmin'), bugReportController.updateStatus.bind(bugReportController), responsedata);
+router.post('/bug-report/delete', auth, requireRole('Superadmin'), bugReportController.deleteReport.bind(bugReportController), responsedata);
+
+// Contact Routes
+router.post('/contact/submit', contactController.submitContact.bind(contactController), responsedata);
+router.post('/contact/all', auth, requireRole('Superadmin'), contactController.getAllContacts.bind(contactController), responsedata);
+router.post('/contact/update-status', auth, requireRole('Superadmin'), contactController.updateStatus.bind(contactController), responsedata);
+router.post('/contact/delete', auth, requireRole('Superadmin'), contactController.deleteContact.bind(contactController), responsedata);
 
 export default router;
 

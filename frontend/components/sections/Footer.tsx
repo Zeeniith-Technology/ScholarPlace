@@ -1,6 +1,5 @@
-import React from 'react'
 import Link from 'next/link'
-import { GraduationCap } from 'lucide-react'
+import Image from 'next/image'
 
 const footerLinks = {
   company: [
@@ -20,16 +19,19 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Logo & Description */}
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
+            <Link href="/" className="flex items-center mb-4 group w-fit">
+              <div className="relative h-12 w-48">
+                <Image
+                  src="/images/Footer_logo.png"
+                  alt="Scholarplace"
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
               </div>
-              <span className="text-xl font-heading font-bold text-neutral">
-                Scholarplace
-              </span>
             </Link>
             <p className="text-neutral-dark max-w-md">
-              Placement preparation platform for engineering colleges. 
+              Placement preparation platform for engineering colleges.
               Structured roadmaps, assessments, and analytics from 3rd to 7th semester.
             </p>
           </div>
@@ -71,7 +73,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-neutral/10 text-center space-y-2">
           <p className="text-neutral-dark text-sm">
-            © Scholarplace, 2025. All rights reserved.
+            © Scholarplace, 2026. All rights reserved.
           </p>
           <p className="text-neutral-dark text-sm">
             Powered by{' '}

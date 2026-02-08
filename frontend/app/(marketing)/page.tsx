@@ -8,6 +8,7 @@ import { StudentExperience } from '@/components/sections/StudentExperience'
 import { Pricing } from '@/components/sections/Pricing'
 import { FAQ } from '@/components/sections/FAQ'
 import { CTA } from '@/components/sections/CTA'
+import { Contact } from '@/components/sections/Contact'
 import { Footer } from '@/components/sections/Footer'
 
 /**
@@ -27,6 +28,7 @@ export default function MarketingHomePage() {
       <Pricing />
       <FAQ />
       <CTA />
+      <Contact />
       <Footer />
     </MarketingLayout>
   )
