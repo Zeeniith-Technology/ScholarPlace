@@ -177,13 +177,13 @@ export default function LoginPage() {
     <AuthLayout
       heroImage="/images/Login_heroSection.jpg"
     >
-      <div className="w-full space-y-8">
+      <div className="w-full space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-heading font-bold text-neutral">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-neutral">
             Login to Scholarplace
           </h1>
-          <p className="text-base text-neutral-dark">
+          <p className="text-sm sm:text-base text-neutral-dark">
             Enter your credentials to access your dashboard
           </p>
         </div>

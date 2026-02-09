@@ -288,19 +288,19 @@ export default function SignupPage() {
       subtitle="From 3rd sem to offer letter – one guided path."
       heroImage="/images/Singup_heroSection.jpg"
     >
-      <div className="w-full space-y-8">
+      <div className="w-full space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-heading font-bold text-neutral">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-neutral">
             Create Your Account
           </h1>
-          <p className="text-base text-neutral-dark">
+          <p className="text-sm sm:text-base text-neutral-dark">
             Join Scholarplace and start your placement journey
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
           <div className="space-y-5">
             <Input
               label="Full Name"

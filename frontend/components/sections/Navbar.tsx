@@ -35,10 +35,10 @@ export function Navbar() {
 
   return (
     <nav
-      className={`fixed top-4 left-[10%] right-[10%] z-50 transition-all duration-300 rounded-full ${headerBg} ${headerBorder} ${headerScrolled}`}
+      className={`fixed top-2 sm:top-4 left-2 right-2 sm:left-[5%] sm:right-[5%] lg:left-[10%] lg:right-[10%] z-50 transition-all duration-300 rounded-full ${headerBg} ${headerBorder} ${headerScrolled}`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center group">
             <Image
@@ -46,7 +46,7 @@ export function Navbar() {
               alt="Scholarplace"
               width={180}
               height={40}
-              className="h-8 md:h-10 w-auto object-contain group-hover:opacity-90 transition-opacity"
+              className="h-6 sm:h-8 md:h-10 w-auto object-contain group-hover:opacity-90 transition-opacity"
               priority
             />
           </Link>
@@ -98,46 +98,54 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+
+      {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#152238] backdrop-blur-xl border-t border-white/[0.08] rounded-b-3xl">
-          <div className="px-4 py-4 space-y-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="block text-white/90 hover:text-white transition-all duration-300 py-2 relative group"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <span className="relative z-10">{link.label}</span>
-                <span className="absolute bottom-2 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300 ease-out"></span>
-              </Link>
-            ))}
-            <div className="pt-4 space-y-2 border-t border-white/20">
-              <Link
-                href="/auth/login"
-                className="block text-sm font-medium text-white/90 hover:text-white py-2.5 px-4 rounded-xl -mx-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Login
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="block text-sm font-medium text-white/90 hover:text-white py-2.5 px-4 rounded-xl -mx-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Sign Up
-              </Link>
-              <Link
-                href="#contact"
-                className="block text-sm font-semibold text-[#152238] bg-white hover:bg-blue-50 py-2.5 px-4 rounded-xl text-center -mx-2 mt-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Book a Demo
-              </Link>
+        <>
+          {/* Backdrop */}
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Menu */}
+          <div className="md:hidden absolute left-0 right-0 top-full mt-2 mx-2 bg-[#152238] backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden">
+            <div className="px-4 py-4 space-y-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200 py-3 px-3 rounded-lg text-base"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="pt-3 space-y-2 border-t border-white/20 mt-2">
+                <Link
+                  href="/auth/login"
+                  className="block text-center text-sm font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 py-3 px-4 rounded-xl transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="block text-center text-sm font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 py-3 px-4 rounded-xl transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+                <Link
+                  href="#contact"
+                  className="block text-sm font-semibold text-[#152238] bg-white hover:bg-blue-50 py-3 px-4 rounded-xl text-center transition-colors shadow-md"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Book a Demo
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </nav>
   )

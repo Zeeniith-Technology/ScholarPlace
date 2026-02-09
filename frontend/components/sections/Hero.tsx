@@ -30,21 +30,21 @@ export function Hero() {
         <div className="gradient-orb w-[350px] h-[350px] bg-secondary/3 bottom-1/3 left-1/3" style={{ animationDelay: '4.5s' }} />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
           {/* Left Column - Enhanced Content */}
           <div className="space-y-8 animate-fade-up">
             <div className="space-y-6">
               <div className="space-y-2">
-                <p className="text-lg md:text-xl font-medium text-primary italic">
+                <p className="text-base sm:text-lg md:text-xl font-medium text-primary italic">
                   &quot;Your dream our Stairs&quot;
                 </p>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-neutral leading-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-neutral leading-tight">
                   Lets crack placement together
                 </h1>
               </div>
-              <p className="text-xl md:text-2xl text-neutral-dark leading-relaxed max-w-2xl font-medium">
-                Structured Aptitude & DSA roadmaps, automated assessments, and smart analytics 
+              <p className="text-lg sm:text-xl md:text-2xl text-neutral-dark leading-relaxed max-w-2xl font-medium">
+                Structured Aptitude & DSA roadmaps, automated assessments, and smart analytics
                 designed for college TPC teams. Guide your students from 3rd semester to their offer letter.
               </p>
             </div>
@@ -75,7 +75,7 @@ export function Hero() {
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-8 pt-4 border-t border-neutral-light/20">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 md:gap-8 pt-4 border-t border-neutral-light/20">
               {stats.map((stat, index) => (
                 <div key={index} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="text-2xl md:text-3xl font-heading font-bold text-primary">{stat.value}</div>
@@ -91,7 +91,7 @@ export function Hero() {
           </div>
 
           {/* Right Column - Enhanced Dashboard Mockup */}
-          <div className="relative animate-slide-in">
+          <div className="relative animate-slide-in hidden lg:block">
             {/* Main Dashboard Card */}
             <div className="glass rounded-3xl p-6 transform rotate-2 hover:rotate-0 transition-all duration-500 shadow-2xl hover:shadow-primary/20 border border-primary/10">
               {/* Header with glassmorphism and curvy borders */}
