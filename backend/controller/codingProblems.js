@@ -1254,7 +1254,8 @@ export async function getAllStudentSubmissions(req, res) {
                 week: problem?.week,
                 day: problem?.day,
                 is_capstone: isCapstone,
-                category: isCapstone ? 'DSA Capstone' : 'DSA Daily'
+                category: isCapstone ? 'DSA Capstone' : 'DSA Daily',
+                score: 100 // Always 100 for passed coding problems
             };
         });
 

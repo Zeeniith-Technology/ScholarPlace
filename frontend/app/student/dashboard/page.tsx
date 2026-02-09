@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Brain,
 } from 'lucide-react'
+import { WeekAccordionItem } from '@/components/dashboard/WeekAccordionItem'
 
 /**
  * Hook for number counting animation
@@ -549,8 +550,8 @@ export default function StudentDashboardPage() {
                 <div
                   key={test.id}
                   className={`p-4 rounded-lg border-2 transition-all duration-300 hover:shadow-md hover:scale-[1.01] animate-stagger-fade ${test.status === 'upcoming'
-                      ? 'border-primary/30 bg-primary/5 hover:bg-primary/10'
-                      : 'border-neutral-light/20 bg-background-elevated opacity-60'
+                    ? 'border-primary/30 bg-primary/5 hover:bg-primary/10'
+                    : 'border-neutral-light/20 bg-background-elevated opacity-60'
                     }`}
                   style={{ animationDelay: `${500 + index * 50}ms` }}
                 >
@@ -747,69 +748,13 @@ export default function StudentDashboardPage() {
                   const weeks = Object.keys(byWeek).map(Number).sort((a, b) => a - b)
                   return weeks.map((weekNum) => {
                     const { dsa, aptitude } = byWeek[weekNum]
-                    const hasDSA = dsa.length > 0
-                    const hasAptitude = aptitude.length > 0
-                    if (!hasDSA && !hasAptitude) return null
                     return (
-                      <div key={weekNum} className="rounded-xl border-2 border-neutral-light/20 overflow-hidden bg-background-elevated/30">
-                        <div className="px-4 py-3 bg-primary/10 border-b border-neutral-light/20">
-                          <h3 className="font-bold text-neutral text-base">Week {weekNum}</h3>
-                        </div>
-                        <div className="p-4 space-y-4">
-                          {hasDSA && (
-                            <div>
-                              <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-primary" /> DSA
-                              </p>
-                              <ul className="space-y-2">
-                                {dsa.map((t: any, idx: number) => {
-                                  const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
-                                  return (
-                                    <li key={t._id || `dsa-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                                      <div className="min-w-0">
-                                        <p className="font-medium text-neutral text-sm">{t.day || 'Test'}</p>
-                                        <p className="text-xs text-neutral-light">{dateStr}</p>
-                                      </div>
-                                      <div className="flex items-center gap-3 shrink-0">
-                                        {t.total_questions != null && (
-                                          <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
-                                        )}
-                                        <span className="font-bold text-primary min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
-                                      </div>
-                                    </li>
-                                  )
-                                })}
-                              </ul>
-                            </div>
-                          )}
-                          {hasAptitude && (
-                            <div>
-                              <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-orange-500" /> Aptitude
-                              </p>
-                              <ul className="space-y-2">
-                                {aptitude.map((t: any, idx: number) => {
-                                  const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
-                                  return (
-                                    <li key={t._id || `apt-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40">
-                                      <div className="min-w-0">
-                                        <p className="font-medium text-neutral text-sm">{t.day || 'Weekly Test'}</p>
-                                        <p className="text-xs text-neutral-light">{dateStr}</p>
-                                      </div>
-                                      <div className="flex items-center gap-3 shrink-0">
-                                        {t.total_questions != null && (
-                                          <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
-                                        )}
-                                        <span className="font-bold text-orange-600 min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
-                                      </div>
-                                    </li>
-                                  )
-                                })}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <WeekAccordionItem
+                        key={weekNum}
+                        weekNum={weekNum}
+                        dsa={dsa}
+                        aptitude={aptitude}
+                      />
                     )
                   })
                 })()}
