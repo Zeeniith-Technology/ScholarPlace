@@ -23,6 +23,7 @@ import {
     XCircle,
     Timer,
     Pause,
+    ArrowLeft,
 } from 'lucide-react'
 
 interface BugReport {
@@ -186,6 +187,13 @@ export default function MyBugReportsPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => router.push('/dept-tpc/dashboard')}
+                            className="p-2 mr-2 hover:bg-neutral-100/50 rounded-full transition-colors group"
+                            title="Back to Dashboard"
+                        >
+                            <ArrowLeft className="w-6 h-6 text-neutral/70 group-hover:text-primary transition-colors" />
+                        </button>
                         <div className="p-3 rounded-lg bg-red-500/20">
                             <Bug className="w-6 h-6 text-red-500" />
                         </div>

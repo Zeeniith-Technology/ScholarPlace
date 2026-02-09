@@ -10,15 +10,15 @@ export const auth = async (req, res, next) => {
         // Get token from Authorization header (Bearer token)
         const authHeader = req.headers.authorization;
         
-        console.log('[Auth Middleware] Request:', {
-            method: req.method,
-            path: req.path,
-            hasAuthHeader: !!authHeader,
-            authHeaderPrefix: authHeader?.substring(0, 20) || 'none'
-        });
+        // console.log('[Auth Middleware] Request:', {
+        //     method: req.method,
+        //     path: req.path,
+        //     hasAuthHeader: !!authHeader,
+        //     authHeaderPrefix: authHeader?.substring(0, 20) || 'none'
+        // });
         
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.log('[Auth Middleware] No valid auth header found');
+            // console.log('[Auth Middleware] No valid auth header found');
             res.locals.responseData = {
                 success: false,
                 status: 401,
@@ -31,7 +31,7 @@ export const auth = async (req, res, next) => {
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
         if (!token) {
-            console.log('[Auth Middleware] Token is empty after removing Bearer prefix');
+            // console.log('[Auth Middleware] Token is empty after removing Bearer prefix');
             res.locals.responseData = {
                 success: false,
                 status: 401,
@@ -41,18 +41,18 @@ export const auth = async (req, res, next) => {
             return next();
         }
         
-        console.log('[Auth Middleware] Token found, length:', token.length);
+        // console.log('[Auth Middleware] Token found, length:', token.length);
 
         try {
             // Verify token
             const secret = process.env.JWT_SECRET || 'your-secret-key';
             const decoded = jwt.verify(token, secret);
             
-            console.log('[Auth Middleware] Token verified successfully:', {
-                id: decoded.id,
-                email: decoded.email,
-                role: decoded.role
-            });
+            // console.log('[Auth Middleware] Token verified successfully:', {
+            //     id: decoded.id,
+            //     email: decoded.email,
+            //     role: decoded.role
+            // });
 
             // If user belongs to a college (TPC, Dept TPC, Student), verify college still exists and is not deleted
             // So that when a college is deleted, these users get 401 on next request (automatic logout)
@@ -129,11 +129,11 @@ export const auth = async (req, res, next) => {
             // Also set req.userId for backward compatibility
             req.userId = req.user.id;
             
-            console.log('[Auth Middleware] User authenticated:', {
-                userId: req.userId,
-                userRole: req.user.role,
-                email: req.user.email
-            });
+            // console.log('[Auth Middleware] User authenticated:', {
+            //     userId: req.userId,
+            //     userRole: req.user.role,
+            //     email: req.user.email
+            // });
             
             next();
         } catch (error) {

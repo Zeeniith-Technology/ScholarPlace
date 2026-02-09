@@ -133,6 +133,7 @@ export default function DepartmentTPCAnalyticsPage() {
       }
 
       const perfData = await perfRes.json()
+      console.log('[Analytics] Performance API Response:', perfData.data)
       if (perfData.success) {
         setPerformance(perfData.data)
         if (perfData.data?.department) {
@@ -406,9 +407,6 @@ export default function DepartmentTPCAnalyticsPage() {
                       <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
                     <p className="text-2xl font-bold text-neutral">{performance.totalTests || 0}</p>
-                    <p className="text-xs text-neutral-light mt-1">
-                      {performance.totalDaysCompleted || 0} days completed
-                    </p>
                   </div>
                 </Card>
 

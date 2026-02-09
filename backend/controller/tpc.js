@@ -3031,6 +3031,15 @@ export default class tpcController {
             const totalDSAProblemsSolved = Object.values(dsaByStudent).reduce((sum, set) => sum + set.size, 0);
             const studentsWithDSAActivity = Object.keys(dsaByStudent).length;
 
+            console.log('[DeptTPC Performance] DSA Stats:', {
+                totalStudents: students.length,
+                dsaSubmissionsCount: dsaSubmissions.length,
+                studentsWithActivity: studentsWithDSAActivity,
+                totalProblemsSolved: totalDSAProblemsSolved,
+                sampleStudent: Object.keys(dsaByStudent)[0],
+                sampleProblems: dsaByStudent[Object.keys(dsaByStudent)[0]]?.size
+            });
+
             // Calculate department statistics
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.person_status === 'active').length;
@@ -5013,7 +5022,44 @@ export default class tpcController {
             const practiceRes = await fetchData('tblPracticeTest', { score: 1, student_id: 1 }, { student_id: { $in: studentIds } });
             const practiceTests = practiceRes.data || [];
 
+            // Fetch DSA Problem Submissions (actual solved problems from tblCodingSubmissions)
+            const { ObjectId } = await import('mongodb');
+            const studentIdObjects = studentIds
+                .filter(id => /^[0-9a-fA-F]{24}$/.test(id))
+                .map(id => new ObjectId(id));
+
+            const dsaFilter = {
+                $and: [
+                    {
+                        $or: [
+                            { student_id: { $in: studentIds } },
+                            { student_id: { $in: studentIdObjects } }
+                        ]
+                    },
+                    { status: 'passed' }
+                ]
+            };
+
+            const dsaRes = await fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, dsaFilter);
+            const dsaSubmissions = dsaRes.data || [];
+
+            // Build DSA map: student_id => Set of unique problem_ids
+            const dsaByStudent = {};
+            dsaSubmissions.forEach(sub => {
+                const sId = (sub.student_id?.toString() || sub.student_id);
+                if (!dsaByStudent[sId]) dsaByStudent[sId] = new Set();
+                if (sub.problem_id) dsaByStudent[sId].add(sub.problem_id);
+            });
+
+            const totalDSAProblemsSolved = Object.values(dsaByStudent).reduce((sum, set) => sum + set.size, 0);
+            const studentsWithDSAActivity = Object.keys(dsaByStudent).length;
+
             console.log('[DeptTPC] Progress records:', progressData.length, 'Practice tests:', practiceTests.length);
+            console.log('[DeptTPC] DSA Stats:', {
+                submissionsCount: dsaSubmissions.length,
+                totalProblemsSolved: totalDSAProblemsSolved,
+                studentsWithActivity: studentsWithDSAActivity
+            });
 
             // Calculate Stats
             const totalStudents = students.length;
@@ -5030,7 +5076,9 @@ export default class tpcController {
                 // Get Progress
                 const prog = progressData.find(p => (p.student_id?.toString() || p.student_id) === sId);
                 const completedDays = (prog?.completed_days || prog?.days_completed || []).length;
-                const codingProblems = (prog?.coding_problems_completed || []).length;
+
+                // Get actual DSA problems solved from submissions
+                const codingProblems = (dsaByStudent[sId] && dsaByStudent[sId].size) || 0;
                 if (prog) totalDays += completedDays;
 
                 // Get Practice Tests for THIS student
@@ -5082,6 +5130,8 @@ export default class tpcController {
                     totalTests: totalPracticeTests, // Count of all practice tests taken
                     totalDaysCompleted: totalDays,
                     engagementRate,
+                    totalDSAProblemsSolved,
+                    studentsWithDSAActivity,
                     studentDetails
                 }
             };
@@ -5327,7 +5377,7 @@ export default class tpcController {
             const progress = progressRes.data?.[0] || null;
 
             // Fetch DSA Problem Submissions for daily progress
-            const submissionsRes = await fetchData('tblProblemSubmission', {}, {
+            const submissionsRes = await fetchData('tblCodingSubmissions', {}, {
                 $or: [
                     { student_id: sIdString },
                     { student_id: new ObjectId(sIdString) }
@@ -5335,10 +5385,30 @@ export default class tpcController {
             });
             const submissions = submissionsRes.data || [];
 
+            console.log('[Student Details] DSA Submissions:', {
+                studentId: sIdString,
+                totalSubmissions: submissions.length,
+                solvedCount: submissions.filter(s => s.status === 'solved' || s.status === 'accepted' || s.status === 'passed').length
+            });
+
+            // Fetch problem titles from tblCodingProblem for better display
+            const uniqueProblemIds = [...new Set(submissions.map(s => s.problem_id).filter(Boolean))];
+            const problemTitleMap = {};
+
+            if (uniqueProblemIds.length > 0) {
+                const problemsRes = await fetchData('tblCodingProblem', {}, {
+                    question_id: { $in: uniqueProblemIds }
+                });
+                const problems = problemsRes.data || [];
+                problems.forEach(p => {
+                    problemTitleMap[p.question_id] = p.title || p.problem_title || p.question_title || `Problem ${p.question_id}`;
+                });
+            }
+
             // Group submissions by date for daily progress
             const dailyProgress = {};
             submissions.forEach(sub => {
-                if (sub.status === 'solved' || sub.status === 'accepted') {
+                if (sub.status === 'solved' || sub.status === 'accepted' || sub.status === 'passed') {
                     const date = new Date(sub.submitted_at || sub.created_at);
                     const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
                     if (!dailyProgress[dateKey]) {
@@ -5350,7 +5420,7 @@ export default class tpcController {
                     }
                     dailyProgress[dateKey].problems.push({
                         id: sub.problem_id,
-                        title: sub.problem_title || 'Problem',
+                        title: problemTitleMap[sub.problem_id] || sub.problem_title || 'Problem',
                         status: sub.status
                     });
                     dailyProgress[dateKey].count++;
@@ -5383,7 +5453,7 @@ export default class tpcController {
                     dsa: {
                         weeksCompleted: progress?.completed_weeks || [],
                         daysCompleted: progress?.completed_days || progress?.days_completed || [],
-                        problemsSolved: submissions.filter(s => s.status === 'solved' || s.status === 'accepted').length,
+                        problemsSolved: submissions.filter(s => s.status === 'solved' || s.status === 'accepted' || s.status === 'passed').length,
                         totalSubmissions: submissions.length,
                         currentStreak: progress?.current_streak || 0,
                         dailyProgress: dailyProgressArray
