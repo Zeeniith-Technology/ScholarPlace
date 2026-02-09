@@ -231,8 +231,8 @@ export default function StudentTestsPage() {
           }
           // Capstone + Weekly Aptitude
           fallbackTests.push(
-            { id: 'capstone-fallback', title: `Week ${currentWeek} Capstone Project`, type: 'weekly', date: dateStr, time: '—', modules: ['DSA'], difficulty: 'Coding', status: 'upcoming', duration: '—', questions: 2, isWeeklyTest: true, eligibility: null, href: `/student/capstone-test/week-${currentWeek}` },
-            { id: 'aptitude-fallback', title: `Week ${currentWeek} Aptitude Test`, type: 'weekly', date: dateStr, time: '—', modules: ['Aptitude'], difficulty: 'Mixed', status: 'upcoming', duration: '60 minutes', questions: 50, isWeeklyTest: true, eligibility, href: `/student/aptitude/weekly/${currentWeek}` },
+            { id: 'capstone-fallback', title: `Week ${currentWeek} Capstone Project`, type: 'weekly', date: dateStr, time: '—', modules: ['DSA'], difficulty: 'Coding', status: 'upcoming', duration: '—', questions: 2, isWeeklyTest: true, eligibility: null, href: null },
+            { id: 'aptitude-fallback', title: `Week ${currentWeek} Aptitude Test`, type: 'weekly', date: dateStr, time: '—', modules: ['Aptitude'], difficulty: 'Mixed', status: 'upcoming', duration: '60 minutes', questions: 50, isWeeklyTest: true, eligibility, href: null },
           )
           setTests(fallbackTests)
           setStats({ completed: 0, upcoming: fallbackTests.length, locked: 0, averageScore: 0 })
@@ -521,7 +521,7 @@ export default function StudentTestsPage() {
                         Start Test
                       </Button>
                     ) : (
-                      <Button variant="primary" className="text-xs sm:text-sm">
+                      <Button variant="primary" className="text-xs sm:text-sm opacity-50 cursor-not-allowed">
                         <Play className="w-4 h-4 mr-2" />
                         Start Test
                       </Button>

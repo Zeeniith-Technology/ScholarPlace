@@ -1198,3 +1198,78 @@ export async function getWeeklyCodingProgress(req, res) {
         });
     }
 }
+
+/**
+ * Get all coding submissions for a student (dashboard/analytics)
+ * GET /coding-problems/submissions/all
+ */
+export async function getAllStudentSubmissions(req, res) {
+    try {
+        const studentId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers?.['x-user-id'];
+
+        if (!studentId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+
+        const db = getDB();
+        const submissionsCollection = db.collection('tblCodingSubmissions');
+
+        // Match student_id as string or ObjectId
+        const studentIdString = String(studentId);
+        let studentIdObj = null;
+        try { studentIdObj = new ObjectId(studentIdString); } catch (_) { /* not ObjectId */ }
+
+        const studentIdConditions = [
+            { student_id: studentIdString },
+            { student_id: studentIdString.trim() }
+        ];
+        if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
+
+        // Get only passed submissions
+        const submissions = await submissionsCollection.find({
+            $or: studentIdConditions,
+            status: 'passed'
+        }).sort({ submitted_at: -1 }).toArray();
+
+        // Enrich with problem details (day, week, type)
+        // We need to fetch problem details to know if it's Daily or Capstone
+        const problemIds = [...new Set(submissions.map(s => s.problem_id))];
+        const problemsCollection = db.collection(COLLECTION_NAME);
+
+        const problems = await problemsCollection.find({
+            question_id: { $in: problemIds }
+        }).project({ question_id: 1, title: 1, week: 1, day: 1, is_capstone: 1 }).toArray();
+
+        const problemMap = new Map();
+        problems.forEach(p => problemMap.set(p.question_id, p));
+
+        const enrichedSubmissions = submissions.map(sub => {
+            const problem = problemMap.get(sub.problem_id);
+            // Determine category: Capstone or Daily
+            const isCapstone = problem?.is_capstone === true || problem?.is_capstone === 'true' || problem?.is_capstone === 1;
+
+            return {
+                ...sub,
+                problem_title: problem?.title || 'Unknown Problem',
+                week: problem?.week,
+                day: problem?.day,
+                is_capstone: isCapstone,
+                category: isCapstone ? 'DSA Capstone' : 'DSA Daily'
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            count: enrichedSubmissions.length,
+            submissions: enrichedSubmissions
+        });
+
+    } catch (error) {
+        console.error('Error fetching all student submissions:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching submissions',
+            error: error.message
+        });
+    }
+}

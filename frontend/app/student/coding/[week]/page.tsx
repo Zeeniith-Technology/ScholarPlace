@@ -128,6 +128,26 @@ function CodingContent() {
     fetchProblems()
   }, [currentDay, weekNum])
 
+  // Prevent Copy-Paste
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') return;
+
+    const handleCopyPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      showToast('Copy/Paste is disabled for this section', 'error');
+    };
+
+    document.addEventListener('copy', handleCopyPaste);
+    document.addEventListener('cut', handleCopyPaste);
+    document.addEventListener('paste', handleCopyPaste);
+
+    return () => {
+      document.removeEventListener('copy', handleCopyPaste);
+      document.removeEventListener('cut', handleCopyPaste);
+      document.removeEventListener('paste', handleCopyPaste);
+    };
+  }, []);
+
   // Handlers
   const handleSelectProblem = (problem: CodingProblem) => {
     setSelectedProblem(problem)

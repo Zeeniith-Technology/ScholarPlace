@@ -238,17 +238,33 @@ export default function CapstoneTestPage() {
             }
         }
 
-        // Prevent Context Menu
+        // Prevent Context Menu & Copy-Paste
         const preventRightClick = (e: MouseEvent) => e.preventDefault()
+        const preventCopyPaste = (e: ClipboardEvent) => {
+            if (process.env.NODE_ENV === 'development') return
+            e.preventDefault()
+            alert('Copy/Paste is disabled during the test.')
+        }
 
         document.addEventListener('visibilitychange', handleVisibilityChange)
         document.addEventListener('fullscreenchange', handleFullscreenChange)
         document.addEventListener('contextmenu', preventRightClick)
 
+        if (process.env.NODE_ENV !== 'development') {
+            document.addEventListener('copy', preventCopyPaste)
+            document.addEventListener('cut', preventCopyPaste)
+            document.addEventListener('paste', preventCopyPaste)
+        }
+
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
             document.removeEventListener('fullscreenchange', handleFullscreenChange)
             document.removeEventListener('contextmenu', preventRightClick)
+            if (process.env.NODE_ENV !== 'development') {
+                document.removeEventListener('copy', preventCopyPaste)
+                document.removeEventListener('cut', preventCopyPaste)
+                document.removeEventListener('paste', preventCopyPaste)
+            }
         }
     }, [hasStarted, isBlocked])
 

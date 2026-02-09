@@ -159,6 +159,8 @@ router.post('/questions/bulk-insert', auth, requireRole(['Superadmin']), questio
 router.post('/coding-problems/week/:weekNum', auth, codingProblemsController.getCodingProblemsByWeek, responsedata);
 // Get daily coding problems by week and day: All authenticated users
 router.post('/coding-problems/daily/:weekNum/:dayNum', auth, codingProblemsController.getDailyCodingProblems, responsedata);
+// Get all student submissions (dashboard/analytics): All authenticated users
+router.post('/coding-problems/submissions/all', auth, codingProblemsController.getAllStudentSubmissions, responsedata);
 
 // Specific routes MUST come before generic :problemId parameter
 // Get all coding problems (admin/testing): All authenticated users

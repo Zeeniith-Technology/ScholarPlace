@@ -98,22 +98,47 @@ export default function StudentDashboardPage() {
           setTestsDetailList([])
           return
         }
-        const response = await fetch(`${apiBaseUrl}/practice-test/list`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-          body: JSON.stringify({
-            filter: {},
-            projection: { week: 1, day: 1, score: 1, category: 1, completed_at: 1, total_questions: 1, correct_answers: 1 },
-            options: { sort: { completed_at: -1 }, limit: 100 },
+
+        const [practiceRes, dsaRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/practice-test/list`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+            body: JSON.stringify({
+              filter: {},
+              projection: { week: 1, day: 1, score: 1, category: 1, completed_at: 1, total_questions: 1, correct_answers: 1 },
+              options: { sort: { completed_at: -1 }, limit: 100 },
+            }),
           }),
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setTestsDetailList(data.success && data.data ? data.data : [])
-        } else {
-          setTestsDetailList([])
+          fetch(`${apiBaseUrl}/coding-problems/submissions/all`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+            body: JSON.stringify({})
+          })
+        ]);
+
+        let combined = [];
+
+        if (practiceRes.ok) {
+          const data = await practiceRes.json()
+          if (data.success && data.data) combined.push(...data.data)
         }
+
+        if (dsaRes.ok) {
+          const dsaData = await dsaRes.json();
+          if (dsaData.success && dsaData.submissions) {
+            combined.push(...dsaData.submissions);
+          }
+        }
+
+        // Sort by date descending
+        combined.sort((a, b) => {
+          const dateA = new Date(a.completed_at || a.submitted_at || 0);
+          const dateB = new Date(b.completed_at || b.submitted_at || 0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
+        setTestsDetailList(combined);
       } catch (_) {
         setTestsDetailList([])
       } finally {
@@ -128,7 +153,7 @@ export default function StudentDashboardPage() {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      
+
       if (!authHeader) {
         console.error('[Dashboard] No auth token found')
         setIsLoadingProgress(false)
@@ -198,11 +223,11 @@ export default function StudentDashboardPage() {
     const checkAuth = async () => {
       try {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-        
+
         // Check if token exists in localStorage
         const token = getToken()
         console.log('[Student Dashboard] Token check:', { hasToken: !!token, tokenLength: token?.length })
-        
+
         const authHeader = getAuthHeader()
         if (!authHeader) {
           console.log('[Student Dashboard] No auth token found, redirecting to login')
@@ -237,15 +262,15 @@ export default function StudentDashboardPage() {
         }
 
         const profileResult = await profileRes.json()
-        console.log('[Student Dashboard] Profile result:', { 
-          success: profileResult.success, 
-          role: profileResult.data?.role, 
-          person_role: profileResult.data?.person_role 
+        console.log('[Student Dashboard] Profile result:', {
+          success: profileResult.success,
+          role: profileResult.data?.role,
+          person_role: profileResult.data?.person_role
         })
-        
+
         const userRole = profileResult.data?.role || profileResult.data?.person_role
         const normalizedRole = userRole?.toLowerCase()
-        
+
         // Only allow Student role
         if (!profileResult.success || normalizedRole !== 'student') {
           console.log('[Student Dashboard] Invalid role or failed profile check, clearing token and redirecting to login')
@@ -303,7 +328,7 @@ export default function StudentDashboardPage() {
       setIsRefreshing(false)
     }
   }
-  
+
   // Use profile API for display name so dashboard greeting matches profile page (same source: DB person_name)
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -367,8 +392,8 @@ export default function StudentDashboardPage() {
     baseDate.setDate(baseDate.getDate() + 1)
     const dateStr = baseDate.toISOString().split('T')[0]
     return [
-      { id: 1, title: `Week ${cw} Capstone Project`, date: dateStr, time: '—', modules: ['DSA'], difficulty: 'Coding', status: 'upcoming', href: `/student/capstone-test/week-${cw}` },
-      { id: 2, title: `Week ${cw} Aptitude Test`, date: dateStr, time: '—', modules: ['Aptitude'], difficulty: 'Mixed', status: 'upcoming', href: `/student/aptitude/weekly/${cw}` },
+      { id: 1, title: `Week ${cw} Capstone Project`, date: dateStr, time: '—', modules: ['DSA'], difficulty: 'Coding', status: 'upcoming', href: null },
+      { id: 2, title: `Week ${cw} Aptitude Test`, date: dateStr, time: '—', modules: ['Aptitude'], difficulty: 'Mixed', status: 'upcoming', href: null },
     ]
   }, [progressData.currentWeek, progressData.totalWeeks])
 
@@ -389,9 +414,8 @@ export default function StudentDashboardPage() {
   const renderDashboardContent = () => (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
       <div
-        className={`transition-opacity duration-300 ${
-          isMounted ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`transition-opacity duration-300 ${isMounted ? 'opacity-100' : 'opacity-0'
+          }`}
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -524,64 +548,63 @@ export default function StudentDashboardPage() {
               upcomingTests.map((test, index) => (
                 <div
                   key={test.id}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 hover:shadow-md hover:scale-[1.01] animate-stagger-fade ${
-                    test.status === 'upcoming'
+                  className={`p-4 rounded-lg border-2 transition-all duration-300 hover:shadow-md hover:scale-[1.01] animate-stagger-fade ${test.status === 'upcoming'
                       ? 'border-primary/30 bg-primary/5 hover:bg-primary/10'
                       : 'border-neutral-light/20 bg-background-elevated opacity-60'
-                  }`}
+                    }`}
                   style={{ animationDelay: `${500 + index * 50}ms` }}
                 >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-neutral text-sm sm:text-base">
-                            {test.title}
-                          </h3>
-                          {test.status === 'locked' && (
-                            <Badge variant="default" className="text-xs">
-                              Locked
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-light">
-                          <span className="flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {new Date(test.date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}{' '}
-                            at {test.time}
-                          </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-neutral text-sm sm:text-base">
+                          {test.title}
+                        </h3>
+                        {test.status === 'locked' && (
                           <Badge variant="default" className="text-xs">
-                            {test.difficulty}
+                            Locked
                           </Badge>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {test.modules.map((module, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {module}
-                            </Badge>
-                          ))}
-                        </div>
+                        )}
                       </div>
-                      {test.status === 'upcoming' && ('href' in test && test.href ? (
-                        <Link
-                          href={test.href}
-                          className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap inline-block"
-                        >
-                          View Details
-                        </Link>
-                      ) : (
-                        <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap">
-                          View Details
-                        </button>
-                      ))}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-light">
+                        <span className="flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {new Date(test.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}{' '}
+                          at {test.time}
+                        </span>
+                        <Badge variant="default" className="text-xs">
+                          {test.difficulty}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {test.modules.map((module, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {module}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+                    {test.status === 'upcoming' && ('href' in test && test.href ? (
+                      <Link
+                        href={test.href}
+                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap inline-block"
+                      >
+                        View Details
+                      </Link>
+                    ) : (
+                      <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap">
+                        View Details
+                      </button>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
-          </Card>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -711,85 +734,85 @@ export default function StudentDashboardPage() {
             <>
               <p className="text-xs text-neutral-light mb-4">DSA is assessed via coding (daily problems + Capstone). Listed below are Aptitude MCQ tests and any practice tests.</p>
               <div className="max-h-[65vh] overflow-y-auto space-y-6">
-              {(() => {
-                const byWeek: Record<number, { dsa: any[]; aptitude: any[] }> = {}
-                testsDetailList.forEach((t: any) => {
-                  const w = t.week != null ? Number(t.week) : 0
-                  if (!byWeek[w]) byWeek[w] = { dsa: [], aptitude: [] }
-                  const cat = (t.category || '').toString().toLowerCase()
-                  // DSA = coding only; only explicitly 'dsa' goes to DSA. All MCQ-style tests (incl. no category) = Aptitude
-                  if (cat === 'dsa') byWeek[w].dsa.push(t)
-                  else byWeek[w].aptitude.push(t)
-                })
-                const weeks = Object.keys(byWeek).map(Number).sort((a, b) => a - b)
-                return weeks.map((weekNum) => {
-                  const { dsa, aptitude } = byWeek[weekNum]
-                  const hasDSA = dsa.length > 0
-                  const hasAptitude = aptitude.length > 0
-                  if (!hasDSA && !hasAptitude) return null
-                  return (
-                    <div key={weekNum} className="rounded-xl border-2 border-neutral-light/20 overflow-hidden bg-background-elevated/30">
-                      <div className="px-4 py-3 bg-primary/10 border-b border-neutral-light/20">
-                        <h3 className="font-bold text-neutral text-base">Week {weekNum}</h3>
+                {(() => {
+                  const byWeek: Record<number, { dsa: any[]; aptitude: any[] }> = {}
+                  testsDetailList.forEach((t: any) => {
+                    const w = t.week != null ? Number(t.week) : 0
+                    if (!byWeek[w]) byWeek[w] = { dsa: [], aptitude: [] }
+                    const cat = (t.category || '').toString().toLowerCase()
+                    // DSA = coding only; only explicitly 'dsa' goes to DSA. All MCQ-style tests (incl. no category) = Aptitude
+                    if (cat.includes('dsa') || cat === 'coding' || t.is_capstone) byWeek[w].dsa.push(t)
+                    else byWeek[w].aptitude.push(t)
+                  })
+                  const weeks = Object.keys(byWeek).map(Number).sort((a, b) => a - b)
+                  return weeks.map((weekNum) => {
+                    const { dsa, aptitude } = byWeek[weekNum]
+                    const hasDSA = dsa.length > 0
+                    const hasAptitude = aptitude.length > 0
+                    if (!hasDSA && !hasAptitude) return null
+                    return (
+                      <div key={weekNum} className="rounded-xl border-2 border-neutral-light/20 overflow-hidden bg-background-elevated/30">
+                        <div className="px-4 py-3 bg-primary/10 border-b border-neutral-light/20">
+                          <h3 className="font-bold text-neutral text-base">Week {weekNum}</h3>
+                        </div>
+                        <div className="p-4 space-y-4">
+                          {hasDSA && (
+                            <div>
+                              <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-primary" /> DSA
+                              </p>
+                              <ul className="space-y-2">
+                                {dsa.map((t: any, idx: number) => {
+                                  const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+                                  return (
+                                    <li key={t._id || `dsa-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-neutral text-sm">{t.day || 'Test'}</p>
+                                        <p className="text-xs text-neutral-light">{dateStr}</p>
+                                      </div>
+                                      <div className="flex items-center gap-3 shrink-0">
+                                        {t.total_questions != null && (
+                                          <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
+                                        )}
+                                        <span className="font-bold text-primary min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
+                                      </div>
+                                    </li>
+                                  )
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                          {hasAptitude && (
+                            <div>
+                              <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-orange-500" /> Aptitude
+                              </p>
+                              <ul className="space-y-2">
+                                {aptitude.map((t: any, idx: number) => {
+                                  const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+                                  return (
+                                    <li key={t._id || `apt-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40">
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-neutral text-sm">{t.day || 'Weekly Test'}</p>
+                                        <p className="text-xs text-neutral-light">{dateStr}</p>
+                                      </div>
+                                      <div className="flex items-center gap-3 shrink-0">
+                                        {t.total_questions != null && (
+                                          <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
+                                        )}
+                                        <span className="font-bold text-orange-600 min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
+                                      </div>
+                                    </li>
+                                  )
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="p-4 space-y-4">
-                        {hasDSA && (
-                          <div>
-                            <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-primary" /> DSA
-                            </p>
-                            <ul className="space-y-2">
-                              {dsa.map((t: any, idx: number) => {
-                                const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
-                                return (
-                                  <li key={t._id || `dsa-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-neutral text-sm">{t.day || 'Test'}</p>
-                                      <p className="text-xs text-neutral-light">{dateStr}</p>
-                                    </div>
-                                    <div className="flex items-center gap-3 shrink-0">
-                                      {t.total_questions != null && (
-                                        <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
-                                      )}
-                                      <span className="font-bold text-primary min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
-                                    </div>
-                                  </li>
-                                )
-                              })}
-                            </ul>
-                          </div>
-                        )}
-                        {hasAptitude && (
-                          <div>
-                            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2 flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-orange-500" /> Aptitude
-                            </p>
-                            <ul className="space-y-2">
-                              {aptitude.map((t: any, idx: number) => {
-                                const dateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
-                                return (
-                                  <li key={t._id || `apt-${weekNum}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40">
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-neutral text-sm">{t.day || 'Weekly Test'}</p>
-                                      <p className="text-xs text-neutral-light">{dateStr}</p>
-                                    </div>
-                                    <div className="flex items-center gap-3 shrink-0">
-                                      {t.total_questions != null && (
-                                        <span className="text-xs text-neutral-light">{t.correct_answers ?? '—'}/{t.total_questions} correct</span>
-                                      )}
-                                      <span className="font-bold text-orange-600 min-w-[3rem] text-right">{t.score != null ? `${t.score}%` : '—'}</span>
-                                    </div>
-                                  </li>
-                                )
-                              })}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              })()}
+                    )
+                  })
+                })()}
               </div>
             </>
           )}

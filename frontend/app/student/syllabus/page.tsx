@@ -76,89 +76,89 @@ const FULL_SYLLABUS: Array<{
   duration: string
   isComingSoon?: boolean
 }> = [
-  {
-    week: 1,
-    title: "Foundation & Logic Building",
-    track: "DSA & Aptitude",
-    modules: ["Basics of Programming", "Control Structures"],
-    topics: ["Input/Output", "Data Types", "Operators", "Conditional Statements", "Loops (For, While)", "Pattern Printing", "Functions"],
-    assignments: 6,
-    tests: 1,
-    duration: "10-12 Hours"
-  },
-  {
-    week: 2,
-    title: "Arrays & Strings",
-    track: "DSA & Aptitude",
-    modules: ["Data Structures I", "Problem Solving"],
-    topics: ["Introduction to Arrays", "Linear Search", "Binary Search", "Two Pointer Technique", "Sliding Window", "Introduction to Strings", "2D Arrays"],
-    assignments: 8,
-    tests: 1,
-    duration: "12-15 Hours"
-  },
-  {
-    week: 3,
-    title: "Recursion & Sorting",
-    track: "DSA & Aptitude",
-    modules: ["Algorithms I", "Recursion Depth"],
-    topics: ["Recursion Basics", "Recursion on Arrays", "Merge Sort", "Quick Sort", "Backtracking Introduction", "Space Complexity"],
-    assignments: 8,
-    tests: 1,
-    duration: "14-16 Hours"
-  },
-  {
-    week: 4,
-    title: "Linked Lists",
-    track: "DSA & Aptitude",
-    modules: ["Data Structures II", "Pointers"],
-    topics: ["Singly Linked List", "Doubly Linked List", "Circular Linked List", "Fast & Slow Pointers", "Reversing a Linked List", "Intersection Point"],
-    assignments: 7,
-    tests: 1,
-    duration: "12-14 Hours"
-  },
-  {
-    week: 5,
-    title: "Stacks & Queues",
-    track: "DSA & Aptitude",
-    modules: ["Data Structures III", "LIFO & FIFO"],
-    topics: ["Stack Implementation", "Queue Implementation", "Monotonic Stack", "Priority Queue Basics", "Circular Queue", "Applications of Stack"],
-    assignments: 7,
-    tests: 1,
-    duration: "12-14 Hours"
-  },
-  {
-    week: 6,
-    title: "DSA & Aptitude Prep - I",
-    track: "DSA & Aptitude",
-    modules: ["Trees & Quant"],
-    topics: ["Introduction to Trees", "Binary Trees", "Tree Traversals", "Height & Depth", "Number Systems", "Percentages", "Ratio & Proportion"],
-    assignments: 5,
-    tests: 1,
-    duration: "14-16 Hours"
-  },
-  {
-    week: 7,
-    title: "DSA & Aptitude Prep - II",
-    track: "DSA & Aptitude",
-    modules: ["Graphs & Reasoning"],
-    topics: ["Introduction to Graphs", "BFS & DFS", "Connected Components", "Blood Relations", "Coding-Decoding", "Direction Sense", "Seating Arrangement"],
-    assignments: 5,
-    tests: 1,
-    duration: "14-16 Hours",
-    isComingSoon: true
-  },
-  {
-    week: 8,
-    title: "Final Preparation",
-    track: "DSA & Aptitude",
-    modules: [],
-    topics: ["Mock Tests", "Comprehensive DSA Revision", "Verbal Ability: Reading Comprehension", "Sentence Correction", "System Design Basics"],
-    assignments: 5,
-    tests: 2,
-    duration: "15-18 Hours",
-    isComingSoon: true
-  }
-]
+    {
+      week: 1,
+      title: "Foundation & Logic Building",
+      track: "DSA & Aptitude",
+      modules: ["Basics of Programming", "Control Structures"],
+      topics: ["Input/Output", "Data Types", "Operators", "Conditional Statements", "Loops (For, While)", "Pattern Printing", "Functions"],
+      assignments: 6,
+      tests: 1,
+      duration: "10-12 Hours"
+    },
+    {
+      week: 2,
+      title: "Arrays & Strings",
+      track: "DSA & Aptitude",
+      modules: ["Data Structures I", "Problem Solving"],
+      topics: ["Introduction to Arrays", "Linear Search", "Binary Search", "Two Pointer Technique", "Sliding Window", "Introduction to Strings", "2D Arrays"],
+      assignments: 8,
+      tests: 1,
+      duration: "12-15 Hours"
+    },
+    {
+      week: 3,
+      title: "Recursion & Sorting",
+      track: "DSA & Aptitude",
+      modules: ["Algorithms I", "Recursion Depth"],
+      topics: ["Recursion Basics", "Recursion on Arrays", "Merge Sort", "Quick Sort", "Backtracking Introduction", "Space Complexity"],
+      assignments: 8,
+      tests: 1,
+      duration: "14-16 Hours"
+    },
+    {
+      week: 4,
+      title: "Linked Lists",
+      track: "DSA & Aptitude",
+      modules: ["Data Structures II", "Pointers"],
+      topics: ["Singly Linked List", "Doubly Linked List", "Circular Linked List", "Fast & Slow Pointers", "Reversing a Linked List", "Intersection Point"],
+      assignments: 7,
+      tests: 1,
+      duration: "12-14 Hours"
+    },
+    {
+      week: 5,
+      title: "Stacks & Queues",
+      track: "DSA & Aptitude",
+      modules: ["Data Structures III", "LIFO & FIFO"],
+      topics: ["Stack Implementation", "Queue Implementation", "Monotonic Stack", "Priority Queue Basics", "Circular Queue", "Applications of Stack"],
+      assignments: 7,
+      tests: 1,
+      duration: "12-14 Hours"
+    },
+    {
+      week: 6,
+      title: "DSA & Aptitude Prep - I",
+      track: "DSA & Aptitude",
+      modules: ["Trees & Quant"],
+      topics: ["Introduction to Trees", "Binary Trees", "Tree Traversals", "Height & Depth", "Number Systems", "Percentages", "Ratio & Proportion"],
+      assignments: 5,
+      tests: 1,
+      duration: "14-16 Hours"
+    },
+    {
+      week: 7,
+      title: "DSA & Aptitude Prep - II",
+      track: "DSA & Aptitude",
+      modules: ["Graphs & Reasoning"],
+      topics: ["Introduction to Graphs", "BFS & DFS", "Connected Components", "Blood Relations", "Coding-Decoding", "Direction Sense", "Seating Arrangement"],
+      assignments: 5,
+      tests: 1,
+      duration: "14-16 Hours",
+      isComingSoon: true
+    },
+    {
+      week: 8,
+      title: "Final Preparation",
+      track: "DSA & Aptitude",
+      modules: [],
+      topics: ["Mock Tests", "Comprehensive DSA Revision", "Verbal Ability: Reading Comprehension", "Sentence Correction", "System Design Basics"],
+      assignments: 5,
+      tests: 2,
+      duration: "15-18 Hours",
+      isComingSoon: true
+    }
+  ]
 
 /**
  * Student Syllabus Page
@@ -245,33 +245,25 @@ export default function StudentSyllabusPage() {
   const fetchProgress = async () => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      const response = await fetch(`${apiBaseUrl}/exam/list`, {
+      const authHeader = getAuthHeader()
+      // Use student-progress/summary for correct overall score
+      const response = await fetch(`${apiBaseUrl}/student-progress/summary`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': authHeader || '',
         },
-        body: JSON.stringify({
-          filter: {},
-          projection: {},
-          options: { sort: { exam_date: 1 } }
-        }),
+        body: JSON.stringify({}),
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          const exams = data.data || []
-          const completedExams = exams.filter((exam: any) => exam.score !== undefined && exam.score !== null)
-
-          // Logic to estimate progress based on exams + actual week completion
-          // This can be refined to use studentProgressByWeek more heavily if available
-          const overallScore = completedExams.length > 0
-            ? Math.round(completedExams.reduce((sum: number, exam: any) => sum + (exam.score || 0), 0) / completedExams.length)
-            : 0
-
-          // Recalculate weeks completed based on REAL progress data (if available) or fallback to exams
-          // We'll update this in the render based on studentProgressByWeek
+          const summary = data.data;
+          // Use averagePracticeScore or calculate from exams if needed, 
+          // but summary usually has the most accurate aggregated score.
+          const overallScore = summary.averagePracticeScore || 0;
 
           setStudentProgress(prev => ({
             ...prev,
@@ -653,9 +645,9 @@ export default function StudentSyllabusPage() {
                 return (
                   <div key={week.week} className="relative pl-8">
                     <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 bg-white ${isComingSoon ? 'border-gray-300' :
-                        week.status === 'completed' ? 'border-green-500 bg-green-500' :
-                          (week.status === 'start' || week.status === 'in_progress') ? 'border-blue-500 animate-pulse' :
-                            'border-gray-300'
+                      week.status === 'completed' ? 'border-green-500 bg-green-500' :
+                        (week.status === 'start' || week.status === 'in_progress') ? 'border-blue-500 animate-pulse' :
+                          'border-gray-300'
                       }`} />
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
                       <h3 className={`text-lg font-bold ${week.status === 'locked' || isComingSoon ? 'text-gray-400' : 'text-gray-800'
