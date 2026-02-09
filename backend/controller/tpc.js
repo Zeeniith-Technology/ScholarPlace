@@ -463,29 +463,70 @@ export default class tpcController {
 
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
+            // FALLBACK: Get practice test data to derive scores when progress is empty/null
+            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id)));
+            const practiceFilter = studentIdStrings.length ? { student_id: { $in: studentIdStrings } } : { _id: null };
+            const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
+            const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
+
+            // Calculate average by student from practice tests
+            const avgByStudent = {};
+            for (const t of practiceTests) {
+                const sid = (t.student_id && typeof t.student_id.toString === 'function' ? t.student_id.toString() : String(t.student_id));
+                if (!avgByStudent[sid]) avgByStudent[sid] = { sum: 0, count: 0 };
+                avgByStudent[sid].sum += (t.score || 0);
+                avgByStudent[sid].count += 1;
+            }
+
             // Calculate statistics
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.person_status === 'active').length;
 
-            // Calculate average score from progress data
+            // Calculate average score: prefer progress.average_score, fallback to practice test average
             let totalScore = 0;
             let scoreCount = 0;
             let totalTestsCompleted = 0;
             let totalDaysCompleted = 0;
             let topPerformers = 0;
 
-            progressData.forEach(progress => {
-                if (progress.average_score !== undefined && progress.average_score !== null) {
-                    totalScore += progress.average_score;
+            students.forEach(student => {
+                const sid = (student._id && typeof student._id.toString === 'function' ? student._id.toString() : String(student._id));
+                const progress = progressData.find(p =>
+                    (String(p.student_id) === sid || String(p.student_id) === String(student.person_id))
+                );
+
+                // Get score from progress OR derive from practice tests
+                let studentScore = null;
+                if (progress && progress.average_score !== undefined && progress.average_score !== null && progress.average_score > 0) {
+                    studentScore = progress.average_score;
+                } else {
+                    // Fallback: calculate from practice tests
+                    const practice = avgByStudent[sid];
+                    if (practice && practice.count > 0) {
+                        studentScore = Math.round(practice.sum / practice.count);
+                    }
+                }
+
+                if (studentScore !== null) {
+                    totalScore += studentScore;
                     scoreCount++;
-                    if (progress.average_score >= 85) {
+                    if (studentScore >= 85) {
                         topPerformers++;
                     }
                 }
-                if (progress.total_practice_tests) {
+
+                // Tests completed: prefer progress, fallback to practice test count
+                if (progress && progress.total_practice_tests) {
                     totalTestsCompleted += progress.total_practice_tests;
+                } else {
+                    const practice = avgByStudent[sid];
+                    if (practice && practice.count > 0) {
+                        totalTestsCompleted += practice.count;
+                    }
                 }
-                if (progress.total_days_completed) {
+
+                if (progress && progress.total_days_completed) {
                     totalDaysCompleted += progress.total_days_completed;
                 }
             });
@@ -955,7 +996,7 @@ export default class tpcController {
             const studentIds = students.map(s => s._id || s.person_id);
             const studentIdStrings = studentIds.map(id => (id?.toString?.() || id)).filter(Boolean);
             const progressFilter = studentIdStrings.length
-                ? { $or: [ { student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } } ] }
+                ? { $or: [{ student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } }] }
                 : { _id: null };
             const progressResponse = await fetchData(
                 'tblStudentProgress',
@@ -967,7 +1008,7 @@ export default class tpcController {
             // Get practice test data: tblPracticeTest stores student_id as STRING (see practiceTest.save)
             // Match both string and ObjectId so we find records regardless of storage format
             const practiceFilter = studentIdStrings.length
-                ? { $or: [ { student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } } ] }
+                ? { $or: [{ student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } }] }
                 : { _id: null };
             const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
             const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
@@ -1072,7 +1113,7 @@ export default class tpcController {
 
             const user = userInfo.user;
             let collegeId = user.person_collage_id || user.collage_id;
-            const deptFilter = user.department;
+            let deptFilter = user.department;
 
             // Build filter based on role (same logic as getDashboardStats)
             const { ObjectId } = await import('mongodb');
@@ -1386,7 +1427,7 @@ export default class tpcController {
 
             const user = userInfo.user;
             let collegeId = user.person_collage_id || user.collage_id;
-            const deptFilter = user.department;
+            let deptFilter = user.department;
 
             // Build filter based on role (same logic as getDashboardStats)
             const { ObjectId } = await import('mongodb');
@@ -1602,20 +1643,56 @@ export default class tpcController {
 
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // Find students needing attention (score < 50 or no progress)
+            // FALLBACK: Get practice test data to derive scores when progress is empty/null
+            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id)));
+            const practiceFilter = studentIdStrings.length ? { student_id: { $in: studentIdStrings } } : { _id: null };
+            const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
+            const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
+
+            // Calculate average by student from practice tests
+            const avgByStudent = {};
+            for (const t of practiceTests) {
+                const sid = (t.student_id && typeof t.student_id.toString === 'function' ? t.student_id.toString() : String(t.student_id));
+                if (!avgByStudent[sid]) avgByStudent[sid] = { sum: 0, count: 0 };
+                avgByStudent[sid].sum += (t.score || 0);
+                avgByStudent[sid].count += 1;
+            }
+
+            // Find students needing attention: derive score from progress OR practice tests, then filter by score < 50
             const needsAttention = students
                 .map(student => {
+                    const sid = (student._id && typeof student._id.toString === 'function' ? student._id.toString() : String(student._id));
                     const progress = progressData.find(p =>
-                        (p.student_id === student._id || p.student_id === student.person_id)
+                        (String(p.student_id) === sid || String(p.student_id) === String(student.person_id))
                     );
+
+                    // Get score from progress OR derive from practice tests
+                    let studentScore = null;
+                    if (progress && progress.average_score !== undefined && progress.average_score !== null && progress.average_score > 0) {
+                        studentScore = progress.average_score;
+                    } else {
+                        // Fallback: calculate from practice tests
+                        const practice = avgByStudent[sid];
+                        if (practice && practice.count > 0) {
+                            studentScore = Math.round(practice.sum / practice.count);
+                        }
+                    }
+
                     return {
                         ...student,
-                        progress: progress || null
+                        progress: progress ? {
+                            ...progress,
+                            average_score: studentScore || 0
+                        } : {
+                            average_score: studentScore || 0,
+                            total_practice_tests: avgByStudent[sid]?.count || 0
+                        }
                     };
                 })
                 .filter(student => {
-                    if (!student.progress) return true; // No progress at all
-                    return student.progress.average_score < 50;
+                    // Only include students with score < 50 OR no score at all
+                    const score = student.progress?.average_score;
+                    return score === null || score === 0 || score < 50;
                 })
                 .slice(0, 20); // Limit to 20
 
@@ -5249,6 +5326,41 @@ export default class tpcController {
             });
             const progress = progressRes.data?.[0] || null;
 
+            // Fetch DSA Problem Submissions for daily progress
+            const submissionsRes = await fetchData('tblProblemSubmission', {}, {
+                $or: [
+                    { student_id: sIdString },
+                    { student_id: new ObjectId(sIdString) }
+                ]
+            });
+            const submissions = submissionsRes.data || [];
+
+            // Group submissions by date for daily progress
+            const dailyProgress = {};
+            submissions.forEach(sub => {
+                if (sub.status === 'solved' || sub.status === 'accepted') {
+                    const date = new Date(sub.submitted_at || sub.created_at);
+                    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+                    if (!dailyProgress[dateKey]) {
+                        dailyProgress[dateKey] = {
+                            date: dateKey,
+                            problems: [],
+                            count: 0
+                        };
+                    }
+                    dailyProgress[dateKey].problems.push({
+                        id: sub.problem_id,
+                        title: sub.problem_title || 'Problem',
+                        status: sub.status
+                    });
+                    dailyProgress[dateKey].count++;
+                }
+            });
+
+            // Convert to array and sort by date (newest first)
+            const dailyProgressArray = Object.values(dailyProgress)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -5271,8 +5383,10 @@ export default class tpcController {
                     dsa: {
                         weeksCompleted: progress?.completed_weeks || [],
                         daysCompleted: progress?.completed_days || progress?.days_completed || [],
-                        problemsSolved: progress?.coding_problems_completed?.length || 0,
-                        currentStreak: progress?.current_streak || 0
+                        problemsSolved: submissions.filter(s => s.status === 'solved' || s.status === 'accepted').length,
+                        totalSubmissions: submissions.length,
+                        currentStreak: progress?.current_streak || 0,
+                        dailyProgress: dailyProgressArray
                     }
                 }
             };

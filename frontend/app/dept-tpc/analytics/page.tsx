@@ -733,18 +733,32 @@ export default function DepartmentTPCAnalyticsPage() {
                 <h4 className="font-semibold text-neutral mb-3 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-primary" /> DSA Progress
                 </h4>
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    {studentDetail.dsa?.daysCompleted?.map((day: any, idx: number) => (
-                      <Badge key={idx} variant="success" className="text-xs">
-                        {typeof day === 'string' ? day : `Day ${day}`}
-                      </Badge>
+                {studentDetail.dsa?.dailyProgress && studentDetail.dsa.dailyProgress.length > 0 ? (
+                  <div className="space-y-3">
+                    {studentDetail.dsa.dailyProgress.map((day: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-background-surface rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-neutral">{new Date(day.date).toLocaleDateString()}</span>
+                          <Badge variant="success" className="text-xs">{day.count} {day.count === 1 ? 'problem' : 'problems'} solved</Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {day.problems.slice(0, 5).map((prob: any, pIdx: number) => (
+                            <span key={pIdx} className="text-xs px-2 py-1 bg-background rounded text-neutral-light">
+                              {prob.title || `Problem ${prob.id}`}
+                            </span>
+                          ))}
+                          {day.problems.length > 5 && (
+                            <span className="text-xs px-2 py-1 text-neutral-light">
+                              +{day.problems.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     ))}
-                    {(!studentDetail.dsa?.daysCompleted || studentDetail.dsa.daysCompleted.length === 0) && (
-                      <p className="text-sm text-neutral-light italic">No daily progress recorded.</p>
-                    )}
                   </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-neutral-light italic">No DSA problems solved yet.</p>
+                )}
               </div>
             </div>
           ) : (

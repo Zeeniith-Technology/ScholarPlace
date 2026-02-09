@@ -11,24 +11,36 @@ let db = null;
  */
 export async function connectDB() {
     try {
+        if (db) return; // Idempotency check: Reuse existing connection
+
         if (!process.env.MONGO_URI) {
             throw new Error('MONGO_URI not found in environment variables');
         }
-        // Connection pool for high concurrency (e.g. 300+ simultaneous submits)
-        const maxPoolSize = parseInt(process.env.MONGO_MAX_POOL_SIZE, 10) || 200;
-        const waitQueueTimeoutMS = parseInt(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS, 10) || 30000;
+
+        // Connection pool: Default to 50 (SAfe for M0 tier with multiple instances/workers)
+        // M0 Limit: 500 connections. 50 * 8 workers = 400 < 500.
+        const maxPoolSize = parseInt(process.env.MONGO_MAX_POOL_SIZE, 10) || 50;
+        const minPoolSize = parseInt(process.env.MONGO_MIN_POOL_SIZE, 10) || 0; // Allow scaling down to 0
+        const waitQueueTimeoutMS = parseInt(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS, 10) || 10000; // Fail fast if queue is full
+
         client = new MongoClient(process.env.MONGO_URI, {
             maxPoolSize,
+            minPoolSize,
             waitQueueTimeoutMS,
+            connectTimeoutMS: 10000, // 10s connection timeout
+            socketTimeoutMS: 45000,  // 45s socket timeout
         });
+
         await client.connect();
-        if(!process.env.DB_NAME){
+
+        if (!process.env.DB_NAME) {
             throw new Error('DB_NAME not found in environment variables');
         }
         db = client.db(process.env.DB_NAME);
-        console.log(`MongoDB connected successfully to db ${process.env.DB_NAME}`);
+        console.log(`MongoDB connected successfully to db ${process.env.DB_NAME} (Pool: ${maxPoolSize})`);
     } catch (error) {
         console.error('Database connection error:', error);
+        // Retry logic could be added here, but usually let process crash and restart is safer
         throw error;
     }
 }
@@ -235,8 +247,8 @@ export async function executeData(collectionName, data, operation, schema = null
             }
 
             // Apply schema (defaults, validation) if provided
-            const schemaAppliedData = schema 
-                ? applySchema(data, schema, false) 
+            const schemaAppliedData = schema
+                ? applySchema(data, schema, false)
                 : data;
 
             // Convert ObjectId fields (personId, userId, etc.)
@@ -275,7 +287,7 @@ export async function executeData(collectionName, data, operation, schema = null
 
             // Get filter from options if not provided as parameter
             let updateFilter = filter || options.filter || {};
-            
+
             if (Object.keys(updateFilter).length === 0 && !options.force) {
                 throw new Error('filter is required for update operation (provide in options.filter or as 4th parameter)');
             }
@@ -299,7 +311,7 @@ export async function executeData(collectionName, data, operation, schema = null
                     console.warn('executeData: _id is neither string nor ObjectId:', typeof updateFilter._id, updateFilter._id);
                 }
             }
-            
+
             console.log('executeData: Final filter before MongoDB query:', {
                 _id: updateFilter._id?.toString() || 'not provided',
                 _idType: typeof updateFilter._id,
@@ -322,9 +334,9 @@ export async function executeData(collectionName, data, operation, schema = null
 
             // Check if data already contains MongoDB update operators ($push, $set, $unset, etc.)
             const hasUpdateOperators = data && typeof data === 'object' && Object.keys(data).some(key => key.startsWith('$'));
-            
+
             let updateData;
-            
+
             if (hasUpdateOperators) {
                 // Data already contains MongoDB operators - don't apply schema to operators
                 // Just merge updated_at into $set if it exists, otherwise create $set for updated_at
@@ -346,10 +358,10 @@ export async function executeData(collectionName, data, operation, schema = null
                 }
             } else {
                 // No operators, wrap in $set and apply schema
-                const schemaAppliedData = schema 
-                    ? applySchema(data, schema, true) 
+                const schemaAppliedData = schema
+                    ? applySchema(data, schema, true)
                     : data;
-                
+
                 updateData = {
                     $set: {
                         ...schemaAppliedData,
@@ -378,20 +390,20 @@ export async function executeData(collectionName, data, operation, schema = null
                         data: null
                     };
                 }
-                
+
                 // Perform the update
                 const updateResult = await collection.updateOne(
                     updateFilter,
                     updateData,
                     options
                 );
-                
+
                 console.log('executeData: updateOne result:', {
                     matchedCount: updateResult.matchedCount,
                     modifiedCount: updateResult.modifiedCount,
                     acknowledged: updateResult.acknowledged
                 });
-                
+
                 if (updateResult.matchedCount === 0) {
                     return {
                         success: false,
@@ -399,10 +411,10 @@ export async function executeData(collectionName, data, operation, schema = null
                         data: null
                     };
                 }
-                
+
                 // Fetch the updated document
                 const updatedDoc = await collection.findOne(updateFilter);
-                
+
                 if (!updatedDoc) {
                     return {
                         success: false,
@@ -410,7 +422,7 @@ export async function executeData(collectionName, data, operation, schema = null
                         data: null
                     };
                 }
-                
+
                 return {
                     success: true,
                     data: updatedDoc
@@ -422,7 +434,7 @@ export async function executeData(collectionName, data, operation, schema = null
         if (op === 'd') {
             // Get filter from options if not provided as parameter
             let deleteFilter = filter || options.filter || {};
-            
+
             if (Object.keys(deleteFilter).length === 0 && !options.force) {
                 throw new Error('filter is required for delete operation (provide in options.filter or as 4th parameter, or use options.force = true)');
             }
@@ -476,7 +488,7 @@ export async function executeData(collectionName, data, operation, schema = null
                         softDeleteData,
                         { returnDocument: 'after', ...options }
                     );
-                    
+
                     // Check if document was found and deleted
                     if (!result || !result.value) {
                         return {
@@ -485,7 +497,7 @@ export async function executeData(collectionName, data, operation, schema = null
                             data: null
                         };
                     }
-                    
+
                     return {
                         success: true,
                         data: result.value
@@ -519,14 +531,14 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
         // Apply role-based filter if user is provided in options or if req is provided
         let queryFilter = { ...filter };
         let userForFiltering = null;
-        
+
         if (options.user) {
             // Direct user object provided
             userForFiltering = options.user;
         } else if (options.req && options.req.user) {
             // Request object provided, extract user from JWT (primary source)
             userForFiltering = options.req.user;
-            
+
             // Check req.headers for role/user overrides (roles come from headers)
             if (options.req.headers) {
                 const headerRole = options.req.headers['x-user-role'] || options.req.headers['user-role'] || options.req.headers['role'];
@@ -534,7 +546,7 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
                 const headerCollegeName = options.req.headers['x-college-name'] || options.req.headers['college-name'] || options.req.headers['college_name'];
                 const headerCollegeId = options.req.headers['x-college-id'] || options.req.headers['college-id'] || options.req.headers['college_id'];
                 const headerUserId = options.req.headers['x-user-id'] || options.req.headers['user-id'] || options.req.headers['userid'];
-                
+
                 // Override user info from req.headers if provided (for superadmin impersonation or special cases)
                 if (headerRole || headerDepartment || headerCollegeName || headerCollegeId || headerUserId) {
                     userForFiltering = {
@@ -554,7 +566,7 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
             const headerCollegeName = options.req.headers['x-college-name'] || options.req.headers['college-name'] || options.req.headers['college_name'];
             const headerCollegeId = options.req.headers['x-college-id'] || options.req.headers['college-id'] || options.req.headers['college_id'];
             const headerUserId = options.req.headers['x-user-id'] || options.req.headers['user-id'] || options.req.headers['userid'];
-            
+
             if (headerRole) {
                 userForFiltering = {
                     role: headerRole,
@@ -565,7 +577,7 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
                 };
             }
         }
-        
+
         if (userForFiltering) {
             queryFilter = applyRoleBasedFilter(userForFiltering, queryFilter, collectionName);
             // Remove user/req from options to avoid passing it to MongoDB
@@ -581,7 +593,7 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
                 console.warn('Failed to convert _id to ObjectId in filter:', error.message);
             }
         }
-        
+
         // Handle student_id field - try both ObjectId and string formats
         // Only do this if there's no existing $or in the filter (to avoid conflicts)
         if (queryFilter.student_id && typeof queryFilter.student_id === 'string' && !queryFilter.$or && !queryFilter.$and) {
@@ -674,7 +686,7 @@ export function applyRoleBasedFilter(user, existingFilter = {}, collectionName =
             if (globalCollections.includes(collectionName.toLowerCase())) {
                 return existingFilter; // No filtering for global collections
             }
-            
+
             // Filter by user ID - check common ID fields
             const userId = user.id || user.userId || user.person_id || user._id;
             if (userId) {
@@ -790,7 +802,7 @@ export async function responsedata(req, res, next) {
                 message: responseData.message || 'Operation successful',
                 data: responseData.data || null
             };
-            
+
             res.status(responseData.status || 200).json(response);
         } else {
             // Error response
@@ -819,7 +831,7 @@ export async function responsedata(req, res, next) {
         }
     } catch (error) {
         console.error('responsedata middleware error:', error);
-        
+
         // Log this error too
         const errorInfo = {
             route: req.originalUrl,
