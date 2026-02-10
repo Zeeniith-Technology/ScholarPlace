@@ -19,9 +19,9 @@ export function AuthLayout({ children, title, subtitle, heroImage }: AuthLayoutP
       <div className="hidden lg:flex lg:flex-1 relative bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10">
         <div className="absolute inset-0 flex flex-col items-center justify-center p-12 z-10">
           <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-            <div className="relative h-12 w-48">
+            <div className="relative h-20 w-72">
               <Image
-                src="/images/Footer_logo.png"
+                src="/images/black_text_logo.png"
                 alt="Scholarplace"
                 fill
                 className="object-contain object-left"
@@ -69,9 +69,9 @@ export function AuthLayout({ children, title, subtitle, heroImage }: AuthLayoutP
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-12 py-12">
         {/* Mobile Logo */}
         <Link href="/" className="lg:hidden flex items-center gap-2 mb-8 group w-fit">
-          <div className="relative h-10 w-40">
+          <div className="relative h-14 w-56">
             <Image
-              src="/images/Footer_logo.png"
+              src="/images/black_text_logo.png"
               alt="Scholarplace"
               fill
               className="object-contain object-left"

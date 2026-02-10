@@ -42,11 +42,11 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center group">
             <Image
-              src="/images/header_fullName.png"
+              src="/images/white_text_logo.png"
               alt="Scholarplace"
-              width={180}
-              height={40}
-              className="h-6 sm:h-8 md:h-10 w-auto object-contain group-hover:opacity-90 transition-opacity"
+              width={240}
+              height={60}
+              className="h-10 sm:h-12 md:h-14 w-auto object-contain group-hover:opacity-90 transition-opacity"
               priority
             />
           </Link>

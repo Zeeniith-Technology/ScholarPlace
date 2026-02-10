@@ -20,9 +20,9 @@ export function Footer() {
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center mb-4 group w-fit">
-              <div className="relative h-12 w-48">
+              <div className="relative h-20 w-72">
                 <Image
-                  src="/images/Footer_logo.png"
+                  src="/images/black_text_logo.png"
                   alt="Scholarplace"
                   fill
                   className="object-contain object-left"
