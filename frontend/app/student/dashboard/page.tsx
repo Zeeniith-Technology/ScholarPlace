@@ -89,6 +89,7 @@ export default function StudentDashboardPage() {
 
   // Fetch completed tests list when Tests detail modal opens
   useEffect(() => {
+    console.log('[Dashboard] Modal State Changed:', { progress: showProgressDetail, tests: showTestsDetail })
     if (!showTestsDetail) return
     const fetchTestsDetail = async () => {
       setLoadingTestsDetail(true)

@@ -131,15 +131,34 @@ function PracticeTestDetailsModal({
                                                                 {q.is_correct ? 'Correct' : 'Incorrect'}
                                                             </Badge>
                                                         </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-2">
-                                                            <div className={`p-3 rounded-lg ${q.is_correct ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
-                                                                <p className="text-xs text-neutral-500 mb-1 font-semibold">Selected Answer</p>
-                                                                <p className="font-medium text-neutral-800">{q.selected_answer || 'Not Attempted'}</p>
-                                                            </div>
-                                                            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-                                                                <p className="text-xs text-neutral-500 mb-1 font-semibold">Correct Answer</p>
-                                                                <p className="font-medium text-neutral-800">{q.correct_answer}</p>
-                                                            </div>
+                                                        <div className="space-y-2 mb-3">
+                                                            {(q as any).options?.map((option: string, optIdx: number) => (
+                                                                <div
+                                                                    key={optIdx}
+                                                                    className={`p-2 rounded text-sm ${option === q.correct_answer
+                                                                        ? 'bg-green-100 text-green-800 font-semibold'
+                                                                        : option === q.selected_answer && !q.is_correct
+                                                                            ? 'bg-red-100 text-red-800 font-semibold'
+                                                                            : 'bg-neutral-light/10 text-neutral-light'
+                                                                        }`}
+                                                                >
+                                                                    {option}
+                                                                    {option === q.correct_answer && ' ✓'}
+                                                                    {option === q.selected_answer && !q.is_correct && ' ✗'}
+                                                                </div>
+                                                            ))}
+                                                            {!(q as any).options && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-2">
+                                                                    <div className={`p-3 rounded-lg ${q.is_correct ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                                                                        <p className="text-xs text-neutral-500 mb-1 font-semibold">Selected Answer</p>
+                                                                        <p className="font-medium text-neutral-800">{q.selected_answer || 'Not Attempted'}</p>
+                                                                    </div>
+                                                                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                                                                        <p className="text-xs text-neutral-500 mb-1 font-semibold">Correct Answer</p>
+                                                                        <p className="font-medium text-neutral-800">{q.correct_answer}</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         {q.explanation && (
                                                             <div className="bg-neutral-100/80 p-3 rounded-lg text-sm text-neutral-600 mt-2">

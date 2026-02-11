@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { getAuthHeader } from '@/utils/auth'
+import { getAuthHeader, getCurrentUserFromToken } from '@/utils/auth'
 import {
   ArrowLeft,
   Clock,
@@ -15,6 +15,7 @@ import {
   Eye,
   Target,
   Brain,
+  Lock,
 } from 'lucide-react'
 
 interface PracticeTest {
@@ -67,8 +68,18 @@ function PracticeTestHistoryContent() {
   const [selectedTest, setSelectedTest] = useState<PracticeTest | null>(null)
   const [filterWeek, setFilterWeek] = useState<number | null>(null)
   const [filterDay, setFilterDay] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   useEffect(() => {
+    // Get user role from token
+    const user = getCurrentUserFromToken()
+    if (user) {
+      console.log('[PracticeTestHistory] Detected user role:', user.role)
+      setUserRole(user.role || null)
+    } else {
+      console.log('[PracticeTestHistory] No user found in token')
+    }
+
     const weekParam = searchParams.get('week')
     const dayParam = searchParams.get('day')
     const studentIdParam = searchParams.get('studentId')
@@ -159,6 +170,7 @@ function PracticeTestHistoryContent() {
     const mins = Math.round(minutes % 60)
     return `${hours}h ${mins}m`
   }
+
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'success'
@@ -317,63 +329,77 @@ function PracticeTestHistoryContent() {
                 {/* Detailed View */}
                 {selectedTest?._id === test._id && (
                   <div className="mt-6 pt-6 border-t border-neutral-light/20">
-                    <h4 className="text-lg font-semibold text-neutral mb-4">Question Details</h4>
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {test.questions_attempted.map((q, idx) => (
-                        <div
-                          key={q.question_id}
-                          className={`p-4 rounded-lg border ${q.is_correct
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-red-50 border-red-200'
-                            }`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-neutral">Question {idx + 1}</span>
-                              <Badge
-                                variant={q.is_correct ? 'success' : 'error'}
-                                className="text-xs"
-                              >
-                                {q.is_correct ? 'Correct' : 'Incorrect'}
-                              </Badge>
-                              <Badge variant="default" className="text-xs">
-                                {q.question_type}
-                              </Badge>
-                            </div>
-                            <span className="text-xs text-neutral-light">
-                              {Math.floor(q.time_spent / 60)}m {q.time_spent % 60}s
-                            </span>
-                          </div>
-
-                          <p className="text-sm text-neutral mb-3 font-medium">{q.question}</p>
-
-                          <div className="space-y-2 mb-3">
-                            {q.options.map((option, optIdx) => (
-                              <div
-                                key={optIdx}
-                                className={`p-2 rounded text-sm ${option === q.correct_answer
-                                  ? 'bg-green-100 text-green-800 font-semibold'
-                                  : option === q.selected_answer && !q.is_correct
-                                    ? 'bg-red-100 text-red-800 font-semibold'
-                                    : 'bg-neutral-light/10 text-neutral-light'
-                                  }`}
-                              >
-                                {option}
-                                {option === q.correct_answer && ' ✓'}
-                                {option === q.selected_answer && !q.is_correct && ' ✗'}
-                              </div>
-                            ))}
-                          </div>
-
-                          {q.explanation && (
-                            <div className="mt-3 p-3 bg-background-surface rounded border border-neutral-light/20">
-                              <p className="text-xs font-semibold text-neutral mb-1">Explanation:</p>
-                              <p className="text-xs text-neutral-light">{q.explanation}</p>
-                            </div>
-                          )}
+                    {userRole?.toLowerCase() === 'student' ? (
+                      <div className="text-center py-8 bg-neutral-light/5 rounded-lg border border-neutral-light/10">
+                        <div className="inline-flex items-center justify-center p-3 bg-neutral-light/10 rounded-full mb-3">
+                          <Lock className="w-6 h-6 text-neutral-light" />
                         </div>
-                      ))}
-                    </div>
+                        <h4 className="text-lg font-semibold text-neutral mb-2">Detailed Answer Review Restricted</h4>
+                        <p className="text-neutral-light max-w-md mx-auto">
+                          Detailed answer keys and explanations are available with your Department TPC. Please contact them to review your performance in detail.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <h4 className="text-lg font-semibold text-neutral mb-4">Question Details</h4>
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {test.questions_attempted.map((q, idx) => (
+                            <div
+                              key={q.question_id}
+                              className={`p-4 rounded-lg border ${q.is_correct
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-red-50 border-red-200'
+                                }`}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-neutral">Question {idx + 1}</span>
+                                  <Badge
+                                    variant={q.is_correct ? 'success' : 'error'}
+                                    className="text-xs"
+                                  >
+                                    {q.is_correct ? 'Correct' : 'Incorrect'}
+                                  </Badge>
+                                  <Badge variant="default" className="text-xs">
+                                    {q.question_type}
+                                  </Badge>
+                                </div>
+                                <span className="text-xs text-neutral-light">
+                                  {Math.floor(q.time_spent / 60)}m {q.time_spent % 60}s
+                                </span>
+                              </div>
+
+                              <p className="text-sm text-neutral mb-3 font-medium">{q.question}</p>
+
+                              <div className="space-y-2 mb-3">
+                                {q.options.map((option, optIdx) => (
+                                  <div
+                                    key={optIdx}
+                                    className={`p-2 rounded text-sm ${option === q.correct_answer
+                                      ? 'bg-green-100 text-green-800 font-semibold'
+                                      : option === q.selected_answer && !q.is_correct
+                                        ? 'bg-red-100 text-red-800 font-semibold'
+                                        : 'bg-neutral-light/10 text-neutral-light'
+                                      }`}
+                                  >
+                                    {option}
+                                    {option === q.correct_answer && ' ✓'}
+                                    {option === q.selected_answer && !q.is_correct && ' ✗'}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {q.explanation && (
+                                <div className="mt-3 p-3 bg-background-surface rounded border border-neutral-light/20">
+                                  <p className="text-xs font-semibold text-neutral mb-1">Explanation:</p>
+                                  <p className="text-xs text-neutral-light">{q.explanation}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </Card>

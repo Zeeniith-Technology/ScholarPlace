@@ -9,14 +9,14 @@ export const auth = async (req, res, next) => {
     try {
         // Get token from Authorization header (Bearer token)
         const authHeader = req.headers.authorization;
-        
+
         // console.log('[Auth Middleware] Request:', {
         //     method: req.method,
         //     path: req.path,
         //     hasAuthHeader: !!authHeader,
         //     authHeaderPrefix: authHeader?.substring(0, 20) || 'none'
         // });
-        
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             // console.log('[Auth Middleware] No valid auth header found');
             res.locals.responseData = {
@@ -40,14 +40,14 @@ export const auth = async (req, res, next) => {
             };
             return next();
         }
-        
+
         // console.log('[Auth Middleware] Token found, length:', token.length);
 
         try {
             // Verify token
             const secret = process.env.JWT_SECRET || 'your-secret-key';
             const decoded = jwt.verify(token, secret);
-            
+
             // console.log('[Auth Middleware] Token verified successfully:', {
             //     id: decoded.id,
             //     email: decoded.email,
@@ -81,37 +81,9 @@ export const auth = async (req, res, next) => {
             let userDepartment = decoded.department;
             let userCollegeName = decoded.college_name;
             let userCollegeId = decoded.college_id;
-            
-            // Check for role override in req.headers (ONLY allowed for superadmin impersonation)
-            const headerRole = req.headers['x-user-role'] || req.headers['user-role'] || req.headers['role'];
-            const headerDepartment = req.headers['x-user-department'] || req.headers['user-department'] || req.headers['department'];
-            const headerCollegeName = req.headers['x-college-name'] || req.headers['college-name'] || req.headers['college_name'];
-            const headerCollegeId = req.headers['x-college-id'] || req.headers['college-id'] || req.headers['college_id'];
-            
-            // SECURITY: Only allow role override if:
-            // 1. Original user is superadmin (for impersonation feature)
-            // 2. OR in development mode (for testing)
-            const isSuperadmin = decoded.role && decoded.role.toLowerCase() === 'superadmin';
-            const isDevelopment = process.env.NODE_ENV !== 'production';
-            
-            if (headerRole && (isSuperadmin || isDevelopment)) {
-                // Superadmin can impersonate other roles via header
-                userRole = headerRole;
-                console.log(`[AUDIT] Role override: ${decoded.email} (${decoded.role}) → ${headerRole}`);
-            }
-            
-            // Department can be supplemented from header (less sensitive)
-            if (headerDepartment) {
-                userDepartment = headerDepartment;
-            }
-            
-            // College name/id can be supplemented from header
-            if (headerCollegeName) {
-                userCollegeName = headerCollegeName;
-            }
-            if (headerCollegeId) {
-                userCollegeId = headerCollegeId;
-            }
+
+
+            // Attach user info to request
 
             // Attach user info to request
             req.user = {
@@ -125,16 +97,16 @@ export const auth = async (req, res, next) => {
                 college_name: userCollegeName || decoded.college_name,
                 college_id: userCollegeId || decoded.college_id,
             };
-            
+
             // Also set req.userId for backward compatibility
             req.userId = req.user.id;
-            
+
             // console.log('[Auth Middleware] User authenticated:', {
             //     userId: req.userId,
             //     userRole: req.user.role,
             //     email: req.user.email
             // });
-            
+
             next();
         } catch (error) {
             if (error.name === 'JsonWebTokenError') {
@@ -229,10 +201,10 @@ export const requireRole = (...allowedRoles) => {
     return async (req, res, next) => {
         try {
             const userRole = req.user?.role?.toLowerCase();
-            
+
             // Special roles that don't need to be in tblRoles (e.g., Superadmin, TPC, DeptTPC, Student)
             const specialRoles = ['superadmin', 'tpc', 'depttpc', 'student', 'admin'];
-            
+
             // Superadmin is always allowed
             if (userRole === 'superadmin') {
                 return next();
@@ -254,10 +226,10 @@ export const requireRole = (...allowedRoles) => {
 
             // Check if user's role matches any allowed role
             let isRoleAllowed = false;
-            
+
             for (const allowedRole of allowedRoles) {
                 const normalizedAllowed = allowedRole.toLowerCase();
-                
+
                 if (userRole === normalizedAllowed) {
                     // For special roles, direct match is enough
                     if (specialRoles.includes(normalizedAllowed)) {
@@ -267,8 +239,8 @@ export const requireRole = (...allowedRoles) => {
                         // For other roles, verify existence in tblRoles
                         const database = getDB();
                         const rolesCollection = database.collection('tblRoles');
-                        const roleExists = await rolesCollection.findOne({ 
-                            role_name: { $regex: new RegExp(`^${allowedRole}$`, 'i') } 
+                        const roleExists = await rolesCollection.findOne({
+                            role_name: { $regex: new RegExp(`^${allowedRole}$`, 'i') }
                         });
                         if (roleExists) {
                             isRoleAllowed = true;
@@ -277,7 +249,7 @@ export const requireRole = (...allowedRoles) => {
                     }
                 }
             }
-            
+
             if (!isRoleAllowed) {
                 res.locals.responseData = {
                     success: false,

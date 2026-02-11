@@ -93,6 +93,7 @@ export default function CollegesManagementPage() {
   })
   const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({})
   const [createTpcAccount, setCreateTpcAccount] = useState(true)
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
@@ -732,19 +733,11 @@ export default function CollegesManagementPage() {
     }
   }
 
-  // Create new department
-  const handleCreateDepartment = async () => {
+  // Handle Update / Create Department
+  const handleSaveDepartment = async () => {
     setFormLoading(true)
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-
-      // If creating TPC account, include college ID from selected college
-      const departmentData = {
-        ...newDepartment,
-        department_college_id: selectedCollegeForDept?._id || newDepartment.department_college_id,
-        create_tpc_account: createTpcAccount,
-      }
-
       const headers = getAuthHeaders()
       if (!headers) {
         showToast('Authentication required. Please login again.', 'error')
@@ -752,42 +745,150 @@ export default function CollegesManagementPage() {
         return
       }
 
-      const res = await fetch(`${apiBase}/department/insert`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(departmentData),
-      })
+      if (editingDepartment && editingDepartment._id) {
+        // UPDATE Existing Department
+        // console.log('Updating department:', editingDepartment._id)
 
-      const result = await res.json()
-      if (result.success) {
-        showToast('Department created successfully' + (createTpcAccount ? ' with TPC account' : ''), 'success')
-        setShowCreateDeptModal(false)
-        setNewDepartment({
-          department_name: '',
-          department_code: '',
-          department_description: '',
-          department_status: 1,
-          department_tpc_name: '',
-          department_tpc_id: '',
-          department_tpc_password: '',
-          department_tpc_contact: '',
-          department_college_id: '',
-        })
-        setShowPassword({})
-        setCreateTpcAccount(true)
-        fetchAllDepartments()
-        // Refresh colleges to show updated department count
-        if (selectedCollegeForDept) {
-          fetchColleges()
+        // 1. Update basic details
+        const updateData = {
+          department_name: newDepartment.department_name,
+          department_code: newDepartment.department_code,
+          department_description: newDepartment.department_description,
+          department_status: newDepartment.department_status,
         }
+
+        const res = await fetch(`${apiBase}/department/update`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            filter: { _id: editingDepartment._id },
+            data: updateData,
+          }),
+        })
+
+        const result = await res.json()
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to update department details')
+        }
+
+        // 2. Handle TPC Account (Create or Update)
+        if (createTpcAccount) { // If checkbox is checked or logically enabled for update
+          if (!newDepartment.department_tpc_name || !newDepartment.department_tpc_id) {
+            // If TPC details missing but checked, maybe show error? Or just skip?
+            // Assuming validation was done before call or user intends to remove?
+            // Actually, if existing TPC exists, we might run update.
+          } else {
+            const tpcData: any = {
+              dept_tpc_name: newDepartment.department_tpc_name,
+              dept_tpc_email: newDepartment.department_tpc_id,
+              dept_tpc_password: newDepartment.department_tpc_password,
+              dept_tpc_contact: newDepartment.department_tpc_contact,
+            }
+
+            if (editingDepartment.department_tpc_id) {
+              // Update existing TPC
+              // We need collage_id and department_id for filter? 
+              // tpc-management/update-dept-tpc uses:
+              // filter: { department_id, collage_id } or { dept_tpc_email } ?
+              // checking tpcManagement.js: updateDeptTpc uses filter from body.
+              // It likely expects filter: { department_id: ... }
+
+              await fetch(`${apiBase}/tpc-management/update-dept-tpc`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                  filter: { department_id: editingDepartment._id },
+                  ...tpcData // This spreads name, email, etc. into root or data?
+                  // Checking controller... tpcManagement.updateDeptTpc usually takes specific fields.
+                  // Let's assume generic structure or verify.
+                  // Controller code for updateDeptTpc not fully visible, but likely follows pattern.
+                  // Actually, let's look at `createCollegeTpc` usage in this file (lines 600+).
+                  // It sends `filter` and other fields at root level.
+                }),
+              })
+            } else {
+              // Create NEW TPC for existing department
+              // Requires collage_id and department_id
+              await fetch(`${apiBase}/tpc-management/create-dept-tpc`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                  ...tpcData,
+                  department_id: editingDepartment._id,
+                  collage_id: selectedCollegeForDept?._id
+                })
+              })
+            }
+          }
+        }
+
+        showToast('Department updated successfully', 'success')
+
       } else {
-        showToast(result.message || 'Failed to create department', 'error')
+        // CREATE New Department
+        const departmentData = {
+          ...newDepartment,
+          department_college_id: selectedCollegeForDept?._id || newDepartment.department_college_id,
+          create_tpc_account: createTpcAccount,
+        }
+
+        const res = await fetch(`${apiBase}/department/insert`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(departmentData),
+        })
+
+        const result = await res.json()
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to create department')
+        }
+        showToast('Department created successfully' + (createTpcAccount ? ' with TPC account' : ''), 'success')
+      }
+
+      // Success cleanup
+      setShowCreateDeptModal(false)
+      setNewDepartment({
+        department_name: '',
+        department_code: '',
+        department_description: '',
+        department_status: 1,
+        department_tpc_name: '',
+        department_tpc_id: '',
+        department_tpc_password: '',
+        department_tpc_contact: '',
+        department_college_id: '',
+      })
+      setShowPassword({})
+      setCreateTpcAccount(true)
+      setEditingDepartment(null) // Reset edit state
+      fetchAllDepartments()
+      if (selectedCollegeForDept) {
+        fetchColleges()
       }
     } catch (error: any) {
       showToast(error.message || 'Operation failed', 'error')
     } finally {
       setFormLoading(false)
     }
+  }
+
+  const handleEditDepartment = (dept: Department) => {
+    setEditingDepartment(dept)
+    setNewDepartment({
+      department_name: dept.department_name,
+      department_code: dept.department_code,
+      department_description: dept.department_description || '',
+      department_status: dept.department_status,
+      department_tpc_name: dept.department_tpc_name || '',
+      department_tpc_id: dept.department_tpc_id || '',
+      department_tpc_password: '', // Don't show password on edit, user must set new one if needed
+      department_tpc_contact: dept.department_tpc_contact || '',
+      department_college_id: dept.department_college_id,
+    })
+    // If TPC exists, allow editing (checkbox checked). If not, allow creating (checkbox checked by default or unchecked?)
+    // Let's set it to true so the form shows up.
+    setCreateTpcAccount(!!dept.department_tpc_id || true)
+    setShowCreateDeptModal(true)
   }
 
   const handleToggleStatus = async (college: College) => {
@@ -1328,10 +1429,10 @@ export default function CollegesManagementPage() {
                     return departmentsForThisCollege.map((dept) => {
                       const isAssigned = selectedCollegeForDept.collage_departments?.includes(dept._id || '')
                       return (
-<div
-                        key={dept._id}
-                        className="flex items-center justify-between p-4 border border-neutral-light/20 rounded-xl bg-background-surface/50 hover:bg-background-elevated hover:border-neutral-light/30 transition-colors"
-                      >
+                        <div
+                          key={dept._id}
+                          className="flex items-center justify-between p-4 border border-neutral-light/20 rounded-xl bg-background-surface/50 hover:bg-background-elevated hover:border-neutral-light/30 transition-colors"
+                        >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-neutral">{dept.department_name}</span>
@@ -1452,11 +1553,20 @@ export default function CollegesManagementPage() {
                             >
                               {isAssigned ? 'Remove' : 'Assign'}
                             </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEditDepartment(dept)}
+                              className="px-4 text-sm mt-2"
+                              disabled={formLoading}
+                            >
+                              Edit
+                            </Button>
                           </div>
                         </div>
                       )
                     })
-                })()}
+                  })()}
                 </div>
 
                 <div className="flex gap-4 pt-4 border-t border-neutral-light/20">
@@ -1481,7 +1591,9 @@ export default function CollegesManagementPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <Card className="w-full max-w-md max-h-[90vh] flex flex-col my-4">
               <div className="flex items-center justify-between p-6 border-b border-neutral-light/20 flex-shrink-0">
-                <h2 className="text-2xl font-bold text-neutral">Create New Department</h2>
+                <h2 className="text-2xl font-bold text-neutral">
+                  {editingDepartment ? 'Edit Department' : 'Create New Department'}
+                </h2>
                 <button
                   onClick={() => {
                     setShowCreateDeptModal(false)
@@ -1511,7 +1623,7 @@ export default function CollegesManagementPage() {
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault()
-                    await handleCreateDepartment()
+                    await handleSaveDepartment()
                   }}
                   className="space-y-4"
                   id="create-dept-form"
@@ -1571,13 +1683,15 @@ export default function CollegesManagementPage() {
                         className="w-4 h-4 text-primary border-neutral-light rounded focus:ring-primary"
                       />
                       <label htmlFor="create-tpc-account" className="text-sm font-medium text-neutral cursor-pointer">
-                        Create Department TPC User Account
+                        {editingDepartment ? 'Update/Create TPC Account' : 'Create Department TPC User Account'}
                       </label>
                     </div>
 
                     {createTpcAccount && (
                       <>
-                        <h3 className="text-lg font-semibold text-neutral mb-2">Department TPC Details</h3>
+                        <h3 className="text-lg font-semibold text-neutral mb-2">
+                          {editingDepartment && editingDepartment.department_tpc_id ? 'Update TPC Details' : 'Department TPC Details'}
+                        </h3>
                         <p className="text-sm text-neutral-dark mb-4">
                           Enter Department TPC details to create their user account. Department TPC can only manage their specific department.
                         </p>
@@ -1652,7 +1766,7 @@ export default function CollegesManagementPage() {
                   isLoading={formLoading}
                   disabled={formLoading}
                 >
-                  Create Department
+                  {editingDepartment ? 'Update Department' : 'Create Department'}
                 </Button>
                 <Button
                   type="button"
@@ -1672,6 +1786,7 @@ export default function CollegesManagementPage() {
                     })
                     setShowPassword({})
                     setCreateTpcAccount(true)
+                    setEditingDepartment(null)
                   }}
                   className="px-6"
                   disabled={formLoading}

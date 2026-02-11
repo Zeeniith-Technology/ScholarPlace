@@ -299,38 +299,38 @@ export async function executeData(collectionName, data, operation, schema = null
                     try {
                         if (/^[0-9a-fA-F]{24}$/.test(updateFilter._id)) {
                             updateFilter._id = new ObjectId(updateFilter._id);
-                            console.log('executeData: Converted string _id to ObjectId:', updateFilter._id.toString());
+                            // console.log('executeData: Converted string _id to ObjectId:', updateFilter._id.toString());
                         }
                     } catch (error) {
                         console.warn('Failed to convert _id to ObjectId in filter:', error.message);
                     }
                 } else if (updateFilter._id instanceof ObjectId) {
                     // Already ObjectId, use it directly - don't recreate it
-                    console.log('executeData: _id is already ObjectId, using directly:', updateFilter._id.toString());
+                    // console.log('executeData: _id is already ObjectId, using directly:', updateFilter._id.toString());
                 } else {
                     console.warn('executeData: _id is neither string nor ObjectId:', typeof updateFilter._id, updateFilter._id);
                 }
             }
 
-            console.log('executeData: Final filter before MongoDB query:', {
+            /* console.log('executeData: Final filter before MongoDB query:', {
                 _id: updateFilter._id?.toString() || 'not provided',
                 _idType: typeof updateFilter._id,
                 _idIsObjectId: updateFilter._id instanceof ObjectId,
                 filterKeys: Object.keys(updateFilter),
                 filter: updateFilter._id ? { _id: updateFilter._id.toString() } : 'using custom filter (no _id)'
-            });
+            }); */
 
             // Verify document exists before updating (for debugging)
             // Use the full filter if _id is not present
             const docExists = await collection.findOne(updateFilter._id ? { _id: updateFilter._id } : updateFilter);
-            console.log('executeData: Document exists check:', {
+            /* console.log('executeData: Document exists check:', {
                 found: !!docExists,
                 docId: docExists?._id?.toString() || 'N/A',
                 docIdType: typeof docExists?._id,
                 queryId: updateFilter._id?.toString() || 'N/A (using custom filter)',
                 idsMatch: updateFilter._id ? (docExists?._id?.toString() === updateFilter._id?.toString()) : 'N/A (no _id in filter)',
                 filterUsed: updateFilter._id ? 'by _id' : 'by custom filter'
-            });
+            }); */
 
             // Check if data already contains MongoDB update operators ($push, $set, $unset, etc.)
             const hasUpdateOperators = data && typeof data === 'object' && Object.keys(data).some(key => key.startsWith('$'));
@@ -383,7 +383,7 @@ export async function executeData(collectionName, data, operation, schema = null
                 // First check if document exists
                 const exists = await collection.findOne(updateFilter);
                 if (!exists) {
-                    console.log('executeData: Document not found with filter:', updateFilter);
+                    // console.log('executeData: Document not found with filter:', updateFilter);
                     return {
                         success: false,
                         message: 'No document found matching the filter',
@@ -398,11 +398,11 @@ export async function executeData(collectionName, data, operation, schema = null
                     options
                 );
 
-                console.log('executeData: updateOne result:', {
+                /* console.log('executeData: updateOne result:', {
                     matchedCount: updateResult.matchedCount,
                     modifiedCount: updateResult.modifiedCount,
                     acknowledged: updateResult.acknowledged
-                });
+                }); */
 
                 if (updateResult.matchedCount === 0) {
                     return {
@@ -606,7 +606,7 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
                         { student_id: new ObjectId(studentIdString) },
                         { student_id: studentIdString }
                     ];
-                    console.log('[fetchData] Converted student_id to $or query:', queryFilter.$or);
+                    // console.log('[fetchData] Converted student_id to $or query:', queryFilter.$or);
                 }
             } catch (error) {
                 console.warn('Failed to convert student_id to ObjectId in filter:', error.message);

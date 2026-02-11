@@ -25,12 +25,27 @@ interface StudentLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
   { name: 'Syllabus', href: '/student/syllabus', icon: BookOpen },
-  { name: 'Learning', href: '/student/study', icon: BookMarked },
+  {
+    name: 'Learning',
+    href: '/student/study',
+    icon: BookMarked,
+    activeRoutes: ['/student/practice']
+  },
   { name: 'Study Help', href: '/student/study-help', icon: HelpCircle },
   { name: 'Code Review', href: '/student/code-review', icon: FileCode },
-  { name: 'Tests', href: '/student/tests', icon: FileText },
+  {
+    name: 'Tests',
+    href: '/student/tests',
+    icon: FileText,
+    activeRoutes: ['/student/tests']
+  },
   { name: 'AI Analysis', href: '/student/analytics', icon: Brain },
-  { name: 'Report Bug', href: '/student/my-bug-reports', icon: Bug },
+  {
+    name: 'Report Bug',
+    href: '/student/my-bug-reports',
+    icon: Bug,
+    activeRoutes: ['/student/bug-report']
+  },
 ]
 
 export function StudentLayout({ children }: StudentLayoutProps) {

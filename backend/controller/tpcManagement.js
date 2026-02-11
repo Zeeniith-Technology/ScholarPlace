@@ -657,43 +657,74 @@ export default class tpcManagementController {
                 return next();
             }
 
-            // Convert _id to ObjectId if it's a string
-            const processedFilter = { ...filter };
-            if (processedFilter._id && typeof processedFilter._id === 'string') {
-                if (/^[0-9a-fA-F]{24}$/.test(processedFilter._id)) {
-                    processedFilter._id = new ObjectId(processedFilter._id);
+            const personTable = "tblPersonMaster";
+            const personMasterSchema = (await import('../schema/PersonMaster.js')).default;
+
+            // Build filter for PersonMaster
+            const userFilter = {
+                person_role: 'DeptTPC',
+                person_deleted: false
+            };
+
+            if (filter._id) {
+                userFilter._id = typeof filter._id === 'string' && /^[0-9a-fA-F]{24}$/.test(filter._id)
+                    ? new ObjectId(filter._id)
+                    : filter._id;
+            } else if (filter.dept_tpc_email) {
+                userFilter.person_email = filter.dept_tpc_email.toLowerCase().trim();
+            } else if (filter.department_id) {
+                // If filtering by department_id, we need a way to link it.
+                // PersonMaster stores 'department_id' (as string or ObjId)
+                userFilter.department_id = filter.department_id.toString();
+            }
+
+            // Fetch existing user from PersonMaster
+            const existingUserRes = await fetchData(personTable, {}, userFilter);
+
+            if (!existingUserRes.success || !existingUserRes.data || existingUserRes.data.length === 0) {
+                // Fallback: Check if user exists with ObjectId department_id if string failed
+                if (filter.department_id) {
+                    userFilter.department_id = typeof filter.department_id === 'string' && /^[0-9a-fA-F]{24}$/.test(filter.department_id)
+                        ? new ObjectId(filter.department_id)
+                        : filter.department_id;
+                    const retryRes = await fetchData(personTable, {}, userFilter);
+                    if (retryRes.success && retryRes.data && retryRes.data.length > 0) {
+                        // Found it
+                    } else {
+                        res.locals.responseData = {
+                            success: false,
+                            status: 404,
+                            message: 'Department TPC account not found',
+                            error: 'DeptTPC account with provided filter does not exist'
+                        };
+                        return next();
+                    }
+                } else {
+                    res.locals.responseData = {
+                        success: false,
+                        status: 404,
+                        message: 'Department TPC account not found',
+                        error: 'DeptTPC account with provided filter does not exist'
+                    };
+                    return next();
                 }
             }
-            processedFilter.dept_tpc_deleted = false;
 
-            // Check if DeptTPC exists
-            const existingDeptTpc = await fetchData(
-                deptTpcTable,
-                { _id: 1, dept_tpc_email: 1, department_id: 1 },
-                processedFilter
-            );
+            // Get the correct user data (handling the retry case implicitly if we fetch again or just reuse if found)
+            // Actually let's just fetch precisely.
+            const user = existingUserRes.data && existingUserRes.data.length > 0
+                ? existingUserRes.data[0]
+                : (await fetchData(personTable, {}, userFilter)).data[0];
 
-            if (!existingDeptTpc.success || !existingDeptTpc.data || existingDeptTpc.data.length === 0) {
-                res.locals.responseData = {
-                    success: false,
-                    status: 404,
-                    message: 'Department TPC account not found',
-                    error: 'DeptTPC account with provided filter does not exist'
-                };
-                return next();
-            }
-
-            const deptTpc = existingDeptTpc.data[0];
-
-            // Check email uniqueness if email is being updated
-            if (dept_tpc_email && dept_tpc_email.toLowerCase().trim() !== deptTpc.dept_tpc_email) {
+            // Check email uniqueness if changing
+            if (dept_tpc_email && dept_tpc_email.toLowerCase().trim() !== user.person_email) {
                 const emailCheck = await fetchData(
-                    deptTpcTable,
-                    { dept_tpc_email: 1 },
+                    personTable,
+                    { person_email: 1 },
                     {
-                        dept_tpc_email: dept_tpc_email.toLowerCase().trim(),
-                        dept_tpc_deleted: false,
-                        _id: { $ne: deptTpc._id }
+                        person_email: dept_tpc_email.toLowerCase().trim(),
+                        person_deleted: false,
+                        _id: { $ne: user._id }
                     }
                 );
 
@@ -702,37 +733,73 @@ export default class tpcManagementController {
                         success: false,
                         status: 409,
                         message: 'Email already exists',
-                        error: 'A DeptTPC account with this email already exists'
+                        error: 'A user with this email already exists'
                     };
                     return next();
                 }
             }
 
-            // Prepare update data
+            // Prepare update data for PersonMaster
             const updateData = {};
-            if (dept_tpc_name) updateData.dept_tpc_name = dept_tpc_name.trim();
-            if (dept_tpc_email) updateData.dept_tpc_email = dept_tpc_email.toLowerCase().trim();
-            if (dept_tpc_contact !== undefined) updateData.dept_tpc_contact = dept_tpc_contact ? dept_tpc_contact.trim() : null;
-            if (dept_tpc_status) updateData.dept_tpc_status = dept_tpc_status;
+            if (dept_tpc_name) updateData.person_name = dept_tpc_name.trim();
+            if (dept_tpc_email) updateData.person_email = dept_tpc_email.toLowerCase().trim();
+            if (dept_tpc_contact !== undefined) updateData.contact_number = dept_tpc_contact ? dept_tpc_contact.trim() : null;
+            if (dept_tpc_status) updateData.person_status = dept_tpc_status; // Assuming status maps directly 'active'/'inactive'
 
             // Hash password if provided
             if (dept_tpc_password) {
                 const saltRounds = 10;
-                updateData.dept_tpc_password = await bcrypt.hash(dept_tpc_password, saltRounds);
+                updateData.person_password = await bcrypt.hash(dept_tpc_password, saltRounds);
             }
 
-            // Update DeptTPC account
-            const updateFilter = { _id: deptTpc._id };
-            const response = await executeData(deptTpcTable, updateData, 'u', deptTpcSchema, updateFilter);
+            // Update PersonMaster
+            const personUpdateResponse = await executeData(personTable, updateData, 'u', personMasterSchema, { _id: user._id });
 
-            if (!response.success) {
+            if (!personUpdateResponse.success) {
                 res.locals.responseData = {
                     success: false,
                     status: 500,
-                    message: 'Failed to update Department TPC account',
-                    error: response.error || 'DeptTPC account update failed'
+                    message: 'Failed to update DeptTPC account',
+                    error: personUpdateResponse.error || 'Update failed'
                 };
                 return next();
+            }
+
+            // Sync with Collage (departments array)
+            const collegeId = user.person_collage_id;
+            const departmentId = user.department_id;
+
+            if (collegeId && departmentId) {
+                const collegeFilter = {
+                    _id: typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
+                        ? new ObjectId(collegeId)
+                        : collegeId,
+                    deleted: false
+                };
+
+                // We need to find the correct department index
+                const collegeRes = await fetchData(collageTable, { departments: 1 }, collegeFilter);
+                if (collegeRes.success && collegeRes.data && collegeRes.data.length > 0) {
+                    const college = collegeRes.data[0];
+                    if (college.departments && Array.isArray(college.departments)) {
+                        const deptIndex = college.departments.findIndex(
+                            d => d.department_id?.toString() === departmentId.toString()
+                        );
+
+                        if (deptIndex >= 0) {
+                            // Update the dept_tpc object inside the department
+                            const collageUpdateData = {};
+                            if (dept_tpc_name) collageUpdateData[`departments.${deptIndex}.dept_tpc.name`] = dept_tpc_name.trim();
+                            if (dept_tpc_email) collageUpdateData[`departments.${deptIndex}.dept_tpc.dept_tpc_email`] = dept_tpc_email.toLowerCase().trim();
+                            // contact not stored in dept_tpc usually, just check usage
+
+                            collageUpdateData[`departments.${deptIndex}.updated_at`] = new Date().toISOString();
+                            collageUpdateData[`updated_at`] = new Date().toISOString();
+
+                            await executeData(collageTable, { $set: collageUpdateData }, 'u', collageSchema, collegeFilter);
+                        }
+                    }
+                }
             }
 
             res.locals.responseData = {
@@ -740,9 +807,9 @@ export default class tpcManagementController {
                 status: 200,
                 message: 'Department TPC account updated successfully',
                 data: {
-                    dept_tpc_id: deptTpc._id,
-                    dept_tpc_email: updateData.dept_tpc_email || deptTpc.dept_tpc_email,
-                    dept_tpc_name: updateData.dept_tpc_name || deptTpc.dept_tpc_name
+                    dept_tpc_id: user._id,
+                    dept_tpc_email: updateData.person_email || user.person_email,
+                    dept_tpc_name: updateData.person_name || user.person_name
                 }
             };
             next();

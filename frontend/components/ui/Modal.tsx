@@ -13,6 +13,9 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  // Debug log to trace unwanted modal rendering
+  if (isOpen) console.log('[Modal] Rendering:', { title, size })
+
   if (!isOpen) return null
 
   const sizeClasses = {

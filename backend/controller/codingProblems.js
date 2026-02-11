@@ -102,7 +102,7 @@ async function triggerCodeReview(params) {
 
         const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
         await reviewCollection.insertOne(reviewDoc);
-        console.log(`[CodeReview] Saved review for submission ${submissionId}, problem ${problemId}`);
+        // console.log(`[CodeReview] Saved review for submission ${submissionId}, problem ${problemId}`);
     } catch (err) {
         console.error('[CodeReview] Failed to generate/save review:', err);
     }
@@ -162,7 +162,7 @@ export async function getCodingProblemsByWeek(req, res) {
             };
         }));
 
-        console.log(`[getCodingProblemsByWeek] Week ${week}: Found ${problems.length} capstone problems`);
+        // console.log(`[getCodingProblemsByWeek] Week ${week}: Found ${problems.length} capstone problems`);
 
         res.status(200).json({
             success: true,
@@ -242,7 +242,7 @@ export async function getDailyCodingProblems(req, res) {
             };
         }));
 
-        console.log(`[getDailyCodingProblems] Week ${week}, Day ${day}: Found ${problems.length} daily problems`);
+        // console.log(`[getDailyCodingProblems] Week ${week}, Day ${day}: Found ${problems.length} daily problems`);
 
         res.status(200).json({
             success: true,

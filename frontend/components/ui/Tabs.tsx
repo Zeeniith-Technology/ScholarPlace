@@ -12,6 +12,8 @@ interface TabItem {
   icon: LucideIcon
   /** Optional full name for tooltip when label is shortened */
   title?: string
+  /** Additional routes that should activate this tab (e.g. ['/student/practice'] for Learning tab) */
+  activeRoutes?: string[]
 }
 
 interface TabsProps {
@@ -27,25 +29,42 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Find active tab index
+  // Find active tab index using "Best Match" strategy
   useEffect(() => {
-    const index = items.findIndex(item => {
-      if (item.href === pathname) return true
-      if (item.href === '/student/code-review' && pathname.startsWith('/student/code-review')) return true
-      // Study Help: own section, must not be treated as Learning
-      if (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) return true
-      // Learning: /student/study and sub-routes, but NOT /student/study-help
-      if (item.href === '/student/study' && pathname.startsWith('/student/study') && !pathname.startsWith('/student/study-help')) return true
-      if (item.href === '/student/study' && pathname.startsWith('/student/practice/')) return true
-      // Coding: match sub-routes
-      if (item.href === '/student/coding' && pathname.startsWith('/student/coding')) return true
-      // Bug Report: match both list and create pages
-      if (item.href === '/student/my-bug-reports' && (pathname.startsWith('/student/my-bug-reports') || pathname.startsWith('/student/bug-report'))) return true
-      return false
-    })
-    if (index !== -1) {
-      setActiveIndex(index)
-    }
+    let bestMatchIndex = 0;
+    let maxMatchLength = -1;
+
+    items.forEach((item, index) => {
+      let matchLength = -1;
+
+      // 1. Exact match
+      if (pathname === item.href) {
+        matchLength = item.href.length + 100; // Boost exact matches
+      }
+      // 2. Prefix match (only if href is not just "/")
+      else if (item.href !== '/' && pathname.startsWith(item.href)) {
+        matchLength = item.href.length;
+      }
+      // 3. Active Routes match
+      else if (item.activeRoutes) {
+        const matchingRoute = item.activeRoutes.find(route => pathname.startsWith(route));
+        if (matchingRoute) {
+          matchLength = matchingRoute.length;
+        }
+      }
+
+      // Special case: /student/study-help vs /student/study
+      // If we are at /student/study-help, both match.
+      // /student/study length is ~14. /student/study-help is ~19.
+      // The longer match logic automatically handles this!
+
+      if (matchLength > maxMatchLength) {
+        maxMatchLength = matchLength;
+        bestMatchIndex = index;
+      }
+    });
+
+    setActiveIndex(bestMatchIndex);
   }, [pathname, items])
 
   // Update indicator position and size (for both default line and premium pill)
@@ -122,15 +141,7 @@ export function Tabs({ items, className, variant = 'default' }: TabsProps) {
 
       {items.map((item, index) => {
         const Icon = item.icon
-        const isActive = pathname === item.href ||
-          (item.href === '/student/code-review' && pathname.startsWith('/student/code-review')) ||
-          (item.href === '/student/study-help' && pathname.startsWith('/student/study-help')) ||
-          (item.href === '/student/coding' && pathname.startsWith('/student/coding')) ||
-          (item.href === '/student/my-bug-reports' && (pathname.startsWith('/student/my-bug-reports') || pathname.startsWith('/student/bug-report'))) ||
-          (item.href === '/student/study' && (
-            (pathname.startsWith('/student/study') && !pathname.startsWith('/student/study-help') && !pathname.startsWith('/student/coding')) ||
-            pathname.startsWith('/student/practice/')
-          ))
+        const isActive = index === activeIndex
 
         return (
           <Link

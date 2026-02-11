@@ -102,7 +102,7 @@ export default class studentProgressController {
             const userRole = req.user?.role || req.userId?.role || req.headers['x-user-role'];
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
 
-            console.log('[StudentProgress] List request:', {
+            /* console.log('[StudentProgress] List request:', {
                 userRole,
                 userId,
                 userIdType: typeof userId,
@@ -114,7 +114,7 @@ export default class studentProgressController {
                     header: req.headers['x-user-id']
                 },
                 filter
-            });
+            }); */
 
             let finalFilter = filter || {};
 
@@ -139,12 +139,12 @@ export default class studentProgressController {
                     ]
                 };
 
-                console.log('[StudentProgress] Filtering by student_id:', {
+                /* console.log('[StudentProgress] Filtering by student_id:', {
                     studentIdString,
                     isObjectId,
                     finalFilter,
                     note: 'This should ONLY return data for the current logged-in student'
-                });
+                }); */
             } else {
                 console.warn('[StudentProgress] WARNING: Not filtering by student_id!', { userRole, userId });
             }
@@ -157,12 +157,12 @@ export default class studentProgressController {
                 ...((userRole !== 'Student' && req) ? { req: req } : {})
             };
 
-            console.log('[StudentProgress] List Query Details:', {
+            /* console.log('[StudentProgress] List Query Details:', {
                 studentIdString,
                 isObjectId,
                 finalFilter: JSON.stringify(finalFilter),
                 collection: 'tblStudentProgress'
-            });
+            }); */
 
             const response = await fetchData(
                 'tblStudentProgress',
@@ -171,14 +171,14 @@ export default class studentProgressController {
                 fetchOptions
             );
 
-            console.log('[StudentProgress] List Result:', {
+            /* console.log('[StudentProgress] List Result:', {
                 count: response.data?.length || 0,
                 firstRecord: response.data?.[0] ? {
                     _id: response.data[0]._id,
                     week: response.data[0].week,
                     days_completed: response.data[0].days_completed
                 } : 'None'
-            });
+            }); */
 
             // Attach verified_days per week (days where student passed ALL daily coding problems)
             if (response.data?.length > 0 && studentIdString) {
@@ -250,7 +250,7 @@ export default class studentProgressController {
             const progressData = req.body;
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
 
-            console.log('[StudentProgress] Upsert request:', { userId, progressData });
+            // console.log('[StudentProgress] Upsert request:', { userId, progressData });
 
             if (!userId) {
                 res.locals.responseData = {
@@ -396,7 +396,7 @@ export default class studentProgressController {
             const { week, day } = req.body;
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
 
-            console.log('[StudentProgress] Complete day request:', { userId, week, day });
+            // console.log('[StudentProgress] Complete day request:', { userId, week, day });
 
             if (!userId || !week || !day) {
                 const missing = [];
