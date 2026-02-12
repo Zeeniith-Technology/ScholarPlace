@@ -443,7 +443,18 @@ function WeekStudyContent() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          setWeeklyTestEligibility(data.data)
+          // Normalize coding problems structure (backend returns total/completed, frontend expects totalCount/completedCount)
+          const normalizedData = {
+            ...data.data,
+            coding_problems: {
+              ...data.data.coding_problems,
+              completedCount: data.data.coding_problems?.completed ?? 0,
+              totalCount: data.data.coding_problems?.total ?? 0,
+              requiredToUnlock: data.data.coding_problems?.total ?? 0,
+              eligible: data.data.coding_problems?.eligible ?? false
+            }
+          }
+          setWeeklyTestEligibility(normalizedData)
         }
       }
     } catch (error) {

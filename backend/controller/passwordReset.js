@@ -159,13 +159,12 @@ class PasswordResetController {
             const normalizedEmail = email.toLowerCase().trim();
             const normalizedOTP = otp.trim();
 
-            // Find reset request
+            // Find reset request by email only first, to check attempts
             const resetResult = await fetchData(
                 'tblPasswordReset',
                 {},
                 {
                     email: normalizedEmail,
-                    otp: normalizedOTP,
                     used: false
                 },
                 { sort: { created_at: -1 }, limit: 1 }
@@ -175,7 +174,7 @@ class PasswordResetController {
                 res.locals.responseData = {
                     success: false,
                     status: 400,
-                    message: 'Invalid OTP'
+                    message: 'No active reset request found'
                 };
                 return next();
             }
@@ -198,6 +197,25 @@ class PasswordResetController {
                     success: false,
                     status: 429,
                     message: 'Too many failed attempts. Please request a new OTP.'
+                };
+                return next();
+            }
+
+            // Check if OTP matches
+            if (resetRequest.otp !== normalizedOTP) {
+                // Increment attempts
+                await executeData(
+                    'tblPasswordReset',
+                    { attempts: (resetRequest.attempts || 0) + 1 },
+                    'u',
+                    null,
+                    { _id: resetRequest._id }
+                );
+
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'Invalid OTP'
                 };
                 return next();
             }

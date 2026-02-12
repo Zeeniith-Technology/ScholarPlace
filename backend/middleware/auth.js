@@ -102,9 +102,9 @@ export const auth = async (req, res, next) => {
             req.userId = req.user.id;
 
             // console.log('[Auth Middleware] User authenticated:', {
-            //     userId: req.userId,
-            //     userRole: req.user.role,
-            //     email: req.user.email
+            //     // userId: req.userId,
+            //     // userRole: req.user.role,
+            //     // email: req.user.email
             // });
 
             next();

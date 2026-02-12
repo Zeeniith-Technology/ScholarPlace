@@ -160,7 +160,7 @@ export default class studentProgressController {
             /* console.log('[StudentProgress] List Query Details:', {
                 studentIdString,
                 isObjectId,
-                finalFilter: JSON.stringify(finalFilter),
+                // finalFilter: JSON.stringify(finalFilter), // PII in filter
                 collection: 'tblStudentProgress'
             }); */
 

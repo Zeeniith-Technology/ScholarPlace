@@ -538,44 +538,6 @@ export async function fetchData(collectionName, projection = {}, filter = {}, op
         } else if (options.req && options.req.user) {
             // Request object provided, extract user from JWT (primary source)
             userForFiltering = options.req.user;
-
-            // Check req.headers for role/user overrides (roles come from headers)
-            if (options.req.headers) {
-                const headerRole = options.req.headers['x-user-role'] || options.req.headers['user-role'] || options.req.headers['role'];
-                const headerDepartment = options.req.headers['x-user-department'] || options.req.headers['user-department'] || options.req.headers['department'];
-                const headerCollegeName = options.req.headers['x-college-name'] || options.req.headers['college-name'] || options.req.headers['college_name'];
-                const headerCollegeId = options.req.headers['x-college-id'] || options.req.headers['college-id'] || options.req.headers['college_id'];
-                const headerUserId = options.req.headers['x-user-id'] || options.req.headers['user-id'] || options.req.headers['userid'];
-
-                // Override user info from req.headers if provided (for superadmin impersonation or special cases)
-                if (headerRole || headerDepartment || headerCollegeName || headerCollegeId || headerUserId) {
-                    userForFiltering = {
-                        ...userForFiltering,
-                        role: headerRole || userForFiltering.role,
-                        department: headerDepartment || userForFiltering.department,
-                        college_name: headerCollegeName || userForFiltering.college_name,
-                        college_id: headerCollegeId || userForFiltering.college_id,
-                        id: headerUserId || userForFiltering.id
-                    };
-                }
-            }
-        } else if (options.req && options.req.headers) {
-            // Fallback: Check req.headers for user info if no JWT user exists
-            const headerRole = options.req.headers['x-user-role'] || options.req.headers['user-role'] || options.req.headers['role'];
-            const headerDepartment = options.req.headers['x-user-department'] || options.req.headers['user-department'] || options.req.headers['department'];
-            const headerCollegeName = options.req.headers['x-college-name'] || options.req.headers['college-name'] || options.req.headers['college_name'];
-            const headerCollegeId = options.req.headers['x-college-id'] || options.req.headers['college-id'] || options.req.headers['college_id'];
-            const headerUserId = options.req.headers['x-user-id'] || options.req.headers['user-id'] || options.req.headers['userid'];
-
-            if (headerRole) {
-                userForFiltering = {
-                    role: headerRole,
-                    department: headerDepartment || null,
-                    college_name: headerCollegeName || null,
-                    college_id: headerCollegeId || null,
-                    id: headerUserId || null
-                };
-            }
         }
 
         if (userForFiltering) {

@@ -488,6 +488,24 @@ async function doSubmit(req, res) {
             return;
         }
 
+        // Input Validation (Security Fix)
+        if (solution.length > 50000) { // Max 50KB code
+            res.status(400).json({
+                success: false,
+                message: 'Solution code is too large (max 50KB)'
+            });
+            return;
+        }
+
+        const allowedLanguages = ['cpp', 'c', 'javascript', 'python', 'java'];
+        if (language && !allowedLanguages.includes(language.toLowerCase())) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid language specified'
+            });
+            return;
+        }
+
         const db = getDB();
         const problemsCollection = db.collection(COLLECTION_NAME);
         const problem = await problemsCollection.findOne({ question_id: problemId });
