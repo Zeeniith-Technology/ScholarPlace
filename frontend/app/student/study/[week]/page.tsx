@@ -443,18 +443,35 @@ function WeekStudyContent() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          // Normalize coding problems structure (backend returns total/completed, frontend expects totalCount/completedCount)
-          const normalizedData = {
-            ...data.data,
-            coding_problems: {
-              ...data.data.coding_problems,
-              completedCount: data.data.coding_problems?.completed ?? 0,
-              totalCount: data.data.coding_problems?.total ?? 0,
-              requiredToUnlock: data.data.coding_problems?.total ?? 0,
-              eligible: data.data.coding_problems?.eligible ?? false
+          // Use functional update to safely merge with existing state (e.g. from fetchWeeklyProgress)
+          setWeeklyTestEligibility((prev: any) => {
+            // Normalize coding problems structure
+            const codingData = data.data.coding_problems || {};
+            const normalizedCoding = {
+              ...codingData,
+              completedCount: codingData.completed ?? 0,
+              totalCount: codingData.total ?? 0,
+              requiredToUnlock: codingData.total ?? 0,
+              eligible: codingData.eligible ?? false
+            };
+
+            // Smart Merge: If we already have valid counts (from fetchWeeklyProgress), 
+            // and the incoming check returns 0 (incomplete), preserve the existing valid counts.
+            if (prev?.coding_problems?.totalCount > 0 && normalizedCoding.totalCount === 0) {
+              normalizedCoding.totalCount = prev.coding_problems.totalCount;
+              normalizedCoding.completedCount = prev.coding_problems.completedCount;
+              normalizedCoding.requiredToUnlock = prev.coding_problems.requiredToUnlock;
             }
-          }
-          setWeeklyTestEligibility(normalizedData)
+
+            return {
+              ...prev,
+              ...data.data,
+              coding_problems: {
+                ...prev?.coding_problems,
+                ...normalizedCoding
+              }
+            };
+          });
         }
       }
     } catch (error) {
