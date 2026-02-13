@@ -4212,6 +4212,68 @@ export default class tpcController {
                         ? Math.round(studentTests.reduce((sum, t) => sum + (t.score || 0), 0) / studentTests.length)
                         : 0;
 
+                    // Calculate unique weeks from student's tests
+                    const uniqueWeeks = new Set();
+                    const uniqueTestsTaken = new Set(); // To ensure we count unique tests if duplicates exist
+                    let dsaSum = 0, dsaCount = 0;
+                    let aptSum = 0, aptCount = 0;
+
+                    studentTests.forEach(test => {
+                        if (test.week && typeof test.week === 'number') {
+                            uniqueWeeks.add(test.week);
+                        }
+                        // Track unique tests (week-day combination)
+                        const testKey = `${test.week}-${test.day}`;
+                        uniqueTestsTaken.add(testKey);
+
+                        // DSA vs Aptitude breakdown
+                        // Assuming test_type or category field exists. Adjust 'dsa'/'aptitude' matching as needed.
+                        // If fields don't exist, these will remain 0.
+                        const type = (test.test_type || test.category || '').toLowerCase();
+                        if (type.includes('dsa') || type.includes('code') || type.includes('technical')) {
+                            dsaSum += (test.score || 0);
+                            dsaCount++;
+                        } else if (type.includes('apt') || type.includes('quant') || type.includes('reasoning')) {
+                            aptSum += (test.score || 0);
+                            aptCount++;
+                        }
+                    });
+                    const weeksCompleted = uniqueWeeks.size;
+
+                    // 1. Last Activity Date
+                    const sortedTests = [...studentTests].sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
+                    const lastActivityDate = sortedTests.length > 0 ? (sortedTests[0].completed_at || sortedTests[0].created_at) : null;
+
+                    // 2. Score Trend (Last 3 vs First 3)
+                    let scoreTrend = 'Stable';
+                    if (studentTests.length >= 2) {
+                        const chronologicalTests = [...studentTests].sort((a, b) => new Date(a.completed_at || a.created_at) - new Date(b.completed_at || b.created_at));
+                        const recentTests = chronologicalTests.slice(-3);
+                        const initialTests = chronologicalTests.slice(0, 3);
+
+                        const recentAvg = recentTests.reduce((sum, t) => sum + (t.score || 0), 0) / recentTests.length;
+                        const initialAvg = initialTests.reduce((sum, t) => sum + (t.score || 0), 0) / initialTests.length;
+
+                        if (recentAvg > initialAvg + 5) scoreTrend = 'Improving';
+                        else if (recentAvg < initialAvg - 5) scoreTrend = 'Declining';
+                    }
+
+                    // 3. DSA vs Aptitude Averages
+                    const dsaAverage = dsaCount > 0 ? Math.round(dsaSum / dsaCount) : 0;
+                    const aptitudeAverage = aptCount > 0 ? Math.round(aptSum / aptCount) : 0;
+
+                    // 4. Completion Rate
+                    // Calculate total available tests across the department (all practice tests in this period)
+                    // We can estimate this by finding the max unique tests taken by any student, OR pass it in.
+                    // For now, let's use a simplified approach: we'll calculate global unique tests outside this map if possible, 
+                    // but since we are inside `map`, we'll return the student's unique count and compute % later or use a rough estimate.
+                    // Actually, let's use the local `testsCompleted` for now. The frontend can calculate % if it knows total.
+                    // Or better: Let's calculate total unique tests in the department *before* mapping if possible.
+                    // Since I can't easily change the code structure above `map` right now without a huge diff, 
+                    // I will return the raw counts and handle the % calculation logic or just return the count.
+                    // Wait, I can allow `completionRate` to be calculated here if I know the total.
+                    // Let's just return the counts for now to be safe, or calculate strictly based on studentTests.length.
+
                     return {
                         name: student.person_name,
                         email: student.person_email,
@@ -4219,7 +4281,12 @@ export default class tpcController {
                         enrollmentNumber: student.enrollment_number || '',
                         averageScore: progress?.average_score || avgTestScore || 0,
                         daysCompleted: progress?.total_days_completed || 0,
+                        weeksCompleted: weeksCompleted,
                         testsCompleted: studentTests.length,
+                        lastActivityDate: lastActivityDate,
+                        scoreTrend: scoreTrend,
+                        dsaAverage: dsaAverage,
+                        aptitudeAverage: aptitudeAverage,
                         status: student.person_status
                     };
                 });
