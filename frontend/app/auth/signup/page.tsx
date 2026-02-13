@@ -151,8 +151,8 @@ export default function SignupPage() {
       newErrors.email = 'Email is required'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email'
-    } else if (!formData.email.includes('@') || !formData.email.endsWith('.edu')) {
-      newErrors.email = 'Please use your college email address'
+    } else if (!formData.email.includes('@') || (!formData.email.endsWith('.edu') && !formData.email.endsWith('.edu.in') && !formData.email.endsWith('.ac.in'))) {
+      newErrors.email = 'Please use your college email address (.edu, .edu.in, .ac.in)'
     }
 
     if (!formData.collegeId) {
