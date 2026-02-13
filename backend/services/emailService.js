@@ -8,41 +8,48 @@ dotenv.config();
  */
 
 class EmailService {
-    constructor() {
-        this.transporter = null;
-        this.initializeTransporter();
+  constructor() {
+    this.transporter = null;
+    this.initializeTransporter();
+  }
+
+  initializeTransporter() {
+    try {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT) || 465,
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_APP_PASSWORD
+        },
+        // Improve performance
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 100,
+        socketTimeout: 30000 // 30s timeout
+      });
+
+      console.log('[EmailService] Email service initialized with explicit SMTP config');
+    } catch (error) {
+      console.error('[EmailService] Failed to initialize email service:', error);
     }
+  }
 
-    initializeTransporter() {
-        try {
-            this.transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_APP_PASSWORD
-                }
-            });
+  /**
+   * Send OTP email for password reset
+   */
+  async sendPasswordResetOTP(email, otp, userName = 'User') {
+    try {
+      if (!this.transporter) {
+        throw new Error('Email service not configured. Please set EMAIL_USER and EMAIL_APP_PASSWORD in .env');
+      }
 
-            console.log('[EmailService] Email service initialized');
-        } catch (error) {
-            console.error('[EmailService] Failed to initialize email service:', error);
-        }
-    }
-
-    /**
-     * Send OTP email for password reset
-     */
-    async sendPasswordResetOTP(email, otp, userName = 'User') {
-        try {
-            if (!this.transporter) {
-                throw new Error('Email service not configured. Please set EMAIL_USER and EMAIL_APP_PASSWORD in .env');
-            }
-
-            const mailOptions = {
-                from: `"ScholarPlace" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: 'Password Reset OTP - ScholarPlace',
-                html: `
+      const mailOptions = {
+        from: `"ScholarPlace" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Password Reset OTP - ScholarPlace',
+        html: `
           <!DOCTYPE html>
           <html>
           <head>
@@ -93,31 +100,31 @@ class EmailService {
           </body>
           </html>
         `
-            };
+      };
 
-            const info = await this.transporter.sendMail(mailOptions);
-            console.log('[EmailService] OTP email sent:', info.messageId);
-            return { success: true, messageId: info.messageId };
-        } catch (error) {
-            console.error('[EmailService] Failed to send OTP email:', error);
-            throw error;
-        }
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('[EmailService] OTP email sent:', info.messageId);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('[EmailService] Failed to send OTP email:', error);
+      throw error;
     }
+  }
 
-    /**
-     * Send password reset confirmation email
-     */
-    async sendPasswordResetConfirmation(email, userName = 'User') {
-        try {
-            if (!this.transporter) {
-                throw new Error('Email service not configured');
-            }
+  /**
+   * Send password reset confirmation email
+   */
+  async sendPasswordResetConfirmation(email, userName = 'User') {
+    try {
+      if (!this.transporter) {
+        throw new Error('Email service not configured');
+      }
 
-            const mailOptions = {
-                from: `"ScholarPlace" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: 'Password Reset Successful - ScholarPlace',
-                html: `
+      const mailOptions = {
+        from: `"ScholarPlace" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Password Reset Successful - ScholarPlace',
+        html: `
           <!DOCTYPE html>
           <html>
           <head>
@@ -162,33 +169,33 @@ class EmailService {
           </body>
           </html>
         `
-            };
+      };
 
-            const info = await this.transporter.sendMail(mailOptions);
-            console.log('[EmailService] Confirmation email sent:', info.messageId);
-            return { success: true, messageId: info.messageId };
-        } catch (error) {
-            console.error('[EmailService] Failed to send confirmation email:', error);
-            throw error;
-        }
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('[EmailService] Confirmation email sent:', info.messageId);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('[EmailService] Failed to send confirmation email:', error);
+      throw error;
     }
+  }
 
-    /**
-     * Test email configuration
-     */
-    async testConnection() {
-        try {
-            if (!this.transporter) {
-                return { success: false, message: 'Email service not configured' };
-            }
+  /**
+   * Test email configuration
+   */
+  async testConnection() {
+    try {
+      if (!this.transporter) {
+        return { success: false, message: 'Email service not configured' };
+      }
 
-            await this.transporter.verify();
-            return { success: true, message: 'Email service is working!' };
-        } catch (error) {
-            console.error('[EmailService] Connection test failed:', error);
-            return { success: false, message: error.message };
-        }
+      await this.transporter.verify();
+      return { success: true, message: 'Email service is working!' };
+    } catch (error) {
+      console.error('[EmailService] Connection test failed:', error);
+      return { success: false, message: error.message };
     }
+  }
 }
 
 export default new EmailService();

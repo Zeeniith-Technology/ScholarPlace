@@ -272,7 +272,12 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
             }
         } catch (error) {
             console.error('AI Learning Path Error:', error);
-            throw new Error('Failed to generate learning path.');
+            // Extract meaningful error message
+            const errorMessage = error.message || 'Failed to generate learning path.';
+            if (errorMessage.includes('429') || errorMessage.includes('Resource has been exhausted')) {
+                throw new Error('AI Service Quota Exceeded. Please try again later.');
+            }
+            throw new Error(`AI Error: ${errorMessage}`);
         }
     }
 

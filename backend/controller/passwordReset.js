@@ -103,20 +103,12 @@ class PasswordResetController {
 
             await executeData('tblPasswordReset', resetData, 'i', passwordResetSchema);
 
-            // Send OTP email
-            try {
-                await emailService.sendPasswordResetOTP(normalizedEmail, otp, userName);
-                console.log('[PasswordReset] OTP sent to:', normalizedEmail);
-            } catch (emailError) {
-                console.error('[PasswordReset] Failed to send email:', emailError);
-                res.locals.responseData = {
-                    success: false,
-                    status: 500,
-                    message: 'Failed to send OTP email. Please try again later.'
-                };
-                return next();
-            }
+            // Send OTP email (Non-blocking for performance)
+            emailService.sendPasswordResetOTP(normalizedEmail, otp, userName)
+                .then(() => console.log('[PasswordReset] OTP sent to:', normalizedEmail))
+                .catch(emailError => console.error('[PasswordReset] Failed to send email (background):', emailError));
 
+            // Respond immediately without waiting for email
             res.locals.responseData = {
                 success: true,
                 status: 200,
@@ -351,16 +343,13 @@ class PasswordResetController {
                 { token: token }
             );
 
-            // Send confirmation email
-            try {
-                await emailService.sendPasswordResetConfirmation(
-                    resetRequest.email,
-                    user.person_name || 'User'
-                );
-            } catch (emailError) {
-                console.error('[PasswordReset] Failed to send confirmation email:', emailError);
-                // Don't fail the request if confirmation email fails
-            }
+            // Send confirmation email (Non-blocking)
+            emailService.sendPasswordResetConfirmation(
+                resetRequest.email,
+                user.person_name || 'User'
+            ).catch(emailError => {
+                console.error('[PasswordReset] Failed to send confirmation email (background):', emailError);
+            });
 
             console.log('[PasswordReset] Password reset successful for:', resetRequest.email);
 
