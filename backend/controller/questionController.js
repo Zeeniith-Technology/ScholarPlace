@@ -7,6 +7,66 @@ import { executeData, fetchData, getDB } from '../methods.js';
 import questionSchema from '../schema/tblQuestion.js';
 import { ObjectId } from 'mongodb';
 
+/**
+ * Seeded Fisher-Yates shuffle algorithm
+ * Uses a seed string to generate reproducible pseudo-random shuffles
+ * @param {Array} array - Array to shuffle
+ * @param {string} seed - Seed string for reproducible randomization
+ * @returns {Array} Shuffled array
+ */
+function seededShuffle(array, seed) {
+    if (!array || array.length === 0) return [];
+
+    // Simple hash function for seed
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        const char = seed.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+
+    // Pseudo-random number generator using linear congruential generator
+    const random = () => {
+        hash = (hash * 9301 + 49297) % 233280;
+        return hash / 233280;
+    };
+
+    // Create a proper deep copy using slice
+    const shuffled = array.slice();
+
+    // Fisher-Yates shuffle with seeded random
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+
+        // Bounds check to ensure safety
+        if (j >= 0 && j < shuffled.length && i >= 0 && i < shuffled.length) {
+            const temp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = temp;
+        }
+    }
+
+    return shuffled;
+}
+
+/**
+ * Shuffle question options and re-assign keys (A, B, C, D)
+ * Preserves the is_correct flag on options
+ * @param {Array} options - Array of option objects
+ * @param {string} seed - Seed string for reproducible randomization
+ * @returns {Array} Shuffled options with new keys
+ */
+function shuffleOptions(options, seed) {
+    const shuffled = seededShuffle([...options], seed);
+
+    // Re-assign keys (A, B, C, D) after shuffle
+    return shuffled.map((opt, idx) => ({
+        ...opt,
+        key: String.fromCharCode(65 + idx) // A=65, B=66, C=67, D=68
+    }));
+}
+
+
 export default class questionController {
 
     /**
@@ -40,13 +100,65 @@ export default class questionController {
                 fetchOptions
             );
 
-            console.log('[Questions] Response data count:', response.data?.length || 0);
+            let questions = response.data || [];
+            console.log('[Questions] Response data count:', questions.length);
+
+            // NEW: Anti-Cheating Shuffle for Weekly Tests
+            // Check if shuffling is enabled AND this is a weekly test
+            const shuffleEnabled = process.env.ENABLE_SHUFFLE === 'true';
+            const isWeeklyTest = filter?.tags?.includes('weekly-aptitude-test');
+            const weekNumber = filter?.week;
+
+            if (shuffleEnabled && isWeeklyTest && userId && weekNumber) {
+                console.log(`[Shuffle] Enabled for student ${userId}, week ${weekNumber}`);
+
+                const seed = `${userId}_week${weekNumber}`;
+
+                // Filter out any null/undefined questions before shuffling
+                questions = questions.filter(q => q != null);
+
+                console.log(`[Shuffle] Questions before shuffle: ${questions.length}, all defined: ${questions.every(q => q != null)}`);
+
+                // 1. Shuffle question order (ONLY within this week's questions)
+                // The query already filtered by week, so we're only shuffling Week X questions
+                questions = seededShuffle(questions, seed);
+
+                console.log(`[Shuffle] Questions after shuffle: ${questions.length}, all defined: ${questions.every(q => q != null)}`);
+
+                // 2. Shuffle options for each question
+                questions = questions.map((q, idx) => {
+                    // Safety check: skip if question is undefined/null
+                    if (!q) {
+                        console.log(`[Shuffle] WARNING: Question at index ${idx} is undefined/null after shuffle!`);
+                        return null;
+                    }
+
+                    if (q.options && Array.isArray(q.options)) {
+                        const optionSeed = `${seed}_q${idx}`;
+                        const shuffledOptions = shuffleOptions(q.options, optionSeed);
+
+                        // Update correct_answer to match new key after shuffle
+                        const correctOption = shuffledOptions.find(opt => opt.is_correct);
+
+                        return {
+                            ...q,
+                            options: shuffledOptions,
+                            correct_answer: correctOption?.key || q.correct_answer
+                        };
+                    }
+                    return q;
+                }).filter(q => q != null); // Remove any null entries from map
+
+                console.log(`[Shuffle] Shuffled ${questions.length} questions and their options`);
+            } else if (!shuffleEnabled && isWeeklyTest) {
+                console.log('[Shuffle] Disabled via ENABLE_SHUFFLE env flag');
+            }
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 message: 'Questions fetched successfully',
-                data: response.data || []
+                data: questions
             };
             next();
         } catch (error) {
@@ -60,6 +172,7 @@ export default class questionController {
             next();
         }
     }
+
 
     /**
      * Get single question by ID

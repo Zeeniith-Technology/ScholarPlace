@@ -524,6 +524,21 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
 
     // Active Test UI
     const currentQ = questions[currentQuestionIndex]
+
+    // Safety check: ensure current question exists
+    if (!currentQ) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col">
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-neutral-light">Loading questions...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     const currentAns = answers[currentQ.question_id]
 
     return (

@@ -2377,52 +2377,61 @@ export default class studentProgressController {
             // CRITICAL: Convert userId to string for consistent storage (schema defines student_id as String)
             const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
-            // Get or create student progress for the week - use $or to match both ObjectId and string formats
-            const existing = await fetchData(
-                'tblStudentProgress',
-                {},
+            // Get tenant info for new records
+            const tenantBm = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
+
+            // Build update data
+            const updateData = {
+                bookmarks: bookmarks,
+                updated_at: new Date().toISOString()
+            };
+
+            // Build full document for upsert (in case it's an insert)
+            const fullDocument = {
+                student_id: studentIdString, // ALWAYS string format
+                week: weekNum,
+                status: 'start',
+                progress_percentage: 0,
+                days_completed: [],
+                time_spent: 0,
+                bookmarks: bookmarks,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // Add tenant info if available
+            if (tenantBm.college_id) fullDocument.college_id = tenantBm.college_id;
+            if (tenantBm.department_id) fullDocument.department_id = tenantBm.department_id;
+
+            // Use MongoDB's findOneAndUpdate with upsert to avoid race conditions
+            const db = getDB();
+            const collection = db.collection('tblStudentProgress');
+
+            await collection.findOneAndUpdate(
                 {
-                    week: weekNum,
-                    ...studentIdFilter
+                    student_id: studentIdString,
+                    week: weekNum
                 },
-                { limit: 1 }
+                {
+                    $set: updateData,
+                    $setOnInsert: {
+                        student_id: studentIdString,
+                        week: weekNum,
+                        status: 'start',
+                        progress_percentage: 0,
+                        days_completed: [],
+                        time_spent: 0,
+                        created_at: new Date().toISOString(),
+                        ...(tenantBm.college_id && { college_id: tenantBm.college_id }),
+                        ...(tenantBm.department_id && { department_id: tenantBm.department_id })
+                    }
+                },
+                {
+                    upsert: true,
+                    returnDocument: 'after'
+                }
             );
 
-            if (existing.data && existing.data.length > 0) {
-                // Update existing progress with bookmarks - use $or to match both formats
-                await executeData(
-                    'tblStudentProgress',
-                    { bookmarks: bookmarks, updated_at: new Date().toISOString() },
-                    'u',
-                    studentProgressSchema,
-                    {
-                        week: weekNum,
-                        ...studentIdFilter
-                    }
-                );
-            } else {
-                // Create new progress record with bookmarks - ALWAYS use string format
-                const newProgress = {
-                    student_id: studentIdString, // ALWAYS string format
-                    week: weekNum,
-                    status: 'start',
-                    progress_percentage: 0,
-                    days_completed: [],
-                    time_spent: 0,
-                    bookmarks: bookmarks,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-                const tenantBm = await getCollegeAndDepartmentForStudent(userId, req, fetchData);
-                if (tenantBm.college_id) newProgress.college_id = tenantBm.college_id;
-                if (tenantBm.department_id) newProgress.department_id = tenantBm.department_id;
-                await executeData(
-                    'tblStudentProgress',
-                    newProgress,
-                    'i',
-                    studentProgressSchema
-                );
-            }
 
             res.locals.responseData = {
                 success: true,

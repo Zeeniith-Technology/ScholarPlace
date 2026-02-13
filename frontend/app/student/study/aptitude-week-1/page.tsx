@@ -61,11 +61,11 @@ function AptitudeWeek1Content() {
   const [showBlockedModal, setShowBlockedModal] = useState(false)
 
   const days = [
-    { id: 'day-1', label: 'Day 1', title: 'Integers â€“ Understanding Numbers Above & Below Zero', dayNum: 1 },
-    { id: 'day-2', label: 'Day 2', title: 'Factors â€“ Breaking Numbers Into Building Blocks', dayNum: 2 },
-    { id: 'day-3', label: 'Day 3', title: 'Divisibility â€“ Checking Without Division', dayNum: 3 },
-    { id: 'day-4', label: 'Day 4', title: 'HCF & LCM â€“ Sharing and Grouping', dayNum: 4 },
-    { id: 'day-5', label: 'Day 5', title: 'BODMAS/VBODMAS â€“ Discipline in Calculation', dayNum: 5 },
+    { id: 'day-1', label: 'Day 1', title: 'Integers — Understanding Numbers Above & Below Zero', dayNum: 1 },
+    { id: 'day-2', label: 'Day 2', title: 'Factors — Breaking Numbers Into Building Blocks', dayNum: 2 },
+    { id: 'day-3', label: 'Day 3', title: 'Divisibility — Checking Without Division', dayNum: 3 },
+    { id: 'day-4', label: 'Day 4', title: 'HCF & LCM — Sharing and Grouping', dayNum: 4 },
+    { id: 'day-5', label: 'Day 5', title: 'BODMAS/VBODMAS — Discipline in Calculation', dayNum: 5 },
   ]
 
   useEffect(() => {
@@ -611,7 +611,7 @@ function AptitudeWeek1Content() {
                           <Trophy className={`w-4 h-4 ${weeklyTestEligibility?.eligible ? 'text-secondary' : 'text-neutral-light'}`} />
                           <div className="font-semibold text-sm">Week 1 Aptitude Test</div>
                         </div>
-                                                <div className="text-xs opacity-80">
+                        <div className="text-xs opacity-80">
                           {weeklyTestEligibility?.weekly_test_status?.passed
                             ? `Completed â€¢ ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
                             : weeklyTestEligibility?.eligible
