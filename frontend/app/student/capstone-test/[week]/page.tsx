@@ -89,6 +89,15 @@ export default function CapstoneTestPage() {
     const allProblemsHaveCode = problems.length > 0 && problems.every(p => ((codeByProblemId[p._id] ?? '').trim().length > 0))
     const canSubmitCapstone = allProblemsPassed && allProblemsHaveCode
 
+    // DEBUG: Log state to help diagnose UI vs backend discrepancies
+    useEffect(() => {
+        if (problems.length > 0) {
+            console.log('[Capstone Debug] Problem Pass States:', problemPassedState);
+            console.log('[Capstone Debug] All Problems Passed:', allProblemsPassed);
+            console.log('[Capstone Debug] Can Submit:', canSubmitCapstone);
+        }
+    }, [problemPassedState, allProblemsPassed, canSubmitCapstone, problems.length]);
+
     // Check Eligibility & Block Status
     const checkStatus = useCallback(async () => {
         try {
@@ -124,6 +133,7 @@ export default function CapstoneTestPage() {
 
             if (probData.success) {
                 const list = probData.problems || probData.data || []
+                console.log('[Capstone Debug] Fetched problems:', list.map((p: any) => ({ id: p._id, qid: p.question_id, status: p.status })));
                 setProblems(list)
                 // TODO: Check completion status from backend week progress, not problem status
                 // const allPassed = list.length > 0 && list.every((p: CodingProblem) => p.status === 'passed')
@@ -436,39 +446,64 @@ export default function CapstoneTestPage() {
                                     return
                                 }
                                 // 1) Submit code for each problem (saves submission + triggers AI review when passed)
-                                const submitPayloads = problems.map((p) => ({
+                                const submitPayloads = problems.map((p: any) => ({
                                     problemId: p.question_id || p._id,
                                     solution: codeByProblemId[p._id] ?? '',
                                     language: selectedLanguage,
                                 }))
-                                const submitResults = await Promise.all(
-                                    submitPayloads.map((payload) =>
-                                        fetch(`${apiBaseUrl}/coding-problems/submit`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-                                            body: JSON.stringify(payload),
-                                        }).then((r) => r.json())
-                                    )
-                                )
+
+                                // Submit problems SEQUENTIALLY to avoid Piston API rate limiting
+                                const submitResults: any[] = []
                                 const submissionIds: Record<string, string> = {}
-                                submitResults.forEach((res: any, i: number) => {
-                                    const p = problems[i]
-                                    if (p && res.submission_id) {
-                                        const sid = typeof res.submission_id === 'string' ? res.submission_id : String(res.submission_id)
-                                        submissionIds[p._id] = sid
+
+                                for (let i = 0; i < submitPayloads.length; i++) {
+                                    const payload = submitPayloads[i]
+                                    const problem = problems[i]
+
+                                    console.log(`[Capstone Submit] Submitting problem ${i + 1}/${submitPayloads.length}: ${problem.question_id}`)
+
+                                    const response = await fetch(`${apiBaseUrl}/coding-problems/submit`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                                        body: JSON.stringify(payload),
+                                    })
+                                    const result = await response.json()
+                                    submitResults.push(result)
+
+                                    if (result.submission_id) {
+                                        const sid = typeof result.submission_id === 'string' ? result.submission_id : String(result.submission_id)
+                                        submissionIds[problem._id] = sid
                                     }
-                                })
+
+                                    // Small delay between submissions (200ms)
+                                    if (i < submitPayloads.length - 1) {
+                                        await new Promise(resolve => setTimeout(resolve, 200))
+                                    }
+                                }
+
+
                                 setSubmissionIdByProblemKey(submissionIds)
-                                // 2) Mark each problem as completed for progress
-                                const completeResults = await Promise.all(
-                                    problems.map((p) =>
-                                        fetch(`${apiBaseUrl}/student-progress/complete-coding-problem`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-                                            body: JSON.stringify({ week: weekNum, problem_id: p.question_id || p._id }),
-                                        }).then((r) => r.json())
-                                    )
-                                )
+
+                                // 2) Mark each problem as completed for progress - SEQUENTIALLY to avoid DB race condition
+                                const completeResults: any[] = []
+                                for (let i = 0; i < problems.length; i++) {
+                                    const p = problems[i]
+                                    console.log(`[Progress] Marking problem ${i + 1}/${problems.length} as completed: ${p.question_id || p._id}`)
+
+                                    const response = await fetch(`${apiBaseUrl}/student-progress/complete-coding-problem`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                                        body: JSON.stringify({ week: weekNum, problem_id: p.question_id || p._id }),
+                                    })
+                                    const result = await response.json()
+                                    completeResults.push(result)
+
+                                    // Small delay between progress updates
+                                    if (i < problems.length - 1) {
+                                        await new Promise(resolve => setTimeout(resolve, 100))
+                                    }
+                                }
+
                                 const allOk = completeResults.every((r: any) => r.success)
                                 if (allOk) {
                                     // Mark entire week as completed
@@ -650,10 +685,19 @@ export default function CapstoneTestPage() {
                                     problemId={activeProblem._id}
                                     value={codeByProblemId[activeProblem._id] ?? getDefaultCode(activeProblem)}
                                     defaultValue={getDefaultCode(activeProblem)}
-                                    onChange={(code) => setCodeByProblemId(prev => ({ ...prev, [activeProblem._id]: code }))}
+                                    onChange={(code) => {
+                                        setCodeByProblemId(prev => ({ ...prev, [activeProblem._id]: code }));
+                                        // CRITICAL: Invalidate test pass status when code changes
+                                        // This forces students to re-run tests after modifying code
+                                        setProblemPassedState(prev => ({ ...prev, [activeProblem._id]: false }));
+                                    }}
                                     language={selectedLanguage}
                                     onTestComplete={(results) => {
                                         const allPassed = results.every((r: any) => r.passed);
+                                        console.log(`[Capstone Debug] Test complete for ${activeProblem._id}:`, {
+                                            allPassed,
+                                            results: results.map(r => ({ passed: r.passed, expected: r.expected?.substring(0, 30), actual: r.actual?.substring(0, 30) }))
+                                        });
                                         setProblemPassedState(prev => ({ ...prev, [activeProblem._id]: allPassed }));
                                     }}
                                     testCases={(activeProblem.test_cases || []).map((tc: any) => ({

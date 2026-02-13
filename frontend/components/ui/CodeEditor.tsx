@@ -152,6 +152,9 @@ export function CodeEditor({
         body: JSON.stringify({
           code,
           language,
+          // If test cases exist, use the first one's input as stdin for the run
+          // This ensures C++ cin or other input-reading code has something to read
+          input: testCases.length > 0 ? testCases[0].input : '',
           testCases: testCases.length > 0 ? testCases : undefined,
         }),
       })

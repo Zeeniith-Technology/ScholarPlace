@@ -73,6 +73,7 @@ const submitQueue = [];
  */
 async function triggerCodeReview(params) {
     const { db, submissionId, personId, departmentId, collegeId, problemId, solution, language, problem } = params;
+    console.log(`[CodeReview] 🔄 Starting review for submission ${submissionId}, problem ${problemId}`);
     try {
         const problemDesc = problem?.problem_statement?.description
             || problem?.problem_statement
@@ -80,7 +81,9 @@ async function triggerCodeReview(params) {
             || (problem?.title ? `Problem: ${problem.title}` : 'Coding problem');
         const problemContext = `${problem?.title || 'Problem'}\n\n${problemDesc}`;
 
+        console.log(`[CodeReview] 📞 Calling AI service for ${language} code review...`);
         const aiReview = await aiService.reviewCode(solution, language, problemContext);
+        console.log(`[CodeReview] ✅ AI review generated, length: ${aiReview?.length || 0} chars`);
 
         const reviewDoc = {
             person_id: String(personId),
@@ -101,10 +104,12 @@ async function triggerCodeReview(params) {
         };
 
         const reviewCollection = db.collection(CODE_REVIEW_COLLECTION);
-        await reviewCollection.insertOne(reviewDoc);
-        // console.log(`[CodeReview] Saved review for submission ${submissionId}, problem ${problemId}`);
+        console.log(`[CodeReview] 💾 Saving review to database...`);
+        const result = await reviewCollection.insertOne(reviewDoc);
+        console.log(`[CodeReview] ✅ Review saved! ID: ${result.insertedId}`);
     } catch (err) {
-        console.error('[CodeReview] Failed to generate/save review:', err);
+        console.error(`[CodeReview] ❌ FAILED for submission ${submissionId}:`, err.message);
+        console.error(`[CodeReview] Stack:`, err.stack);
     }
 }
 
@@ -156,13 +161,17 @@ export async function getCodingProblemsByWeek(req, res) {
                 status: 'passed',
                 $or: studentIdConditions
             }) : null;
+
+            // DEBUG: Log submission check for specific problem
+            // console.log(`[debug status] Check ${pid} for user ${studentIdString}:`, passedSubmission ? 'FOUND' : 'NOT FOUND');
+
             return {
                 ...problem,
                 status: passedSubmission ? 'passed' : 'pending'
             };
         }));
 
-        // console.log(`[getCodingProblemsByWeek] Week ${week}: Found ${problems.length} capstone problems`);
+        // Logging reduced for production
 
         res.status(200).json({
             success: true,
@@ -365,18 +374,33 @@ export async function getAllCodingProblems(req, res) {
 // Helper to execute code using Piston API
 async function executeWithPiston(language, code, stdin) {
     try {
+        // Map language to correct Piston language and version (MUST match codeExecution.js)
+        const languageMap = {
+            'python': { language: 'python', version: '3.10.0' },
+            'javascript': { language: 'javascript', version: '18.15.0' },
+            'c': { language: 'c', version: '10.2.0' },
+            'cpp': { language: 'c++', version: '10.2.0' },
+            'c++': { language: 'c++', version: '10.2.0' },
+            'java': { language: 'java', version: '15.0.2' }
+        };
+
+        const pistonConfig = languageMap[language.toLowerCase()] || { language: language, version: '*' };
+
         const response = await fetch('https://emkc.org/api/v2/piston/execute', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                language: language,
-                version: '*',
+                language: pistonConfig.language,
+                version: pistonConfig.version,
                 files: [{ content: code }],
-                stdin: stdin
+                stdin: stdin,
+                compile_timeout: 10000,
+                run_timeout: 3000,
+                memory_limit: 128 * 1024 * 1024
             })
         });
         const result = await response.json();
-        // console.log('[Piston Result]', JSON.stringify(result).substring(0, 500)); // Log for debugging
+        console.log(`[Piston] Executed ${pistonConfig.language}@${pistonConfig.version}, exit code: ${result.run?.code}, stderr: ${result.run?.stderr?.substring(0, 50) || 'none'}`);
         return result;
     } catch (error) {
         console.error("Piston API Error:", error);
@@ -394,6 +418,8 @@ async function doSubmit(req, res) {
         const { problemId, solution: solutionBody, code, language } = req.body;
         const solution = solutionBody || code; // Support both "solution" and "code" (capstone UI)
         const studentId = req.user.id;
+
+        // Submission logging reduced
 
         if (!problemId || !solution) {
             res.status(400).json({
@@ -463,7 +489,35 @@ async function doSubmit(req, res) {
             const input = testCase.input || '';
             const expectedOutput = (testCase.expected_output || testCase.output || '').trim();
 
-            const executionResult = await executeWithPiston(pistonLang, solution, input);
+            // Sanitize input: strip variable names but preserve all values
+            let sanitizedInput = input;
+            if (typeof sanitizedInput === 'string' && sanitizedInput.includes('=')) {
+                const assignments = sanitizedInput.split(',').map(s => s.trim());
+                const values = [];
+
+                for (const assignment of assignments) {
+                    if (assignment.includes('=')) {
+                        const parts = assignment.split('=');
+                        const value = parts.slice(1).join('=').trim();
+                        if (value) values.push(value);
+                    } else {
+                        if (values.length > 0) {
+                            values[values.length - 1] += ', ' + assignment;
+                        }
+                    }
+                }
+
+                if (values.length > 0) {
+                    sanitizedInput = values.join(' ');
+                }
+            }
+
+            // Add small delay to prevent Piston API rate limiting when running multiple tests
+            if (testCases.indexOf(testCase) > 0) {
+                await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay between tests
+            }
+
+            const executionResult = await executeWithPiston(pistonLang, solution, sanitizedInput);
 
             // Check for compilation error (Piston v2 puts it in 'compile' object)
             let actualOutput = '';
@@ -492,6 +546,8 @@ async function doSubmit(req, res) {
             const isCorrect = actualOutput === expectedOutput;
             if (isCorrect) passedCases++;
 
+            // Test logging removed for production
+
             testResults.push({
                 input: input,
                 expectedOutput: expectedOutput,
@@ -502,6 +558,8 @@ async function doSubmit(req, res) {
         }
 
         // 3. Save submission
+        // Debug logging removed for production
+
         const status = totalCases > 0 && passedCases === totalCases ? 'passed' : 'failed';
 
         const submissionsCollection = db.collection('tblCodingSubmissions');
@@ -523,32 +581,35 @@ async function doSubmit(req, res) {
         const insertResult = await submissionsCollection.insertOne(submission);
         const submissionId = insertResult.insertedId;
 
+        console.log(`[Submission] ✅ Saved submission ${submissionId} with status: ${status}, score: ${submission.score}%`);
+
         // When all test cases pass, trigger AI code review (async, do not block response)
         if (status === 'passed') {
+            console.log(`[Submission] 🎯 Triggering code review for passed submission...`);
             const personId = req.user?.id || req.user?.person_id || studentId;
             const departmentId = req.user?.department_id ?? null;
             const collegeId = req.user?.college_id ?? req.user?.collegeId ?? null;
-            triggerCodeReview({
-                db,
-                submissionId,
-                personId,
-                departmentId,
-                collegeId,
-                problemId,
-                solution,
-                language,
-                problem,
-            }).catch((err) => console.error('[CodeReview] Trigger error:', err));
 
-            // Server-side persistence: if all capstone problems are passed, mark capstone_completed
-            await tryMarkCapstoneCompleted({
-                db,
-                studentId,
-                week: problem?.week ?? null,
-                collegeId,
-                departmentId,
-                req
-            });
+            // Add small delay for Capstone to avoid rate limit (2 submissions at once)
+            const isCapstone = problem?.is_capstone === true || problem?.is_capstone === 1;
+            const delayMs = isCapstone ? Math.random() * 2000 : 0; // 0-2 second random delay for Capstone
+
+            setTimeout(() => {
+                triggerCodeReview({
+                    db,
+                    submissionId,
+                    personId,
+                    departmentId,
+                    collegeId,
+                    problemId,
+                    solution,
+                    language,
+                    problem,
+                }).catch((err) => console.error('[CodeReview] Trigger error:', err));
+            }, delayMs);
+
+
+            // Note: Capstone completion is tracked via student progress updates
         }
 
         res.status(200).json({
@@ -656,7 +717,30 @@ export async function runSolution(req, res) {
             const input = testCase.input || '';
             const expectedOutput = (testCase.expected_output || testCase.output || '').trim();
 
-            const executionResult = await executeWithPiston(pistonLang, solution, input);
+            // Sanitize input: strip variable names but preserve all values
+            let sanitizedInput = input;
+            if (typeof sanitizedInput === 'string' && sanitizedInput.includes('=')) {
+                const assignments = sanitizedInput.split(',').map(s => s.trim());
+                const values = [];
+
+                for (const assignment of assignments) {
+                    if (assignment.includes('=')) {
+                        const parts = assignment.split('=');
+                        const value = parts.slice(1).join('=').trim();
+                        if (value) values.push(value);
+                    } else {
+                        if (values.length > 0) {
+                            values[values.length - 1] += ', ' + assignment;
+                        }
+                    }
+                }
+
+                if (values.length > 0) {
+                    sanitizedInput = values.join(' ');
+                }
+            }
+
+            const executionResult = await executeWithPiston(pistonLang, solution, sanitizedInput);
 
             // Check for compilation error (Piston v2 puts it in 'compile' object)
             let actualOutput = '';
