@@ -27,28 +27,35 @@ interface Department {
 
 interface College {
   _id?: string
+  collage_id?: string
   collage_name: string
-  collage_address: string
-  collage_city: string
-  collage_state: string
-  collage_country: string
-  collage_pincode: string
-  collage_contact_number: string
-  collage_tpc_person: string
+  collage_address?: string
+  collage_city?: string
+  collage_state?: string
+  collage_country?: string
+  collage_pincode?: string
+  collage_contact_number?: string
+  collage_tpc_person?: string
   collage_tpc_email?: string
   collage_tpc_password?: string
   collage_tpc_contact?: string
   tpc_users?: Array<{ _id?: string; person_id?: string; name?: string }>
-  collage_email: string
-  collage_website: string
-  collage_logo: string
+  collage_email?: string
+  collage_website?: string
+  collage_logo?: string
   collage_status: number
-  collage_type: string
+  collage_type?: string
   collage_departments?: string[] // Array of department IDs
+  collage_subscription_status?: string
   created_at?: string
   updated_at?: string
   deleted?: boolean
+  // Analytics fields (from /superadmin/analytics/colleges)
+  studentCount?: number
+  activeStudents?: number
+  studentsWithProgress?: number
 }
+
 
 /**
  * College Management Page
@@ -126,16 +133,11 @@ export default function CollegesManagementPage() {
     collage_type: '',
   })
 
-  // Fetch colleges
+  // Fetch colleges with student statistics
   const fetchColleges = async () => {
     try {
       setLoading(true)
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-
-      const filter: any = { deleted: false }
-      if (statusFilter !== 'all') {
-        filter.collage_status = parseInt(statusFilter)
-      }
 
       const authHeader = getAuthHeader()
       if (!authHeader) {
@@ -144,25 +146,51 @@ export default function CollegesManagementPage() {
         return
       }
 
-      const res = await fetch(`${apiBase}/collage/list`, {
+      // Step 1: Fetch full college details (address, email, phone, etc.)
+      const listRes = await fetch(`${apiBase}/collage/list`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
         },
-        body: JSON.stringify({
-          filter,
-          projection: {},
-          options: { sort: { created_at: -1 } },
-        }),
+        body: JSON.stringify({ status: statusFilter === 'all' ? undefined : parseInt(statusFilter) }),
       })
 
-      const result = await res.json()
-      if (result.success) {
-        setColleges(result.data || [])
-      } else {
-        showToast(result.message || 'Failed to fetch colleges', 'error')
+      const listResult = await listRes.json()
+      if (!listResult.success || !listResult.data) {
+        showToast(listResult.message || 'Failed to fetch colleges', 'error')
+        return
       }
+
+      // Step 2: Fetch analytics for student stats
+      const analyticsRes = await fetch(`${apiBase}/superadmin/analytics/colleges`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+        },
+        body: JSON.stringify({}),
+      })
+
+      const analyticsResult = await analyticsRes.json()
+
+      // Step 3: Merge: Full college data + student stats from analytics
+      const collegesWithStats = (listResult.data || []).map((college: any) => {
+        // Find matching analytics data
+        const analytics = analyticsResult.success && analyticsResult.data
+          ? analyticsResult.data.colleges?.find((a: any) => a.collegeId === college._id)
+          : null
+
+        return {
+          ...college,
+          // Add real student stats from analytics
+          studentCount: analytics?.students?.total || 0,
+          activeStudents: analytics?.students?.active || 0,
+          studentsWithProgress: analytics?.students?.withProgress || 0,
+        }
+      })
+
+      setColleges(collegesWithStats)
     } catch (error: any) {
       showToast(error.message || 'Failed to fetch colleges', 'error')
     } finally {
@@ -929,9 +957,9 @@ export default function CollegesManagementPage() {
     const matchesSearch =
       !search ||
       college.collage_name.toLowerCase().includes(search.toLowerCase()) ||
-      college.collage_city.toLowerCase().includes(search.toLowerCase()) ||
-      college.collage_state.toLowerCase().includes(search.toLowerCase()) ||
-      college.collage_email.toLowerCase().includes(search.toLowerCase())
+      college.collage_city?.toLowerCase().includes(search.toLowerCase()) ||
+      college.collage_state?.toLowerCase().includes(search.toLowerCase()) ||
+      college.collage_email?.toLowerCase().includes(search.toLowerCase())
     return matchesSearch
   })
 

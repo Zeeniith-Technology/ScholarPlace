@@ -297,6 +297,7 @@ router.post('/superadmin/analytics/overview', auth, requireRole('Superadmin'), s
 router.post('/superadmin/analytics/colleges', auth, requireRole('Superadmin'), superadminAnalytics.getCollegeStatistics.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/students', auth, requireRole('Superadmin'), superadminAnalytics.getStudentAnalytics.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/graphical', auth, requireRole('Superadmin'), superadminAnalytics.getGraphicalAnalytics.bind(superadminAnalytics), responsedata);
+router.post('/superadmin/analytics/recent-activity', auth, requireRole('Superadmin'), superadminAnalytics.getRecentActivity.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/security', auth, requireRole('Superadmin'), superadminAnalytics.getSecurityViolations.bind(superadminAnalytics), responsedata);
 
 // TPC Coding Monitoring

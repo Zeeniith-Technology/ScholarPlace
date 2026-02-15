@@ -605,7 +605,12 @@ async function doSubmit(req, res) {
                     solution,
                     language,
                     problem,
-                }).catch((err) => console.error('[CodeReview] Trigger error:', err));
+                }).catch((err) => {
+                    console.error('[CodeReview] ❌ FAILED to trigger review for submission:', submissionId);
+                    console.error('[CodeReview] Problem:', problemId, problem?.title);
+                    console.error('[CodeReview] Error:', err.message);
+                    console.error('[CodeReview] Stack:', err.stack);
+                });
             }, delayMs);
 
 

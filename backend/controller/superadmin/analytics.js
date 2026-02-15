@@ -573,6 +573,107 @@ export default class superadminAnalyticsController {
     }
 
     /**
+     * Get recent platform activity
+     * Route: POST /superadmin/analytics/recent-activity
+     */
+    async getRecentActivity(req, res, next) {
+        try {
+            const { limit = 10 } = req.body || {};
+            const db = getDB();
+
+            // Get recent student registrations
+            const recentStudents = await db.collection('tblPersonMaster').find({
+                person_role: 'Student',
+                person_deleted: { $ne: true }
+            })
+                .sort({ created_at: -1 })
+                .limit(5)
+                .project({ person_name: 1, person_email: 1, created_at: 1, person_collage_id: 1 })
+                .toArray();
+
+            // Get recent test submissions (practice tests)
+            const recentTests = await db.collection('tblPracticeTest').find({})
+                .sort({ updated_at: -1 })
+                .limit(5)
+                .project({ student_id: 1, score: 1, day: 1, updated_at: 1 })
+                .toArray();
+
+            // Get recent progress updates
+            const recentProgress = await db.collection('tblStudentProgress').find({})
+                .sort({ updated_at: -1 })
+                .limit(5)
+                .project({ student_id: 1, week: 1, days_completed: 1, updated_at: 1 })
+                .toArray();
+
+            // Combine and format activities
+            const activities = [];
+
+            // Add student registrations
+            recentStudents.forEach(student => {
+                activities.push({
+                    type: 'registration',
+                    message: `New student registered: ${student.person_name}`,
+                    timestamp: student.created_at || new Date(),
+                    details: {
+                        email: student.person_email,
+                        collegeId: student.person_collage_id
+                    }
+                });
+            });
+
+            // Add test submissions
+            recentTests.forEach(test => {
+                activities.push({
+                    type: 'test',
+                    message: `Practice test completed (Day ${test.day}, Score: ${test.score || 0})`,
+                    timestamp: test.updated_at || new Date(),
+                    details: {
+                        studentId: test.student_id,
+                        score: test.score
+                    }
+                });
+            });
+
+            // Add progress updates
+            recentProgress.forEach(progress => {
+                activities.push({
+                    type: 'progress',
+                    message: `Week ${progress.week} progress updated (${progress.days_completed?.length || 0} days)`,
+                    timestamp: progress.updated_at || new Date(),
+                    details: {
+                        studentId: progress.student_id,
+                        week: progress.week
+                    }
+                });
+            });
+
+            // Sort by timestamp descending and limit
+            activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const limitedActivities = activities.slice(0, parseInt(limit));
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Recent activity fetched successfully',
+                data: {
+                    activities: limitedActivities,
+                    total: limitedActivities.length
+                }
+            };
+            next();
+        } catch (error) {
+            console.error('Recent Activity Error:', error);
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Failed to fetch recent activity',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    /**
      * Get security violations summary
      * Route: GET /superadmin/analytics/security
      */

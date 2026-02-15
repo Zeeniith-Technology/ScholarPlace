@@ -18,6 +18,9 @@ dotenv.config();
 
 class AIService {
     constructor() {
+        // Initialize cache for AI responses
+        this.cache = new Map();
+
         // Gemini Pro Configuration
         this.provider = process.env.AI_PROVIDER || 'gemini'; // 'gemini' or 'openai'
         this.geminiApiKey = process.env.GEMINI_API_KEY;
@@ -33,7 +36,15 @@ class AIService {
              * - gemini-2.0-flash  (alternative)
              */
             const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-            this.model = this.genAI.getGenerativeModel({ model: modelName });
+            this.model = this.genAI.getGenerativeModel({
+                model: modelName,
+                generationConfig: {
+                    temperature: 0.7,      // Faster than 1.0
+                    topK: 20,              // Faster than default 40
+                    topP: 0.8,             // Faster than default 0.95
+                    maxOutputTokens: 1000, // Limit response length
+                }
+            });
             console.log(`[AIService] Initialized with model: ${modelName}`);
         } else {
             console.warn('[AIService] Gemini API key not found. AI features will not work.');
@@ -46,6 +57,48 @@ class AIService {
             'Loops', 'Arrays', 'Functions', 'Input/Output',
             'DSA Basics', 'Programming Fundamentals'
         ];
+    }
+
+    /**
+     * Simple cache with TTL
+     */
+    getCached(key) {
+        const item = this.cache.get(key);
+        if (!item) return null;
+        if (Date.now() > item.expires) {
+            this.cache.delete(key);
+            return null;
+        }
+        return item.value;
+    }
+
+    setCached(key, value, ttlSeconds = 600) {
+        this.cache.set(key, {
+            value,
+            expires: Date.now() + (ttlSeconds * 1000)
+        });
+        // Auto-cleanup old entries (prevent memory leak)
+        if (this.cache.size > 1000) {
+            const now = Date.now();
+            for (const [k, v] of this.cache.entries()) {
+                if (now > v.expires) this.cache.delete(k);
+            }
+        }
+    }
+
+    /**
+     * Generate cache key from data
+     */
+    generateCacheKey(prefix, data) {
+        const str = typeof data === 'string' ? data : JSON.stringify(data);
+        // Simple hash function
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return `${prefix}:${hash}`;
     }
 
     /**
@@ -109,12 +162,25 @@ Context: ${context}`;
     /**
      * Code Review - Analyze student code and provide feedback
      */
-    async reviewCode(code, language, problemContext) {
+    async reviewCode(code, language, problemContext = null) {
+        // Check cache first - Include problemContext to avoid cache collision for different problems with same code
+        const cacheKey = this.generateCacheKey('code_review', { code, language, problemContext });
+        const cached = this.getCached(cacheKey);
+        if (cached) {
+            console.log('[AIService] Returning cached code review');
+            return cached;
+        }
+
         try {
             if (this.provider === 'gemini') {
-                return await this.reviewCodeGemini(code, language, problemContext);
+                const result = await this.reviewCodeGemini(code, language);
+                // Cache for 30 minutes (same code likely to be reviewed again)
+                this.setCached(cacheKey, result, 1800);
+                return result;
             } else if (this.provider === 'openai') {
-                return await this.reviewCodeOpenAI(code, language, problemContext);
+                const result = await this.reviewCodeOpenAI(code, language);
+                this.setCached(cacheKey, result, 1800);
+                return result;
             }
         } catch (error) {
             console.error('AI Code Review Error:', error);
@@ -123,20 +189,18 @@ Context: ${context}`;
     }
 
     async reviewCodeGemini(code, language, problemContext) {
-        const prompt = `${this.getSystemPrompt('code-review')}
+        const contextBlock = problemContext ? `\n\nProblem Context:\n${problemContext}\n` : '';
+        const prompt = `${this.getSystemPrompt('code-review')}${contextBlock}
 
-Review this ${language} code for the following problem:
-${problemContext}
-
-Student Code:
+Code to review:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Provide detailed feedback on:
-1. Correctness - Does it solve the problem?
-2. Code Quality - Is it readable and well-structured?
-3. Best Practices - Are there better approaches?
+Analyze:
+1. Correctness - Does it work?
+2. Code Quality - Is it clean, readable, maintainable?
+3. Best Practices - Does it follow language conventions?
 4. Efficiency - Can it be optimized?
 5. Learning Points - What concepts does this demonstrate?
 
@@ -388,12 +452,24 @@ Format as JSON array:
      * Analyze Performance and Provide Feedback
      */
     async analyzePerformance(studentData) {
+        // Check cache first (cache for 10 minutes - performance data changes less frequently)
+        const cacheKey = this.generateCacheKey('perf_analysis', studentData);
+        const cached = this.getCached(cacheKey);
+        if (cached) {
+            console.log('[AIService] Returning cached performance analysis');
+            return cached;
+        }
+
         try {
+            let result;
             if (this.provider === 'gemini') {
-                return await this.analyzePerformanceGemini(studentData);
+                result = await this.analyzePerformanceGemini(studentData);
             } else if (this.provider === 'openai') {
-                return await this.analyzePerformanceOpenAI(studentData);
+                result = await this.analyzePerformanceOpenAI(studentData);
             }
+            // Cache for 10 minutes
+            this.setCached(cacheKey, result, 600);
+            return result;
         } catch (error) {
             console.error('AI Performance Analysis Error:', error);
             throw new Error('Failed to analyze performance.');

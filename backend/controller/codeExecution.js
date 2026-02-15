@@ -34,17 +34,19 @@ export default class codeExecutionController {
         return next();
       }
 
+      // Use self-hosted Piston (UNLIMITED & FREE!) OR RapidAPI Judge0
+      // For Windows Docker issues, use RapidAPI temporarily
+      // Get free key at: https://rapidapi.com/judge0-official/api/judge0-ce
+      const useRapidAPI = !process.env.PISTON_URL || process.env.PISTON_URL.includes('rapidapi');
+      const pistonUrl = process.env.PISTON_URL || 'https://judge0-ce.p.rapidapi.com/submissions';
+
       // If testCases are provided, run ALL of them
       if (testCases && Array.isArray(testCases) && testCases.length > 0) {
-        // Test execution logs minimal
-
         const testResults = [];
 
         for (const testCase of testCases) {
           const testInput = testCase.input || '';
           const expectedOutput = (testCase.output || testCase.expected_output || testCase.expectedOutput || '').trim();
-
-          // Test case details removed for security
 
           // Sanitize input
           let sanitizedInput = testInput;
@@ -69,8 +71,8 @@ export default class codeExecutionController {
             }
           }
 
-          // Execute with Piston
-          const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
+          // Execute with self-hosted Piston
+          const response = await axios.post(pistonUrl, {
             language: pistonConfig.language,
             version: pistonConfig.version,
             files: [{ content: code }],
@@ -88,51 +90,47 @@ export default class codeExecutionController {
             testResults.push({
               input: testInput,
               expectedOutput: expectedOutput,
-              actualOutput: `Compilation Error:\n${compile.stderr || compile.output}`,
+              actualOutput: compile.output || compile.stderr,
               passed: false,
-              error: compile.stderr || compile.output
+              error: 'Compilation Error'
             });
             continue;
           }
 
-          // Get actual output
+          // Parse output
           let actualOutput = (run.stdout || run.output || '').trim();
           const stderr = (run.stderr || '').trim();
 
-          // Handle runtime errors
           if (!actualOutput && stderr) {
-            actualOutput = `Error:\n${stderr}`;
-          } else if (run.code !== 0 && stderr) {
-            actualOutput += `\n\nRuntime Error:\n${stderr}`;
+            actualOutput = stderr;
           }
 
-          // Compare outputs (normalize for comparison)
+          // Check if runtime error occurred
+          if (run.code !== 0 && stderr) {
+            testResults.push({
+              input: testInput,
+              expectedOutput: expectedOutput,
+              actualOutput: actualOutput || stderr,
+              passed: false,
+              error: 'Runtime Error'
+            });
+            continue;
+          }
+
+          // Check if output matches expected
           const passed = actualOutput === expectedOutput;
-
-          // Per-test logging removed
-
           testResults.push({
             input: testInput,
             expectedOutput: expectedOutput,
             actualOutput: actualOutput,
-            passed: passed,
-            error: stderr || (run.code !== 0 ? 'Runtime error' : null)
+            passed: passed
           });
         }
-
-        // Return test results
-        const allPassed = testResults.every(t => t.passed);
-        const passedCount = testResults.filter(t => t.passed).length;
-
-        console.log(`[CodeExec Summary] ${passedCount}/${testResults.length} tests passed → ${allPassed ? '✅ ALL PASSED' : '❌ SOME FAILED'}`);
 
         res.json({
           success: true,
           data: {
-            testResults: testResults,
-            output: allPassed
-              ? `✅ All ${testResults.length} test cases passed!`
-              : `❌ ${testResults.filter(t => !t.passed).length} of ${testResults.length} test cases failed.`
+            testResults: testResults
           }
         });
         return next();
@@ -140,9 +138,9 @@ export default class codeExecutionController {
 
       // Fallback: single execution (no test cases provided)
       console.log(`[CodeExecution] Sending request to Piston for ${language}`);
-      console.log(`[CodeExecution] Raw Input:`, JSON.stringify(input));
+      console.log(`[CodeExecution] Using URL: ${pistonUrl}`);
 
-      // Sanitize input: strip variable names but preserve all values
+      // Sanitize input
       let sanitizedInput = input || "";
       if (typeof sanitizedInput === 'string' && sanitizedInput.includes('=')) {
         const assignments = sanitizedInput.split(',').map(s => s.trim());
@@ -166,7 +164,7 @@ export default class codeExecutionController {
         }
       }
 
-      const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
+      const response = await axios.post(pistonUrl, {
         language: pistonConfig.language,
         version: pistonConfig.version,
         files: [{ content: code }],
@@ -215,12 +213,42 @@ export default class codeExecutionController {
     } catch (error) {
       console.error('[CodeExecution] Piston API Error:', error.message);
 
-      res.locals.responseData = {
-        success: false,
-        status: 500,
-        message: "Code execution service unavailable",
-        error: error.message
-      };
+      // Log detailed error info for debugging
+      if (error.response) {
+        console.error('[CodeExecution] Status:', error.response.status);
+        console.error('[CodeExecution] Response Data:', JSON.stringify(error.response.data));
+
+        // Helpful error messages
+        if (error.code === 'ECONNREFUSED') {
+          res.locals.responseData = {
+            success: false,
+            status: 500,
+            message: "Piston is not running. Please start it with: docker run -d -p 2000:2000 ghcr.io/engineer-man/piston",
+            error: "Connection refused to Piston server"
+          };
+        } else {
+          res.locals.responseData = {
+            success: false,
+            status: 500,
+            message: "Code execution service error",
+            error: error.response.data?.message || error.message
+          };
+        }
+      } else if (error.code === 'ECONNREFUSED') {
+        res.locals.responseData = {
+          success: false,
+          status: 500,
+          message: "⚠️ Piston is not running! Run: docker run -d -p 2000:2000 ghcr.io/engineer-man/piston",
+          error: "Connection refused - is Docker running?"
+        };
+      } else {
+        res.locals.responseData = {
+          success: false,
+          status: 500,
+          message: "Code execution service unavailable",
+          error: error.message
+        };
+      }
       next();
     }
   }

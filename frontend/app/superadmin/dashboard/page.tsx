@@ -239,9 +239,28 @@ export default function SuperadminDashboardPage() {
         }
       }
 
-      // Recent activity: only show when we have real activity from an API.
-      // (No backend endpoint for activity feed yet – do not show fake/placeholder activity.)
-      setRecentActivity([])
+      // Fetch recent activity
+      const activityRes = await fetch(`${apiBaseUrl}/superadmin/analytics/recent-activity`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ limit: 10 }),
+      })
+
+      if (activityRes.ok) {
+        const activityData = await activityRes.json()
+        if (activityData.success && activityData.data) {
+          // Map activity to include icons and format timestamps
+          const mappedActivity = (activityData.data.activities || []).map((activity: any, index: number) => ({
+            id: `activity-${index}`,
+            message: activity.message,
+            timestamp: activity.timestamp,
+            icon: activity.type === 'registration' ? 'Award' :
+              activity.type === 'test' ? 'FileText' :
+                activity.type === 'progress' ? 'TrendingUp' : 'CheckCircle2',
+          }))
+          setRecentActivity(mappedActivity)
+        }
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
