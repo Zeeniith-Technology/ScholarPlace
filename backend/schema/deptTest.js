@@ -38,6 +38,12 @@ const deptTestSchema = {
         enum: ['practice', 'assessment'],
         default: 'practice'
     },
+    module: {
+        type: String,
+        enum: ['DSA', 'Aptitude'],
+        required: false
+        // Required for AI-generated tests
+    },
     topic: {
         type: String,
         required: false

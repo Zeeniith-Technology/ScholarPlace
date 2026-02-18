@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
 import { getApiBaseUrl } from '@/utils/api'
-import { FileCode, Sparkles, Loader2, Calendar, ChevronDown, ChevronRight, User } from 'lucide-react'
+import { FileCode, Sparkles, Loader2, Calendar, ChevronDown, ChevronRight, User, Search, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface CodeReviewItem {
@@ -35,6 +35,8 @@ export default function DeptTPCAIReviewsPage() {
   const [loading, setLoading] = useState(true)
   const [modalStudent, setModalStudent] = useState<string | null>(null)
   const [modalDayOpen, setModalDayOpen] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+
 
   const fetchReviews = useCallback(async () => {
     setLoading(true)
@@ -91,6 +93,14 @@ export default function DeptTPCAIReviewsPage() {
       .map(([name, items]) => ({ name, count: items.length, reviews: items }))
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [reviews])
+
+  const filteredStudents = React.useMemo(() => {
+    if (!searchQuery) return studentsWithCount
+    const lowerQuery = searchQuery.toLowerCase()
+    return studentsWithCount.filter(({ name }) =>
+      name.toLowerCase().includes(lowerQuery)
+    )
+  }, [studentsWithCount, searchQuery])
 
   const openModal = (studentName: string) => {
     setModalStudent(studentName)
@@ -159,64 +169,92 @@ export default function DeptTPCAIReviewsPage() {
 
   return (
     <DepartmentTPCLayout>
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral flex items-center gap-2">
-            <Sparkles className="w-7 h-7 text-primary" />
-            AI Code Reviews
-          </h1>
-          <p className="text-neutral-light mt-1 text-sm">
-            Click a student name to see their reviews by week and day
-          </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral flex items-center gap-2">
+              <Sparkles className="w-7 h-7 text-primary" />
+              AI Code Reviews
+            </h1>
+            <p className="text-neutral-light mt-1 text-sm">
+              Click a student name to see their reviews by week and day
+            </p>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-light" />
+              <input
+                type="text"
+                placeholder="Search student..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-lg border border-neutral-light/20 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+            <Button variant="secondary" size="sm" onClick={fetchReviews} disabled={loading} className="gap-2 shrink-0 h-10">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+          </div>
         </div>
 
         {loading ? (
-          <Card className="p-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            <p className="text-neutral-light">Loading...</p>
-          </Card>
-        ) : studentsWithCount.length === 0 ? (
-          <Card className="p-12 text-center">
-            <FileCode className="w-12 h-12 text-neutral-light mx-auto mb-3 opacity-60" />
-            <p className="text-neutral font-medium">No code reviews in your department</p>
-            <p className="text-neutral-light text-sm mt-1">
-              Reviews from students in your department will appear here once they complete coding problems and receive AI feedback.
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-20 bg-neutral-light/5 animate-pulse rounded-xl border border-neutral-light/10"></div>
+            ))}
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <Card className="p-12 text-center border-dashed border-2 bg-transparent shadow-none">
+            {searchQuery ? (
+              <>
+                <Search className="w-12 h-12 text-neutral-light mx-auto mb-3 opacity-40" />
+                <p className="text-neutral font-medium">No students found</p>
+                <p className="text-neutral-light text-sm mt-1">
+                  Try searching for a different name
+                </p>
+              </>
+            ) : (
+              <>
+                <FileCode className="w-12 h-12 text-neutral-light mx-auto mb-3 opacity-40" />
+                <p className="text-neutral font-medium">No code reviews yet</p>
+                <p className="text-neutral-light text-sm mt-1 max-w-xs mx-auto">
+                  Once students in your department complete coding problems, their AI reviews will appear here.
+                </p>
+              </>
+            )}
           </Card>
         ) : (
-          <Card className="overflow-hidden">
-            <div className="divide-y divide-neutral-light/10">
-              {studentsWithCount.map(({ name, count }) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => openModal(name)}
-                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary shrink-0">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-neutral group-hover:text-primary group-hover:underline">
-                      {name}
-                    </p>
-                    <p className="text-sm text-neutral-light mt-0.5">
-                      {count} review{count !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-neutral-light shrink-0" />
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+            {filteredStudents.map(({ name, count }) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => openModal(name)}
+                className="flex items-center gap-4 p-4 rounded-xl border border-neutral-light/10 bg-white hover:border-primary/30 hover:shadow-md transition-all duration-300 text-left group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-transparent transition-all duration-500" />
 
-        <div className="mt-4 flex justify-end">
-          <Button variant="secondary" size="sm" onClick={fetchReviews} disabled={loading} className="gap-1">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Refresh
-          </Button>
-        </div>
+                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-lg font-heading font-bold">{name.charAt(0)}</span>
+                </div>
+
+                <div className="flex-1 min-w-0 z-10">
+                  <h3 className="font-semibold text-neutral group-hover:text-primary transition-colors truncate">
+                    {name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-neutral-light/10 text-neutral-light group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      {count} Review{count !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+
+                <ChevronRight className="w-5 h-5 text-neutral-light/50 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <Modal

@@ -31,6 +31,7 @@ import { auth, requireRole, optionalAuth } from './middleware/auth.js';
 import tpcCodingController from './controller/tpcCoding.js';
 import bugReportController from './controller/bugReport.js';
 import contactController from './controller/contactController.js';
+import CertificateController from './controller/certificate.js';
 
 const router = express.Router();
 
@@ -61,6 +62,7 @@ const bulkActions = new BulkActionsController();
 const deptTest = new DeptTestController();
 const errorLogs = new errorLogController();
 const tpcCoding = new tpcCodingController();
+const certificate = new CertificateController();
 // bugReportController is already exported as default instance, no need to instantiate
 
 // Default data routes
@@ -238,6 +240,9 @@ router.post('/student/practice-history', auth, studentProgress.getMyPracticeHist
 
 // Student Scheduled Tests (Dept Assigned)
 router.post('/student/tests/scheduled', auth, deptTest.getAvailableTests.bind(deptTest), responsedata);
+router.post('/student/dept-test/start', auth, deptTest.startTest.bind(deptTest), responsedata);
+router.post('/student/dept-test/submit', auth, deptTest.submitTest.bind(deptTest), responsedata);
+router.post('/student/dept-test/results', auth, deptTest.getTestResults.bind(deptTest), responsedata);
 
 // TPC Practice Test Routes
 router.post('/tpc/student/practice-tests', auth, tpc.getStudentPracticeTests, responsedata);
@@ -344,9 +349,17 @@ router.post('/dept-tpc/export-students', auth, requireRole('DeptTPC'), bulkActio
 
 // DeptTPC Test Scheduling
 router.post('/dept-tpc/test/create', auth, requireRole('DeptTPC'), deptTest.createTest.bind(deptTest), responsedata);
+router.post('/dept-tpc/test/generate-questions', auth, requireRole('DeptTPC'), deptTest.generateQuestions.bind(deptTest), responsedata);
 router.post('/dept-tpc/test/list', auth, requireRole('DeptTPC'), deptTest.listTests.bind(deptTest), responsedata);
 router.post('/dept-tpc/test/bulk-upload', auth, requireRole('DeptTPC'), deptTest.bulkUpload.bind(deptTest), responsedata);
+router.post('/dept-tpc/test/analytics', auth, requireRole('DeptTPC'), deptTest.getTestAnalytics.bind(deptTest), responsedata);
 router.post('/dept-tpc/students/search', auth, requireRole('DeptTPC'), deptTest.searchStudents.bind(deptTest), responsedata);
+
+// Student Dept Test Routes
+router.post('/student/tests/scheduled', auth, deptTest.getAvailableTests.bind(deptTest), responsedata);
+router.post('/student/dept-test/start', auth, deptTest.startTest.bind(deptTest), responsedata);
+router.post('/student/dept-test/submit', auth, deptTest.submitTest.bind(deptTest), responsedata);
+router.post('/student/dept-test/results', auth, deptTest.getTestResults.bind(deptTest), responsedata);
 
 // TPC Management Routes (Superadmin only)
 router.post('/tpc-management/create-college-tpc', auth, requireRole('Superadmin'), tpcManagement.createCollegeTpc.bind(tpcManagement), responsedata);
@@ -373,6 +386,10 @@ router.post('/contact/submit', contactController.submitContact.bind(contactContr
 router.post('/contact/all', auth, requireRole('Superadmin'), contactController.getAllContacts.bind(contactController), responsedata);
 router.post('/contact/update-status', auth, requireRole('Superadmin'), contactController.updateStatus.bind(contactController), responsedata);
 router.post('/contact/delete', auth, requireRole('Superadmin'), contactController.deleteContact.bind(contactController), responsedata);
+
+// Certificate routes
+router.post('/student/certificate', auth, requireRole('Student'), certificate.getStudentCertificate.bind(certificate), responsedata);
+router.post('/dept-tpc/certificates', auth, requireRole('DeptTPC'), certificate.getDeptCertificates.bind(certificate), responsedata);
 
 export default router;
 

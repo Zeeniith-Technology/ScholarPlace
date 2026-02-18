@@ -1,6 +1,7 @@
 import { executeData, fetchData, getDB } from '../methods.js';
 import studentProgressSchema from '../schema/studentProgress.js';
 import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
+import CertificateController from './certificate.js';
 
 const isProgressAuditEnabled = () =>
     process.env.PROGRESS_AUDIT_LOG === 'true' || process.env.PROGRESS_UPSERT_AUDIT === 'true';
@@ -806,6 +807,14 @@ export default class studentProgressController {
                     studentProgressSchema,
                     { student_id: userId, week: week }
                 );
+
+                // Auto-generate certificate if week 8 is completed
+                if (status === 'completed' && Number(week) === 8) {
+                    // Fire and forget - don't block response
+                    CertificateController.generateIfEligible(userId).catch(err => {
+                        console.error('[StudentProgress] Certificate auto-gen failed:', err);
+                    });
+                }
             }
 
             return {

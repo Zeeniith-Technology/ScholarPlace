@@ -15,6 +15,7 @@ import {
     Image as ImageIcon,
     Video as VideoIcon,
     FileText,
+    ArrowLeft,
 } from 'lucide-react'
 
 interface MediaFile {
@@ -31,6 +32,7 @@ export default function BugReportPage() {
         page_name: '',
         bug_description: '',
         how_to_reproduce: '',
+        report_type: 'bug',
     })
     const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -111,6 +113,7 @@ export default function BugReportPage() {
                     'Authorization': authHeader,
                 },
                 body: JSON.stringify({
+                    report_type: formData.report_type,
                     page_url: formData.page_url,
                     page_name: formData.page_name,
                     bug_description: formData.bug_description,
@@ -147,8 +150,14 @@ export default function BugReportPage() {
             <div className="min-h-screen bg-background p-4 md:p-6">
                 <div className="max-w-4xl mx-auto">
                     {/* Header */}
-                    <div className="mb-6">
-                        <div className="flex items-center gap-3 mb-2">
+                    <div className="mb-6 flex items-center gap-4">
+                        <button
+                            onClick={() => router.back()}
+                            className="p-2 -ml-2 rounded-full hover:bg-neutral-light/10 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-neutral" />
+                        </button>
+                        <div className="flex items-center gap-3">
                             <div className="p-3 rounded-lg bg-red-500/20">
                                 <Bug className="w-6 h-6 text-red-500" />
                             </div>
@@ -203,6 +212,39 @@ export default function BugReportPage() {
                                     required
                                 />
                                 <p className="text-xs text-neutral-light mt-1">The URL where you encountered the bug</p>
+                            </div>
+
+                            {/* Report Type */}
+                            <div>
+                                <label className="block text-sm font-semibold text-neutral mb-2">
+                                    Report Type <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex gap-4">
+                                    <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${formData.report_type === 'bug' ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-background-elevated border-neutral-light/20 text-neutral-light hover:border-neutral-light/50'}`}>
+                                        <input
+                                            type="radio"
+                                            name="report_type"
+                                            value="bug"
+                                            checked={formData.report_type === 'bug'}
+                                            onChange={handleInputChange}
+                                            className="hidden"
+                                        />
+                                        <Bug className="w-4 h-4" />
+                                        <span className="font-medium">Bug Report</span>
+                                    </label>
+                                    <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${formData.report_type === 'suggestion' ? 'bg-blue-500/10 border-blue-500 text-blue-500' : 'bg-background-elevated border-neutral-light/20 text-neutral-light hover:border-neutral-light/50'}`}>
+                                        <input
+                                            type="radio"
+                                            name="report_type"
+                                            value="suggestion"
+                                            checked={formData.report_type === 'suggestion'}
+                                            onChange={handleInputChange}
+                                            className="hidden"
+                                        />
+                                        <AlertCircle className="w-4 h-4" />
+                                        <span className="font-medium">Suggestion</span>
+                                    </label>
+                                </div>
                             </div>
 
                             {/* Page Name */}

@@ -40,6 +40,21 @@ const bugReportSchema = {
         description: 'College name'
     },
 
+    college_name: {
+        type: 'string',
+        required: false,
+        description: 'College name'
+    },
+
+    // Report Type
+    report_type: {
+        type: 'string',
+        required: true,
+        enum: ['bug', 'suggestion', 'ui_issue', 'other'],
+        default: 'bug',
+        description: 'Type of report (bug, suggestion, etc.)'
+    },
+
     // Bug Details
     page_url: {
         type: 'string',

@@ -8,12 +8,6 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { getAuthHeader, getCurrentUserFromToken, clearAuth } from '@/utils/auth'
 import {
-  User,
-  Mail,
-  GraduationCap,
-  Calendar,
-  Phone,
-  BookOpen,
   LogOut,
   Lock,
   CheckCircle2,
@@ -485,14 +479,77 @@ export default function StudentProfilePage() {
         {/* Personal information – icon-led rows */}
         <Card>
           <h2 className="text-xl font-heading font-bold text-neutral mb-5">Personal information</h2>
-          <div className="space-y-0 divide-y divide-neutral-light/15">
-            <InfoRow icon={User} label="Full name" value={profileData.name} />
-            <InfoRow icon={Mail} label="Email" value={profileData.email} sub="Email cannot be changed" />
-            <InfoRow icon={GraduationCap} label="College" value={profileData.college_name || 'Not set'} />
-            <InfoRow icon={Calendar} label="Semester" value={profileData.semester ? `${profileData.semester} Semester` : 'Not set'} />
-            <InfoRow icon={Hash} label="Enrollment number" value={profileData.enrollment_number || 'Not set'} />
-            <InfoRow icon={Phone} label="Phone" value={profileData.contact_number || 'Not set'} />
-            <InfoRow icon={BookOpen} label="Department" value={profileData.department || 'Not set'} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">Full Name</label>
+              <input
+                type="text"
+                value={profileData.name}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">Email</label>
+              <input
+                type="text"
+                value={profileData.email}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+              <p className="text-xs text-neutral-light mt-1">Email cannot be changed</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">Phone</label>
+              <input
+                type="text"
+                value={profileData.contact_number || 'Not set'}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">Enrollment Number</label>
+              <input
+                type="text"
+                value={profileData.enrollment_number || 'Not set'}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">Department</label>
+              <input
+                type="text"
+                value={profileData.department || 'Not set'}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">College</label>
+              <input
+                type="text"
+                value={profileData.college_name || 'Not set'}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral mb-2">Semester</label>
+              <input
+                type="text"
+                value={profileData.semester ? `${profileData.semester} Semester` : 'Not set'}
+                className="w-full px-3 py-2 border border-neutral-light/20 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+              />
+            </div>
           </div>
         </Card>
       </div>
@@ -500,28 +557,4 @@ export default function StudentProfilePage() {
   )
 }
 
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: string
-  sub?: string
-}) {
-  return (
-    <div className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-        <Icon className="w-5 h-5 text-primary" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-neutral-light">{label}</p>
-        <p className="text-neutral font-medium mt-0.5">{value}</p>
-        {sub && <p className="text-xs text-neutral-light mt-1">{sub}</p>}
-      </div>
-    </div>
-  )
-}
 

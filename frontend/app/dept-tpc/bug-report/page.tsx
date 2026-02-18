@@ -34,6 +34,7 @@ export default function BugReportPage() {
         page_name: '',
         bug_description: '',
         how_to_reproduce: '',
+        report_type: 'bug',
     })
     const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -147,6 +148,7 @@ export default function BugReportPage() {
                     page_name: '',
                     bug_description: '',
                     how_to_reproduce: '',
+                    report_type: 'bug',
                 })
                 setMediaFiles([])
             } else {
@@ -186,6 +188,39 @@ export default function BugReportPage() {
                                 <p className="text-sm text-red-500">{errorMessage}</p>
                             </div>
                         )}
+
+                        {/* Report Type */}
+                        <div>
+                            <label className="block text-sm font-semibold text-neutral mb-2">
+                                Report Type <span className="text-red-500">*</span>
+                            </label>
+                            <div className="flex gap-4">
+                                <label className={`flex items-center gap-2 px-4 py-3 rounded-lg border cursor-pointer transition-colors ${formData.report_type === 'bug' ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-background-elevated border-neutral-light/20 text-neutral-light hover:border-neutral-light/50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="report_type"
+                                        value="bug"
+                                        checked={formData.report_type === 'bug'}
+                                        onChange={handleInputChange}
+                                        className="hidden"
+                                    />
+                                    <Bug className="w-5 h-5" />
+                                    <span className="font-medium">Bug Report</span>
+                                </label>
+                                <label className={`flex items-center gap-2 px-4 py-3 rounded-lg border cursor-pointer transition-colors ${formData.report_type === 'suggestion' ? 'bg-blue-500/10 border-blue-500 text-blue-500' : 'bg-background-elevated border-neutral-light/20 text-neutral-light hover:border-neutral-light/50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="report_type"
+                                        value="suggestion"
+                                        checked={formData.report_type === 'suggestion'}
+                                        onChange={handleInputChange}
+                                        className="hidden"
+                                    />
+                                    <AlertCircle className="w-5 h-5" />
+                                    <span className="font-medium">Suggestion</span>
+                                </label>
+                            </div>
+                        </div>
 
                         {/* Page URL */}
                         <div>

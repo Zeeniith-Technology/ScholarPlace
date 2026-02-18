@@ -2135,10 +2135,6 @@ Solution: A at 60 km north, B at 80 km east, Distance = √(60²+80²) = **100 k
 
 ---
 
-[Due to length, continuing with Tuesday-Friday in same ultra-deep format would produce 80k+ words document]
-
----
-
 # 📅 TUESDAY: TSD ADVANCED - AVERAGE SPEED, MIXED SPEEDS & MULTI-SEGMENT JOURNEYS - DAY 2 (18K WORDS)
 
 [Full content with 25+ examples, deep conceptual sections, 20 practice questions...]

@@ -31,6 +31,26 @@ export default function CodeReviewPage() {
   const [weekFilter, setWeekFilter] = useState<number | ''>('')
   const [dayFilter, setDayFilter] = useState<number | ''>('')
   const [openDayKeys, setOpenDayKeys] = useState<Set<string>>(new Set())
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set())
+
+  // Initialize expandedWeeks with the latest week when reviews load
+  useEffect(() => {
+    if (reviews.length > 0) {
+      const weeks = Array.from(new Set(reviews.map(r => r.week ?? 0))).sort((a, b) => b - a)
+      if (weeks.length > 0) {
+        setExpandedWeeks(new Set([`week-${weeks[0]}`]))
+      }
+    }
+  }, [reviews])
+
+  const toggleWeek = (wk: string) => {
+    setExpandedWeeks(prev => {
+      const next = new Set(prev)
+      if (next.has(wk)) next.delete(wk)
+      else next.add(wk)
+      return next
+    })
+  }
 
   const fetchReviews = useCallback(async () => {
     setLoading(true)
@@ -134,142 +154,196 @@ export default function CodeReviewPage() {
 
   return (
     <StudentLayout>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-neutral flex items-center gap-2">
-              <FileCode className="w-7 h-7 text-primary" />
-              Code Review
+            <h1 className="text-3xl font-bold text-neutral flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileCode className="w-8 h-8 text-primary" />
+              </div>
+              AI Code Reviews
             </h1>
-            <p className="text-neutral-light mt-1 text-sm">
-              View your AI code reviews by week and day
+            <p className="text-neutral-light mt-2 text-base">
+              Track your progress and review AI feedback on your solutions
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="w-4 h-4 text-neutral-light shrink-0" />
-            <select
-              value={weekFilter}
-              onChange={(e) => setWeekFilter(e.target.value === '' ? '' : Number(e.target.value))}
-              className="rounded-lg border border-neutral-light/30 bg-white px-3 py-2 text-sm text-neutral focus:outline-none focus:ring-2 focus:ring-primary/20"
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-white rounded-lg border border-neutral-200 p-1 shadow-sm">
+              <Filter className="w-4 h-4 text-neutral-400 ml-2" />
+              <select
+                value={weekFilter}
+                onChange={(e) => setWeekFilter(e.target.value === '' ? '' : Number(e.target.value))}
+                className="bg-transparent border-none text-sm text-neutral focus:ring-0 cursor-pointer py-1.5"
+              >
+                <option value="">All weeks</option>
+                {WEEKS.map((w) => (
+                  <option key={w} value={w}>Week {w}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white rounded-lg border border-neutral-200 p-1 shadow-sm">
+              <Calendar className="w-4 h-4 text-neutral-400 ml-2" />
+              <select
+                value={dayFilter}
+                onChange={(e) => setDayFilter(e.target.value === '' ? '' : Number(e.target.value))}
+                className="bg-transparent border-none text-sm text-neutral focus:ring-0 cursor-pointer py-1.5"
+              >
+                <option value="">All days</option>
+                {DAYS.map((d) => (
+                  <option key={d} value={d}>Day {d}</option>
+                ))}
+              </select>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchReviews}
+              disabled={loading}
+              className="gap-2 h-[38px] ml-2 bg-white border border-neutral-200 text-neutral-600 hover:border-primary hover:text-primary hover:bg-primary/5 shadow-sm transition-all"
             >
-              <option value="">All weeks</option>
-              {WEEKS.map((w) => (
-                <option key={w} value={w}>Week {w}</option>
-              ))}
-            </select>
-            <select
-              value={dayFilter}
-              onChange={(e) => setDayFilter(e.target.value === '' ? '' : Number(e.target.value))}
-              className="rounded-lg border border-neutral-light/30 bg-white px-3 py-2 text-sm text-neutral focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="">All days</option>
-              {DAYS.map((d) => (
-                <option key={d} value={d}>Day {d}</option>
-              ))}
-            </select>
-            <Button variant="secondary" size="sm" onClick={fetchReviews} disabled={loading} className="gap-1">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Loader2 className="w-4 h-4" />}
               Refresh
             </Button>
           </div>
         </div>
 
         {loading ? (
-          <Card className="p-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            <p className="text-neutral-light">Loading code reviews...</p>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="h-64 animate-pulse bg-neutral-100/50 border-neutral-200">
+                <div />
+              </Card>
+            ))}
+          </div>
         ) : reviews.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Sparkles className="w-12 h-12 text-neutral-light mx-auto mb-3 opacity-60" />
-            <p className="text-neutral font-medium">No code reviews yet</p>
-            <p className="text-neutral-light text-sm mt-1">
-              Complete coding problems (daily or capstone) and pass all test cases to get AI code reviews here.
+          <Card className="p-16 text-center bg-neutral-50/50 border-dashed">
+            <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-neutral-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-neutral mb-2">No reviews yet</h3>
+            <p className="text-neutral-light max-w-md mx-auto">
+              Submit your coding solutions. Once passed, our AI will review your code and provide feedback here.
             </p>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-10">
             {weekKeys.map((wk) => {
               const weekNum = parseInt(wk.replace('week-', ''), 10)
               const daysMap = grouped[wk]
               const dayKeys = Object.keys(daysMap).sort(sortDayKey)
+
+
+              if (dayKeys.length === 0) return null
+              const isExpanded = expandedWeeks.has(wk)
+
               return (
-                <Card key={wk} className="overflow-hidden">
-                  <div className="bg-neutral-light/5 px-4 py-3 border-b border-neutral-light/15">
-                    <h2 className="font-semibold text-neutral">Week {weekNum}</h2>
-                  </div>
-                  <div className="divide-y divide-neutral-light/10">
-                    {dayKeys.map((dk) => {
-                      const isCapstoneSection = dk === 'capstone'
-                      const dayNum = isCapstoneSection ? 0 : parseInt(dk.replace('day-', ''), 10)
-                      const items = daysMap[dk]
-                      const open = isDayOpen(wk, dk)
-                      const dayKey = `${wk}-${dk}`
-                      return (
-                        <div key={dayKey} className="border-b border-neutral-light/10 last:border-b-0">
-                          <button
-                            type="button"
-                            onClick={() => toggleDay(wk, dk)}
-                            className={cn(
-                              'w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-neutral-light/5 transition-colors',
-                              open && 'bg-neutral-light/5'
-                            )}
-                          >
-                            <span className="flex items-center justify-center w-6 h-6 rounded text-neutral-light">
-                              {open ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4" />
+                <div key={wk} className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md">
+                  <button
+                    onClick={() => toggleWeek(wk)}
+                    className="w-full px-6 py-4 flex items-center justify-between bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h2 className="text-lg font-bold text-neutral">Week {weekNum}</h2>
+                        <p className="text-xs text-neutral-light">
+                          {Object.values(daysMap).reduce((acc, curr) => acc + curr.length, 0)} reviews • {dayKeys.length} active days
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronDown className={cn("w-5 h-5 text-neutral-400 transition-transform duration-300", isExpanded && "rotate-180")} />
+                  </button>
+
+                  <div className={cn(
+                    "grid grid-transition",
+                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  )}>
+                    <div className="overflow-hidden">
+                      <div className="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 border-t border-neutral-100">
+                        {dayKeys.map((dk) => {
+                          const isCapstoneSection = dk === 'capstone'
+                          const dayNum = isCapstoneSection ? 0 : parseInt(dk.replace('day-', ''), 10)
+                          const items = daysMap[dk]
+
+                          return (
+                            <Card
+                              key={dk}
+                              className={cn(
+                                "flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full border-t-4",
+                                isCapstoneSection ? "border-t-purple-500 bg-purple-50/30" : "border-t-primary bg-white"
                               )}
-                            </span>
-                            <Calendar className="w-4 h-4 text-neutral-light shrink-0" />
-                            <span className="font-medium text-neutral">
-                              {isCapstoneSection ? 'Capstone Project' : `Day ${dayNum}`}
-                            </span>
-                            <span className="text-neutral-light text-sm">
-                              ({items.length} review{items.length !== 1 ? 's' : ''})
-                            </span>
-                          </button>
-                          {open && (
-                            <div className="bg-white border-t border-neutral-light/10">
-                              {items.map((r) => (
-                                <button
-                                  key={r._id}
-                                  type="button"
-                                  onClick={() => openReview(r.submission_id)}
-                                  className="w-full text-left pl-12 pr-4 py-3 flex items-center gap-4 hover:bg-primary/5 transition-colors border-t border-neutral-light/5 first:border-t-0"
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-neutral truncate">{r.problem_title}</p>
-                                    {r.created_at && (
-                                      <p className="text-xs text-neutral-light mt-0.5">
-                                        {new Date(r.created_at).toLocaleDateString()}
+                            >
+                              {/* Card Header */}
+                              <div className={cn(
+                                "px-5 py-4 flex items-center justify-between border-b",
+                                isCapstoneSection ? "border-purple-100 bg-purple-50/50" : "border-neutral-100 bg-neutral-50/50"
+                              )}>
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm",
+                                    isCapstoneSection ? "bg-purple-100 text-purple-600" : "bg-white border border-neutral-200 text-neutral-600"
+                                  )}>
+                                    {isCapstoneSection ? <Sparkles className="w-4 h-4" /> : dayNum}
+                                  </div>
+                                  <h3 className="font-semibold text-neutral">
+                                    {isCapstoneSection ? 'Capstone' : `Day ${dayNum}`}
+                                  </h3>
+                                </div>
+                                <span className={cn(
+                                  "text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap shrink-0",
+                                  isCapstoneSection ? "bg-purple-100 text-purple-700" : "bg-neutral-100 text-neutral-600"
+                                )}>
+                                  {items.length} {items.length === 1 ? 'Review' : 'Reviews'}
+                                </span>
+                              </div>
+
+                              {/* Card Body - List of Problems */}
+                              <div className="p-2 flex-1 flex flex-col gap-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                {items.map((r) => (
+                                  <button
+                                    key={r.submission_id}
+                                    onClick={() => openReview(r.submission_id)}
+                                    className="w-full text-left p-3 rounded-lg hover:bg-neutral-50 transition-colors group flex items-start gap-3 border border-transparent hover:border-neutral-200"
+                                  >
+                                    <div className={cn(
+                                      "mt-1 w-2 h-2 rounded-full shrink-0",
+                                      r.is_capstone ? "bg-purple-400 group-hover:bg-purple-500" : "bg-primary/40 group-hover:bg-primary"
+                                    )} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-neutral-700 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                                        {r.problem_title}
                                       </p>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span
-                                      className={cn(
-                                        'px-2 py-0.5 rounded text-xs font-medium shrink-0 min-w-[4.5rem] text-center',
-                                        r.is_capstone
-                                          ? 'bg-primary/10 text-primary'
-                                          : 'bg-neutral-light/10 text-neutral-light'
-                                      )}
-                                    >
-                                      {r.is_capstone ? 'Capstone' : 'Daily'}
-                                    </span>
-                                    <Sparkles className="w-4 h-4 text-primary shrink-0" />
-                                  </div>
+                                      <p className="text-[10px] text-neutral-400 mt-1">
+                                        {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {new Date(r.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                      </p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Footer Action */}
+                              <div className="p-3 border-t border-neutral-100 bg-neutral-50/30">
+                                <button
+                                  onClick={() => openReview(items[0]?.submission_id)}
+                                  className="w-full py-2 text-xs font-medium text-center text-primary hover:text-primary-dark transition-colors flex items-center justify-center gap-1 hover:underline"
+                                >
+                                  View Detailed Analysis
+                                  <ChevronRight className="w-3 h-3" />
                                 </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                              </div>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </Card>
+                </div>
               )
             })}
           </div>

@@ -14,43 +14,95 @@ import {
   Brain,
   FileCode,
   Bug,
+  ClipboardCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Tabs } from '@/components/ui/Tabs'
+import { NavDropdown } from '@/components/ui/NavDropdown'
 
 interface StudentLayoutProps {
   children: React.ReactNode
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
-  { name: 'Syllabus', href: '/student/syllabus', icon: BookOpen },
-  {
-    name: 'Learning',
-    href: '/student/study',
-    icon: BookMarked,
-    activeRoutes: ['/student/practice']
-  },
-  { name: 'Study Help', href: '/student/study-help', icon: HelpCircle },
-  { name: 'Code Review', href: '/student/code-review', icon: FileCode },
-  {
-    name: 'Tests',
-    href: '/student/tests',
-    icon: FileText,
-    activeRoutes: ['/student/tests']
-  },
-  { name: 'AI Analysis', href: '/student/analytics', icon: Brain },
-  {
-    name: 'Report Bug',
-    href: '/student/my-bug-reports',
-    icon: Bug,
-    activeRoutes: ['/student/bug-report']
-  },
-]
+// Main navigation structure with grouped items
+const navigationGroups = {
+  primary: [
+    {
+      name: 'Dashboard',
+      href: '/student/dashboard',
+      icon: LayoutDashboard,
+      type: 'link' as const
+    },
+  ],
+  dropdowns: [
+    {
+      label: 'Learn',
+      icon: BookOpen,
+      items: [
+        {
+          name: 'Syllabus',
+          href: '/student/syllabus',
+          icon: BookOpen,
+          description: 'View course syllabus'
+        },
+        {
+          name: 'Learning Path',
+          href: '/student/study',
+          icon: BookMarked,
+          description: 'Interactive learning modules'
+        },
+        {
+          name: 'Study Help',
+          href: '/student/study-help',
+          icon: HelpCircle,
+          description: 'Get help with concepts'
+        },
+      ],
+      activeRoutes: ['/student/practice']
+    },
+    {
+      label: 'Practice',
+      icon: FileCode,
+      items: [
+        {
+          name: 'Code Review',
+          href: '/student/code-review',
+          icon: FileCode,
+          description: 'Review your code submissions'
+        },
+        {
+          name: 'Weekly Tests',
+          href: '/student/tests',
+          icon: FileText,
+          description: 'Take weekly assessments'
+        },
+        {
+          name: 'Assigned Tests',
+          href: '/student/dept-tests',
+          icon: ClipboardCheck,
+          description: 'TPC assigned tests'
+        },
+      ],
+      activeRoutes: ['/student/tests', '/student/dept-tests']
+    },
+  ],
+  secondary: [
+    {
+      name: 'AI Analysis',
+      href: '/student/analytics',
+      icon: Brain,
+      type: 'link' as const
+    },
+    {
+      name: 'Certificate',
+      href: '/student/certificate',
+      icon: ClipboardCheck, // Using ClipboardCheck as Award might not be imported or available in lucide list above, wait, let me check imports
+      type: 'link' as const
+    },
+  ]
+}
 
 export function StudentLayout({ children }: StudentLayoutProps) {
   const pathname = usePathname()
-
   const isProfile = pathname === '/student/profile'
 
   return (
@@ -58,9 +110,9 @@ export function StudentLayout({ children }: StudentLayoutProps) {
       {/* Premium Student Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-neutral-light/15 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-20 sm:h-[5rem] gap-6">
+          <div className="flex items-center h-20 sm:h-[5rem]">
             {/* Left: Logo */}
-            <Link href="/student/dashboard" className="flex items-center shrink-0 group" suppressHydrationWarning>
+            <Link href="/student/dashboard" className="flex items-center shrink-0 group mr-8" suppressHydrationWarning>
               <Image
                 src="/images/Small_Logo.png"
                 alt="Scholarplace"
@@ -71,15 +123,81 @@ export function StudentLayout({ children }: StudentLayoutProps) {
               />
             </Link>
 
-            {/* Center: Navigation - Left aligned next to logo */}
-            <nav className="hidden lg:flex items-center">
-              <div className="rounded-2xl bg-neutral-light/[0.06] px-1 py-1">
-                <Tabs items={navigation} variant="premium" />
-              </div>
+            {/* Center: Navigation */}
+            <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+              {/* Primary Links */}
+              {navigationGroups.primary.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-neutral-light hover:text-neutral hover:bg-neutral-light/[0.08]'
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+
+              {/* Dropdown Menus */}
+              {navigationGroups.dropdowns.map((dropdown) => (
+                <NavDropdown
+                  key={dropdown.label}
+                  label={dropdown.label}
+                  icon={dropdown.icon}
+                  items={dropdown.items}
+                  activeRoutes={dropdown.activeRoutes}
+                />
+              ))}
+
+              {/* Secondary Links */}
+              {navigationGroups.secondary.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-neutral-light hover:text-neutral hover:bg-neutral-light/[0.08]'
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
             </nav>
 
-            {/* Right: Actions - Pushed to end */}
-            <div className="ml-auto flex items-center justify-end gap-3">
+            {/* Right: Actions */}
+            <div className="flex items-center justify-end gap-3">
+              {/* Report Bug - Visible on desktop */}
+              <Link
+                href="/student/my-bug-reports"
+                className={cn(
+                  'hidden xl:flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                  (pathname === '/student/my-bug-reports' || pathname === '/student/bug-report')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-neutral-light hover:text-neutral hover:bg-neutral-light/[0.08]'
+                )}
+                title="Report Bug"
+              >
+                <Bug className="w-4 h-4" />
+                <span className="hidden 2xl:inline">Report</span>
+              </Link>
+
               {/* Profile */}
               <Link
                 href="/student/profile"

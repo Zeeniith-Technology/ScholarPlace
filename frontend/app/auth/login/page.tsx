@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/layouts/AuthLayout'
 import { Toast, useToast } from '@/components/ui/Toast'
-import { setToken, getToken } from '@/utils/auth'
+import { setToken, getToken, getAuthData, clearAuth } from '@/utils/auth'
 
 /**
  * Login Page
@@ -25,6 +25,40 @@ export default function LoginPage() {
   const [generalError, setGeneralError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Check for existing session on mount
+  React.useEffect(() => {
+    const authData = getAuthData()
+    if (authData?.isAuthenticated && authData?.token) {
+      // Basic token expiry check (optional, but good for UX)
+      try {
+        const payload = JSON.parse(atob(authData.token.split('.')[1]))
+        if (payload.exp && Date.now() >= payload.exp * 1000) {
+          clearAuth()
+          return
+        }
+      } catch (e) {
+        clearAuth()
+        return
+      }
+
+      console.log('[Login] User already logged in, redirecting to dashboard')
+      const userRole = authData.role || 'Student'
+      const normalizedRole = userRole.toLowerCase()
+
+      if (normalizedRole === 'student') {
+        router.replace('/student/dashboard')
+      } else if (normalizedRole === 'depttpc' || normalizedRole === 'dept-tpc') {
+        router.replace('/dept-tpc/dashboard')
+      } else if (normalizedRole === 'tpc') {
+        router.replace('/tpc/dashboard')
+      } else if (normalizedRole === 'superadmin') {
+        router.replace('/superadmin/dashboard')
+      } else {
+        router.replace('/student/dashboard')
+      }
+    }
+  }, [router])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}

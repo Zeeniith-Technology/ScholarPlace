@@ -15,7 +15,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: [],
+    domains: ['res.cloudinary.com'],
   },
   transpilePackages: ['recharts'],
   webpack: (config, { isServer }) => {

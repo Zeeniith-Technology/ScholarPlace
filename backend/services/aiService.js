@@ -35,14 +35,14 @@ class AIService {
              * - gemini-2.5-pro    (more capable)
              * - gemini-2.0-flash  (alternative)
              */
-            const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+            const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
             this.model = this.genAI.getGenerativeModel({
                 model: modelName,
                 generationConfig: {
                     temperature: 0.7,      // Faster than 1.0
                     topK: 20,              // Faster than default 40
                     topP: 0.8,             // Faster than default 0.95
-                    maxOutputTokens: 1000, // Limit response length
+                    maxOutputTokens: 8192, // Increased limit for detailed reviews
                 }
             });
             console.log(`[AIService] Initialized with model: ${modelName}`);
@@ -328,12 +328,25 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
      * Generate Personalized Learning Path
      */
     async generateLearningPath(studentPerformance) {
+        // Check cache first (cache for 30 minutes)
+        const cacheKey = this.generateCacheKey('learning_path', studentPerformance);
+        const cached = this.getCached(cacheKey);
+        if (cached) {
+            console.log('[AIService] Returning cached learning path');
+            return cached;
+        }
+
         try {
+            let result;
             if (this.provider === 'gemini') {
-                return await this.generateLearningPathGemini(studentPerformance);
+                result = await this.generateLearningPathGemini(studentPerformance);
             } else if (this.provider === 'openai') {
-                return await this.generateLearningPathOpenAI(studentPerformance);
+                result = await this.generateLearningPathOpenAI(studentPerformance);
             }
+
+            // Cache for 30 minutes
+            this.setCached(cacheKey, result, 1800);
+            return result;
         } catch (error) {
             console.error('AI Learning Path Error:', error);
             // Extract meaningful error message
@@ -447,6 +460,104 @@ Format as JSON array:
             throw new Error('Failed to generate questions in correct format.');
         }
     }
+
+    /**
+     * Generate Test Questions for Department TPC
+     * Pure AI generation based on module, topic, difficulty
+     * @param {String} module - 'DSA' or 'Aptitude'
+     * @param {String} topic - Specific topic (e.g., 'Arrays', 'Logical Reasoning')
+     * @param {String} difficulty - 'Easy', 'Medium', 'Hard', or 'Mixed'
+     * @param {Number} count - Number of questions to generate
+     * @returns {Array} Array of question objects with text, options, correct_option, marks
+     */
+    async generateTestQuestions(module, topic, difficulty, count = 10) {
+        if (this.provider === 'gemini') {
+            return await this.generateTestQuestionsGemini(module, topic, difficulty, count);
+        } else {
+            throw new Error('OpenAI provider not yet implemented for test generation');
+        }
+    }
+
+    async generateTestQuestionsGemini(module, topic, difficulty, count) {
+        try {
+            const systemPrompt = `You are an expert ${module} educator creating practice test questions.
+
+STRICT RULES:
+1. Generate EXACTLY ${count} multiple-choice questions
+2. Each question must have EXACTLY 4 options
+3. Mark the correct answer clearly (0-3 index)
+4. Questions must be relevant to: "${topic}"
+5. Difficulty level: ${difficulty}
+6. Module: ${module}
+7. Response MUST be valid JSON array, no markdown, no extra text
+8. Each question must have: text, options (array of 4 strings), correct_option (0-3), marks (default 1)
+
+${difficulty === 'Mixed' ? 'Include a mix of Easy, Medium, and Hard questions.' : `All questions should be ${difficulty} level.`}
+
+${module === 'DSA'
+                    ? 'Focus on conceptual understanding, algorithm analysis, time/space complexity, data structures, and problem-solving strategies.'
+                    : 'Focus on logical reasoning, quantitative aptitude, verbal ability, or data interpretation as relevant to the topic.'
+                }
+
+EXAMPLE OUTPUT FORMAT:
+[
+  {
+    "text": "What is the time complexity of binary search in a sorted array?",
+    "options": ["O(n)", "O(log n)", "O(n^2)", "O(1)"],
+    "correct_option": 1,
+    "marks": 1
+  }
+]
+
+Generate ${count} high-quality ${difficulty} level questions on "${topic}" for ${module} module now. Return ONLY the JSON array, nothing else.`;
+
+            // Use existing configured model instance instead of creating new one
+            const result = await this.model.generateContent(systemPrompt);
+            const response = await result.response;
+            let text = response.text().trim();
+
+            // Clean markdown if present
+            if (text.startsWith('```json')) {
+                text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            } else if (text.startsWith('```')) {
+                text = text.replace(/```\n?/g, '');
+            }
+
+            const questions = JSON.parse(text);
+
+            // Validate structure
+            if (!Array.isArray(questions)) {
+                throw new Error('AI response is not an array');
+            }
+
+            // Validate and clean each question
+            const validatedQuestions = questions.map((q, idx) => {
+                if (!q.text || !Array.isArray(q.options) || q.options.length !== 4 || typeof q.correct_option !== 'number') {
+                    console.warn(`[AI] Invalid question at index ${idx}, skipping:`, q);
+                    return null;
+                }
+                return {
+                    text: q.text.trim(),
+                    options: q.options.map(opt => String(opt).trim()),
+                    correct_option: q.correct_option,
+                    marks: q.marks || 1
+                };
+            }).filter(q => q !== null);
+
+            console.log(`[AI] Generated ${validatedQuestions.length}/${count} valid questions for ${module} - ${topic} (${difficulty})`);
+
+            if (validatedQuestions.length === 0) {
+                throw new Error('No valid questions generated');
+            }
+
+            return validatedQuestions;
+
+        } catch (error) {
+            console.error('[AI] Test Generation Error:', error);
+            throw error;
+        }
+    }
+
 
     /**
      * Analyze Performance and Provide Feedback

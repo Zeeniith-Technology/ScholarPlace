@@ -218,29 +218,75 @@ export default class aiController {
         try {
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
             const { week, analyticsContext } = req.body;
+            const weekNum = parseInt(week) || 1;
 
-            // Fetch student performance data
-            const progressResult = await fetchData(
-                'tblStudentProgress',
-                {},
-                { student_id: userId }, // Should fetch all progress to understand weak areas
-                {}
-            );
+            // 1. Check Cache (tblAIInteraction) - 24 hour TTL
+            try {
+                const oneDayAgo = new Date();
+                oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
-            const practiceTestResult = await fetchData(
-                'tblPracticeTest',
-                {},
-                { student_id: userId, week: week || 1 },
-                {}
-            );
+                const cachedInteraction = await fetchData(
+                    'tblAIInteraction',
+                    {},
+                    {
+                        student_id: userId,
+                        interaction_type: 'learning-path',
+                        week: weekNum,
+                        created_at: { $gte: oneDayAgo }
+                    },
+                    { sort: { created_at: -1 }, limit: 1 }
+                );
 
-            // Get learning profile
-            const profileResult = await fetchData(
-                'tblStudentLearningProfile',
-                {},
-                { student_id: userId },
-                {}
-            );
+                if (cachedInteraction.data && cachedInteraction.data.length > 0) {
+                    const latest = cachedInteraction.data[0];
+                    console.log(`[AI Controller] Returning cached learning path for user ${userId}, week ${weekNum}`);
+
+                    let cachedPath;
+                    if (latest.parsed_response) {
+                        cachedPath = latest.parsed_response;
+                    } else if (latest.ai_response) {
+                        try {
+                            cachedPath = JSON.parse(latest.ai_response);
+                        } catch (e) {
+                            cachedPath = { analysis: latest.ai_response }; // Fallback
+                        }
+                    }
+
+                    if (cachedPath) {
+                        res.locals.responseData = {
+                            success: true,
+                            status: 200,
+                            message: 'Learning path retrieved from cache',
+                            data: cachedPath
+                        };
+                        return next();
+                    }
+                }
+            } catch (cacheErr) {
+                console.warn('[AI Controller] Cache check failed, proceeding to generate:', cacheErr);
+            }
+
+            // 2. Fetch Data in Parallel
+            const [progressResult, practiceTestResult, profileResult] = await Promise.all([
+                fetchData('tblStudentProgress', {
+                    notes: 0,
+                    bookmarks: 0,
+                    days_completed: 1,
+                    progress_percentage: 1,
+                    status: 1,
+                    week: 1,
+                    student_id: 1,
+                    practice_test_scores: 1
+                }, { student_id: userId }, {}),
+                fetchData('tblPracticeTest', {
+                    'questions_attempted.question': 0,
+                    'questions_attempted.explanation': 0,
+                    'questions_attempted.options': 0,
+                    'questions_attempted.selected_answer': 0,
+                    'questions_attempted.correct_answer': 0
+                }, { student_id: userId, week: weekNum }, {}),
+                fetchData('tblStudentLearningProfile', {}, { student_id: userId }, {})
+            ]);
 
             const studentPerformance = {
                 progress: progressResult.data || [],
@@ -258,7 +304,7 @@ export default class aiController {
                 {
                     student_id: userId,
                     interaction_type: 'learning-path',
-                    week: week || 1,
+                    week: weekNum,
                     input_data: studentPerformance,
                     ai_response: JSON.stringify(learningPath),
                     parsed_response: learningPath,

@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +19,7 @@ import {
   Code,
   Sparkles,
   Bug,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAuthHeader } from '@/utils/auth'
@@ -87,11 +88,65 @@ const navigation = [
   { name: 'Coding Monitoring', href: '/dept-tpc/coding-monitoring', icon: Code },
   { name: 'AI Reviews', href: '/dept-tpc/ai-reviews', icon: Sparkles },
   { name: 'Tests', href: '/dept-tpc/tests', icon: FileText },
+  { name: 'Test Results', href: '/dept-tpc/schedule-test?tab=results', icon: ClipboardList },
+  { name: 'Certificates', href: '/dept-tpc/certificates', icon: Award },
   { name: 'Test Approvals', href: '/dept-tpc/test-approvals', icon: Shield },
   { name: 'Analytics', href: '/dept-tpc/analytics', icon: BarChart3 },
   { name: 'Reports', href: '/dept-tpc/reports', icon: BookOpen },
   { name: 'Settings', href: '/dept-tpc/settings', icon: Settings },
 ]
+
+function SidebarNav({ pathname, sidebarOpen, setSidebarOpen }: {
+  pathname: string | null
+  sidebarOpen: boolean
+  setSidebarOpen: (v: boolean) => void
+}) {
+  const searchParams = useSearchParams()
+  return (
+    <>
+      {navigation.map((item) => {
+        const Icon = item.icon
+        const [itemPath, itemQuery] = item.href.split('?')
+        const itemParams = new URLSearchParams(itemQuery || '')
+        const isActive = (() => {
+          if (!pathname?.startsWith(itemPath)) return false
+          if (itemQuery) {
+            return [...itemParams.entries()].every(([k, v]) => searchParams.get(k) === v)
+          }
+          // Plain path — not active if a query-string sibling is active
+          const siblingActive = navigation.some(n => {
+            const [sp, sq] = n.href.split('?')
+            if (!sq || sp !== itemPath) return false
+            const sParams = new URLSearchParams(sq)
+            return [...sParams.entries()].every(([k, v]) => searchParams.get(k) === v)
+          })
+          return !siblingActive && (pathname === itemPath || pathname?.startsWith(itemPath + '/'))
+        })()
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              'flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group',
+              isActive
+                ? 'bg-primary text-white shadow-md'
+                : 'text-neutral-light hover:bg-background-elevated hover:text-neutral'
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <Icon className="w-5 h-5" />
+              {item.name}
+            </div>
+            {item.name === 'Test Approvals' && (
+              <TestApprovalsBadge />
+            )}
+          </Link>
+        )
+      })}
+    </>
+  )
+}
 
 export function DepartmentTPCLayout({ children }: DepartmentTPCLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -164,31 +219,9 @@ export function DepartmentTPCLayout({ children }: DepartmentTPCLayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group',
-                    isActive
-                      ? 'bg-primary text-white shadow-md'
-                      : 'text-neutral-light hover:bg-background-elevated hover:text-neutral'
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5" />
-                    {item.name}
-                  </div>
-                  {item.name === 'Test Approvals' && (
-                    <TestApprovalsBadge />
-                  )}
-                </Link>
-              )
-            })}
+            <Suspense fallback={null}>
+              <SidebarNav pathname={pathname} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            </Suspense>
           </nav>
 
           {/* Footer */}

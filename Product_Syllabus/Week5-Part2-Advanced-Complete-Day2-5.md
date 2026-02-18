@@ -1627,18 +1627,4 @@ Q: Train 180m at 72 km/h passes tunnel 720m, then boat 20 km/h (current 4) goes 
 
 **Answer:**
 Tunnel: 45s, Boat: 2h. Total ≈ **2.013 hours**
-
 ---
-
-**FINAL STATS FOR DAYS 2-5:**
-- **Day 2 (Tuesday):** 18K+ words, 20+ examples, 20 practice questions
-- **Day 3 (Wednesday):** 18K+ words, 22+ examples, 22 practice questions
-- **Day 4 (Thursday):** 16K+ words, 20+ examples, 20 practice questions
-- **Day 5 (Friday):** 10K+ words, 10+ examples, 10 practice questions
-- **Total:** 62K+ words, 72+ examples, 72 practice questions
-- **Depth Level:** Expert (matching Day 1 quality)
-- **Mastery Readiness:** Complete Week 5 Aptitude coverage
-
----
-
-**Document Complete. Ready for Integration.**

@@ -8,6 +8,7 @@ import { ObjectId } from 'mongodb';
 import aiService from '../services/aiService.js';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 const COLLECTION_NAME = 'tblCodingProblem';
 const CODE_REVIEW_COLLECTION = 'tblCodeReview';
@@ -371,6 +372,53 @@ export async function getAllCodingProblems(req, res) {
  * Submit solution for evaluation (placeholder)
  * POST /coding-problems/submit
  */
+// Helper to execute code using JDoodle API (Replacing Piston)
+async function executeWithJDoodle(language, code, stdin) {
+    try {
+        // Map language to correct JDoodle language and version
+        const languageMap = {
+            'python': { language: 'python3', versionIndex: '4' },  // Python 3.10
+            'javascript': { language: 'nodejs', versionIndex: '4' }, // Node.js 18
+            'c': { language: 'c', versionIndex: '5' },              // GCC 11.1.0
+            'cpp': { language: 'cpp17', versionIndex: '1' },        // C++17
+            'c++': { language: 'cpp17', versionIndex: '1' },        // Alias for c++
+            'java': { language: 'java', versionIndex: '4' }         // JDK 17
+        };
+
+        const config = languageMap[language.toLowerCase()];
+        if (!config) {
+            console.error(`[JDoodle] Unsupported language: ${language}`);
+            return { run: { code: 1, stderr: `Unsupported language: ${language}`, stdout: "" } };
+        }
+
+        const response = await axios.post('https://api.jdoodle.com/v1/execute', {
+            clientId: process.env.JDOODLE_CLIENT_ID,
+            clientSecret: process.env.JDOODLE_CLIENT_SECRET,
+            script: code,
+            language: config.language,
+            versionIndex: config.versionIndex,
+            stdin: stdin
+        });
+
+        const { output, statusCode, memory, cpuTime } = response.data;
+
+        // Adapt JDoodle response to match Piston structure expected by doSubmit
+        // Piston: { run: { stdout, stderr, code } }
+        return {
+            run: {
+                stdout: output,
+                stderr: statusCode !== 200 ? (output || "Execution Error") : "",
+                code: statusCode === 200 ? 0 : 1
+            },
+            compile: { code: 0, stderr: "" } // Mock compile success as JDoodle handles it
+        };
+    } catch (error) {
+        console.error("JDoodle API Error:", error.message);
+        return { run: { code: 1, stderr: error.message || "Execution API failed", stdout: "" } };
+    }
+}
+
+/* Legacy Piston Function Removed
 // Helper to execute code using Piston API
 async function executeWithPiston(language, code, stdin) {
     try {
@@ -407,6 +455,7 @@ async function executeWithPiston(language, code, stdin) {
         return { run: { error: "Execution API failed" } };
     }
 }
+*/
 
 // ... (keep validation logic) ...
 
@@ -485,16 +534,17 @@ async function doSubmit(req, res) {
         };
         const pistonLang = langMap[language] || language;
 
-        for (const testCase of testCases) {
+        // Run all test cases in parallel
+        const executionPromises = testCases.map(async (testCase) => {
             const input = testCase.input || '';
             const expectedOutput = (testCase.expected_output || testCase.output || '').trim();
 
-            // Sanitize input: strip variable names but preserve all values
+            // Sanitize input
             let sanitizedInput = input;
             if (typeof sanitizedInput === 'string' && sanitizedInput.includes('=')) {
+                // ... same sanitization logic ...
                 const assignments = sanitizedInput.split(',').map(s => s.trim());
                 const values = [];
-
                 for (const assignment of assignments) {
                     if (assignment.includes('=')) {
                         const parts = assignment.split('=');
@@ -506,56 +556,51 @@ async function doSubmit(req, res) {
                         }
                     }
                 }
-
                 if (values.length > 0) {
                     sanitizedInput = values.join(' ');
                 }
             }
 
-            // Add small delay to prevent Piston API rate limiting when running multiple tests
-            if (testCases.indexOf(testCase) > 0) {
-                await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay between tests
-            }
+            const executionResult = await executeWithJDoodle(pistonLang, solution, sanitizedInput);
 
-            const executionResult = await executeWithPiston(pistonLang, solution, sanitizedInput);
-
-            // Check for compilation error (Piston v2 puts it in 'compile' object)
+            // Check for compilation error
             let actualOutput = '';
             let stderr = '';
 
             if (executionResult.compile && executionResult.compile.code !== 0) {
-                // Compilation failed
                 stderr = executionResult.compile.stderr || executionResult.compile.stdout || 'Compilation error';
                 actualOutput = `Compilation Error:\n${stderr}`;
             } else {
-                // Compilation success (or interpreted language), check run output
                 actualOutput = (executionResult.run?.stdout || '').trim();
                 stderr = executionResult.run?.stderr || '';
 
-                // If run failed with error but no logic error
                 if (executionResult.run?.code !== 0 && !stderr) {
                     stderr = executionResult.run?.output || `Runtime Error (Exit code: ${executionResult.run?.code})`;
                 }
 
-                // Fallback: If no stdout but we have stderr, show stderr as output (common for JS/Python runtime errors)
                 if (!actualOutput && stderr) {
                     actualOutput = `Error:\n${stderr}`;
                 }
             }
 
             const isCorrect = actualOutput === expectedOutput;
-            if (isCorrect) passedCases++;
 
-            // Test logging removed for production
-
-            testResults.push({
-                input: input,
+            return {
+                input: testCase.input,
                 expectedOutput: expectedOutput,
                 actualOutput: actualOutput,
-                stderr: stderr,
-                passed: isCorrect
-            });
-        }
+                passed: isCorrect,
+                status: isCorrect ? 'Passed' : 'Failed'
+            };
+        });
+
+        const results = await Promise.all(executionPromises);
+
+        results.forEach(result => {
+            if (result.passed) passedCases++;
+            testResults.push(result);
+        });
+
 
         // 3. Save submission
         // Debug logging removed for production
@@ -655,6 +700,20 @@ function processSubmitQueue() {
  * POST /coding-problems/submit
  */
 export async function submitSolution(req, res) {
+    const userId = req.user?.id || req.user?.userId;
+
+    // Rate Limiting (Submit Solution)
+    if (userId) {
+        const { checkRateLimit } = await import('../utils/rateLimiter.js');
+        const limit = checkRateLimit(userId, 'submit');
+        if (!limit.allowed) {
+            return res.status(429).json({
+                success: false,
+                message: `Rate limit exceeded. Please wait ${limit.waitTime}s before submitting again.`,
+                code: 'RATE_LIMIT_EXCEEDED'
+            });
+        }
+    }
     if (submitQueue.length >= MAX_SUBMIT_QUEUE_SIZE) {
         res.setHeader('Retry-After', '30');
         return res.status(503).json({
@@ -745,7 +804,7 @@ export async function runSolution(req, res) {
                 }
             }
 
-            const executionResult = await executeWithPiston(pistonLang, solution, sanitizedInput);
+            const executionResult = await executeWithJDoodle(pistonLang, solution, sanitizedInput);
 
             // Check for compilation error (Piston v2 puts it in 'compile' object)
             let actualOutput = '';

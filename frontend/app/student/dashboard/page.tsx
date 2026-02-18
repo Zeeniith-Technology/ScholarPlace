@@ -589,18 +589,7 @@ export default function StudentDashboardPage() {
                         ))}
                       </div>
                     </div>
-                    {test.status === 'upcoming' && ('href' in test && test.href ? (
-                      <Link
-                        href={test.href}
-                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap inline-block"
-                      >
-                        View Details
-                      </Link>
-                    ) : (
-                      <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 whitespace-nowrap">
-                        View Details
-                      </button>
-                    ))}
+
                   </div>
                 </div>
               ))

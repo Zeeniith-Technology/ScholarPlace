@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -24,7 +24,9 @@ import {
     Search,
     Trash2,
     PlusCircle,
-    ChevronDown
+    ChevronDown,
+    BarChart,
+    Table
 } from 'lucide-react'
 
 // --- Components ---
@@ -236,11 +238,22 @@ function ManualQuestionEditor({ questions, onChange }: { questions: any[], onCha
 }
 
 export default function ScheduleTestPage() {
+    return (
+        <Suspense fallback={null}>
+            <ScheduleTestContent />
+        </Suspense>
+    )
+}
+
+function ScheduleTestContent() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { toast, showToast, hideToast } = useToast()
 
-    // State
-    const [activeTab, setActiveTab] = useState<'manual' | 'bulk'>('manual')
+    // State — initialise tab from ?tab= URL param
+    const [activeTab, setActiveTab] = useState<'manual' | 'bulk' | 'results'>(
+        (searchParams.get('tab') as 'manual' | 'bulk' | 'results') || 'manual'
+    )
     const [isLoading, setIsLoading] = useState(false)
     const [bulkData, setBulkData] = useState<any[]>([])
 
@@ -248,9 +261,10 @@ export default function ScheduleTestPage() {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        assignment_type: 'department',
+        assignment_type: 'batch', // Changed default from 'department' to 'batch'
         target_value: '', // Used for Batch/Email raw input
         target_emails: [] as string[], // Used for Student Selector
+        module: '', // NEW: DSA or Aptitude
         topic: '',
         question_count: 10,
         difficulty: 'Medium',
@@ -261,10 +275,53 @@ export default function ScheduleTestPage() {
         manual_questions: [] as any[]
     })
 
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([])
+
     // Handlers
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleGenerateQuestions = async () => {
+        if (!formData.module || !formData.topic) {
+            showToast('Please select module and enter topic', 'error')
+            return
+        }
+
+        setIsGenerating(true)
+        try {
+            const apiBaseUrl = getApiBaseUrl()
+            const authHeader = getAuthHeader()
+
+            const res = await fetch(`${apiBaseUrl}/dept-tpc/test/generate-questions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader || ''
+                },
+                body: JSON.stringify({
+                    module: formData.module,
+                    topic: formData.topic,
+                    difficulty: formData.difficulty,
+                    count: formData.question_count
+                })
+            })
+
+            const result = await res.json()
+            if (result.success) {
+                setGeneratedQuestions(result.data.questions)
+                showToast(`${result.data.questions.length} questions generated!`, 'success')
+            } else {
+                showToast(result.message || 'Failed to generate questions', 'error')
+            }
+        } catch (error) {
+            console.error('Generation Error:', error)
+            showToast('AI generation failed. Please try again.', 'error')
+        } finally {
+            setIsGenerating(false)
+        }
     }
 
     const handleManualSubmit = async (e: React.FormEvent) => {
@@ -277,6 +334,16 @@ export default function ScheduleTestPage() {
 
             const payload: any = { ...formData }
 
+            // Use generated questions if auto mode
+            if (payload.content_source === 'auto') {
+                if (generatedQuestions.length === 0) {
+                    showToast('Please generate questions first', 'error')
+                    setIsLoading(false)
+                    return
+                }
+                payload.manual_questions = generatedQuestions
+            }
+
             // Format Assignment
             if (payload.assignment_type === 'student') {
                 // Use target_emails from Selector
@@ -286,7 +353,7 @@ export default function ScheduleTestPage() {
             }
 
             // Validate Manual Questions
-            if (payload.content_source === 'manual' && payload.manual_questions.length === 0) {
+            if (payload.manual_questions.length === 0) {
                 showToast('Please add at least one question', 'error')
                 setIsLoading(false)
                 return
@@ -304,7 +371,17 @@ export default function ScheduleTestPage() {
             const result = await res.json()
             if (result.success) {
                 showToast('Test scheduled successfully!', 'success')
-                setFormData(prev => ({ ...prev, title: '', description: '', manual_questions: [], target_emails: [] }))
+                setFormData(prev => ({
+                    ...prev,
+                    title: '',
+                    description: '',
+                    manual_questions: [],
+                    target_emails: [],
+                    content_source: 'auto', // Reset to default
+                    topic: '',
+                    question_count: 5 // Reset to default
+                }))
+                setGeneratedQuestions([]) // Clear generated questions
             } else {
                 showToast(result.message || 'Failed to schedule test', 'error')
             }
@@ -315,6 +392,69 @@ export default function ScheduleTestPage() {
             setIsLoading(false)
         }
     }
+
+    // --- Test Analytics State ---
+    const [viewTests, setViewTests] = useState<any[]>([])
+    const [selectedTestId, setSelectedTestId] = useState<string>('')
+    const [testAnalytics, setTestAnalytics] = useState<any>(null)
+    const [loadingAnalytics, setLoadingAnalytics] = useState(false)
+
+    // --- Helper Functions for Analytics ---
+    const fetchViewTests = async () => {
+        setIsLoading(true)
+        try {
+            const apiBaseUrl = getApiBaseUrl()
+            const authHeader = getAuthHeader()
+            const res = await fetch(`${apiBaseUrl}/dept-tpc/test/list`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': authHeader || '' },
+                body: JSON.stringify({})
+            })
+            const result = await res.json()
+            if (result.success) {
+                setViewTests(result.data || [])
+            }
+        } catch (error) {
+            console.error('Failed to fetch tests', error)
+            showToast('Failed to fetch tests', 'error')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const fetchTestAnalytics = async (testId: string) => {
+        if (!testId) return
+        setLoadingAnalytics(true)
+        try {
+            const apiBaseUrl = getApiBaseUrl()
+            const authHeader = getAuthHeader()
+            const res = await fetch(`${apiBaseUrl}/dept-tpc/test/analytics`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': authHeader || '' },
+                body: JSON.stringify({ test_id: testId })
+            })
+            const result = await res.json()
+            if (result.success) {
+                setTestAnalytics(result.data)
+            } else {
+                showToast(result.message || 'Failed to fetch analytics', 'error')
+                setTestAnalytics(null)
+            }
+        } catch (error) {
+            console.error('Failed to fetch analytics', error)
+            showToast('Failed to fetch analytics', 'error')
+            setTestAnalytics(null)
+        } finally {
+            setLoadingAnalytics(false)
+        }
+    }
+
+    // Effect to fetch tests when switching to Results tab
+    useEffect(() => {
+        if (activeTab === 'results') {
+            fetchViewTests()
+        }
+    }, [activeTab])
 
     // ... Bulk Upload Handlers (Keep Existing) ...
     const downloadTemplate = () => {
@@ -396,10 +536,11 @@ export default function ScheduleTestPage() {
                         >
                             Bulk Upload
                         </button>
+
                     </div>
                 </div>
 
-                {activeTab === 'manual' ? (
+                {activeTab === 'manual' && (
                     <Card className="p-6 animate-smooth-appear max-w-3xl">
                         <form onSubmit={handleManualSubmit} className="space-y-6">
                             {/* Test Details */}
@@ -428,7 +569,7 @@ export default function ScheduleTestPage() {
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-1">Assign To *</label>
                                         <div className="flex gap-4">
-                                            {['department', 'batch', 'student'].map(type => (
+                                            {['batch', 'student'].map(type => (
                                                 <label key={type} className="flex items-center gap-2 cursor-pointer">
                                                     <input
                                                         type="radio"
@@ -488,24 +629,100 @@ export default function ScheduleTestPage() {
                                 </div>
 
                                 {formData.content_source === 'auto' ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-4">
+                                        {/* Module Selection */}
                                         <div>
-                                            <label className="block text-sm font-medium mb-1">Topic (Optional)</label>
-                                            <input name="topic" value={formData.topic} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none" placeholder="e.g. Data Structures" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">No. of Questions</label>
-                                            <input type="number" name="question_count" value={formData.question_count} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none" min="1" max="50" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Difficulty</label>
-                                            <select name="difficulty" value={formData.difficulty} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none">
-                                                <option>Easy</option>
-                                                <option>Medium</option>
-                                                <option>Hard</option>
-                                                <option>Mixed</option>
+                                            <label className="block text-sm font-medium mb-1">Module *</label>
+                                            <select
+                                                name="module"
+                                                required
+                                                value={formData.module}
+                                                onChange={handleInputChange}
+                                                className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none"
+                                            >
+                                                <option value="">Select Module</option>
+                                                <option value="DSA">DSA (Data Structures & Algorithms)</option>
+                                                <option value="Aptitude">Aptitude</option>
                                             </select>
                                         </div>
+
+                                        {/* Topic Input */}
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Topic *</label>
+                                            <input
+                                                name="topic"
+                                                required
+                                                value={formData.topic}
+                                                onChange={handleInputChange}
+                                                className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none"
+                                                placeholder="e.g., Arrays, Graphs, Logical Reasoning"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Be specific. Examples: &quot;Binary Trees&quot;, &quot;Permutations & Combinations&quot;, &quot;String Manipulation&quot;
+                                            </p>
+                                        </div>
+
+                                        {/* Difficulty & Count */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Difficulty *</label>
+                                                <select name="difficulty" value={formData.difficulty} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none">
+                                                    <option value="Easy">Easy</option>
+                                                    <option value="Medium">Medium</option>
+                                                    <option value="Hard">Hard</option>
+                                                    <option value="Mixed">Mixed</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">No. of Questions *</label>
+                                                <input
+                                                    type="number"
+                                                    name="question_count"
+                                                    required
+                                                    value={formData.question_count}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none"
+                                                    min="1"
+                                                    max="50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Generate Button */}
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateQuestions}
+                                            disabled={isGenerating || !formData.module || !formData.topic}
+                                            className="w-full py-3 bg-secondary text-white rounded-lg font-semibold hover:bg-secondary-dark disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            {isGenerating ? (
+                                                <>
+                                                    <Clock className="w-5 h-5 animate-spin" />
+                                                    Generating Questions...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plus className="w-5 h-5" />
+                                                    Generate Questions with AI
+                                                </>
+                                            )}
+                                        </button>
+
+                                        {/* Generated Questions Preview (Editable) */}
+                                        {generatedQuestions.length > 0 && (
+                                            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                                    <p className="text-sm font-semibold text-green-800">
+                                                        {generatedQuestions.length} Questions Generated! Review and edit if needed.
+                                                    </p>
+                                                </div>
+                                                <ManualQuestionEditor
+                                                    questions={generatedQuestions}
+                                                    onChange={setGeneratedQuestions}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <ManualQuestionEditor
@@ -515,12 +732,16 @@ export default function ScheduleTestPage() {
                                 )}
                             </div>
 
-                            {/* Schedule */}
+                            {/* Scheduling */}
                             <div className="space-y-4 pt-4 border-t border-dashed border-gray-200">
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-accent" /> Schedule
+                                    <Calendar className="w-5 h-5 text-neutral-light" /> Scheduling
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-1">Duration (Minutes) *</label>
+                                        <input type="number" name="duration_minutes" required value={formData.duration_minutes} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none" min="10" />
+                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Start Time *</label>
                                         <input type="datetime-local" name="scheduled_start" required value={formData.scheduled_start} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none" />
@@ -529,49 +750,190 @@ export default function ScheduleTestPage() {
                                         <label className="block text-sm font-medium mb-1">End Time *</label>
                                         <input type="datetime-local" name="scheduled_end" required value={formData.scheduled_end} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none" />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Duration (mins)</label>
-                                        <input type="number" name="duration_minutes" value={formData.duration_minutes} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none" />
-                                    </div>
                                 </div>
                             </div>
 
-                            <div className="pt-6">
-                                <button type="submit" disabled={isLoading} className="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                                    {isLoading ? 'Scheduling...' : <><CheckCircle className="w-5 h-5" /> Schedule Test</>}
-                                </button>
-                            </div>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full py-4 bg-primary text-white text-lg font-semibold rounded-xl hover:bg-primary-dark shadow-xl hover:shadow-2xl transition-all disabled:opacity-50"
+                            >
+                                {isLoading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Clock className="w-5 h-5 animate-spin" /> Scheduling...
+                                    </span>
+                                ) : 'Schedule Test'}
+                            </button>
                         </form>
                     </Card>
-                ) : (
-                    // Bulk Upload View
-                    <div className="space-y-6 animate-smooth-appear">
-                        <Card className="p-8 border border-dashed border-primary/20 bg-primary/5">
-                            <div className="flex flex-col items-center justify-center text-center space-y-4">
-                                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-primary" />
+                )}
+
+                {activeTab === 'bulk' && (
+                    <Card className="p-6 animate-smooth-appear max-w-3xl">
+                        <div className="space-y-8">
+                            <div className="text-center">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 mb-4">
+                                    <Upload className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-xl font-bold text-neutral">Upload Excel File</h3>
-                                <div className="flex gap-4">
-                                    <button onClick={downloadTemplate} className="px-4 py-2 rounded-lg border border-neutral-light/20 bg-white hover:bg-gray-50 flex items-center gap-2 text-sm font-medium">
-                                        <Download className="w-4 h-4" /> Download Template
-                                    </button>
-                                    <label className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark cursor-pointer flex items-center gap-2 text-sm font-medium">
-                                        <Plus className="w-4 h-4" /> Select File
-                                        <input type="file" accept=".xlsx" onChange={handleFileUpload} className="hidden" />
-                                    </label>
+                                <h2 className="text-xl font-bold">Bulk Upload Tests</h2>
+                                <p className="text-gray-500 mt-2">Upload an Excel file to schedule multiple tests at once.</p>
+                            </div>
+
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 flex flex-col items-center">
+                                <button
+                                    onClick={downloadTemplate}
+                                    className="flex items-center gap-2 text-primary hover:text-primary-dark font-medium mb-4"
+                                >
+                                    <Download className="w-5 h-5" /> Download Template
+                                </button>
+                                <label className="w-full max-w-sm cursor-pointer group">
+                                    <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white group-hover:border-primary transition-colors">
+                                        <Upload className="w-8 h-8 text-gray-400 group-hover:text-primary mb-2" />
+                                        <span className="text-sm text-gray-500 group-hover:text-primary">Click to upload .xlsx file</span>
+                                    </div>
+                                    <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+                                </label>
+                            </div>
+
+                            {bulkData.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-semibold">{bulkData.length} Tests Found</h3>
+                                        <button
+                                            onClick={handleBulkSubmit}
+                                            disabled={isLoading}
+                                            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50"
+                                        >
+                                            {isLoading ? 'Uploading...' : 'Confirm Upload'}
+                                        </button>
+                                    </div>
+                                    <div className="bg-gray-800 text-white rounded-lg p-4 font-mono text-sm max-h-60 overflow-y-auto">
+                                        <pre>{JSON.stringify(bulkData, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                )}
+
+                {activeTab === 'results' && (
+                    <Card className="p-6 animate-smooth-appear">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <div>
+                                <h2 className="text-xl font-bold flex items-center gap-2">
+                                    <BarChart className="w-6 h-6 text-primary" />
+                                    Test Results & Analytics
+                                </h2>
+                                <p className="text-neutral-light text-sm mt-1">View student performance and detailed reports</p>
+                            </div>
+
+                            <div className="w-full md:w-64">
+                                <select
+                                    value={selectedTestId}
+                                    onChange={(e) => {
+                                        setSelectedTestId(e.target.value)
+                                        fetchTestAnalytics(e.target.value)
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="">Select a Test to View Results</option>
+                                    {viewTests.map((test: any) => (
+                                        <option key={test._id} value={test._id}>
+                                            {test.title} ({new Date(test.created_at).toLocaleDateString()})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {loadingAnalytics ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <Clock className="w-8 h-8 text-primary animate-spin mb-2" />
+                                <p className="text-neutral-light">Loading analytics data...</p>
+                            </div>
+                        ) : testAnalytics ? (
+                            <div className="space-y-6">
+                                {/* Summary Stats */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                        <p className="text-xs text-blue-600 font-semibold uppercase">Total Attempts</p>
+                                        <p className="text-2xl font-bold text-blue-900">{testAnalytics.total_attempts}</p>
+                                    </div>
+                                    <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                        <p className="text-xs text-green-600 font-semibold uppercase">Average Score</p>
+                                        <p className="text-2xl font-bold text-green-900">
+                                            {testAnalytics.results.length > 0
+                                                ? Math.round(testAnalytics.results.reduce((a: any, b: any) => a + (b.score || 0), 0) / testAnalytics.results.length)
+                                                : 0}
+                                        </p>
+                                    </div>
+                                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                                        <p className="text-xs text-purple-600 font-semibold uppercase">Pass Rate</p>
+                                        <p className="text-2xl font-bold text-purple-900">
+                                            {testAnalytics.results.length > 0
+                                                ? Math.round((testAnalytics.results.filter((r: any) => r.percentage >= 40).length / testAnalytics.results.length) * 100)
+                                                : 0}%
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Results Table */}
+                                <div className="border rounded-lg overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-gray-50 border-b">
+                                                <tr>
+                                                    <th className="px-4 py-3 font-semibold text-gray-700">Student Name</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-700">Email</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-700">Score</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-700">Percentage</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-700">Status</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-700">Submitted At</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {testAnalytics.results.length > 0 ? (
+                                                    testAnalytics.results.map((result: any) => (
+                                                        <tr key={result.attempt_id} className="hover:bg-gray-50">
+                                                            <td className="px-4 py-3 font-medium">{result.student_name}</td>
+                                                            <td className="px-4 py-3 text-gray-500">{result.student_email}</td>
+                                                            <td className="px-4 py-3 font-medium">{result.score} / {result.total_marks}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className={`px-2 py-1 rounded text-xs font-semibold ${result.percentage >= 70 ? 'bg-green-100 text-green-700' :
+                                                                    result.percentage >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                                                                        'bg-red-100 text-red-700'
+                                                                    }`}>
+                                                                    {result.percentage}%
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3 capitalize">{result.status}</td>
+                                                            <td className="px-4 py-3 text-gray-500">
+                                                                {new Date(result.submitted_at).toLocaleString()}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                                                            No attempts found for this test.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-                        </Card>
-                        {bulkData.length > 0 && (
-                            <Card className="p-6">
-                                <h3 className="text-lg font-bold mb-4">Preview ({bulkData.length} records)</h3>
-                                <button onClick={handleBulkSubmit} disabled={isLoading} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">
-                                    {isLoading ? 'Uploading...' : 'Confirm Upload'}
-                                </button>
-                            </Card>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                <Table className="w-12 h-12 text-gray-300 mb-3" />
+                                <h3 className="text-lg font-medium text-gray-900">Select a test to view results</h3>
+                                <p className="text-gray-500 max-w-xs text-center">
+                                    Choose a test from the dropdown above to see detailed student analytics.
+                                </p>
+                            </div>
                         )}
-                    </div>
+                    </Card>
                 )}
                 {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
             </div>

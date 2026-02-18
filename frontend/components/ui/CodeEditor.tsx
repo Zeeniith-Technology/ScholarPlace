@@ -169,9 +169,9 @@ export function CodeEditor({
           // Normalize result data to match expected shape
           const normalizedResults = result.data.testResults.map((t: any) => ({
             ...t,
-            expectedOutput: t.expected,
-            actualOutput: t.actual,
-            stderr: t.error
+            expectedOutput: t.expected || t.expectedOutput,
+            actualOutput: t.actual || t.actualOutput,
+            stderr: t.error || t.stderr
           }));
 
           setTestResults(normalizedResults)

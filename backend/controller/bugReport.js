@@ -10,7 +10,7 @@ class BugReportController {
      */
     async submitBugReport(req, res, next) {
         try {
-            const { page_url, page_name, bug_description, how_to_reproduce, media_files } = req.body;
+            const { page_url, page_name, bug_description, how_to_reproduce, media_files, report_type } = req.body;
             const userId = res.locals.person_id || req.userId || req.user?.id;
             const userRole = res.locals.role || req.user?.role;
             const userName = res.locals.name || req.user?.name || req.user?.fullName;
@@ -106,6 +106,7 @@ class BugReportController {
                 reporter_role: userRole,
                 college_id: collegeId || null,
                 college_name: collegeName || null,
+                report_type: report_type || 'bug',
                 page_url: page_url,
                 page_name: page_name,
                 bug_description: bug_description,
