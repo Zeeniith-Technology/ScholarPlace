@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { Building2, Users, Check } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -90,9 +91,11 @@ export function Pricing() {
               </li>
             </ul>
             <div className="mt-8 pt-6 border-t border-neutral-light/15">
-              <Button variant="primary" className="w-full h-12 rounded-xl font-semibold text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-shadow">
-                Talk to Our Team for Pricing
-              </Button>
+              <Link href="#contact" className="w-full block">
+                <Button variant="primary" className="w-full h-12 rounded-xl font-semibold text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-shadow">
+                  Talk to Our Team for Pricing
+                </Button>
+              </Link>
             </div>
           </Card>
         </div>

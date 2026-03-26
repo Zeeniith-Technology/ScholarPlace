@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 
 export function Contact() {
     const [isLoading, setIsLoading] = useState(false)
+    const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null)
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -19,6 +20,7 @@ export function Contact() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
+        setSubmitStatus(null)
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/contact/submit`, {
@@ -32,14 +34,17 @@ export function Contact() {
             const data = await response.json();
 
             if (data.success) {
-                alert('Message sent successfully! We will get back to you soon.')
+                setSubmitStatus({ type: 'success', message: 'Message sent successfully! We will get back to you soon.' })
                 setFormData({ name: '', email: '', subject: '', message: '' })
+                setTimeout(() => setSubmitStatus(null), 5000)
             } else {
-                alert(data.message || 'Failed to send message. Please try again.')
+                setSubmitStatus({ type: 'error', message: data.message || 'Failed to send message. Please try again.' })
+                setTimeout(() => setSubmitStatus(null), 5000)
             }
         } catch (error) {
             console.error('Error submitting form:', error);
-            alert('An error occurred. Please try again later.')
+            setSubmitStatus({ type: 'error', message: 'An error occurred. Please try again later.' })
+            setTimeout(() => setSubmitStatus(null), 5000)
         } finally {
             setIsLoading(false)
         }
@@ -134,7 +139,7 @@ export function Contact() {
                                     <Input
                                         id="name"
                                         name="name"
-                                        placeholder="Your name "
+                                        placeholder="Your name"
                                         value={formData.name}
                                         onChange={handleChange}
                                         required
@@ -182,6 +187,14 @@ export function Contact() {
                                     className="w-full px-4 py-2 rounded-lg border border-neutral-light/20 bg-white/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-neutral placeholder:text-neutral-light/70"
                                 />
                             </div>
+
+                            {submitStatus && (
+                                <div className={`p-4 rounded-xl text-sm font-medium animate-fade-up transition-all ${
+                                    submitStatus.type === 'success' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'
+                                } border`}>
+                                    {submitStatus.message}
+                                </div>
+                            )}
 
                             <Button
                                 type="submit"

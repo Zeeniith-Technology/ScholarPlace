@@ -27,11 +27,11 @@ export function Navbar() {
   ]
 
   // Deep navy-blue header: complements logo light blue + white, strong contrast, brand-aligned
-  const headerBg = 'bg-[#152238]' // deep navy-blue (blue-950 range)
-  const headerBorder = 'border-white/[0.08]'
+  const headerBg = 'bg-[#0f172a]/80' // deep navy but slightly translucent for glass effect
+  const headerBorder = 'border border-white/10'
   const headerScrolled = isScrolled
-    ? 'backdrop-blur-xl shadow-xl shadow-black/20 border-white/[0.1]'
-    : 'backdrop-blur-lg'
+    ? 'backdrop-blur-xl shadow-2xl shadow-blue-900/20 bg-[#0f172a]/95'
+    : 'backdrop-blur-md shadow-lg shadow-black/10'
 
   return (
     <nav
@@ -46,7 +46,7 @@ export function Navbar() {
               alt="Scholarplace"
               width={240}
               height={60}
-              className="h-10 sm:h-12 md:h-14 w-auto object-contain group-hover:opacity-90 transition-opacity"
+              className="h-10 sm:h-12 md:h-14 w-auto object-contain group-hover:opacity-90 transition-opacity scale-150 sm:scale-[1.4] origin-left pl-2"
               priority
             />
           </Link>
@@ -57,7 +57,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-white/90 hover:text-white transition-all duration-300 text-sm font-medium relative group py-2"
+                className="text-white/90 hover:text-white transition-all duration-300 text-base font-medium relative group py-2 tracking-wide"
               >
                 <span className="relative z-10">{link.label}</span>
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300 ease-out"></span>
@@ -66,24 +66,12 @@ export function Navbar() {
           </div>
 
           {/* Desktop CTAs */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-4">
             <Link
               href="/auth/login"
-              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2.5 rounded-full transition-all duration-200"
+              className="text-base font-semibold text-[#0f172a] bg-white hover:bg-neutral-light px-7 py-2.5 rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] hover:scale-105"
             >
               Login
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="text-sm font-medium text-white/90 hover:text-white px-4 py-2.5 rounded-full transition-all duration-200"
-            >
-              Sign Up
-            </Link>
-            <Link
-              href="#contact"
-              className="text-sm font-semibold text-[#152238] bg-white hover:bg-blue-50 px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              Book a Demo
             </Link>
           </div>
 
@@ -123,24 +111,10 @@ export function Navbar() {
               <div className="pt-3 space-y-2 border-t border-white/20 mt-2">
                 <Link
                   href="/auth/login"
-                  className="block text-center text-sm font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 py-3 px-4 rounded-xl transition-colors"
+                  className="block text-center text-base font-bold text-[#0f172a] bg-white hover:bg-neutral-light py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(255,255,255,0.15)] transition-all"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="block text-center text-sm font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 py-3 px-4 rounded-xl transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Sign Up
-                </Link>
-                <Link
-                  href="#contact"
-                  className="block text-sm font-semibold text-[#152238] bg-white hover:bg-blue-50 py-3 px-4 rounded-xl text-center transition-colors shadow-md"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Book a Demo
                 </Link>
               </div>
             </div>

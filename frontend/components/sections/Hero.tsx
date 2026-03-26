@@ -6,18 +6,6 @@ import { ArrowRight, TrendingUp, Users, BarChart3, CheckCircle2 } from 'lucide-r
 import { Button } from '@/components/ui/Button'
 
 export function Hero() {
-  const stats = [
-    { value: '500+', label: 'Colleges' },
-    { value: '50K+', label: 'Students' },
-    { value: '95%', label: 'Satisfaction' },
-  ]
-
-  const features = [
-    'Semester-wise Roadmaps',
-    'Automated Assessments',
-    'Smart Analytics',
-  ]
-
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Enhanced Animated Background */}
@@ -43,50 +31,46 @@ export function Hero() {
                   Lets crack placement together
                 </h1>
               </div>
-              <p className="text-lg sm:text-xl md:text-2xl text-neutral-dark leading-relaxed max-w-2xl font-medium">
-                Structured Aptitude & DSA roadmaps, automated assessments, and smart analytics
-                designed for college TPC teams. Guide your students from 3rd semester to their offer letter.
-              </p>
-            </div>
-
-            {/* Quick Features */}
-            <div className="flex flex-wrap gap-4">
-              {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm text-neutral-dark">
-                  <CheckCircle2 className="w-4 h-4 text-secondary flex-shrink-0" />
-                  <span>{feature}</span>
-                </div>
-              ))}
+              <div className="text-lg sm:text-xl text-neutral-dark leading-relaxed max-w-2xl font-medium space-y-4">
+                <p className="text-xl md:text-2xl font-semibold text-neutral-dark">
+                  Empower your college TPC teams with an all-in-one placement ecosystem.
+                </p>
+                <ul className="space-y-3 mt-4 text-base sm:text-lg">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Structured Roadmaps</strong> for flawless Aptitude & DSA mastery.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-secondary flex-shrink-0 mt-0.5" />
+                    <span><strong>Automated Assessments</strong> to track real-time progress effortlessly.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                    <span><strong>Smart Analytics</strong> to guide students from 3rd semester straight to their dream offer letter.</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="#contact">
                 <Button variant="primary" className="w-full sm:w-auto px-8 py-4 text-lg group shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40">
-                  Get Scholarplace for Your College
+                  Book a Demo
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link href="#student-experience">
                 <Button variant="secondary" className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg shadow-secondary/20 hover:shadow-xl hover:shadow-secondary/30">
-                  See Student Experience
+                  Explore Student Experience
                 </Button>
               </Link>
             </div>
 
-            {/* Stats */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 md:gap-8 pt-4 border-t border-neutral-light/20">
-              {stats.map((stat, index) => (
-                <div key={index} className="animate-fade-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="text-2xl md:text-3xl font-heading font-bold text-primary">{stat.value}</div>
-                  <div className="text-sm text-neutral-dark">{stat.label}</div>
-                </div>
-              ))}
-            </div>
 
             <p className="text-sm text-neutral-dark flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Built for 5th–7th sem students and TPC teams
+              Built for 3rd–7th sem students and TPC teams
             </p>
           </div>
 
@@ -140,11 +124,13 @@ export function Hero() {
 
               {/* Enhanced Chart Area */}
               <div className="h-40 bg-gradient-to-br from-primary/5 via-primary/3 to-primary/5 rounded-xl p-4 mb-6 border border-neutral-light/10">
-                <div className="h-full flex items-end justify-around gap-2">
-                  {[40, 60, 45, 80, 70, 90, 65].map((height, i) => (
+                <div className="h-full flex items-end justify-around gap-2 group">
+                  {[20, 35, 30, 50, 65, 75, 92].map((height, i) => (
                     <div
                       key={i}
-                      className="bg-primary rounded-t flex-1 shadow-lg hover:scale-105 transition-transform"
+                      className={`bg-primary rounded-t flex-1 shadow-lg transition-all duration-500 hover:scale-x-105 hover:-translate-y-1 ${
+                        i === 6 ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+                      }`}
                       style={{ height: `${height}%` }}
                     />
                   ))}

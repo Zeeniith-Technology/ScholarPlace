@@ -148,7 +148,13 @@ export function Roadmap() {
           {/* Toggle Button */}
           <div className="relative z-20 text-center mt-[-28px] pt-8">
             <Button
-              onClick={() => setShowAll(!showAll)}
+              onClick={(e) => {
+                e.preventDefault();
+                if (showAll) {
+                  document.getElementById('roadmap')?.scrollIntoView({ behavior: 'smooth' });
+                }
+                setShowAll(!showAll);
+              }}
               className="group relative px-6 py-2.5 rounded-full bg-background/80 backdrop-blur-md border border-white/20 shadow-lg hover:shadow-primary/20 hover:scale-105 transition-all duration-300 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

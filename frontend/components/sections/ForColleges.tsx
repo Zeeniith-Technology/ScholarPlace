@@ -1,5 +1,5 @@
 import React from 'react'
-import { TrendingUp, AlertCircle, FileText, Users } from 'lucide-react'
+import { TrendingUp, AlertCircle, FileText, Users, CheckCircle2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -34,17 +34,26 @@ export function ForColleges() {
                 Built for College Administration & TPC Teams
               </h2>
             </div>
-            <p className="text-lg text-neutral-dark leading-relaxed">
-              Scholarplace empowers your Training & Placement Coordinators with powerful tools 
-              to guide students through their placement journey. From department-level TPCs 
-              tracking their branch performance to central placement cells overseeing campus-wide 
-              analytics, everyone gets the insights they need.
-            </p>
-            <p className="text-lg text-neutral-dark leading-relaxed">
-              Our platform integrates seamlessly into your existing training workflows, making 
-              it easy to identify students who need extra support and celebrate those who are 
-              excelling.
-            </p>
+            <ul className="space-y-4 pt-2">
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-lg text-neutral-dark leading-relaxed">
+                  <strong>Empower TPCs</strong> with powerful tools to guide students through their placement journey.
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-secondary flex-shrink-0 mt-0.5" />
+                <span className="text-lg text-neutral-dark leading-relaxed">
+                  <strong>Track Performance</strong> from department-level branches to campus-wide placement cells.
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <span className="text-lg text-neutral-dark leading-relaxed">
+                  <strong>Seamless Integration</strong> into your existing workflows to easily identify students needing support.
+                </span>
+              </li>
+            </ul>
           </div>
 
           {/* Right Column - Benefits Cards */}
@@ -72,22 +81,7 @@ export function ForColleges() {
           </div>
         </div>
 
-        {/* Info Badge */}
-        <div className="glass rounded-xl p-6 border-l-4 border-primary animate-fade-up">
-          <div className="flex items-start gap-4">
-            <Users className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-            <div>
-              <h4 className="font-semibold text-neutral mb-2">
-                Subscription Model
-              </h4>
-              <p className="text-neutral-dark">
-                Scholarplace is designed as a subscription for colleges, not individual students. 
-                Colleges subscribe and onboard their students, ensuring comprehensive coverage 
-                across departments and batches.
-              </p>
-            </div>
-          </div>
-        </div>
+
       </div>
     </section>
   )

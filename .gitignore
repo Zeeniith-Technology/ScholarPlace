@@ -60,3 +60,7 @@ docs
 
 # security reviews
 security_review.pdf
+*.docx
+*.pptx
+*.py
+temp_brochure.md
