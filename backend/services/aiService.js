@@ -1,7 +1,7 @@
 /**
  * AI Service Layer
- * Abstracted AI service that supports Gemini Pro now, can easily switch to GPT-4 later
- * 
+ * Uses Anthropic Claude (claude-sonnet-4-6) as the primary AI provider.
+ *
  * This service handles:
  * - Code review and feedback
  * - AI tutor with hints
@@ -11,7 +11,7 @@
  * - Scope restrictions
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -21,33 +21,19 @@ class AIService {
         // Initialize cache for AI responses
         this.cache = new Map();
 
-        // Gemini Pro Configuration
-        this.provider = process.env.AI_PROVIDER || 'gemini'; // 'gemini' or 'openai'
-        this.geminiApiKey = process.env.GEMINI_API_KEY;
+        this.anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
-        // Initialize Gemini if API key is available
-        if (this.geminiApiKey && this.provider === 'gemini') {
-            // Initialize Gemini SDK
-            this.genAI = new GoogleGenerativeAI(this.geminiApiKey);
-            /**
-             * Model notes:
-             * - gemini-2.5-flash  (recommended - fast and free tier)
-             * - gemini-2.5-pro    (more capable)
-             * - gemini-2.0-flash  (alternative)
-             */
-            const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
-            this.model = this.genAI.getGenerativeModel({
-                model: modelName,
-                generationConfig: {
-                    temperature: 0.7,      // Faster than 1.0
-                    topK: 20,              // Faster than default 40
-                    topP: 0.8,             // Faster than default 0.95
-                    maxOutputTokens: 8192, // Increased limit for detailed reviews
-                }
-            });
-            console.log(`[AIService] Initialized with model: ${modelName}`);
+        /**
+         * Model: claude-sonnet-4-6
+         * Switch to 'claude-opus-4-6' for the most capable model.
+         */
+        this.modelName = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
+        if (this.anthropicApiKey) {
+            this.client = new Anthropic({ apiKey: this.anthropicApiKey });
+            console.log(`[AIService] Initialized with model: ${this.modelName}`);
         } else {
-            console.warn('[AIService] Gemini API key not found. AI features will not work.');
+            console.warn('[AIService] ANTHROPIC_API_KEY not found. AI features will not work.');
         }
 
         // Scope restrictions - only these topics are allowed
@@ -59,9 +45,36 @@ class AIService {
         ];
     }
 
+    // ─── Internal helpers ─────────────────────────────────────────────────────
+
     /**
-     * Simple cache with TTL
+     * Core method: send a prompt to Claude and get back the response text.
+     * @param {string} systemPrompt
+     * @param {string} userPrompt
+     * @param {number} maxTokens
+     * @returns {Promise<string>}
      */
+    async _callClaude(systemPrompt, userPrompt, maxTokens = 2048) {
+        if (!this.client) throw new Error('Anthropic client not initialized. Check ANTHROPIC_API_KEY.');
+
+        const message = await this.client.messages.create({
+            model: this.modelName,
+            max_tokens: maxTokens,
+            system: systemPrompt,
+            messages: [
+                { role: 'user', content: userPrompt }
+            ]
+        });
+
+        // message.content is an array of content blocks; grab all text blocks
+        return message.content
+            .filter(block => block.type === 'text')
+            .map(block => block.text)
+            .join('');
+    }
+
+    // ─── Cache helpers ────────────────────────────────────────────────────────
+
     getCached(key) {
         const item = this.cache.get(key);
         if (!item) return null;
@@ -75,9 +88,8 @@ class AIService {
     setCached(key, value, ttlSeconds = 600) {
         this.cache.set(key, {
             value,
-            expires: Date.now() + (ttlSeconds * 1000)
+            expires: Date.now() + ttlSeconds * 1000
         });
-        // Auto-cleanup old entries (prevent memory leak)
         if (this.cache.size > 1000) {
             const now = Date.now();
             for (const [k, v] of this.cache.entries()) {
@@ -86,46 +98,37 @@ class AIService {
         }
     }
 
-    /**
-     * Generate cache key from data
-     */
     generateCacheKey(prefix, data) {
         const str = typeof data === 'string' ? data : JSON.stringify(data);
-        // Simple hash function
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32bit integer
+            hash = hash & hash;
         }
         return `${prefix}:${hash}`;
     }
 
-    /**
-     * Strip markdown asterisks from text so UI shows plain text only
-     */
+    // ─── Text sanitization ────────────────────────────────────────────────────
+
     stripMarkdownAsterisks(text) {
         if (typeof text !== 'string') return text;
         return text.replace(/\*\*/g, '').replace(/\*/g, '').trim();
     }
 
-    /**
-     * Sanitize analysis/learning-path object: strip ** and * from all string values
-     */
     sanitizePlainText(obj) {
         if (!obj || typeof obj !== 'object') return obj;
         const out = Array.isArray(obj) ? [] : {};
         for (const [k, v] of Object.entries(obj)) {
             if (typeof v === 'string') out[k] = this.stripMarkdownAsterisks(v);
-            else if (Array.isArray(v)) out[k] = v.map((item) => typeof item === 'string' ? this.stripMarkdownAsterisks(item) : item);
+            else if (Array.isArray(v)) out[k] = v.map(item => typeof item === 'string' ? this.stripMarkdownAsterisks(item) : item);
             else out[k] = v;
         }
         return out;
     }
 
-    /**
-     * Check if query is within project scope
-     */
+    // ─── Scope checks ─────────────────────────────────────────────────────────
+
     isWithinScope(userQuery) {
         const queryLower = userQuery.toLowerCase();
         const scopeKeywords = [
@@ -135,15 +138,25 @@ class AIService {
             'dsa', 'data structures', 'algorithms basics',
             'programming', 'code', 'coding', 'syntax'
         ];
-
         return scopeKeywords.some(keyword => queryLower.includes(keyword));
     }
 
-    /**
-     * Generate system prompt with scope restrictions
-     */
+    isWithinScopeStudyHelp(userQuery) {
+        const q = userQuery.toLowerCase();
+        const k = [
+            'c programming', 'c++', 'javascript', 'data types', 'variables', 'operators',
+            'loops', 'arrays', 'functions', 'dsa', 'programming', 'code', 'syntax',
+            'integer', 'factor', 'divisibility', 'hcf', 'lcm', 'bodmas', 'aptitude',
+            'quantitative', 'number', 'percentage', 'ratio', 'equation', 'algebra',
+            'multiplication', 'division', 'addition', 'subtraction', 'math', 'solve'
+        ];
+        return k.some(kw => q.includes(kw)) || q.length > 10;
+    }
+
+    // ─── System prompt ────────────────────────────────────────────────────────
+
     getSystemPrompt(context = 'general') {
-        const basePrompt = `You are an AI tutor for a college-level programming learning platform. 
+        return `You are an AI tutor for a college-level programming learning platform.
 Your role is to help students learn C, C++, and JavaScript programming fundamentals.
 
 IMPORTANT RULES:
@@ -155,15 +168,11 @@ IMPORTANT RULES:
 6. Focus on fundamentals and best practices.
 
 Context: ${context}`;
-
-        return basePrompt;
     }
 
-    /**
-     * Code Review - Analyze student code and provide feedback
-     */
+    // ─── Code Review ──────────────────────────────────────────────────────────
+
     async reviewCode(code, language, problemContext = null) {
-        // Check cache first - Include problemContext to avoid cache collision for different problems with same code
         const cacheKey = this.generateCacheKey('code_review', { code, language, problemContext });
         const cached = this.getCached(cacheKey);
         if (cached) {
@@ -172,26 +181,18 @@ Context: ${context}`;
         }
 
         try {
-            if (this.provider === 'gemini') {
-                const result = await this.reviewCodeGemini(code, language);
-                // Cache for 30 minutes (same code likely to be reviewed again)
-                this.setCached(cacheKey, result, 1800);
-                return result;
-            } else if (this.provider === 'openai') {
-                const result = await this.reviewCodeOpenAI(code, language);
-                this.setCached(cacheKey, result, 1800);
-                return result;
-            }
+            const result = await this._reviewCode(code, language, problemContext);
+            this.setCached(cacheKey, result, 1800);
+            return result;
         } catch (error) {
             console.error('AI Code Review Error:', error);
             throw new Error('Failed to review code. Please try again.');
         }
     }
 
-    async reviewCodeGemini(code, language, problemContext) {
+    async _reviewCode(code, language, problemContext) {
         const contextBlock = problemContext ? `\n\nProblem Context:\n${problemContext}\n` : '';
-        const prompt = `${this.getSystemPrompt('code-review')}${contextBlock}
-
+        const userPrompt = `${contextBlock}
 Code to review:
 \`\`\`${language}
 ${code}
@@ -204,7 +205,7 @@ Analyze:
 4. Efficiency - Can it be optimized?
 5. Learning Points - What concepts does this demonstrate?
 
-Focus on: what could be done in a better way, and which way is the ideal or perfect way to write this code (best practice, clearest, most maintainable).
+Focus on: what could be done in a better way, and which way is the ideal or perfect way to write this code.
 
 Format your response as:
 - Strengths: [what's good]
@@ -213,14 +214,11 @@ Format your response as:
 - Suggestions: [how to improve]
 - Learning: [key concepts to understand]`;
 
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        return this._callClaude(this.getSystemPrompt('code-review'), userPrompt, 2048);
     }
 
-    /**
-     * AI Tutor - Provide hints (max 3 per problem)
-     */
+    // ─── AI Tutor Hints ───────────────────────────────────────────────────────
+
     async getHint(problemDescription, studentCode, language, hintNumber, previousHints = []) {
         try {
             if (hintNumber > 3) {
@@ -229,33 +227,25 @@ Format your response as:
                     isFinal: true
                 };
             }
-
-            if (this.provider === 'gemini') {
-                return await this.getHintGemini(problemDescription, studentCode, language, hintNumber, previousHints);
-            } else if (this.provider === 'openai') {
-                return await this.getHintOpenAI(problemDescription, studentCode, language, hintNumber, previousHints);
-            }
+            return await this._getHint(problemDescription, studentCode, language, hintNumber, previousHints);
         } catch (error) {
             console.error('AI Tutor Hint Error:', error);
             throw new Error('Failed to get hint. Please try again.');
         }
     }
 
-    async getHintGemini(problemDescription, studentCode, language, hintNumber, previousHints) {
+    async _getHint(problemDescription, studentCode, language, hintNumber, previousHints) {
         const previousHintsText = previousHints.length > 0
             ? `Previous hints given:\n${previousHints.map((h, i) => `Hint ${i + 1}: ${h}`).join('\n')}`
             : 'No previous hints given.';
 
-        // Define length constraints based on hint number
         const lengthConstraints = {
             1: '1-2 sentences, very subtle hint',
             2: '2-3 sentences, more direct hint',
             3: '3-4 sentences, most helpful hint (but still not the answer)'
         };
 
-        const prompt = `${this.getSystemPrompt('ai-tutor')}
-
-Problem:
+        const userPrompt = `Problem:
 ${problemDescription}
 
 Student's Current Code:
@@ -275,21 +265,13 @@ CRITICAL INSTRUCTIONS FOR HINT #${hintNumber}:
 - Point to the key concept or approach needed
 - Make it progressively more helpful (hint 1 is subtle, hint 3 is more direct)
 - Never give the complete answer or solution
-- Be direct and concise - get straight to the point
+- Be direct and concise
 
-Example of a GOOD hint: "Think about how C handles multi-dimensional data structures. What do you call an array where each element is itself an array?"
+Your response should be ONLY the hint text. Start directly with the hint, no introductory phrases.`;
 
-Example of a BAD hint: "That's an excellent question that gets into how we can organize data structures in C! When you think about an 'array of arrays,' you're essentially imagining..." (TOO LONG, TOO VERBOSE)
+        let hintText = (await this._callClaude(this.getSystemPrompt('ai-tutor'), userPrompt, 256)).trim();
 
-Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. Start directly with the hint, no introductory phrases.`;
-
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-
-        // Post-process to ensure conciseness
-        let hintText = response.text().trim();
-
-        // Remove common verbose openings
+        // Remove verbose openings
         const verboseOpenings = [
             "That's an excellent question",
             "That's a great question",
@@ -298,10 +280,8 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
             "I'd encourage you to",
             "To get a helpful hint"
         ];
-
         for (const opening of verboseOpenings) {
             if (hintText.toLowerCase().startsWith(opening.toLowerCase())) {
-                // Find the first sentence after the opening
                 const sentences = hintText.split(/[.!?]+/);
                 if (sentences.length > 1) {
                     hintText = sentences.slice(1).join('.').trim();
@@ -310,25 +290,18 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
             }
         }
 
-        // Limit to reasonable length (max 200 words for hint 3, 100 for hint 1)
         const maxWords = hintNumber === 1 ? 30 : hintNumber === 2 ? 50 : 80;
         const words = hintText.split(/\s+/);
         if (words.length > maxWords) {
             hintText = words.slice(0, maxWords).join(' ') + '...';
         }
 
-        return {
-            hint: hintText,
-            hintNumber: hintNumber,
-            isFinal: hintNumber >= 3
-        };
+        return { hint: hintText, hintNumber, isFinal: hintNumber >= 3 };
     }
 
-    /**
-     * Generate Personalized Learning Path
-     */
+    // ─── Learning Path ────────────────────────────────────────────────────────
+
     async generateLearningPath(studentPerformance) {
-        // Check cache first (cache for 30 minutes)
         const cacheKey = this.generateCacheKey('learning_path', studentPerformance);
         const cached = this.getCached(cacheKey);
         if (cached) {
@@ -337,35 +310,26 @@ Your response should be ONLY the hint text, ${lengthConstraints[hintNumber]}. St
         }
 
         try {
-            let result;
-            if (this.provider === 'gemini') {
-                result = await this.generateLearningPathGemini(studentPerformance);
-            } else if (this.provider === 'openai') {
-                result = await this.generateLearningPathOpenAI(studentPerformance);
-            }
-
-            // Cache for 30 minutes
+            const result = await this._generateLearningPath(studentPerformance);
             this.setCached(cacheKey, result, 1800);
             return result;
         } catch (error) {
             console.error('AI Learning Path Error:', error);
-            // Extract meaningful error message
             const errorMessage = error.message || 'Failed to generate learning path.';
-            if (errorMessage.includes('429') || errorMessage.includes('Resource has been exhausted')) {
-                throw new Error('AI Service Quota Exceeded. Please try again later.');
+            if (errorMessage.includes('429') || errorMessage.includes('rate_limit')) {
+                throw new Error('AI Service Rate Limit Exceeded. Please try again later.');
             }
             throw new Error(`AI Error: ${errorMessage}`);
         }
     }
 
-    async generateLearningPathGemini(studentPerformance) {
+    async _generateLearningPath(studentPerformance) {
         const { analyticsContext, ...dataForPrompt } = studentPerformance;
         const contextBlock = analyticsContext
-            ? `\n\nDashboard summary (overall scores, subject performance, weekly trend - use to tailor the path):\n${JSON.stringify(analyticsContext, null, 2)}\n\n`
+            ? `\n\nDashboard summary:\n${JSON.stringify(analyticsContext, null, 2)}\n\n`
             : '';
-        const prompt = `${this.getSystemPrompt('personalized-learning')}
 
-Student Performance Data:
+        const userPrompt = `Student Performance Data:
 ${JSON.stringify(dataForPrompt, null, 2)}${contextBlock}
 
 Based on this performance, generate a personalized learning path:
@@ -375,7 +339,7 @@ Based on this performance, generate a personalized learning path:
 4. Provide study schedule suggestions
 5. Give encouragement and motivation
 
-IMPORTANT: Use plain text only. Do NOT use asterisks (*) or ** for bold. No markdown formatting in weakAreas, recommendedDays, focusAreas, studyPlan, or motivation. Write in plain sentences.
+IMPORTANT: Use plain text only. Do NOT use asterisks (*) or ** for bold. No markdown formatting.
 
 Format as JSON:
 {
@@ -386,48 +350,32 @@ Format as JSON:
   "motivation": "encouraging message"
 }`;
 
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-
+        const text = await this._callClaude(this.getSystemPrompt('personalized-learning'), userPrompt, 1024);
         try {
-            // Try to parse JSON response
-            const text = response.text();
             const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                return this.sanitizePlainText(parsed);
-            }
+            if (jsonMatch) return this.sanitizePlainText(JSON.parse(jsonMatch[0]));
             return { analysis: this.stripMarkdownAsterisks(text) };
-        } catch (parseError) {
-            return { analysis: this.stripMarkdownAsterisks(response.text()) };
+        } catch {
+            return { analysis: this.stripMarkdownAsterisks(text) };
         }
     }
 
-    /**
-     * Generate Questions for Student
-     */
+    // ─── Question Generation ──────────────────────────────────────────────────
+
     async generateQuestions(topic, difficulty, count = 5) {
         try {
-            // Check scope
             if (!this.isWithinScope(topic)) {
                 throw new Error('Topic is outside project scope. Please focus on C, C++, JavaScript fundamentals.');
             }
-
-            if (this.provider === 'gemini') {
-                return await this.generateQuestionsGemini(topic, difficulty, count);
-            } else if (this.provider === 'openai') {
-                return await this.generateQuestionsOpenAI(topic, difficulty, count);
-            }
+            return await this._generateQuestions(topic, difficulty, count);
         } catch (error) {
             console.error('AI Question Generation Error:', error);
             throw error;
         }
     }
 
-    async generateQuestionsGemini(topic, difficulty, count) {
-        const prompt = `${this.getSystemPrompt('question-generation')}
-
-Generate ${count} ${difficulty} level multiple-choice questions about: ${topic}
+    async _generateQuestions(topic, difficulty, count) {
+        const userPrompt = `Generate ${count} ${difficulty} level multiple-choice questions about: ${topic}
 
 Requirements:
 - Each question should have 4 options (A, B, C, D)
@@ -446,39 +394,23 @@ Format as JSON array:
   }
 ]`;
 
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-
+        const text = await this._callClaude(this.getSystemPrompt('question-generation'), userPrompt, 2048);
         try {
-            const text = response.text();
             const jsonMatch = text.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
-            }
+            if (jsonMatch) return JSON.parse(jsonMatch[0]);
             throw new Error('Failed to parse questions');
-        } catch (parseError) {
+        } catch {
             throw new Error('Failed to generate questions in correct format.');
         }
     }
 
-    /**
-     * Generate Test Questions for Department TPC
-     * Pure AI generation based on module, topic, difficulty
-     * @param {String} module - 'DSA' or 'Aptitude'
-     * @param {String} topic - Specific topic (e.g., 'Arrays', 'Logical Reasoning')
-     * @param {String} difficulty - 'Easy', 'Medium', 'Hard', or 'Mixed'
-     * @param {Number} count - Number of questions to generate
-     * @returns {Array} Array of question objects with text, options, correct_option, marks
-     */
+    // ─── Test Question Generation (TPC) ───────────────────────────────────────
+
     async generateTestQuestions(module, topic, difficulty, count = 10) {
-        if (this.provider === 'gemini') {
-            return await this.generateTestQuestionsGemini(module, topic, difficulty, count);
-        } else {
-            throw new Error('OpenAI provider not yet implemented for test generation');
-        }
+        return await this._generateTestQuestions(module, topic, difficulty, count);
     }
 
-    async generateTestQuestionsGemini(module, topic, difficulty, count) {
+    async _generateTestQuestions(module, topic, difficulty, count) {
         try {
             const systemPrompt = `You are an expert ${module} educator creating practice test questions.
 
@@ -495,9 +427,9 @@ STRICT RULES:
 ${difficulty === 'Mixed' ? 'Include a mix of Easy, Medium, and Hard questions.' : `All questions should be ${difficulty} level.`}
 
 ${module === 'DSA'
-                    ? 'Focus on conceptual understanding, algorithm analysis, time/space complexity, data structures, and problem-solving strategies.'
-                    : 'Focus on logical reasoning, quantitative aptitude, verbal ability, or data interpretation as relevant to the topic.'
-                }
+    ? 'Focus on conceptual understanding, algorithm analysis, time/space complexity, data structures, and problem-solving strategies.'
+    : 'Focus on logical reasoning, quantitative aptitude, verbal ability, or data interpretation as relevant to the topic.'
+}
 
 EXAMPLE OUTPUT FORMAT:
 [
@@ -509,28 +441,18 @@ EXAMPLE OUTPUT FORMAT:
   }
 ]
 
-Generate ${count} high-quality ${difficulty} level questions on "${topic}" for ${module} module now. Return ONLY the JSON array, nothing else.`;
+Return ONLY the JSON array, nothing else.`;
 
-            // Use existing configured model instance instead of creating new one
-            const result = await this.model.generateContent(systemPrompt);
-            const response = await result.response;
-            let text = response.text().trim();
+            const userPrompt = `Generate ${count} high-quality ${difficulty} level questions on "${topic}" for ${module} module now.`;
 
-            // Clean markdown if present
-            if (text.startsWith('```json')) {
-                text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-            } else if (text.startsWith('```')) {
-                text = text.replace(/```\n?/g, '');
-            }
+            let text = (await this._callClaude(systemPrompt, userPrompt, 4096)).trim();
+
+            // Strip markdown fences if present
+            text = text.replace(/^```json\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/, '');
 
             const questions = JSON.parse(text);
+            if (!Array.isArray(questions)) throw new Error('AI response is not an array');
 
-            // Validate structure
-            if (!Array.isArray(questions)) {
-                throw new Error('AI response is not an array');
-            }
-
-            // Validate and clean each question
             const validatedQuestions = questions.map((q, idx) => {
                 if (!q.text || !Array.isArray(q.options) || q.options.length !== 4 || typeof q.correct_option !== 'number') {
                     console.warn(`[AI] Invalid question at index ${idx}, skipping:`, q);
@@ -546,24 +468,17 @@ Generate ${count} high-quality ${difficulty} level questions on "${topic}" for $
 
             console.log(`[AI] Generated ${validatedQuestions.length}/${count} valid questions for ${module} - ${topic} (${difficulty})`);
 
-            if (validatedQuestions.length === 0) {
-                throw new Error('No valid questions generated');
-            }
-
+            if (validatedQuestions.length === 0) throw new Error('No valid questions generated');
             return validatedQuestions;
-
         } catch (error) {
             console.error('[AI] Test Generation Error:', error);
             throw error;
         }
     }
 
+    // ─── Performance Analysis ─────────────────────────────────────────────────
 
-    /**
-     * Analyze Performance and Provide Feedback
-     */
     async analyzePerformance(studentData) {
-        // Check cache first (cache for 10 minutes - performance data changes less frequently)
         const cacheKey = this.generateCacheKey('perf_analysis', studentData);
         const cached = this.getCached(cacheKey);
         if (cached) {
@@ -572,13 +487,7 @@ Generate ${count} high-quality ${difficulty} level questions on "${topic}" for $
         }
 
         try {
-            let result;
-            if (this.provider === 'gemini') {
-                result = await this.analyzePerformanceGemini(studentData);
-            } else if (this.provider === 'openai') {
-                result = await this.analyzePerformanceOpenAI(studentData);
-            }
-            // Cache for 10 minutes
+            const result = await this._analyzePerformance(studentData);
             this.setCached(cacheKey, result, 600);
             return result;
         } catch (error) {
@@ -587,59 +496,47 @@ Generate ${count} high-quality ${difficulty} level questions on "${topic}" for $
         }
     }
 
-    async analyzePerformanceGemini(studentData) {
+    async _analyzePerformance(studentData) {
         const { analyticsContext, ...dataForPrompt } = studentData;
         const contextBlock = analyticsContext
-            ? `\n\nDashboard summary (use to enrich your feedback - overall scores, subject breakdown, weekly trend):\n${JSON.stringify(analyticsContext, null, 2)}\n\n`
+            ? `\n\nDashboard summary:\n${JSON.stringify(analyticsContext, null, 2)}\n\n`
             : '';
-        const prompt = `${this.getSystemPrompt('performance-analysis')}
 
-Student Performance Data:
+        const userPrompt = `Student Performance Data:
 ${JSON.stringify(dataForPrompt, null, 2)}${contextBlock}
 
 Analyze the data carefully. Note that "dsa" and "aptitude" have separate "dailyPractice" and "weeklyTest" sections.
 
 Instructions:
-1. **Check for Partial Data**: If the student has progress in ONE area (e.g., DSA Daily) but not others, acknowledge the progress. DO NOT say "No data/activity" if *any* section has data.
-2. **Specific Feedback**: 
-   - If 'dsa.dailyPractice.score' > 0, praise their coding practice.
-   - If 'aptitude.dailyPractice' is empty, encourage them to start aptitude.
-   - distinguishable between 'Daily Practice' and 'Weekly Tests'.
-3. **Strong/Weak Areas**: Base these strictly on the provided scores.
+1. Check for Partial Data: If the student has progress in ONE area but not others, acknowledge the progress.
+2. Specific Feedback based on actual scores.
+3. Distinguish between Daily Practice and Weekly Tests.
 
-IMPORTANT: Use plain text only. Do NOT use asterisks (*) or ** for bold. No markdown formatting in overallScore, strongAreas, weakAreas, recommendations, or feedback. Write in plain sentences.
+IMPORTANT: Use plain text only. Do NOT use asterisks (*) or **. No markdown formatting.
 
 Output Format (JSON):
 {
-  "overallScore": "percentage (average of available scores)",
-  "strongAreas": ["list of areas with good progress"],
-  "weakAreas": ["specific areas with low/no progress"],
-  "recommendations": ["actionable steps based on missing items"],
-  "feedback": "Encouraging summary acknowledging what they HAVE done."
+  "overallScore": "percentage",
+  "strongAreas": ["list of strong areas"],
+  "weakAreas": ["specific weak areas"],
+  "recommendations": ["actionable steps"],
+  "feedback": "Encouraging summary."
 }`;
 
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-
+        const text = await this._callClaude(this.getSystemPrompt('performance-analysis'), userPrompt, 1024);
         try {
-            const text = response.text();
             const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                return this.sanitizePlainText(parsed);
-            }
-            return { analysis: this.stripMarkdownAsterisks(response.text()) };
-        } catch (parseError) {
-            return { analysis: this.stripMarkdownAsterisks(response.text()) };
+            if (jsonMatch) return this.sanitizePlainText(JSON.parse(jsonMatch[0]));
+            return { analysis: this.stripMarkdownAsterisks(text) };
+        } catch {
+            return { analysis: this.stripMarkdownAsterisks(text) };
         }
     }
 
-    /**
-     * Answer Student Question (with scope check)
-     */
+    // ─── Answer Question ──────────────────────────────────────────────────────
+
     async answerQuestion(question, context = {}) {
         try {
-            // Check if question is within scope
             if (!this.isWithinScope(question)) {
                 return {
                     answer: "I can only help with topics related to C Programming, C++ Programming, JavaScript, Data Types, Variables, Operators, Loops, Arrays, Functions, and DSA basics. Please ask questions related to these topics.",
@@ -647,25 +544,11 @@ Output Format (JSON):
                 };
             }
 
-            if (this.provider === 'gemini') {
-                return await this.answerQuestionGemini(question, context);
-            } else if (this.provider === 'openai') {
-                return await this.answerQuestionOpenAI(question, context);
-            }
-        } catch (error) {
-            console.error('AI Question Answering Error:', error);
-            throw new Error('Failed to answer question.');
-        }
-    }
+            const contextText = context.currentDay
+                ? `Student is currently studying: ${context.currentDay}`
+                : '';
 
-    async answerQuestionGemini(question, context) {
-        const contextText = context.currentDay
-            ? `Student is currently studying: ${context.currentDay}`
-            : '';
-
-        const prompt = `${this.getSystemPrompt('question-answering')}
-
-${contextText}
+            const userPrompt = `${contextText}
 
 Student Question: ${question}
 
@@ -675,25 +558,12 @@ Provide a clear, educational answer:
 - Guide them to understand, don't just give answers
 - Keep it concise but thorough`;
 
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-
-        return {
-            answer: response.text(),
-            outOfScope: false
-        };
-    }
-
-    isWithinScopeStudyHelp(userQuery) {
-        const q = userQuery.toLowerCase();
-        const k = [
-            'c programming', 'c++', 'javascript', 'data types', 'variables', 'operators',
-            'loops', 'arrays', 'functions', 'dsa', 'programming', 'code', 'syntax',
-            'integer', 'factor', 'divisibility', 'hcf', 'lcm', 'bodmas', 'aptitude',
-            'quantitative', 'number', 'percentage', 'ratio', 'equation', 'algebra',
-            'multiplication', 'division', 'addition', 'subtraction', 'math', 'solve'
-        ];
-        return k.some(kw => q.includes(kw)) || q.length > 10;
+            const answer = await this._callClaude(this.getSystemPrompt('question-answering'), userPrompt, 1024);
+            return { answer, outOfScope: false };
+        } catch (error) {
+            console.error('AI Question Answering Error:', error);
+            throw new Error('Failed to answer question.');
+        }
     }
 
     async answerQuestionWithHistory(question, context = {}, conversationHistory = []) {
@@ -704,7 +574,7 @@ Provide a clear, educational answer:
                     outOfScope: true
                 };
             }
-            if (!this.model) throw new Error('AI model not available.');
+            if (!this.client) throw new Error('Anthropic client not available.');
 
             const ctx = [
                 context.week && `Week: ${context.week}`,
@@ -712,40 +582,57 @@ Provide a clear, educational answer:
                 context.topic && `Topic: ${context.topic}`,
             ].filter(Boolean).join('; ') || 'General';
 
-            let historyBlock = '';
+            // Build messages array with conversation history
+            const messages = [];
+
             if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-                historyBlock = 'Previous conversation:\n' + conversationHistory.map((t) => {
-                    const who = t.role === 'student' ? 'Student' : 'Tutor';
-                    return `${who}: ${(t.content || '').slice(0, 800)}`;
-                }).join('\n\n') + '\n\n---\nContinue the teaching. Build on what you already explained.\n\n';
+                for (const turn of conversationHistory) {
+                    messages.push({
+                        role: turn.role === 'student' ? 'user' : 'assistant',
+                        content: (turn.content || '').slice(0, 800)
+                    });
+                }
             }
 
-            const prompt = `${this.getSystemPrompt('question-answering')}
+            messages.push({ role: 'user', content: question });
+
+            const systemPrompt = `${this.getSystemPrompt('question-answering')}
 
 Context: ${ctx}
-${historyBlock}Student: ${question}
 
 Provide a clear, step-by-step explanation. If they seem stuck, break it down further. Keep the answer focused.
 Do NOT use asterisks (*) or double asterisks (**) for formatting; write in plain text only.`;
 
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            return { answer: response.text(), outOfScope: false };
+            const message = await this.client.messages.create({
+                model: this.modelName,
+                max_tokens: 1024,
+                system: systemPrompt,
+                messages
+            });
+
+            const answer = message.content
+                .filter(block => block.type === 'text')
+                .map(block => block.text)
+                .join('');
+
+            return { answer, outOfScope: false };
         } catch (e) {
             console.error('answerQuestionWithHistory:', e);
             throw e;
         }
     }
 
+    // ─── Quiz from Conversation ───────────────────────────────────────────────
+
     async generateQuestionsFromConversation(conversation, topicLabel = 'what you learned') {
         try {
-            if (!this.model) throw new Error('AI model not available.');
+            if (!this.client) throw new Error('Anthropic client not available.');
 
             const summary = Array.isArray(conversation) && conversation.length > 0
-                ? conversation.map((t) => `${t.role}: ${(t.content || '').slice(0, 600)}`).join('\n')
+                ? conversation.map(t => `${t.role}: ${(t.content || '').slice(0, 600)}`).join('\n')
                 : `Topic: ${topicLabel}`;
 
-            const prompt = `Create a quiz from this teaching conversation. You MUST generate at least 20 multiple-choice questions. If the conversation is short, create more questions on the same topics to reach 20.
+            const userPrompt = `Create a quiz from this teaching conversation. You MUST generate at least 20 multiple-choice questions. If the conversation is short, create more questions on the same topics to reach 20.
 
 Conversation or topic:
 ${summary.slice(0, 6000)}
@@ -754,12 +641,11 @@ Each question: "question" (string), "options" (array of exactly 4 strings), "cor
 Do NOT use asterisks (*) or ** in question, options, or explanation; use plain text only.
 Output ONLY a JSON array, no other text. Example: [{"question":"...","options":["a","b","c","d"],"correctAnswer":"b","explanation":"..."}]`;
 
-            const result = await this.model.generateContent(prompt);
-            const text = result?.response?.text() || '';
+            const text = await this._callClaude(this.getSystemPrompt('question-generation'), userPrompt, 4096);
             const m = text.match(/\[[\s\S]*\]/);
             if (!m) throw new Error('Could not parse generated questions.');
             const arr = JSON.parse(m[0]);
-            return (Array.isArray(arr) ? arr : []).slice(0, 25).map((q) => ({
+            return (Array.isArray(arr) ? arr : []).slice(0, 25).map(q => ({
                 question: q.question || '',
                 options: q.options || [],
                 correct_answer: q.correctAnswer ?? q.correct_answer,
@@ -771,27 +657,22 @@ Output ONLY a JSON array, no other text. Example: [{"question":"...","options":[
         }
     }
 
-    /**
-     * Generate extra multiple-choice questions on a topic (e.g. to reach minimum 20).
-     * Same JSON shape as generateQuestionsFromConversation. No asterisks in output.
-     */
     async generateMoreConceptQuestions(topicLabel, count) {
         try {
-            if (!this.model) throw new Error('AI model not available.');
+            if (!this.client) throw new Error('Anthropic client not available.');
             const n = Math.max(1, Math.min(50, Math.ceil(Number(count) || 5)));
 
-            const prompt = `Generate exactly ${n} multiple-choice questions on this topic: ${String(topicLabel || 'programming basics')}.
+            const userPrompt = `Generate exactly ${n} multiple-choice questions on this topic: ${String(topicLabel || 'programming basics')}.
 
 Each question: "question" (string), "options" (array of exactly 4 strings), "correctAnswer" (exact full text of one of the 4 options), "explanation" (string).
 Do NOT use asterisks (*) or ** in question, options, or explanation; use plain text only.
-Output ONLY a JSON array, no other text. Example: [{"question":"...","options":["a","b","c","d"],"correctAnswer":"b","explanation":"..."}]`;
+Output ONLY a JSON array, no other text.`;
 
-            const result = await this.model.generateContent(prompt);
-            const text = result?.response?.text() || '';
+            const text = await this._callClaude(this.getSystemPrompt('question-generation'), userPrompt, 4096);
             const m = text.match(/\[[\s\S]*\]/);
             if (!m) return [];
             const arr = JSON.parse(m[0]);
-            return (Array.isArray(arr) ? arr : []).slice(0, n).map((q) => ({
+            return (Array.isArray(arr) ? arr : []).slice(0, n).map(q => ({
                 question: q.question || '',
                 options: q.options || [],
                 correct_answer: q.correctAnswer ?? q.correct_answer,
@@ -803,42 +684,24 @@ Output ONLY a JSON array, no other text. Example: [{"question":"...","options":[
         }
     }
 
-    /**
-     * Analyze test performance and generate personalized guidance
-     * @param {Object} testData - Current test attempt data
-     * @param {Array} previousTests - Previous test attempts for this student (same week/day if practice)
-     * @param {String} testType - 'practice' or 'weekly'
-     * @returns {Object} Analysis with guidance, patterns, strengths, weaknesses, recommendations
-     */
+    // ─── Test Performance Analysis ────────────────────────────────────────────
+
     async analyzeTestPerformance(testData, previousTests = [], testType = 'practice') {
         try {
-            if (!this.model) throw new Error('AI model not available.');
+            if (!this.client) throw new Error('Anthropic client not available.');
 
             const { score, questions_attempted = [], week, day, time_spent } = testData;
             const totalQuestions = questions_attempted.length;
             const correctCount = questions_attempted.filter(q => q.is_correct).length;
-            const incorrectCount = totalQuestions - correctCount;
 
-            // Analyze question topics/types for patterns
             const topics = {};
-            const questionTypes = {};
-            const timePatterns = [];
-
             questions_attempted.forEach(q => {
                 const topic = q.question_topic?.[0] || 'General';
-                topics[topic] = (topics[topic] || { correct: 0, total: 0 });
+                topics[topic] = topics[topic] || { correct: 0, total: 0 };
                 topics[topic].total++;
                 if (q.is_correct) topics[topic].correct++;
-
-                const qType = q.question_type || 'multiple-choice';
-                questionTypes[qType] = (questionTypes[qType] || { correct: 0, total: 0 });
-                questionTypes[qType].total++;
-                if (q.is_correct) questionTypes[qType].correct++;
-
-                if (q.time_spent) timePatterns.push(q.time_spent);
             });
 
-            // Calculate topic performance
             const topicPerformance = Object.entries(topics).map(([topic, stats]) => ({
                 topic,
                 accuracy: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
@@ -846,41 +709,21 @@ Output ONLY a JSON array, no other text. Example: [{"question":"...","options":[
                 total: stats.total
             }));
 
-            // Compare with previous attempts
             let comparison = null;
             if (previousTests.length > 0) {
                 const prevScores = previousTests.map(t => t.score || 0);
                 const avgPrevScore = prevScores.reduce((a, b) => a + b, 0) / prevScores.length;
                 const lastScore = prevScores[prevScores.length - 1];
                 const improvement = score - lastScore;
-                const trend = improvement > 5 ? 'improving' : improvement < -5 ? 'declining' : 'stable';
-
                 comparison = {
                     previous_score: lastScore,
                     average_previous: Math.round(avgPrevScore),
                     improvement: Math.round(improvement),
-                    trend
+                    trend: improvement > 5 ? 'improving' : improvement < -5 ? 'declining' : 'stable'
                 };
             }
 
-            // Build context for AI
-            const context = {
-                testType,
-                week,
-                day: day || null,
-                score,
-                totalQuestions,
-                correctCount,
-                incorrectCount,
-                timeSpent: time_spent || 0,
-                topicPerformance: topicPerformance.slice(0, 10), // Top 10 topics
-                previousAttempts: previousTests.length,
-                comparison
-            };
-
-            const prompt = `You are an AI learning coach analyzing a student's test performance. Provide personalized guidance based on their results.
-
-Test Details:
+            const userPrompt = `Test Details:
 - Type: ${testType === 'practice' ? 'Daily Practice Test' : 'Weekly Test'}
 - Week: ${week}${day ? `, Day: ${day}` : ''}
 - Score: ${score}%
@@ -895,36 +738,35 @@ ${comparison ? `Previous Performance:
 - Average: ${comparison.average_previous}%
 - Change: ${comparison.improvement > 0 ? '+' : ''}${comparison.improvement}%
 - Trend: ${comparison.trend}
-` : 'This appears to be their first attempt at this test.\n'}
+` : 'This appears to be their first attempt.\n'}
 
-Analyze this performance and provide:
-1. Learning patterns you detect (e.g., "visual-learner", "needs-repetition", "strong-in-basics", "struggles-with-advanced", "fast-learner", "methodical-approach")
-2. Strengths (topics/concepts they excel at)
-3. Weak areas (topics that need improvement)
-4. Personalized guidance message (2-3 sentences, encouraging and actionable)
-5. Specific recommendations (3-5 actionable steps)
-6. Topics to revisit (list of specific topics)
+Provide:
+1. Learning patterns detected
+2. Strengths
+3. Weak areas
+4. Personalized guidance (2-3 sentences)
+5. Specific recommendations (3-5 steps)
+6. Topics to revisit
 
-Do NOT use asterisks (*) or ** in any text. Use plain text only.
+Do NOT use asterisks (*) or **. Plain text only.
 
 Output as JSON:
 {
-  "learning_patterns": ["pattern1", "pattern2"],
-  "strengths": ["strength1", "strength2"],
-  "weak_areas": ["weakness1", "weakness2"],
-  "guidance": "personalized message here",
-  "recommendations": ["recommendation1", "recommendation2"],
-  "topics_to_revisit": ["topic1", "topic2"],
+  "learning_patterns": ["pattern1"],
+  "strengths": ["strength1"],
+  "weak_areas": ["weakness1"],
+  "guidance": "personalized message",
+  "recommendations": ["rec1"],
+  "topics_to_revisit": ["topic1"],
   "performance_trend": "${comparison?.trend || 'new'}"
 }`;
 
-            const result = await this.model.generateContent(prompt);
-            const text = result?.response?.text() || '';
+            const systemPrompt = 'You are an AI learning coach analyzing a student\'s test performance. Provide personalized guidance based on their results.';
+            const text = await this._callClaude(systemPrompt, userPrompt, 1024);
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (!jsonMatch) throw new Error('Could not parse AI analysis response.');
 
             const analysis = JSON.parse(jsonMatch[0]);
-
             return {
                 learning_patterns: Array.isArray(analysis.learning_patterns) ? analysis.learning_patterns : [],
                 strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
@@ -932,12 +774,11 @@ Output as JSON:
                 guidance: analysis.guidance || 'Keep practicing and reviewing the concepts.',
                 recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
                 topics_to_revisit: Array.isArray(analysis.topics_to_revisit) ? analysis.topics_to_revisit : [],
-                performance_trend: analysis.performance_trend || (comparison?.trend || 'new'),
-                comparison: comparison
+                performance_trend: analysis.performance_trend || comparison?.trend || 'new',
+                comparison
             };
         } catch (e) {
             console.error('analyzeTestPerformance:', e);
-            // Return fallback analysis
             return {
                 learning_patterns: [],
                 strengths: score >= 70 ? ['Good understanding of basics'] : [],
@@ -946,7 +787,7 @@ Output as JSON:
                     ? 'Great job! You have a strong grasp of the concepts. Keep practicing to maintain this level.'
                     : score >= 60
                         ? 'You are making progress. Review the incorrect answers and practice similar problems to improve further.'
-                        : 'Don\'t worry, learning takes time. Review the study material again and practice more problems on the topics you found challenging.',
+                        : "Don't worry, learning takes time. Review the study material again and practice more problems on the topics you found challenging.",
                 recommendations: score < 70
                     ? ['Review the study material for this day/week', 'Practice similar problems', 'Focus on understanding the explanations']
                     : ['Continue practicing', 'Try more challenging problems'],
@@ -955,38 +796,6 @@ Output as JSON:
                 comparison: null
             };
         }
-    }
-
-    // ========== GPT-4 Methods (for future upgrade) ==========
-
-    async reviewCodeOpenAI(code, language, problemContext) {
-        // TODO: Implement when upgrading to GPT-4
-        throw new Error('OpenAI integration not yet implemented');
-    }
-
-    async getHintOpenAI(problemDescription, studentCode, language, hintNumber, previousHints) {
-        // TODO: Implement when upgrading to GPT-4
-        throw new Error('OpenAI integration not yet implemented');
-    }
-
-    async generateLearningPathOpenAI(studentPerformance) {
-        // TODO: Implement when upgrading to GPT-4
-        throw new Error('OpenAI integration not yet implemented');
-    }
-
-    async generateQuestionsOpenAI(topic, difficulty, count) {
-        // TODO: Implement when upgrading to GPT-4
-        throw new Error('OpenAI integration not yet implemented');
-    }
-
-    async analyzePerformanceOpenAI(studentData) {
-        // TODO: Implement when upgrading to GPT-4
-        throw new Error('OpenAI integration not yet implemented');
-    }
-
-    async answerQuestionOpenAI(question, context) {
-        // TODO: Implement when upgrading to GPT-4
-        throw new Error('OpenAI integration not yet implemented');
     }
 }
 
