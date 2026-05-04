@@ -208,6 +208,26 @@ export function Roadmap() {
           </div>
 
         </div>
+
+        {/* Customizable syllabus note — full-width strip */}
+        <div className="mt-10 flex items-center justify-center gap-3 border border-blue-100 rounded-2xl bg-blue-50/50 px-6 py-4">
+          <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-white border border-blue-100 shadow-sm flex items-center justify-center">
+            <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.213l-4.5 1.5 1.5-4.5L16.862 3.487z" />
+            </svg>
+          </div>
+          <p className="text-[12px] text-gray-500 leading-relaxed">
+            <span className="font-semibold text-gray-700">Flexible Curriculum —</span>{' '}
+            This roadmap can be fully customized to align with your institution's academic structure and placement goals.
+          </p>
+          <a
+            href="#contact"
+            className="flex-shrink-0 text-[11px] font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2 transition-colors"
+          >
+            Talk to us →
+          </a>
+        </div>
+
       </div>
     </section>
   )
