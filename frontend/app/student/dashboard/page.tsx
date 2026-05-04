@@ -31,14 +31,25 @@ import { WeekAccordionItem } from '@/components/dashboard/WeekAccordionItem'
 function useCountUp(end: number, duration: number = 2000, start: number = 0): number {
   const [count, setCount] = useState(start)
   const startTimeRef = React.useRef<number | null>(null)
-  const rafRef = React.useRef<number>()
+  const rafRef = React.useRef<number>(0)
 
   useEffect(() => {
+    // Reset on each new end value
+    startTimeRef.current = null
+    setCount(start)
+
     const animate = (currentTime: number) => {
+      // Skip frames that arrive after a long background pause
+      // (document hidden = browser throttles rAF; on resume currentTime jumps)
+      if (document.hidden) {
+        rafRef.current = requestAnimationFrame(animate)
+        return
+      }
       if (startTimeRef.current === null) {
         startTimeRef.current = currentTime
       }
-      const progress = Math.min((currentTime - startTimeRef.current) / duration, 1)
+      const elapsed = currentTime - startTimeRef.current
+      const progress = Math.min(elapsed / duration, 1)
       const easeOutQuart = 1 - Math.pow(1 - progress, 4)
       setCount(Math.floor(start + (end - start) * easeOutQuart))
 
@@ -49,9 +60,7 @@ function useCountUp(end: number, duration: number = 2000, start: number = 0): nu
 
     rafRef.current = requestAnimationFrame(animate)
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [end, duration, start])
 
@@ -304,20 +313,38 @@ export default function StudentDashboardPage() {
     }
   }, [progressData, isLoadingProgress])
 
-  // Auto-refresh every 30 seconds
+  // ─── Smart refresh on tab return ──────────────────────────────────────────
+  // No polling interval = zero DB reads while the tab is active or in background.
+  // When you switch BACK to this tab, we only re-fetch if data is >5 min stale.
+  // This cuts MongoDB reads from ~120/hr (30s polling) to ≤12/hr worst-case.
+  // The manual Refresh button is always there for instant on-demand updates.
+  const lastFetchedRef = React.useRef<number>(Date.now())
+  const STALE_AFTER_MS = 5 * 60 * 1000 // 5 minutes
+
+  // Update the timestamp every time data is fetched
+  const fetchProgressSummaryTracked = React.useCallback(async () => {
+    await fetchProgressSummary()
+    lastFetchedRef.current = Date.now()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    const interval = setInterval(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) return // tab going to background — do nothing
+
+      const msSinceLastFetch = Date.now() - lastFetchedRef.current
+      if (msSinceLastFetch < STALE_AFTER_MS) return // data is still fresh
+
+      // Data is stale — refresh silently
       setIsRefreshing(true)
       Promise.all([
-        fetchProgressSummary(),
+        fetchProgressSummaryTracked(),
         checkUserData(),
-      ]).finally(() => {
-        setIsRefreshing(false)
-      })
-    }, 30000) // 30 seconds
+      ]).finally(() => setIsRefreshing(false))
+    }
 
-    return () => clearInterval(interval)
-  }, [])
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [fetchProgressSummaryTracked]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true)

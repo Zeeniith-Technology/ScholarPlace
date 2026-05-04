@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Poppins } from 'next/font/google'
+import { Inter, Poppins, Caveat } from 'next/font/google'
 import '../styles/globals.css'
 
 const inter = Inter({
@@ -15,6 +15,13 @@ const poppins = Poppins({
   display: 'swap',
 })
 
+const caveat = Caveat({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-caveat',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: 'Scholarplace - Student Learning Platform',
   description: 'Track your progress, take tests, and improve your skills',
@@ -27,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${poppins.variable} ${caveat.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>{children}</body>
     </html>
   )

@@ -2,189 +2,387 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ArrowRight, TrendingUp, Users, BarChart3, CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import Image from 'next/image'
+import {
+  FileText, LayoutDashboard, Users, BarChart3, BookOpen,
+  Award, RefreshCw, Target, TrendingUp, Clock, Star, Calendar,
+  CheckCircle, AlertTriangle, Zap, Code, Settings, ClipboardList,
+  Brain, GraduationCap, PieChart, ScrollText
+} from 'lucide-react'
 
-export function Hero() {
+/* ─── Sidebar nav items with icons ─── */
+const sidebarItems = [
+  { label: 'Dashboard',         Icon: LayoutDashboard, active: true  },
+  { label: 'Students',          Icon: Users,           active: false },
+  { label: 'Aptitude Monitoring',Icon: Brain,          active: false },
+  { label: 'Coding Monitoring', Icon: Code,            active: false },
+  { label: 'AI Reviews',        Icon: Star,            active: false },
+  { label: 'Tests',             Icon: ClipboardList,   active: false },
+  { label: 'Test Results',      Icon: ScrollText,      active: false },
+  { label: 'Certificates',      Icon: Award,           active: false },
+  { label: 'Analytics',         Icon: PieChart,        active: false },
+  { label: 'Reports',           Icon: BarChart3,       active: false },
+  { label: 'Settings',          Icon: Settings,        active: false },
+]
+
+/* ─── SP Logo component (uses actual image) ─── */
+function SpLogo({ size = 28 }: { size?: number }) {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Enhanced Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background-surface to-primary/5">
-        <div className="gradient-orb w-[600px] h-[600px] bg-primary/5 top-0 left-1/4" style={{ animationDelay: '0s' }} />
-        <div className="gradient-orb w-[500px] h-[500px] bg-secondary/5 bottom-0 right-1/4" style={{ animationDelay: '3s' }} />
-        <div className="gradient-orb w-[400px] h-[400px] bg-accent/5 top-1/2 left-1/2" style={{ animationDelay: '6s' }} />
-        {/* Additional subtle orbs for depth */}
-        <div className="gradient-orb w-[300px] h-[300px] bg-primary/3 top-1/3 right-1/3" style={{ animationDelay: '1.5s' }} />
-        <div className="gradient-orb w-[350px] h-[350px] bg-secondary/3 bottom-1/3 left-1/3" style={{ animationDelay: '4.5s' }} />
+    <div className="flex-shrink-0 rounded-lg overflow-hidden" style={{ width: size, height: size }}>
+      <Image
+        src="/images/Small_Logo.png"
+        alt="ScholarPlace"
+        width={size}
+        height={size}
+        className="object-contain w-full h-full"
+        priority
+      />
+    </div>
+  )
+}
+
+/* ─── Dept TPC Dashboard mockup ─── */
+function DeptTPCCard() {
+  return (
+    <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden w-[540px] select-none pointer-events-none">
+      {/* Top bar */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 bg-gray-50/80">
+        <SpLogo size={26} />
+        <span className="text-xs font-bold text-gray-800">Department TPC Dashboard</span>
+        <div className="ml-auto flex items-center gap-2">
+          <RefreshCw className="w-3 h-3 text-gray-400" />
+          <span className="text-[9px] bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5 font-semibold">
+            Department TPC
+          </span>
+        </div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
-          {/* Left Column - Enhanced Content */}
-          <div className="space-y-8 animate-fade-up">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-base sm:text-lg md:text-xl font-medium text-primary italic">
-                  &quot;Your dream our Stairs&quot;
-                </p>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-neutral leading-tight">
-                  Lets crack placement together
-                </h1>
-              </div>
-              <div className="text-lg sm:text-xl text-neutral-dark leading-relaxed max-w-2xl font-medium space-y-4">
-                <p className="text-xl md:text-2xl font-semibold text-neutral-dark">
-                  Empower your college TPC teams with an all-in-one placement ecosystem.
-                </p>
-                <ul className="space-y-3 mt-4 text-base sm:text-lg">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
-                    <span><strong>Structured Roadmaps</strong> for flawless Aptitude & DSA mastery.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-secondary flex-shrink-0 mt-0.5" />
-                    <span><strong>Automated Assessments</strong> to track real-time progress effortlessly.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
-                    <span><strong>Smart Analytics</strong> to guide students from 3rd semester straight to their dream offer letter.</span>
-                  </li>
-                </ul>
-              </div>
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-40 bg-gray-50 border-r border-gray-100 py-2 flex-shrink-0">
+          {sidebarItems.map(({ label, Icon, active }) => (
+            <div
+              key={label}
+              className={`flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded-lg mb-0.5
+                ${active ? 'bg-blue-600 text-white' : 'text-gray-500'}`}
+            >
+              <Icon className={`w-3 h-3 flex-shrink-0 ${active ? 'text-white' : 'text-gray-400'}`} />
+              <span className={`text-[8px] font-medium truncate ${active ? 'text-white' : 'text-gray-500'}`}>
+                {label}
+              </span>
             </div>
+          ))}
+        </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="#contact">
-                <Button variant="primary" className="w-full sm:w-auto px-8 py-4 text-lg group shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40">
-                  Book a Demo
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="#student-experience">
-                <Button variant="secondary" className="w-full sm:w-auto px-8 py-4 text-lg shadow-lg shadow-secondary/20 hover:shadow-xl hover:shadow-secondary/30">
-                  Explore Student Experience
-                </Button>
-              </Link>
-            </div>
+        {/* Main content */}
+        <div className="flex-1 p-3.5 space-y-3">
+          <p className="text-[9px] text-gray-400">Manage students, track performance, and monitor progress</p>
 
-
-            <p className="text-sm text-neutral-dark flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Built for 3rd–7th sem students and TPC teams
-            </p>
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              { label: 'Total Students',  val: '847',  sub: '821 active',           color: 'text-gray-800',  Icon: Users        },
+              { label: 'Average Score',   val: '74%',  sub: 'Overall average',      color: 'text-green-600', Icon: TrendingUp   },
+              { label: 'Tests Completed', val: '1,243',sub: 'Across all students',  color: 'text-amber-500', Icon: CheckCircle  },
+              { label: 'Top Performers',  val: '312',  sub: 'Score ≥85%',           color: 'text-blue-600',  Icon: Star         },
+            ].map(s => (
+              <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-2 shadow-sm">
+                <div className="flex justify-between items-start mb-1">
+                  <span className="text-[7.5px] text-gray-400 leading-tight">{s.label}</span>
+                  <s.Icon className={`w-3 h-3 ${s.color}`} />
+                </div>
+                <div className={`text-sm font-bold ${s.color}`}>{s.val}</div>
+                <div className="text-[7px] text-gray-400 mt-0.5">{s.sub}</div>
+              </div>
+            ))}
           </div>
 
-          {/* Right Column - Enhanced Dashboard Mockup */}
-          <div className="relative animate-slide-in hidden lg:block">
-            {/* Main Dashboard Card */}
-            <div className="glass rounded-3xl p-6 transform rotate-2 hover:rotate-0 transition-all duration-500 shadow-2xl hover:shadow-primary/20 border border-primary/10">
-              {/* Header with glassmorphism and curvy borders */}
-              <div className="glass rounded-3xl p-4 mb-6 flex items-center justify-between border border-primary/20 backdrop-blur-md">
-                <div>
-                  <div className="h-5 bg-gradient-to-r from-primary to-secondary rounded-2xl w-40 mb-2"></div>
-                  <div className="h-3 bg-neutral-dark/20 rounded-xl w-28"></div>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-secondary to-accent shadow-lg flex items-center justify-center backdrop-blur-sm">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div>
+          {/* Bottom panels */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Top Performers */}
+            <div className="bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
+              <div className="flex items-center gap-1 mb-2">
+                <Award className="w-3 h-3 text-blue-500" />
+                <span className="text-[8px] font-bold text-gray-700">Top Performers</span>
+                <span className="ml-auto text-[7px] text-blue-500">View All →</span>
               </div>
-
-              {/* Progress and Analytics Cards - Above Semester Progress */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {/* Progress Card - Green */}
-                <div className="glass rounded-2xl p-4 border border-secondary/20 backdrop-blur-md">
-                  <div className="h-10 bg-secondary/30 rounded-xl mb-2 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-secondary" />
+              {['Priya S. — 96%', 'Arjun M. — 94%', 'Nisha K. — 91%'].map((name) => (
+                <div key={name} className="flex items-center gap-1.5 py-0.5">
+                  <div className="w-3 h-3 rounded-full bg-blue-100 flex items-center justify-center">
+                    <GraduationCap className="w-2 h-2 text-blue-500" />
                   </div>
-                  <div className="h-2 bg-secondary/20 rounded-full w-full"></div>
-                  <div className="h-2 bg-secondary/20 rounded-full w-2/3 mt-1"></div>
+                  <span className="text-[7.5px] text-gray-600">{name}</span>
                 </div>
-                {/* Analytics Card - Blue */}
-                <div className="glass rounded-2xl p-4 border border-primary/20 backdrop-blur-md">
-                  <div className="h-10 bg-primary/30 rounded-xl mb-2 flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="h-2 bg-primary/20 rounded-full w-full"></div>
-                  <div className="h-2 bg-primary/20 rounded-full w-3/4 mt-1"></div>
-                </div>
+              ))}
+            </div>
+            {/* Needs Attention */}
+            <div className="bg-amber-50 rounded-xl border border-amber-100 p-2.5 shadow-sm">
+              <div className="flex items-center gap-1 mb-2">
+                <AlertTriangle className="w-3 h-3 text-amber-500" />
+                <span className="text-[8px] font-bold text-gray-700">Needs Attention</span>
               </div>
-
-              {/* Progress Section with animation */}
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-neutral-dark">Semester Progress</span>
-                  <span className="text-lg font-bold text-accent">75%</span>
+              <div className="bg-white rounded-lg border border-amber-100 p-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[8px] font-semibold text-gray-700">3 Students</span>
+                  <span className="text-[7px] bg-red-100 text-red-500 rounded-full px-1.5 py-0.5">Below 40%</span>
                 </div>
-                <div className="h-4 bg-background-elevated rounded-full overflow-hidden shadow-inner">
-                  <div className="h-full bg-accent rounded-full w-3/4 flex items-center justify-end pr-2">
-                    <div className="w-2 h-2 rounded-full bg-white/80"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Enhanced Chart Area */}
-              <div className="h-40 bg-gradient-to-br from-primary/5 via-primary/3 to-primary/5 rounded-xl p-4 mb-6 border border-neutral-light/10">
-                <div className="h-full flex items-end justify-around gap-2 group">
-                  {[20, 35, 30, 50, 65, 75, 92].map((height, i) => (
-                    <div
-                      key={i}
-                      className={`bg-primary rounded-t flex-1 shadow-lg transition-all duration-500 hover:scale-x-105 hover:-translate-y-1 ${
-                        i === 6 ? 'opacity-100' : 'opacity-60 hover:opacity-100'
-                      }`}
-                      style={{ height: `${height}%` }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Test Schedule with icons */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 bg-primary/30 rounded w-32"></div>
-                  <div className="w-2 h-2 rounded-full bg-secondary"></div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center text-xs text-secondary">
-                      ✓
-                    </div>
-                    <div className="h-2 bg-neutral-dark/20 rounded flex-1"></div>
-                    <div className="h-2 bg-neutral-dark/10 rounded w-12"></div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center text-xs text-secondary">
-                      ✓
-                    </div>
-                    <div className="h-2 bg-neutral-dark/20 rounded flex-1"></div>
-                    <div className="h-2 bg-neutral-dark/10 rounded w-12"></div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-neutral-dark/20 flex items-center justify-center text-xs text-neutral-dark">
-                      ○
-                    </div>
-                    <div className="h-2 bg-neutral-dark/20 rounded flex-1"></div>
-                    <div className="h-2 bg-neutral-dark/10 rounded w-12"></div>
-                  </div>
-                </div>
+                <div className="text-[7px] text-gray-400 mt-0.5">Avg score: 32%</div>
+                <div className="text-[7px] text-gray-400">Days completed: &lt; 2</div>
+                <span className="text-[7px] text-blue-500 mt-0.5 block">View Profiles →</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 
+/* ─── Student top nav items ─── */
+const studentNav = [
+  { label: 'Dashboard', Icon: LayoutDashboard, active: true  },
+  { label: 'Learn',     Icon: BookOpen,         active: false },
+  { label: 'Practice',  Icon: ClipboardList,    active: false },
+  { label: 'AI Analysis',Icon: Brain,           active: false },
+  { label: 'Certificate',Icon: Award,           active: false },
+]
 
+/* ─── Student Dashboard mockup ─── */
+function StudentDashCard() {
+  return (
+    <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden w-[510px] select-none pointer-events-none">
+      {/* Top nav */}
+      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-gray-100">
+        <SpLogo size={24} />
+        {studentNav.map(({ label, Icon, active }) => (
+          <span
+            key={label}
+            className={`text-[8.5px] font-medium flex items-center gap-1 px-1.5 py-0.5 rounded-md
+              ${active ? 'text-blue-600 bg-blue-50 border border-blue-100' : 'text-gray-400'}`}
+          >
+            <Icon className={`w-2.5 h-2.5 ${active ? 'text-blue-500' : 'text-gray-300'}`} />
+            {label}
+          </span>
+        ))}
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-[7px] font-bold">S</span>
+          </div>
+          <div>
+            <div className="text-[8px] font-semibold text-gray-700">My account</div>
+            <div className="text-[7px] text-gray-400">Profile &amp; settings</div>
+          </div>
+        </div>
+      </div>
 
+      <div className="p-4 space-y-3">
+        {/* Greeting */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-gray-800">Good Evening, Student! 👋</h3>
+            <p className="text-[9px] text-gray-400">Welcome back to your 6th Semester dashboard</p>
+            <button className="mt-1 flex items-center gap-1 text-[8px] text-gray-500 border border-gray-200 rounded-md px-1.5 py-0.5 bg-white">
+              <RefreshCw className="w-2 h-2" /> Refresh
+            </button>
+          </div>
+          <span className="text-[8px] bg-green-50 text-green-600 border border-green-200 rounded-full px-2 py-0.5 font-semibold flex items-center gap-1">
+            <BookOpen className="w-2.5 h-2.5" /> Week 5 of 8
+          </span>
+        </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            { label: 'Overall Progress', val: '68%',    sub: '34 days completed', Icon: Target,      color: 'text-blue-500'  },
+            { label: 'Tests Completed',  val: '12',     sub: '12 tests done',     Icon: CheckCircle, color: 'text-green-500' },
+            { label: 'Current Streak',   val: '7 days', sub: 'Keep it up! 🔥',   Icon: Zap,         color: 'text-amber-500' },
+            { label: 'Current Rank',     val: '#42',    sub: 'Out of 847',        Icon: Star,        color: 'text-purple-500'},
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-2 shadow-sm">
+              <div className="flex justify-between items-start mb-1">
+                <span className="text-[7px] text-gray-400 leading-tight">{s.label}</span>
+                <s.Icon className={`w-2.5 h-2.5 ${s.color}`} />
+              </div>
+              <div className={`text-[11px] font-bold ${s.color}`}>{s.val}</div>
+              <div className="text-[7px] text-gray-400">{s.sub}</div>
+            </div>
+          ))}
+        </div>
 
+        {/* Upcoming tests */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] font-bold text-gray-700 flex items-center gap-1">
+              <Calendar className="w-2.5 h-2.5 text-blue-500" /> Upcoming Tests
+            </span>
+            <span className="text-[8px] text-blue-500">View All +</span>
+          </div>
+          <div className="space-y-1.5">
+            {[
+              { title: 'Week 5 Capstone Project', date: 'May 2 at 10:00 AM', type: 'Coding',  badge: 'bg-blue-100 text-blue-600',   label: 'DSA'     },
+              { title: 'Week 5 Aptitude Test',    date: 'May 3 at 11:00 AM', type: 'Mixed',   badge: 'bg-green-100 text-green-600', label: 'Aptitude'},
+            ].map(t => (
+              <div key={t.title} className="bg-gray-50 rounded-xl border border-gray-100 p-2">
+                <div className="text-[9px] font-semibold text-gray-700">{t.title}</div>
+                <div className="text-[7px] text-gray-400 flex items-center gap-1 mt-0.5">
+                  <Clock className="w-2 h-2" /> {t.date} · {t.type}
+                </div>
+                <span className={`inline-block text-[7px] font-medium rounded-full px-1.5 py-0.5 mt-1 ${t.badge}`}>{t.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
+        {/* Quick actions */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            { label: 'View Syllabus',  sub: 'Check modules',         Icon: BookOpen,    bg: 'bg-blue-50',   ic: 'text-blue-600',   txt: 'text-blue-700'   },
+            { label: 'Take Test',      sub: 'Start assessment',      Icon: FileText,    bg: 'bg-green-50',  ic: 'text-green-600',  txt: 'text-green-700'  },
+            { label: 'View Analytics', sub: 'Track progress',        Icon: BarChart3,   bg: 'bg-amber-50',  ic: 'text-amber-600',  txt: 'text-amber-700'  },
+            { label: 'AI Analysis',    sub: 'Personalized insights', Icon: Brain,       bg: 'bg-purple-50', ic: 'text-purple-600', txt: 'text-purple-700' },
+          ].map(a => (
+            <div key={a.label} className="bg-white rounded-xl border border-gray-100 p-2 shadow-sm">
+              <div className={`w-6 h-6 rounded-lg ${a.bg} flex items-center justify-center mb-1.5`}>
+                <a.Icon className={`w-3.5 h-3.5 ${a.ic}`} />
+              </div>
+              <div className={`text-[7.5px] font-semibold leading-tight ${a.txt}`}>{a.label}</div>
+              <div className="text-[6.5px] text-gray-400 leading-tight mt-0.5">{a.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
+/* ─── Feature icons ─── */
+const featurePills = [
+  { Icon: Target,        label: 'Structured Roadmap'   },
+  { Icon: FileText,      label: 'Smart Assessments'    },
+  { Icon: BarChart3,     label: 'Real-time Analytics'  },
+  { Icon: Award,         label: 'Placement Readiness'  },
+]
 
+const stats = [
+  { Icon: Users,          value: '500+', label: 'Students Trained'                 },
+  { Icon: TrendingUp,     value: '3X',   label: 'Improvement in Placement Readiness'},
+  { Icon: GraduationCap,  value: '25+',  label: 'Colleges Trust ScholarPlace'      },
+]
 
+/* ─── MAIN HERO ─── */
+export function Hero() {
+  return (
+    <section
+      className="relative min-h-screen flex items-center overflow-hidden pt-32 pb-16 select-none"
+      style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #f0f4ff 50%, #f5f0ff 100%)' }}
+    >
+      {/* Background blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute w-[600px] h-[600px] rounded-full bg-blue-200/30 blur-3xl -top-40 -left-20" />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-purple-200/20 blur-3xl bottom-0 right-0" />
+      </div>
 
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="grid lg:grid-cols-2 gap-10 xl:gap-16 items-center">
 
+          {/* ── LEFT ── */}
+          <div className="space-y-7">
 
+            {/* Badge */}
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-100">
+              <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+              For Engineering Colleges &amp; Training Departments
+            </span>
 
+            {/* Headline */}
+            <div className="space-y-1">
+              <h1 className="text-5xl lg:text-6xl font-heading font-extrabold text-gray-900 leading-tight tracking-tight">
+                Transform Placement<br />Preparation into
+              </h1>
+              <h1 className="text-5xl lg:text-6xl font-heading font-extrabold text-blue-600 leading-tight tracking-tight">
+                Real Results
+              </h1>
+            </div>
 
+            {/* Subtitle */}
+            <p className="text-lg text-gray-500 leading-relaxed max-w-lg">
+              A complete ecosystem to assess, analyze, and improve student performance — every step of the way.
+            </p>
+
+            {/* Feature icons */}
+            <div className="grid grid-cols-4 gap-3">
+              {featurePills.map(({ Icon, label }) => (
+                <div key={label} className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-11 h-11 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <span className="text-xs text-gray-600 font-medium leading-tight">{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="#contact"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-200 transition-all duration-200 hover:-translate-y-0.5 select-none"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Book a Demo
+              </Link>
+              <Link
+                href="#student-experience"
+                className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-3 rounded-xl border border-gray-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 select-none"
+              >
+                <FileText className="w-4 h-4" />
+                See How It Works
+              </Link>
+            </div>
+
+            {/* Stats */}
+            <div className="flex flex-wrap gap-6 pt-4 border-t border-gray-200">
+              {stats.map(({ Icon, value, label }) => (
+                <div key={label} className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-extrabold text-gray-900 leading-none">{value}</div>
+                    <div className="text-xs text-gray-500 leading-tight mt-0.5">{label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── RIGHT — overlapping dashboard mockups ── */}
+          <div className="relative hidden lg:flex items-start justify-center" style={{ minHeight: '580px' }}>
+
+            {/* Back: Dept TPC */}
+            <div
+              className="absolute top-0 right-0 z-10 origin-top-right rounded-2xl"
+              style={{
+                transform: 'rotate(2deg) scale(0.83)',
+                filter: 'drop-shadow(0 20px 60px rgba(37,99,235,0.15))',
+              }}
+            >
+              <DeptTPCCard />
+            </div>
+
+            {/* Front: Student Dashboard */}
+            <div
+              className="absolute bottom-0 left-0 z-20 origin-bottom-left rounded-2xl"
+              style={{
+                transform: 'rotate(-1deg) scale(0.86)',
+                filter: 'drop-shadow(0 24px 64px rgba(37,99,235,0.18))',
+              }}
+            >
+              <StudentDashCard />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  )
+}

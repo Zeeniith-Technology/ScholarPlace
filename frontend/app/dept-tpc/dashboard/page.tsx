@@ -33,14 +33,23 @@ import {
 function useCountUp(end: number, duration: number = 2000, start: number = 0): number {
   const [count, setCount] = useState(start)
   const startTimeRef = React.useRef<number | null>(null)
-  const rafRef = React.useRef<number>()
+  const rafRef = React.useRef<number>(0)
 
   useEffect(() => {
+    startTimeRef.current = null
+    setCount(start)
+
     const animate = (currentTime: number) => {
+      // Skip frames while the tab is hidden — prevents burst catch-up on return
+      if (document.hidden) {
+        rafRef.current = requestAnimationFrame(animate)
+        return
+      }
       if (startTimeRef.current === null) {
         startTimeRef.current = currentTime
       }
-      const progress = Math.min((currentTime - startTimeRef.current) / duration, 1)
+      const elapsed = currentTime - startTimeRef.current
+      const progress = Math.min(elapsed / duration, 1)
       const easeOutQuart = 1 - Math.pow(1 - progress, 4)
       setCount(Math.floor(start + (end - start) * easeOutQuart))
 
@@ -51,14 +60,13 @@ function useCountUp(end: number, duration: number = 2000, start: number = 0): nu
 
     rafRef.current = requestAnimationFrame(animate)
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [end, duration, start])
 
   return count
 }
+
 
 /**
  * TPC/DeptTPC Dashboard Page
@@ -81,6 +89,28 @@ export default function DepartmentTPCDashboardPage() {
     checkAuth()
     fetchDashboardData()
   }, [])
+
+  // ─── Smart refresh on tab return ──────────────────────────────────────────
+  // No polling = zero DB reads in background. On tab return, refresh only if
+  // data is older than 5 minutes. Manual refresh button handles the rest.
+  const lastFetchedRef = React.useRef<number>(Date.now())
+  const STALE_AFTER_MS = 5 * 60 * 1000 // 5 minutes
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) return // going to background — do nothing
+
+      const msSinceLastFetch = Date.now() - lastFetchedRef.current
+      if (msSinceLastFetch < STALE_AFTER_MS) return // still fresh, skip
+
+      // Data is stale — silently refresh
+      setIsRefreshing(true)
+      fetchDashboardData() // isRefreshing will be cleared inside fetchDashboardData
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
     try {
@@ -200,6 +230,7 @@ export default function DepartmentTPCDashboardPage() {
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
+      lastFetchedRef.current = Date.now() // mark when data was last fetched
     }
   }
 
