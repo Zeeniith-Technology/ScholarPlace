@@ -69,91 +69,38 @@ export function Pricing() {
           </p>
         </div>
 
-        {/* ── TAB SWITCHER ── */}
-        <div className="relative flex justify-center items-center mb-8">
+        {/* ── PRICING CARDS ── */}
+        <div className="relative grid md:grid-cols-2 gap-6 mb-12 items-stretch mt-12 lg:mt-24">
 
           {/* Left — handwriting label + curved arrow */}
-          <div className="hidden md:flex flex-col items-end absolute left-0 top-1/2 -translate-y-1/2 gap-0 pr-2">
+          <div className="hidden lg:flex flex-col items-end absolute -top-20 xl:-top-24 left-10 xl:left-0 gap-0 pointer-events-none">
             <span
               className="text-blue-500 text-right leading-snug mb-1"
-              style={{ fontFamily: 'var(--font-caveat)', fontSize: '18px' }}
+              style={{ fontFamily: 'var(--font-caveat)', fontSize: '20px' }}
             >
               Ideal for<br />Placement Teams
             </span>
-            {/* Blue curved arrow — starts top-left, sweeps down to the right toward tab */}
-            <svg width="80" height="54" viewBox="0 0 80 54" fill="none" className="mr-0">
-              <path
-                d="M 8 6 C 20 4, 58 18, 72 46"
-                stroke="#3b82f6"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                fill="none"
-              />
-              {/* Arrowhead — filled triangle at the tip */}
-              <path
-                d="M 72 46 L 60 41 L 65 32 Z"
-                fill="#3b82f6"
-                stroke="#3b82f6"
-                strokeWidth="0.5"
-                strokeLinejoin="round"
-              />
+            {/* Blue curved arrow pointing down-right into the card */}
+            <svg width="70" height="50" viewBox="0 0 80 54" fill="none">
+              <path d="M 8 6 C 20 4, 58 18, 72 46" stroke="#3b82f6" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+              <path d="M 72 46 L 60 41 L 65 32 Z" fill="#3b82f6" stroke="#3b82f6" strokeWidth="0.5" strokeLinejoin="round" />
             </svg>
-          </div>
-
-          {/* Tabs */}
-          <div className="inline-flex items-center bg-white/80 backdrop-blur border border-gray-200 rounded-full p-1 shadow-sm gap-1">
-            <button
-              onClick={() => setActiveTab('college')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                activeTab === 'college' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              For Colleges &amp; Universities
-            </button>
-            <button
-              onClick={() => setActiveTab('student')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                activeTab === 'student' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <GraduationCap className="w-4 h-4" />
-              For Individual Students
-            </button>
           </div>
 
           {/* Right — handwriting label + curved arrow */}
-          <div className="hidden md:flex flex-col items-start absolute right-0 top-1/2 -translate-y-1/2 gap-0 pl-2">
-            {/* Purple curved arrow — starts top-right, sweeps down to the left toward tab */}
-            <svg width="80" height="54" viewBox="0 0 80 54" fill="none" className="ml-0">
-              <path
-                d="M 72 6 C 60 4, 22 18, 8 46"
-                stroke="#9333ea"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                fill="none"
-              />
-              {/* Arrowhead — filled triangle at the tip */}
-              <path
-                d="M 8 46 L 20 41 L 15 32 Z"
-                fill="#9333ea"
-                stroke="#9333ea"
-                strokeWidth="0.5"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <div className="hidden lg:flex flex-col items-start absolute -top-20 xl:-top-24 right-10 xl:right-0 gap-0 pointer-events-none">
             <span
-              className="text-purple-500 leading-snug mt-1"
-              style={{ fontFamily: 'var(--font-caveat)', fontSize: '18px' }}
+              className="text-purple-500 text-left leading-snug mb-1"
+              style={{ fontFamily: 'var(--font-caveat)', fontSize: '20px' }}
             >
               Ideal for<br />Students
             </span>
+            {/* Purple curved arrow pointing down-left into the card (flipped horizontally) */}
+            <svg width="70" height="50" viewBox="0 0 80 54" fill="none" className="-scale-x-100">
+              <path d="M 8 6 C 20 4, 58 18, 72 46" stroke="#9333ea" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+              <path d="M 72 46 L 60 41 L 65 32 Z" fill="#9333ea" stroke="#9333ea" strokeWidth="0.5" strokeLinejoin="round" />
+            </svg>
           </div>
-
-        </div>
-
-        {/* ── PRICING CARDS ── */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12 items-stretch">
 
           {/* ── COLLEGE CARD ── */}
           <div

@@ -85,8 +85,8 @@ export function Contact() {
                                 <div>
                                     <h3 className="text-lg font-semibold text-neutral mb-1">Email Us</h3>
                                     <p className="text-neutral-dark mb-2">Our friendly team is here to help.</p>
-                                    <a href="mailto:zeeniithinfo@gmail.com" className="text-primary font-medium hover:text-primary-dark transition-colors">
-                                        zeeniithinfo@gmail.com
+                                    <a href="mailto:info@zeeniith.in" className="text-primary font-medium hover:text-primary-dark transition-colors">
+                                        info@zeeniith.in
                                     </a>
                                 </div>
                             </div>

@@ -257,10 +257,10 @@ function StudentDashCard() {
 
 /* ─── Feature icons ─── */
 const featurePills = [
-  { Icon: Target,        label: 'Structured Roadmap'   },
-  { Icon: FileText,      label: 'Smart Assessments'    },
-  { Icon: BarChart3,     label: 'Real-time Analytics'  },
-  { Icon: Award,         label: 'Placement Readiness'  },
+  { Icon: BookOpen,      label: 'DSA + Aptitude Curriculum' },
+  { Icon: FileText,      label: 'Weekly Tests & Assessments' },
+  { Icon: BarChart3,     label: 'AI-Powered Analytics'      },
+  { Icon: Users,         label: 'TPC Management Dashboard'  },
 ]
 
 const stats = [
@@ -274,65 +274,69 @@ export function Hero() {
   return (
     <section
       className="relative min-h-screen flex items-center overflow-hidden pt-32 pb-16 select-none"
-      style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #f0f4ff 50%, #f5f0ff 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #f0f5ff 0%, #f8faff 60%, #ffffff 100%)' }}
     >
-      {/* Background blobs */}
+      {/* Subtle background accent — very light, not blurry */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute w-[600px] h-[600px] rounded-full bg-blue-200/30 blur-3xl -top-40 -left-20" />
-        <div className="absolute w-[500px] h-[500px] rounded-full bg-purple-200/20 blur-3xl bottom-0 right-0" />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-blue-100/25 blur-xl -top-32 -left-16" />
+        <div className="absolute w-[300px] h-[300px] rounded-full bg-blue-50/30 blur-lg bottom-10 right-10" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid lg:grid-cols-2 gap-10 xl:gap-16 items-center">
 
           {/* ── LEFT ── */}
-          <div className="space-y-7">
+          <div className="space-y-6">
 
             {/* Badge */}
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-100">
-              <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-              For Engineering Colleges &amp; Training Departments
-            </span>
-
-            {/* Headline */}
-            <div className="space-y-1">
-              <h1 className="text-5xl lg:text-6xl font-heading font-extrabold text-gray-900 leading-tight tracking-tight">
-                Transform Placement<br />Preparation into
-              </h1>
-              <h1 className="text-5xl lg:text-6xl font-heading font-extrabold text-blue-600 leading-tight tracking-tight">
-                Real Results
-              </h1>
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-100 w-fit">
+              <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+              Placement Prep Platform for Engineering Colleges
             </div>
 
-            {/* Subtitle */}
-            <p className="text-lg text-gray-500 leading-relaxed max-w-lg">
-              A complete ecosystem to assess, analyze, and improve student performance — every step of the way.
+            {/* Headline — product-specific, scannable in 3s */}
+            <div className="space-y-2 sm:space-y-3">
+              <h1 className="text-[32px] sm:text-4xl lg:text-5xl font-heading font-extrabold text-gray-900 leading-tight tracking-tight">
+                One Platform to Prepare<br className="hidden sm:block" /> Students for Campus Placements
+              </h1>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] sm:text-base lg:text-lg font-semibold text-blue-600">
+                <span>DSA</span> <span className="opacity-50">·</span>
+                <span>Aptitude</span> <span className="opacity-50">·</span>
+                <span>Mock Tests</span> <span className="opacity-50">·</span>
+                <span>Analytics</span> <span className="opacity-50">·</span>
+                <span>TPC Dashboard</span>
+              </div>
+            </div>
+
+            {/* Subtitle — SEO friendly, clear, specific */}
+            <p className="text-[13px] sm:text-base text-gray-500 leading-relaxed max-w-lg text-justify">
+              An all-in-one campus placement preparation platform. ScholarPlace guides students through a structured 3rd to 7th-semester curriculum, while empowering Department and College TPCs with real-time analytics and performance tracking to maximize hiring success.
             </p>
 
-            {/* Feature icons */}
-            <div className="grid grid-cols-4 gap-3">
+            {/* Feature pills */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {featurePills.map(({ Icon, label }) => (
                 <div key={label} className="flex flex-col items-center gap-2 text-center">
-                  <div className="w-11 h-11 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-blue-600" />
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <span className="text-xs text-gray-600 font-medium leading-tight">{label}</span>
+                  <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium leading-tight">{label}</span>
                 </div>
               ))}
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
               <Link
                 href="#contact"
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-200 transition-all duration-200 hover:-translate-y-0.5 select-none"
+                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-7 py-3.5 rounded-xl shadow-[0_4px_24px_rgba(37,99,235,0.4)] hover:shadow-[0_6px_28px_rgba(37,99,235,0.55)] transition-all duration-200 hover:-translate-y-0.5 select-none w-full sm:w-auto"
               >
-                <LayoutDashboard className="w-4 h-4" />
-                Book a Demo
+                <Calendar className="w-4 h-4" />
+                Book a Free Demo →
               </Link>
               <Link
                 href="#student-experience"
-                className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-3 rounded-xl border border-gray-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 select-none"
+                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-3.5 rounded-xl border border-gray-200 shadow-sm transition-all duration-200 hover:-translate-y-0.5 select-none w-full sm:w-auto"
               >
                 <FileText className="w-4 h-4" />
                 See How It Works
@@ -340,15 +344,15 @@ export function Hero() {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap gap-6 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-5 border-t border-gray-200">
               {stats.map(({ Icon, value, label }) => (
                 <div key={label} className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-4 h-4 text-blue-600" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-extrabold text-gray-900 leading-none">{value}</div>
-                    <div className="text-xs text-gray-500 leading-tight mt-0.5">{label}</div>
+                    <div className="text-lg sm:text-xl font-extrabold text-gray-900 leading-none">{value}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-500 leading-tight mt-0.5">{label}</div>
                   </div>
                 </div>
               ))}

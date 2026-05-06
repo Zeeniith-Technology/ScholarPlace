@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import {
   TrendingUp, AlertCircle, FileText, ShieldCheck,
   Users, BarChart3, Download, Target, CheckCircle2,
@@ -147,9 +148,13 @@ export function ForColleges() {
               {/* Dashboard Top Bar */}
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-white/90">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <BarChart3 className="w-3.5 h-3.5 text-white" />
-                  </div>
+                  <Image
+                    src="/images/Small_Logo.png"
+                    alt="ScholarPlace"
+                    width={24}
+                    height={24}
+                    className="rounded-md object-contain"
+                  />
                   <span className="text-sm font-bold text-gray-900">ScholarPlace TPC</span>
                 </div>
                 <div className="flex items-center gap-2">

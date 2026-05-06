@@ -76,9 +76,10 @@ export function Navbar() {
             </Link>
             <Link
               href="#contact"
-              className="btn-premium px-5 py-2.5 text-sm font-semibold text-white rounded-xl"
+              className="px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 hover:scale-[1.04]
+                bg-white text-blue-700 shadow-md hover:shadow-lg hover:bg-blue-50"
             >
-              Book a Demo
+              Book a Free Demo →
             </Link>
           </div>
 
@@ -122,10 +123,10 @@ export function Navbar() {
                 </Link>
                 <Link
                   href="#contact"
-                  className="btn-premium block text-center text-sm font-semibold text-white py-3 px-4 rounded-xl"
+                  className="btn-premium block text-center text-sm font-bold text-white py-3 px-4 rounded-xl"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Book a Demo
+                  📅 Book a Free Demo
                 </Link>
               </div>
             </div>
