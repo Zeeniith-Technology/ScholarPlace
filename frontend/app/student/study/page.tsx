@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
@@ -14,15 +14,17 @@ import {
   Zap,
   TrendingUp,
   Target,
-  ArrowRight,
   BookMarked,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAuthHeader } from '@/utils/auth'
+import { WeeklyFeedbackModal } from '@/components/feedback/WeeklyFeedbackModal'
 
 /**
  * Learning Landing Page
- * Shows available weeks for learning and allows students to start their weekly learning
+ * Shows available weeks for learning and allows students to start their weekly learning.
+ * Includes a mandatory weekly feedback column (FEEDBACK) after the STATUS column.
  * Route: /student/study
  */
 export default function LearningPage() {
@@ -31,6 +33,13 @@ export default function LearningPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [syllabusData, setSyllabusData] = useState<any[]>([])
   const [studentProgressByWeek, setStudentProgressByWeek] = useState<{ [week: number]: any }>({})
+
+  // Track which weeks already have feedback submitted (Set of week numbers)
+  const [submittedFeedbackWeeks, setSubmittedFeedbackWeeks] = useState<Set<number>>(new Set())
+  const [checkingFeedback, setCheckingFeedback] = useState(false)
+
+  // Modal state
+  const [feedbackModalWeek, setFeedbackModalWeek] = useState<number | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -44,13 +53,8 @@ export default function LearningPage() {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
 
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-
-      if (authHeader) {
-        headers['Authorization'] = authHeader
-      }
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (authHeader) headers['Authorization'] = authHeader
 
       const response = await fetch(`${apiBaseUrl}/syllabus/list`, {
         method: 'POST',
@@ -65,9 +69,7 @@ export default function LearningPage() {
 
       if (response.ok) {
         const result = await response.json()
-        if (result.success && result.data) {
-          setSyllabusData(result.data)
-        }
+        if (result.success && result.data) setSyllabusData(result.data)
       }
     } catch (error) {
       console.error('Error fetching syllabus:', error)
@@ -80,24 +82,13 @@ export default function LearningPage() {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-
-      if (!authHeader) {
-        console.error('[Student Progress] No auth token found')
-        return
-      }
+      if (!authHeader) return
 
       const response = await fetch(`${apiBaseUrl}/student-progress/list`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-        },
-        body: JSON.stringify({
-          filter: {},
-          projection: {},
-          options: { sort: { week: 1 } }
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ filter: {}, projection: {}, options: { sort: { week: 1 } } })
       })
 
       if (response.ok) {
@@ -107,25 +98,20 @@ export default function LearningPage() {
           result.data.forEach((progress: any) => {
             progressMap[progress.week] = progress
           })
-          // If Week 1 is done but status wasn't updated (legacy), sync completion once.
+
+          // Sync Week 1 completion if needed (legacy support)
           if (progressMap[1]?.status !== 'completed') {
             try {
               const completionRes = await fetch(`${apiBaseUrl}/student-progress/check-week-completion`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': authHeader,
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
                 body: JSON.stringify({ week: 1 }),
               })
               if (completionRes.ok) {
                 const completion = await completionRes.json()
                 if (completion?.success && completion?.data?.isCompleted) {
-                  progressMap[1] = {
-                    ...(progressMap[1] || { week: 1 }),
-                    status: 'completed'
-                  }
+                  progressMap[1] = { ...(progressMap[1] || { week: 1 }), status: 'completed' }
                 }
               }
             } catch (err) {
@@ -141,40 +127,63 @@ export default function LearningPage() {
     }
   }
 
+  /**
+   * Check which weeks already have feedback submitted.
+   * Called once after progress is loaded, for all accessible weeks.
+   */
+  const checkSubmittedFeedback = useCallback(async (accessibleWeeks: number[]) => {
+    if (accessibleWeeks.length === 0) return
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    const authHeader = getAuthHeader()
+    if (!authHeader) return
+
+    setCheckingFeedback(true)
+    try {
+      const response = await fetch(`${apiBaseUrl}/student/feedback/check-submitted-bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ week_numbers: accessibleWeeks })
+      })
+      const data = await response.json()
+      if (data?.success && Array.isArray(data?.data?.submitted_weeks)) {
+        setSubmittedFeedbackWeeks(new Set(data.data.submitted_weeks))
+      }
+    } catch (err) {
+      console.error('[Feedback] checkSubmittedFeedback bulk error:', err)
+    } finally {
+      setCheckingFeedback(false)
+    }
+  }, [])
+
   const isWeekUnlocked = (weekNumber: number) => {
     if (weekNumber === 1) return true
     const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true'
-    if (isTestMode && (weekNumber === 2 || weekNumber === 3 || weekNumber === 4 || weekNumber === 5 || weekNumber === 6)) return true
+    if (isTestMode && weekNumber <= 6) return true
+    
+    // Check if previous week is completed
     const previousWeekProgress = studentProgressByWeek[weekNumber - 1]
-    return previousWeekProgress?.status === 'completed'
+    const isPrevCompleted = previousWeekProgress?.status === 'completed'
+    
+    // Check if previous week feedback is submitted
+    const isPrevFeedbackSubmitted = submittedFeedbackWeeks.has(weekNumber - 1)
+    
+    return isPrevCompleted && isPrevFeedbackSubmitted
   }
 
-  // Helper function to get student's status for a week
-  // Show "Continue" when: at least one DSA problem solved (e.g. day 1), or at least one Aptitude daily practice done (e.g. day 1)
   const getStudentWeekStatus = (weekNumber: number) => {
-    if (!isWeekUnlocked(weekNumber)) {
-      return 'locked'
-    }
-
+    if (!isWeekUnlocked(weekNumber)) return 'locked'
     const progress = studentProgressByWeek[weekNumber]
-    if (!progress) {
-      return 'start'
-    }
+    if (!progress) return 'start'
 
-    const hasDaysCompleted = progress.days_completed && progress.days_completed.length > 0
-    const hasAssignmentsCompleted = progress.assignments_completed && progress.assignments_completed > 0
-    const hasTestsCompleted = progress.tests_completed && progress.tests_completed > 0
-    const hasDsaProgress = (progress.coding_problems_completed && progress.coding_problems_completed.length > 0) ||
-      (progress.verified_days && progress.verified_days.length > 0)
-    const hasAptitudeProgress = (progress.practice_tests_completed && progress.practice_tests_completed > 0) ||
-      (progress.practice_test_scores && progress.practice_test_scores.length > 0)
+    const hasDaysCompleted = progress.days_completed?.length > 0
+    const hasAssignmentsCompleted = progress.assignments_completed > 0
+    const hasTestsCompleted = progress.tests_completed > 0
+    const hasDsaProgress = progress.coding_problems_completed?.length > 0 || progress.verified_days?.length > 0
+    const hasAptitudeProgress = progress.practice_tests_completed > 0 || progress.practice_test_scores?.length > 0
 
-    if (progress.status === 'completed') {
-      return 'completed'
-    }
-    if (hasDaysCompleted || hasAssignmentsCompleted || hasTestsCompleted || hasDsaProgress || hasAptitudeProgress) {
-      return 'in_progress'
-    }
+    if (progress.status === 'completed') return 'completed'
+    if (hasDaysCompleted || hasAssignmentsCompleted || hasTestsCompleted || hasDsaProgress || hasAptitudeProgress) return 'in_progress'
+
     const status = progress.status || 'start'
     return status === 'locked' ? 'start' : status
   }
@@ -182,37 +191,29 @@ export default function LearningPage() {
   const handleStartWeek = (week: number, status: string) => {
     if (status === 'locked') return
 
-    // For Week 1, show selection page with DSA and Aptitude options
-    if (week === 1) {
-      router.push('/student/study/week-1-select')
-    } else if (week === 2) {
-      router.push('/student/study/week-2-select')
-    } else if (week === 3) {
-      router.push('/student/study/week-3-select')
-    } else if (week === 4) {
-      router.push('/student/study/week-4-select')
-    } else if (week === 5) {
-      router.push('/student/study/week-5-select')
-    } else if (week === 6) {
-      router.push('/student/study/week-6-select')
-    } else {
-      // For Week 7+, use dynamic route
-      router.push(`/student/study/${week}?day=day-1`)
+    const weekRoutes: Record<number, string> = {
+      1: '/student/study/week-1-select',
+      2: '/student/study/week-2-select',
+      3: '/student/study/week-3-select',
+      4: '/student/study/week-4-select',
+      5: '/student/study/week-5-select',
+      6: '/student/study/week-6-select',
     }
+    router.push(weekRoutes[week] ?? `/student/study/${week}?day=day-1`)
   }
 
-  // Practicals: 2 per week (static for all weeks)
+  // Practicals: 2 per week (static)
   const practicalsPerWeek = 2
 
   const defaultWeeks = [
-    { week: 1, title: 'Fundamentals', tests: 1 },
+    { week: 1, title: 'Fundamentals',      tests: 1 },
     { week: 2, title: 'Advanced Concepts', tests: 1 },
-    { week: 3, title: 'Data Structures', tests: 0 },
-    { week: 4, title: 'Algorithms', tests: 0 },
-    { week: 5, title: 'Problem Solving', tests: 0 },
-    { week: 6, title: 'Interview Prep', tests: 0 },
-    { week: 7, title: 'Mock Tests', tests: 0, isComingSoon: true },
-    { week: 8, title: 'Final Review', tests: 0, isComingSoon: true },
+    { week: 3, title: 'Data Structures',   tests: 0 },
+    { week: 4, title: 'Algorithms',        tests: 0 },
+    { week: 5, title: 'Problem Solving',   tests: 0 },
+    { week: 6, title: 'Interview Prep',    tests: 0 },
+    { week: 7, title: 'Mock Tests',        tests: 0, isComingSoon: true },
+    { week: 8, title: 'Final Review',      tests: 0, isComingSoon: true },
   ]
 
   const weeklySchedule = defaultWeeks.map((week) => {
@@ -221,14 +222,33 @@ export default function LearningPage() {
     return { ...merged, practicals: practicalsPerWeek }
   })
 
+  // Once progress is loaded, check feedback submission for all relevant weeks
+  useEffect(() => {
+    if (isLoading) return
+    const allWeeksToCheck = [1, 2, 3, 4, 5, 6]
+    checkSubmittedFeedback(allWeeksToCheck)
+  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Feedback helpers ──────────────────────────────────────────────────────
+
+  /** Whether a week is eligible to show a feedback button */
+  const isFeedbackEligible = (weekNum: number, isComingSoon: boolean) => {
+    if (isComingSoon) return false
+    const st = getStudentWeekStatus(weekNum)
+    return st === 'completed'
+  }
+
+  const handleFeedbackSubmitted = (weekNum: number) => {
+    setSubmittedFeedbackWeeks(prev => new Set(prev).add(weekNum))
+    setFeedbackModalWeek(null)
+  }
+
   return (
     <StudentLayout>
       <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Header Section */}
-        <div className={cn(
-          'transition-opacity duration-500',
-          isMounted ? 'opacity-100' : 'opacity-0'
-        )}>
+
+        {/* Header */}
+        <div className={cn('transition-opacity duration-500', isMounted ? 'opacity-100' : 'opacity-0')}>
           <div className="flex items-center gap-4 mb-2">
             <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 border border-primary/20">
               <BookMarked className="w-7 h-7 text-primary" strokeWidth={1.75} />
@@ -254,7 +274,7 @@ export default function LearningPage() {
             </div>
           </div>
         ) : (
-          /* Weeks Table Layout */
+          /* ── Weeks Table ─────────────────────────────────────────────────── */
           <Card className="overflow-hidden">
             {/* Header Info */}
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -262,7 +282,7 @@ export default function LearningPage() {
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span className="font-semibold text-gray-800">{weeklySchedule.length} weeks</span>
                   <span>•</span>
-                  <span>DSA & Aptitude course roadmap</span>
+                  <span>DSA &amp; Aptitude course roadmap</span>
                 </div>
                 <div className="text-xs text-gray-500">
                   Last updated: {new Date().toLocaleTimeString()}
@@ -278,16 +298,24 @@ export default function LearningPage() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">WEEK</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">PRACTICALS</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">STATUS</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
+                      <span className="flex items-center justify-end gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+                        FEEDBACK
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {weeklySchedule.map((week: any, index: number) => {
-                    const studentStatus = getStudentWeekStatus(week.week || index + 1)
+                    const weekNum = week.week || index + 1
+                    const studentStatus = getStudentWeekStatus(weekNum)
                     const isActive = studentStatus === 'start' || studentStatus === 'in_progress'
                     const isCompleted = studentStatus === 'completed'
                     const isLocked = studentStatus === 'locked' || !studentStatus
-                    const weekNum = week.week || index + 1
                     const isComingSoon = week.isComingSoon || false
+                    const feedbackEligible = isFeedbackEligible(weekNum, isComingSoon)
+                    const feedbackDone = submittedFeedbackWeeks.has(weekNum)
 
                     return (
                       <tr
@@ -304,7 +332,6 @@ export default function LearningPage() {
                         {/* WEEK Column */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                            {/* Status Indicator Bar */}
                             {isActive && !isComingSoon && (
                               <div className="w-1 h-16 bg-blue-500 rounded-full flex-shrink-0" />
                             )}
@@ -314,7 +341,6 @@ export default function LearningPage() {
                             {(!isActive && !isCompleted) || isComingSoon ? (
                               <div className="w-1 h-16 bg-transparent flex-shrink-0" />
                             ) : null}
-
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base transition-all duration-300 flex-shrink-0',
@@ -324,17 +350,11 @@ export default function LearningPage() {
                               )}>
                                 {isCompleted && !isComingSoon ? (
                                   <CheckCircle2 className="w-5 h-5" />
-                                ) : (
-                                  weekNum
-                                )}
+                                ) : weekNum}
                               </div>
                               <div>
-                                <div className="font-bold text-base text-gray-900">
-                                  Week {weekNum}
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                  {week.title || 'Course Content'}
-                                </div>
+                                <div className="font-bold text-base text-gray-900">Week {weekNum}</div>
+                                <div className="text-xs text-gray-600">{week.title || 'Course Content'}</div>
                               </div>
                             </div>
                           </div>
@@ -377,94 +397,28 @@ export default function LearningPage() {
                                 <span>Coming Soon</span>
                               </span>
                             </Badge>
-                          ) : studentStatus === 'start' && weekNum === 1 ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                router.push('/student/study/week-1-select')
-                              }}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 ml-auto"
-                            >
-                              <Clock className="w-4 h-4" />
-                              Start
-                            </button>
-                          ) : studentStatus === 'start' && weekNum > 1 ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (weekNum === 2) {
-                                  router.push('/student/study/week-2-select')
-                                } else if (weekNum === 3) {
-                                  router.push('/student/study/week-3-select')
-                                } else if (weekNum === 4) {
-                                  router.push('/student/study/week-4-select')
-                                } else if (weekNum === 5) {
-                                  router.push('/student/study/week-5-select')
-                                } else if (weekNum === 6) {
-                                  router.push('/student/study/week-6-select')
-                                } else {
-                                  router.push(`/student/study/${weekNum}?day=day-1`)
-                                }
-                              }}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 ml-auto"
-                            >
-                              <Clock className="w-4 h-4" />
-                              Start
-                            </button>
                           ) : studentStatus === 'start' ? (
-                            <Badge
-                              variant="primary"
-                              className="text-xs px-3 py-1.5 font-semibold bg-blue-100 text-blue-700 border border-blue-200 ml-auto w-fit"
-                            >
-                              <span className="flex items-center gap-1.5">
-                                <Zap className="w-3 h-3" />
-                                <span>Start</span>
-                              </span>
-                            </Badge>
-                          ) : isActive && weekNum === 1 ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                router.push('/student/study/week-1?day=pre-week')
+                                handleStartWeek(weekNum, studentStatus)
                               }}
                               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 ml-auto"
                             >
-                              <Play className="w-4 h-4" />
-                              Resume
-                            </button>
-                          ) : isActive && weekNum > 1 ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (weekNum === 2) {
-                                  router.push('/student/study/week-2-select')
-                                } else if (weekNum === 3) {
-                                  router.push('/student/study/week-3-select')
-                                } else if (weekNum === 4) {
-                                  router.push('/student/study/week-4-select')
-                                } else if (weekNum === 5) {
-                                  router.push('/student/study/week-5-select')
-                                } else if (weekNum === 6) {
-                                  router.push('/student/study/week-6-select')
-                                } else {
-                                  router.push(`/student/study/${weekNum}?day=day-1`)
-                                }
-                              }}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 ml-auto"
-                            >
-                              <Play className="w-4 h-4" />
-                              Resume
+                              <Clock className="w-4 h-4" />
+                              Start
                             </button>
                           ) : isActive ? (
-                            <Badge
-                              variant="primary"
-                              className="text-xs px-3 py-1.5 font-semibold bg-blue-100 text-blue-700 border border-blue-200 ml-auto w-fit"
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleStartWeek(weekNum, studentStatus)
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 ml-auto"
                             >
-                              <span className="flex items-center gap-1.5">
-                                <Zap className="w-3 h-3" />
-                                <span>In Progress</span>
-                              </span>
-                            </Badge>
+                              <Play className="w-4 h-4" />
+                              Resume
+                            </button>
                           ) : isCompleted ? (
                             <Badge
                               variant="secondary"
@@ -485,6 +439,44 @@ export default function LearningPage() {
                                 <span>Locked</span>
                               </span>
                             </Badge>
+                          )}
+                        </td>
+
+                        {/* FEEDBACK Column — mandatory for all accessible weeks */}
+                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          {feedbackEligible ? (
+                            feedbackDone ? (
+                              /* Already submitted */
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-3 py-1.5 font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 ml-auto w-fit"
+                              >
+                                <span className="flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  Done ✓
+                                </span>
+                              </Badge>
+                            ) : (
+                              /* Not yet submitted — mandatory CTA */
+                              <button
+                                disabled={checkingFeedback}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setFeedbackModalWeek(weekNum)
+                                }}
+                                className={cn(
+                                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 ml-auto',
+                                  'bg-amber-500 hover:bg-amber-600 text-white',
+                                  'animate-pulse-once'
+                                )}
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                                Give Feedback
+                              </button>
+                            )
+                          ) : (
+                            /* Locked / coming soon — show dash */
+                            <span className="text-gray-300 text-lg ml-auto block text-right">—</span>
                           )}
                         </td>
                       </tr>
@@ -532,23 +524,27 @@ export default function LearningPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg bg-primary/20">
-                  <Clock className="w-5 h-5 text-primary" />
+                <div className="p-3 rounded-lg bg-amber-100">
+                  <MessageSquare className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-neutral-light">In Progress</p>
-                  <p className="text-2xl font-bold text-neutral">
-                    {weeklySchedule.filter((w: any, i: number) => {
-                      const status = getStudentWeekStatus(w.week || i + 1)
-                      return status === 'start' || status === 'in_progress'
-                    }).length}
-                  </p>
+                  <p className="text-sm text-neutral-light">Feedback Given</p>
+                  <p className="text-2xl font-bold text-neutral">{submittedFeedbackWeeks.size}</p>
                 </div>
               </div>
             </div>
           </Card>
         )}
       </div>
+
+      {/* Weekly Feedback Modal */}
+      {feedbackModalWeek !== null && (
+        <WeeklyFeedbackModal
+          weekNumber={feedbackModalWeek}
+          onClose={() => setFeedbackModalWeek(null)}
+          onSubmitted={() => handleFeedbackSubmitted(feedbackModalWeek)}
+        />
+      )}
     </StudentLayout>
   )
 }

@@ -69,54 +69,7 @@ export default class logincontroller {
                 return next();
             }
 
-            // Check if user's college is active and subscription is active
-            // For TPC/DeptTPC, use collage_id directly; for PersonMaster, use person_collage_id
-            const collegeIdForValidation = user.person_collage_id || user.collage_id;
-            if (collegeIdForValidation) {
-                const { ObjectId } = await import('mongodb');
-                const collegeFilter = typeof collegeIdForValidation === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdForValidation)
-                    ? { _id: new ObjectId(collegeIdForValidation), deleted: false }
-                    : { _id: collegeIdForValidation, deleted: false };
-
-                const collegeResponse = await fetchData(
-                    'tblCollage',
-                    { _id: 1, collage_status: 1, collage_subscription_status: 1, collage_name: 1 },
-                    collegeFilter
-                );
-
-                if (collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0) {
-                    const college = collegeResponse.data[0];
-
-                    if (college.collage_status !== 1) {
-                        res.locals.responseData = {
-                            success: false,
-                            status: 403,
-                            message: 'Your college account is currently inactive. Please contact administrator.',
-                            error: 'College inactive'
-                        };
-                        return next();
-                    }
-
-                    if (college.collage_subscription_status !== 'active') {
-                        res.locals.responseData = {
-                            success: false,
-                            status: 403,
-                            message: 'Your college subscription is inactive. Please contact administrator.',
-                            error: 'College subscription inactive'
-                        };
-                        return next();
-                    }
-
-                    // Update college info in user object
-                    if (!user.college_name && college.collage_name) {
-                        user.college_name = college.collage_name;
-                    }
-                }
-            }
-
-            // Verify password hash
-            // Password field name varies by table: person_password, tpc_password, dept_tpc_password
-            // Verify password hash
+            // Fetch college data AND verify password concurrently to save ~100-200ms
             const userPassword = user.person_password || user.tpc_password || user.dept_tpc_password;
             if (!userPassword) {
                 res.locals.responseData = {
@@ -128,7 +81,27 @@ export default class logincontroller {
                 return next();
             }
 
-            const isValidPassword = await bcrypt.compare(password, userPassword);
+            const collegeIdForValidation = user.person_collage_id || user.collage_id;
+            let collegePromise = Promise.resolve({ success: true, data: [] });
+            
+            if (collegeIdForValidation) {
+                const { ObjectId } = await import('mongodb');
+                const collegeFilter = typeof collegeIdForValidation === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdForValidation)
+                    ? { _id: new ObjectId(collegeIdForValidation), deleted: false }
+                    : { _id: collegeIdForValidation, deleted: false };
+
+                // Fetch all needed fields in ONE query
+                collegePromise = fetchData(
+                    'tblCollage',
+                    { _id: 1, collage_status: 1, collage_subscription_status: 1, collage_name: 1, departments: 1, collage_departments: 1 },
+                    collegeFilter
+                );
+            }
+
+            const bcryptPromise = bcrypt.compare(password, userPassword);
+
+            // Await both operations concurrently
+            const [collegeResponse, isValidPassword] = await Promise.all([collegePromise, bcryptPromise]);
 
             if (!isValidPassword) {
                 res.locals.responseData = {
@@ -140,50 +113,42 @@ export default class logincontroller {
                 return next();
             }
 
-            // Verify college membership for TPC and DeptTPC roles
-            const userRole = detectedUserRole || user.person_role;
-            if (userRole === 'TPC' || userRole === 'DeptTPC') {
-                const collegeIdForCheck = user.person_collage_id || user.collage_id;
-                if (!collegeIdForCheck) {
+            // Verify college and extract details
+            let collegeName = user.college_name || user.collage_name;
+            let collegeId = collegeIdForValidation;
+            let departmentId = user.department_id || null;
+            let departmentName = user.department || null;
+            const finalUserRole = detectedUserRole || user.person_role;
+
+            if (collegeIdForValidation && collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0) {
+                const college = collegeResponse.data[0];
+
+                if (college.collage_status !== 1) {
                     res.locals.responseData = {
                         success: false,
                         status: 403,
-                        message: 'Your account is not associated with any college. Please contact administrator.',
-                        error: 'College association missing'
+                        message: 'Your college account is currently inactive. Please contact administrator.',
+                        error: 'College inactive'
                     };
                     return next();
                 }
-            }
 
-            // Get college name and resolve department_id if needed
-            let collegeName = user.college_name || user.collage_name;
-            let collegeId = user.person_collage_id || user.collage_id;
-            let departmentId = user.department_id || null;
-            let departmentName = user.department || null;
+                if (college.collage_subscription_status !== 'active') {
+                    res.locals.responseData = {
+                        success: false,
+                        status: 403,
+                        message: 'Your college subscription is inactive. Please contact administrator.',
+                        error: 'College subscription inactive'
+                    };
+                    return next();
+                }
 
-            // For DeptTPC/Student: If department_id is missing but department name exists, try to resolve it efficiently
-            // Only try direct lookup if college info is present, avoid regex scans
-            const finalUserRole = detectedUserRole || user.person_role;
-            if ((finalUserRole === 'DeptTPC' || finalUserRole === 'Student') && !departmentId && departmentName && collegeId) {
-                const { ObjectId } = await import('mongodb');
-                const collegeIdObj = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
-                    ? new ObjectId(collegeId)
-                    : collegeId;
+                if (!collegeName && college.collage_name) {
+                    collegeName = college.collage_name;
+                }
 
-                // Try to get department_id from college document's departments array
-                const collegeResponse = await fetchData(
-                    'tblCollage',
-                    { departments: 1, collage_departments: 1, collage_name: 1 },
-                    { _id: collegeIdObj, deleted: false }
-                );
-
-                if (collegeResponse.success && collegeResponse.data && collegeResponse.data.length > 0) {
-                    const college = collegeResponse.data[0];
-                    if (!collegeName && college.collage_name) {
-                        collegeName = college.collage_name;
-                    }
-
-                    // Try embedded departments[] array first
+                // Resolve department_id efficiently from the pre-fetched college data
+                if ((finalUserRole === 'DeptTPC' || finalUserRole === 'Student') && !departmentId && departmentName) {
                     if (college.departments && Array.isArray(college.departments)) {
                         const trimmedDeptName = departmentName.trim();
                         const matchingDept = college.departments.find(dept => {
@@ -197,74 +162,42 @@ export default class logincontroller {
                             departmentId = matchingDept.department_id?.toString?.() || matchingDept.department_id || null;
                         }
                     }
-                } else if (collegeId && !collegeName) {
-                    // If college lookup failed, try simple lookup for college name only
-                    const collegeFilter = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
-                        ? { _id: new ObjectId(collegeId), deleted: false }
-                        : { _id: collegeId, deleted: false };
-
-                    const collegeInfo = await fetchData(
-                        'tblCollage',
-                        { collage_name: 1 },
-                        collegeFilter
-                    );
-                    if (collegeInfo.success && collegeInfo.data && collegeInfo.data.length > 0) {
-                        collegeName = collegeInfo.data[0].collage_name;
-                    }
                 }
-            } else if (collegeId && !collegeName) {
-                // For other roles, just get college name if missing
-                const { ObjectId } = await import('mongodb');
-                const collegeFilter = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
-                    ? { _id: new ObjectId(collegeId), deleted: false }
-                    : { _id: collegeId, deleted: false };
-
-                const collegeInfo = await fetchData(
-                    'tblCollage',
-                    { collage_name: 1 },
-                    collegeFilter
-                );
-                if (collegeInfo.success && collegeInfo.data && collegeInfo.data.length > 0) {
-                    collegeName = collegeInfo.data[0].collage_name;
-                }
+            } else if ((finalUserRole === 'TPC' || finalUserRole === 'DeptTPC') && !collegeIdForValidation) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 403,
+                    message: 'Your account is not associated with any college. Please contact administrator.',
+                    error: 'College association missing'
+                };
+                return next();
             }
 
-            // Generate JWT token (include department_id for DeptTPC/Student, college_id for all roles)
+            // Generate JWT token
             const secret = process.env.JWT_SECRET || 'your-secret-key';
             const token = jwt.sign(
                 {
-                    id: user._id, // Always use PersonMaster._id (single source of truth)
+                    id: user._id,
                     email: user.person_email,
                     role: finalUserRole,
                     name: user.person_name,
-                    department: departmentName || null, // Department name/code (for UI display)
-                    department_id: departmentId || null, // Department id (for filtering - CRITICAL for DeptTPC)
+                    department: departmentName || null,
+                    department_id: departmentId || null,
                     college_name: collegeName || null,
-                    college_id: collegeId || null // Always use person_collage_id from PersonMaster
+                    college_id: collegeId || null
                 },
                 secret,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
             );
 
-            console.log('[Login] JWT token generated:', {
-                id: user._id,
-                email: user.person_email,
-                role: finalUserRole,
-                college_id: collegeId,
-                department: departmentName,
-                department_id: departmentId
-            });
-
-            // JWT token returned in response body (no cookies)
-
-            // Update last login in PersonMaster (single source of truth)
-            await executeData(
+            // Update last login in PersonMaster without blocking the response
+            executeData(
                 'tblPersonMaster',
                 { last_login: new Date().toISOString() },
                 'u',
                 null,
                 { person_email: normalizedEmail }
-            );
+            ).catch(err => console.error('[Login] Failed to update last_login:', err));
 
             // Prepare response (include token for JWT-based authentication)
             // All fields come from PersonMaster (single source of truth)

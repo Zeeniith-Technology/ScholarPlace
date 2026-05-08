@@ -32,6 +32,7 @@ import tpcCodingController from './controller/tpcCoding.js';
 import bugReportController from './controller/bugReport.js';
 import contactController from './controller/contactController.js';
 import CertificateController from './controller/certificate.js';
+import WeeklyFeedbackController from './controller/weeklyFeedback.js';
 
 const router = express.Router();
 
@@ -63,6 +64,7 @@ const deptTest = new DeptTestController();
 const errorLogs = new errorLogController();
 const tpcCoding = new tpcCodingController();
 const certificate = new CertificateController();
+const weeklyFeedback = new WeeklyFeedbackController();
 // bugReportController is already exported as default instance, no need to instantiate
 
 // Default data routes
@@ -390,6 +392,28 @@ router.post('/contact/delete', auth, requireRole('Superadmin'), contactControlle
 // Certificate routes
 router.post('/student/certificate', auth, requireRole('Student'), certificate.getStudentCertificate.bind(certificate), responsedata);
 router.post('/dept-tpc/certificates', auth, requireRole('DeptTPC'), certificate.getDeptCertificates.bind(certificate), responsedata);
+
+// ─── Weekly Feedback Routes ───────────────────────────────────────────────
+
+// Student: submit & view own feedback
+router.post('/student/feedback/submit', auth, requireRole('Student'), weeklyFeedback.submitFeedback.bind(weeklyFeedback), responsedata);
+router.post('/student/feedback/check-submitted', auth, requireRole('Student'), weeklyFeedback.checkSubmitted.bind(weeklyFeedback), responsedata);
+router.post('/student/feedback/check-submitted-bulk', auth, requireRole('Student'), weeklyFeedback.checkSubmittedBulk.bind(weeklyFeedback), responsedata);
+router.post('/student/feedback/my-history', auth, requireRole('Student'), weeklyFeedback.getMyFeedback.bind(weeklyFeedback), responsedata);
+// DeptTPC: view + analytics for their department
+router.post('/tpc-dept/feedback/list', auth, requireRole('DeptTPC'), weeklyFeedback.listFeedback.bind(weeklyFeedback), responsedata);
+router.post('/tpc-dept/feedback/analytics', auth, requireRole('DeptTPC'), weeklyFeedback.getAnalytics.bind(weeklyFeedback), responsedata);
+router.post('/tpc-dept/feedback/student', auth, requireRole('DeptTPC'), weeklyFeedback.getStudentFeedback.bind(weeklyFeedback), responsedata);
+
+// College TPC: view + analytics for their entire college
+router.post('/tpc-college/feedback/list', auth, requireRole('TPC'), weeklyFeedback.listFeedback.bind(weeklyFeedback), responsedata);
+router.post('/tpc-college/feedback/analytics', auth, requireRole('TPC'), weeklyFeedback.getAnalytics.bind(weeklyFeedback), responsedata);
+router.post('/tpc-college/feedback/student', auth, requireRole('TPC'), weeklyFeedback.getStudentFeedback.bind(weeklyFeedback), responsedata);
+
+// Superadmin: view + analytics across all colleges
+router.post('/superadmin/feedback/list', auth, requireRole('Superadmin'), weeklyFeedback.listFeedback.bind(weeklyFeedback), responsedata);
+router.post('/superadmin/feedback/analytics', auth, requireRole('Superadmin'), weeklyFeedback.getAnalytics.bind(weeklyFeedback), responsedata);
+router.post('/superadmin/feedback/student', auth, requireRole('Superadmin'), weeklyFeedback.getStudentFeedback.bind(weeklyFeedback), responsedata);
 
 export default router;
 

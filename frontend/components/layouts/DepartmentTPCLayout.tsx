@@ -20,6 +20,7 @@ import {
   Sparkles,
   Bug,
   ClipboardList,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAuthHeader } from '@/utils/auth'
@@ -92,6 +93,7 @@ const navigation = [
   { name: 'Certificates', href: '/dept-tpc/certificates', icon: Award },
   { name: 'Test Approvals', href: '/dept-tpc/test-approvals', icon: Shield },
   { name: 'Analytics', href: '/dept-tpc/analytics', icon: BarChart3 },
+  { name: 'Student Pulse', href: '/dept-tpc/feedback', icon: MessageSquare },
   { name: 'Reports', href: '/dept-tpc/reports', icon: BookOpen },
   { name: 'Settings', href: '/dept-tpc/settings', icon: Settings },
 ]

@@ -16,6 +16,7 @@ import {
   Award,
   BookOpen,
   Code,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Coding Monitoring', href: '/tpc/coding-monitoring', icon: Code },
   { name: 'Tests', href: '/tpc/tests', icon: FileText },
   { name: 'Analytics', href: '/tpc/analytics', icon: BarChart3 },
+  { name: 'Student Pulse', href: '/tpc/feedback', icon: MessageSquare },
   { name: 'Reports', href: '/tpc/reports', icon: BookOpen },
   { name: 'Settings', href: '/tpc/settings', icon: Settings },
 ]
