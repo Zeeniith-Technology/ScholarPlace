@@ -176,6 +176,12 @@ router.post('/coding-problems/run', auth, codingProblemsController.runSolution, 
 // Get weekly coding progress (check capstone eligibility): All authenticated users
 router.post('/coding-problems/progress/:weekNum', auth, codingProblemsController.getWeeklyCodingProgress, responsedata);
 
+// ── Tiered Daily Coding (Easy / Medium / Hard) ──
+// Fetch 12 grouped problems for a day: POST body { week, day }
+router.post('/coding-problems/tiered/problems', auth, codingProblemsController.getDailyTieredProblems);
+// Get daily progress summary (solved_today / daily_goal): POST body { week, day }
+router.post('/coding-problems/tiered/progress', auth, codingProblemsController.getDailyTieredProgress);
+
 // Code review: get by submission ID or by problem ID (for Code Review UI)
 router.post('/coding-problems/review/get-by-submission', auth, codingProblemsController.getCodeReviewBySubmissionId, responsedata);
 router.post('/coding-problems/review/get-by-problem', auth, codingProblemsController.getCodeReviewByProblemId, responsedata);

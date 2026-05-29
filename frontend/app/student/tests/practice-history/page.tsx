@@ -372,21 +372,26 @@ function PracticeTestHistoryContent() {
                               <p className="text-sm text-neutral mb-3 font-medium">{q.question}</p>
 
                               <div className="space-y-2 mb-3">
-                                {q.options.map((option, optIdx) => (
+                                {q.options.map((option, optIdx) => {
+                                  const optionLetter = String.fromCharCode(65 + optIdx);
+                                  const isCorrectOption = option === q.correct_answer || optionLetter === q.correct_answer;
+                                  const isSelectedWrong = option === q.selected_answer && !q.is_correct;
+                                  
+                                  return (
                                   <div
                                     key={optIdx}
-                                    className={`p-2 rounded text-sm ${option === q.correct_answer
+                                    className={`p-2 rounded text-sm ${isCorrectOption
                                       ? 'bg-green-100 text-green-800 font-semibold'
-                                      : option === q.selected_answer && !q.is_correct
+                                      : isSelectedWrong
                                         ? 'bg-red-100 text-red-800 font-semibold'
                                         : 'bg-neutral-light/10 text-neutral-light'
                                       }`}
                                   >
-                                    {option}
-                                    {option === q.correct_answer && ' ✓'}
-                                    {option === q.selected_answer && !q.is_correct && ' ✗'}
+                                    {optionLetter}. {option}
+                                    {isCorrectOption && ' ✓'}
+                                    {isSelectedWrong && ' ✗'}
                                   </div>
-                                ))}
+                                )})}
                               </div>
 
                               {q.explanation && (

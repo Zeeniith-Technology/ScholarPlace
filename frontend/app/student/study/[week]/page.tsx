@@ -284,8 +284,8 @@ function WeekStudyContent() {
       const dayMatch = dayParam.match(/day-(\d+)/)
       const dayNum = dayMatch ? parseInt(dayMatch[1]) : 0
 
-      // Only fetch for days 1-5
-      if (dayNum < 1 || dayNum > 5) {
+      // Fetch for days 0-5 (0 is pre-week)
+      if (dayNum < 0 || dayNum > 5) {
         setDailyCodingProblems([])
         return
       }

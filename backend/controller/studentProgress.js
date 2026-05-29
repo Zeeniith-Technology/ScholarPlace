@@ -208,7 +208,9 @@ export default class studentProgressController {
                     });
                     const verifiedByWeek = {};
                     Object.entries(problemsByDay).forEach(([key, qIds]) => {
-                        if (qIds.length > 0 && qIds.every(id => passedIds.has(id))) {
+                        const passedCount = qIds.filter(id => passedIds.has(id)).length;
+                        const requiredToPass = Math.min(6, qIds.length); // 6 out of 12 required
+                        if (qIds.length > 0 && passedCount >= requiredToPass) {
                             const dayPart = key.replace(/^\d+-/, '');
                             const weekNum = parseInt(key.split('-')[0], 10);
                             if (!verifiedByWeek[weekNum]) verifiedByWeek[weekNum] = [];
@@ -1959,15 +1961,20 @@ export default class studentProgressController {
                 const dailyProblems = await problemsCollection.find({
                     week: { $in: [weekNum, String(weekNum)] },
                     day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
+                    deleted: { $ne: true },
+                    status: { $ne: 'archived' },
                     $or: [
                         { is_daily: 1 },  // Primary: explicitly marked as daily (production schema)
                         { is_daily: true },  // Fallback: boolean true variant
                         { $and: [{ is_capstone: { $ne: true } }, { is_daily: { $exists: false } }] }  // Legacy: old schema without is_daily field
                     ]
-                }).project({ question_id: 1, problem_id: 1 }).toArray();
+                }).project({ question_id: 1, problem_id: 1, day: 1 }).toArray();
 
-                // Extract problem IDs (support both question_id and problem_id)
-                allCodingProblems = dailyProblems.map(p => p.question_id ?? p.problem_id).filter(Boolean);
+                // Keep day info for 6-per-day validation
+                allCodingProblems = dailyProblems.map(p => ({
+                    id: p.question_id ?? p.problem_id,
+                    day: p.day
+                })).filter(p => Boolean(p.id));
 
                 console.log(`[checkWeeklyTestEligibility] Found ${allCodingProblems.length} daily problems for week ${weekNum} from database`);
             } catch (error) {
@@ -1995,8 +2002,9 @@ export default class studentProgressController {
                     ];
                     if (studentIdObj) studentIdConditions.push({ student_id: studentIdObj });
 
+                    const allCodingIds = allCodingProblems.map(p => p.id);
                     const passedSubs = await submissionsCollection.find({
-                        problem_id: { $in: allCodingProblems },
+                        problem_id: { $in: allCodingIds },
                         status: 'passed',
                         $or: studentIdConditions
                     }).project({ problem_id: 1 }).toArray();
@@ -2075,15 +2083,41 @@ export default class studentProgressController {
             // Add raw attempts map for frontend lookups
             practiceTestEligibility.attempts_by_day = attemptsByDay;
 
-            // Check coding problems completion
-            // If no coding problems exist for this week, or track is 'aptitude' (no coding in aptitude), consider requirement met
+            // Check coding problems completion (6 per day requirement)
             const codingRequired = trackNorm !== 'aptitude';
-            const completedRequired = allCodingProblems.filter(id => codingProblemsCompleted.includes(id));
+            let codingEligible = true;
+            let totalMissing = 0;
+
+            if (codingRequired && allCodingProblems.length > 0) {
+                // Group problems by day
+                const problemsByDay = {};
+                allCodingProblems.forEach(p => {
+                    if (!problemsByDay[p.day]) problemsByDay[p.day] = [];
+                    problemsByDay[p.day].push(p.id);
+                });
+
+                // Check if every day meets the 6 questions requirement
+                const DAILY_GOAL = 6;
+                for (const day in problemsByDay) {
+                    const dayIds = problemsByDay[day];
+                    const completedInDay = dayIds.filter(id => codingProblemsCompleted.includes(id)).length;
+                    const requiredForDay = Math.min(DAILY_GOAL, dayIds.length);
+                    
+                    if (completedInDay < requiredForDay) {
+                        codingEligible = false;
+                        totalMissing += (requiredForDay - completedInDay);
+                    }
+                }
+            } else if (allCodingProblems.length === 0) {
+                codingEligible = true;
+            }
+
+            const completedRequired = allCodingProblems.filter(p => codingProblemsCompleted.includes(p.id));
             const codingProblemsEligibility = {
-                eligible: !codingRequired || allCodingProblems.length === 0 || allCodingProblems.every(id => codingProblemsCompleted.includes(id)),
+                eligible: !codingRequired || codingEligible,
                 total: allCodingProblems.length,
                 completed: completedRequired.length,
-                missing: allCodingProblems.filter(id => !codingProblemsCompleted.includes(id))
+                missing: codingRequired ? totalMissing : 0
             };
 
             // Check if Weekly Test itself is completed (day: 'weekly-test')

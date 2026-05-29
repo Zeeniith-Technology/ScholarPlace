@@ -249,6 +249,18 @@ export default class syllabuscontroller {
                 }
                 const fileName = dayFiles[dayNum] || dayFiles[1]
                 filePath = path.join(__dirname, `../../Product_Syllabus/${fileName}`)
+            } else if (weekNum === 6) {
+                // Week 6: Separate file for each day
+                const dayNum = parseInt(dayParam.replace('day-', '')) || 1
+                const dayFiles = {
+                    1: 'Week6-Monday.md',
+                    2: 'Week6-Tuesday.md',
+                    3: 'Week6-Wednesday.md',
+                    4: 'Week6-Thursday.md',
+                    5: 'Week6-Friday.md'
+                }
+                const fileName = dayFiles[dayNum] || dayFiles[1]
+                filePath = path.join(__dirname, `../../Product_Syllabus/${fileName}`)
             } else {
                 res.locals.responseData = {
                     success: false,
@@ -282,6 +294,8 @@ export default class syllabuscontroller {
                 content = parseWeek4DayContent(fileContent, dayParam) // Week 4 uses day names (MONDAY, TUESDAY, etc.)
             } else if (weekNum === 5) {
                 content = parseWeek5DayContent(fileContent, dayParam) // Week 5 has separate files per day
+            } else if (weekNum === 6) {
+                content = parseWeek6DayContent(fileContent, dayParam) // Week 6 has separate files per day
             } else {
                 // For future weeks, use Week 2 parser as template
                 content = parseWeek2DayContent(fileContent, dayParam)
@@ -1264,6 +1278,164 @@ function parseWeek5DayContent(fileContent, day) {
 
     if (!cleanedContent || cleanedContent.length < 200) {
         console.log(`Warning: Limited content for Week 5, Day ${day}. Collected ${dayContent.length} lines. Content may be incomplete.`)
+    }
+
+    return {
+        day: `Day ${day.replace('day-', '')}`,
+        title: extractedTitle || dayInfo.title,
+        learning_outcomes: learningOutcomes.length > 0 ? learningOutcomes : [],
+        topics: topics.length > 0 ? topics : [],
+        content: cleanedContent || `Content for ${extractedTitle || dayInfo.title} is being loaded...`,
+        key_concepts: extractKeyConcepts ? extractKeyConcepts(cleanedContent) : []
+    }
+}
+
+/**
+ * Parse day-specific content from Week 6 files
+ * Each day has its own file (Week6-Monday.md through Week6-Friday.md)
+ */
+function parseWeek6DayContent(fileContent, day) {
+    const lines = fileContent.split('\n')
+    const dayMap = {
+        'day-1': {
+            patterns: ['MONDAY', '# 📚 WEEK 6 – MONDAY'],
+            title: 'Sorting Algorithms',
+            dayName: 'MONDAY'
+        },
+        'day-2': {
+            patterns: ['TUESDAY', '# 📚 WEEK 6 – TUESDAY'],
+            title: 'Recursion & Backtracking',
+            dayName: 'TUESDAY'
+        },
+        'day-3': {
+            patterns: ['WEDNESDAY', '# 📚 WEEK 6 – WEDNESDAY'],
+            title: 'Hashing & Frequency Problems',
+            dayName: 'WEDNESDAY'
+        },
+        'day-4': {
+            patterns: ['THURSDAY', '# 📚 WEEK 6 – THURSDAY'],
+            title: 'Binary Search Advanced',
+            dayName: 'THURSDAY'
+        },
+        'day-5': {
+            patterns: ['FRIDAY', '# 📚 WEEK 6 – FRIDAY'],
+            title: 'Mixed Placement Mock',
+            dayName: 'FRIDAY'
+        },
+    }
+
+    const dayInfo = dayMap[day] || dayMap['day-1']
+    let dayContent = []
+    let learningOutcomes = []
+    let topics = []
+    let currentSection = null
+    let foundHeader = false
+
+    console.log(`Parsing Week 6 content for day: ${day}, looking for patterns:`, dayInfo.patterns)
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        const trimmedLine = line.trim()
+
+        // Check if we've reached the day header (# 📚 WEEK 6 – MONDAY)
+        if (!foundHeader && trimmedLine.startsWith('#') && trimmedLine.includes(dayInfo.dayName)) {
+            console.log(`Found Week 6 day header at line ${i}: ${trimmedLine}`)
+            foundHeader = true
+            dayContent.push(line)
+            continue
+        }
+
+        // Once we find the header, collect all content
+        if (foundHeader) {
+            // Skip anchor tags
+            if (trimmedLine.startsWith('<a name=') || trimmedLine.includes('</a>')) {
+                continue
+            }
+
+            // Collect ALL content lines (each file is a single day)
+            dayContent.push(line)
+        }
+    }
+
+    // If header not found, use entire file (single-day file)
+    if (!foundHeader && dayContent.length === 0) {
+        dayContent = lines
+    }
+
+    // Extract topics from content
+    const contentText = dayContent.join('\n')
+
+    // Extract topics from SECTION headers (## Part X: or # 🔵 SECTION X:)
+    const sectionMatches = contentText.matchAll(/##\s*(?:Part|Section|SECTION)\s+\d+[:\s]+([^\n]+)/gi)
+    for (const match of sectionMatches) {
+        const sectionTitle = match[1].trim()
+        if (sectionTitle && sectionTitle.length > 3 && !topics.includes(sectionTitle)) {
+            topics.push(sectionTitle)
+        }
+    }
+
+    // Also extract from blue section headers (# 🔵 SECTION N: ...)
+    const blueSectionMatches = contentText.matchAll(/#\s*🔵\s*SECTION\s+\d+[:\s]+([^\n]+)/gi)
+    for (const match of blueSectionMatches) {
+        const sectionTitle = match[1].trim()
+        if (sectionTitle && sectionTitle.length > 3 && !topics.includes(sectionTitle)) {
+            topics.push(sectionTitle)
+        }
+    }
+
+    // Topic keywords for Week 6
+    const topicKeywords = [
+        'Bubble Sort', 'Selection Sort', 'Insertion Sort', 'Sorting',
+        'Recursion', 'Backtracking', 'Permutations', 'Subsets', 'N-Queens',
+        'Tower of Hanoi', 'Factorial', 'Fibonacci',
+        'Hashing', 'HashMap', 'Two-Sum', 'Anagram', 'Frequency',
+        'Binary Search', 'Peak Element', 'Rotated Array', 'Kth Smallest',
+        'Placement', 'Mock', 'Interview', 'Leaders', 'Inversions'
+    ]
+
+    topicKeywords.forEach(keyword => {
+        if (contentText.includes(keyword) && !topics.includes(keyword)) {
+            topics.push(keyword)
+        }
+    })
+
+    // Extract learning outcomes from checklist items
+    const checklistMatches = contentText.matchAll(/- \[x\]\s+(.+)/g)
+    for (const match of checklistMatches) {
+        const outcome = match[1].trim()
+        if (outcome && outcome.length > 5 && !learningOutcomes.includes(outcome)) {
+            learningOutcomes.push(outcome)
+        }
+    }
+
+    // Clean up and format content
+    let cleanedContent = dayContent.join('\n').trim()
+
+    // Extract actual title from the subtitle line (## SORTING ALGORITHMS | ...)
+    let extractedTitle = dayInfo.title
+    const contentLines = cleanedContent.split('\n')
+    for (let i = 0; i < Math.min(5, contentLines.length); i++) {
+        const ln = contentLines[i].trim()
+        if (ln.startsWith('##') && !ln.includes('TABLE OF CONTENTS') && !ln.includes('BEGINNER')) {
+            const subtitle = ln.replace(/^##\s*/, '').trim()
+            const mainPart = subtitle.split('|')[0].trim()
+            if (mainPart && mainPart.length > 5) {
+                extractedTitle = mainPart
+                break
+            }
+        }
+    }
+
+    console.log(`Week 6 content collection summary for ${day}:`, {
+        linesCollected: dayContent.length,
+        contentLength: cleanedContent.length,
+        learningOutcomes: learningOutcomes.length,
+        topics: topics.length,
+        extractedTitle: extractedTitle
+    })
+
+    if (!cleanedContent || cleanedContent.length < 200) {
+        console.log(`Warning: Limited content for Week 6, Day ${day}. Collected ${dayContent.length} lines.`)
     }
 
     return {

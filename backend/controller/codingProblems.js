@@ -137,7 +137,9 @@ export async function getCodingProblemsByWeek(req, res) {
         // Capstone: match is_capstone as true, 1, or 'true' for DB compatibility
         const problems = await collection.find({
             week: { $in: [week, String(week)] },
-            is_capstone: { $in: [true, 1, 'true'] }
+            is_capstone: { $in: [true, 1, 'true'] },
+            deleted: { $ne: true },
+            status: { $ne: 'archived' }
         }).sort({ question_id: 1 }).toArray();
 
         // Check for submissions (match student_id as string or ObjectId for production)
@@ -209,10 +211,10 @@ export async function getDailyCodingProblems(req, res) {
             });
         }
 
-        if (isNaN(day) || day < 1 || day > 5) {
+        if (isNaN(day) || day < 0 || day > 5) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid day number. Must be between 1 and 5.'
+                message: 'Invalid day number. Must be between 0 and 5.'
             });
         }
 
@@ -220,11 +222,13 @@ export async function getDailyCodingProblems(req, res) {
         const collection = db.collection(COLLECTION_NAME);
 
         // Match week/day as number or string (DB may store week: 1 or "1", day: 5 or "day-5")
-        const dayValues = [day, String(day), `day-${day}`];
+        const dayValues = day === 0 ? [0, "0", "pre-week"] : [day, String(day), `day-${day}`];
         const problems = await collection.find({
             week: { $in: [week, String(week)] },
             day: { $in: dayValues },
-            is_capstone: { $ne: true } // daily: false or field missing
+            is_capstone: { $ne: true }, // daily: false or field missing
+            deleted: { $ne: true },
+            status: { $ne: 'archived' }
         }).sort({ question_id: 1 }).toArray();
 
         // Check for submissions (match student_id as string or ObjectId)
@@ -1238,6 +1242,8 @@ export async function getWeeklyCodingProgress(req, res) {
         const dailyProblems = await problemsCollection.find({
             week: { $in: [week, String(week)] },
             day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] },
+            deleted: { $ne: true },
+            status: { $ne: 'archived' },
             $or: [
                 { is_daily: 1 },  // Primary: explicitly marked as daily (production schema)
                 { is_daily: true },  // Fallback: boolean true variant
@@ -1294,9 +1300,32 @@ export async function getWeeklyCodingProgress(req, res) {
                 question_number: p.question_number
             }));
 
-        // Dynamic: require all daily problems for this week to unlock capstone (works for any count per week)
-        const requiredToUnlock = totalDailyProblems;
-        const isEligible = completedCount >= requiredToUnlock;
+        // Dynamic: require 6 problems per day to unlock capstone
+        const dailyGoals = {}; // Group by day to check if each day met the goal of 6
+        dailyProblems.forEach(p => {
+            const dayKey = p.day;
+            if (!dailyGoals[dayKey]) dailyGoals[dayKey] = { total: 0, completed: 0 };
+            dailyGoals[dayKey].total++;
+            if (completedProblemIds.has(problemId(p))) {
+                dailyGoals[dayKey].completed++;
+            }
+        });
+
+        const DAILY_GOAL = 6;
+        let eligibleDays = 0;
+        let totalDays = Object.keys(dailyGoals).length;
+        let totalRequired = 0;
+
+        Object.values(dailyGoals).forEach(dayGoal => {
+            const requiredForDay = Math.min(DAILY_GOAL, dayGoal.total);
+            totalRequired += requiredForDay;
+            if (dayGoal.completed >= requiredForDay) {
+                eligibleDays++;
+            }
+        });
+
+        const requiredToUnlock = totalRequired;
+        const isEligible = eligibleDays >= totalDays && totalDays > 0;
 
         pendingProblems.sort((a, b) => dayOrder(a.day) - dayOrder(b.day) || (a.question_number || 0) - (b.question_number || 0));
 
@@ -1396,3 +1425,170 @@ export async function getAllStudentSubmissions(req, res) {
         });
     }
 }
+
+/**
+ * Get tiered daily problems (Easy / Medium / Hard) for a given week+day.
+ * Returns 12 problems grouped by difficulty with student completion status.
+ * POST /questions/coding-tiered
+ * Body: { week: number, day: string }
+ */
+export async function getDailyTieredProblems(req, res) {
+    try {
+        const { week, day } = req.body;
+        const studentId = req.user?.id;
+
+        if (!week || !day) {
+            return res.status(400).json({ success: false, message: 'week and day are required' });
+        }
+
+        const weekNum = parseInt(week, 10);
+        const db = getDB();
+        const col = db.collection(COLLECTION_NAME);
+
+        // Fetch all tiered problems for this week+day
+        const dayValues = [day, String(day)];
+        const problems = await col.find({
+            week: { $in: [weekNum, String(weekNum)] },
+            day: { $in: dayValues },
+            is_daily_tiered: true,
+            deleted: { $ne: true },
+            status: { $ne: 'archived' }
+        }).sort({ difficulty: 1, question_number: 1 }).toArray();
+
+        if (problems.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: 'No tiered problems generated yet for this day. Run the generation script.',
+                data: { easy: [], medium: [], hard: [], total: 0, daily_goal: 6, solved_today: 0 }
+            });
+        }
+
+        // Get student's passed submissions for these problem IDs
+        const problemIds = problems.map(p => p.question_id);
+        const submissionsCol = db.collection('tblCodingSubmissions');
+        const studentIdStr = String(studentId);
+        let studentIdObj = null;
+        try { studentIdObj = new ObjectId(studentIdStr); } catch (_) {}
+
+        const idConditions = [{ student_id: studentIdStr }];
+        if (studentIdObj) idConditions.push({ student_id: studentIdObj });
+
+        const passedSubs = await submissionsCol.find({
+            $or: idConditions,
+            problem_id: { $in: problemIds },
+            status: 'passed'
+        }).project({ problem_id: 1 }).toArray();
+
+        const passedSet = new Set(passedSubs.map(s => s.problem_id));
+
+        // Attach status to each problem
+        const enriched = problems.map(p => ({
+            problem_id: p.question_id,
+            title: p.title,
+            difficulty: p.difficulty,      // 'EASY' | 'MEDIUM' | 'HARD'
+            topic: p.topic,
+            problem_statement: p.problem_statement,
+            input_format: p.input_format,
+            output_format: p.output_format,
+            constraints: p.constraints,
+            test_cases: p.test_cases,
+            hints: p.hints,
+            concepts_tested: p.concepts_tested,
+            estimated_time_minutes: p.estimated_time_minutes,
+            expected_complexity: p.expected_complexity,
+            function_signature: p.function_signature,
+            status: passedSet.has(p.question_id) ? 'passed' : 'pending'
+        }));
+
+        // Group by difficulty
+        const easy   = enriched.filter(p => p.difficulty === 'EASY');
+        const medium = enriched.filter(p => p.difficulty === 'MEDIUM');
+        const hard   = enriched.filter(p => p.difficulty === 'HARD');
+
+        const solvedToday = enriched.filter(p => p.status === 'passed').length;
+        const DAILY_GOAL  = 6;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                week: weekNum,
+                day,
+                easy,
+                medium,
+                hard,
+                total: enriched.length,
+                daily_goal: DAILY_GOAL,
+                solved_today: solvedToday,
+                goal_achieved: solvedToday >= DAILY_GOAL
+            }
+        });
+
+    } catch (err) {
+        console.error('[getDailyTieredProblems]', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch tiered problems', error: err.message });
+    }
+}
+
+/**
+ * Get student's daily tiered coding progress summary (for dashboard / roadmap).
+ * POST /questions/coding-tiered-progress
+ * Body: { week: number, day: string }
+ */
+export async function getDailyTieredProgress(req, res) {
+    try {
+        const { week, day } = req.body;
+        const studentId = req.user?.id;
+
+        if (!week || !day) {
+            return res.status(400).json({ success: false, message: 'week and day are required' });
+        }
+
+        const weekNum = parseInt(week, 10);
+        const db = getDB();
+        const col = db.collection(COLLECTION_NAME);
+
+        const dayValues = [day, String(day)];
+        const problemIds = (await col.find({
+            week: { $in: [weekNum, String(weekNum)] },
+            day: { $in: dayValues },
+            is_daily_tiered: true,
+            deleted: { $ne: true }
+        }).project({ question_id: 1, difficulty: 1 }).toArray()).map(p => ({ id: p.question_id, difficulty: p.difficulty }));
+
+        if (problemIds.length === 0) {
+            return res.status(200).json({ success: true, data: { solved: 0, total: 0, daily_goal: 6, goal_achieved: false } });
+        }
+
+        const submissionsCol = db.collection('tblCodingSubmissions');
+        const studentIdStr   = String(studentId);
+        let studentIdObj = null;
+        try { studentIdObj = new ObjectId(studentIdStr); } catch (_) {}
+
+        const idConditions = [{ student_id: studentIdStr }];
+        if (studentIdObj) idConditions.push({ student_id: studentIdObj });
+
+        const passedCount = await submissionsCol.countDocuments({
+            $or: idConditions,
+            problem_id: { $in: problemIds.map(p => p.id) },
+            status: 'passed'
+        });
+
+        const DAILY_GOAL = 6;
+        return res.status(200).json({
+            success: true,
+            data: {
+                week: weekNum,
+                day,
+                solved: passedCount,
+                total: problemIds.length,
+                daily_goal: DAILY_GOAL,
+                goal_achieved: passedCount >= DAILY_GOAL
+            }
+        });
+
+    } catch (err) {
+        console.error('[getDailyTieredProgress]', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch tiered progress', error: err.message });
+    }
+}
+

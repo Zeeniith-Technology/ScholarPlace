@@ -136,6 +136,14 @@ function Week1StudyContent() {
         { id: 'day-4', label: 'Day 4', title: 'Queue Fundamentals', dayNum: 4 },
         { id: 'day-5', label: 'Day 5', title: 'Queue Applications', dayNum: 5 },
       ]
+    } else if (weekNum === 6) {
+      return [
+        { id: 'day-1', label: 'Day 1', title: 'Sorting Algorithms', dayNum: 1 },
+        { id: 'day-2', label: 'Day 2', title: 'Recursion & Backtracking', dayNum: 2 },
+        { id: 'day-3', label: 'Day 3', title: 'Hashing & Frequency Problems', dayNum: 3 },
+        { id: 'day-4', label: 'Day 4', title: 'Binary Search Advanced', dayNum: 4 },
+        { id: 'day-5', label: 'Day 5', title: 'Mixed Placement Mock', dayNum: 5 },
+      ]
     } else {
       // Default structure for future weeks (day-1 to day-5)
       return [
@@ -283,8 +291,8 @@ function Week1StudyContent() {
       const dayMatch = dayParam.match(/day-(\d+)/)
       const dayNum = dayMatch ? parseInt(dayMatch[1]) : 0
 
-      // Only fetch for days 1-5
-      if (dayNum < 1 || dayNum > 5) {
+      // Fetch for days 0-5 (0 is pre-week)
+      if (dayNum < 0 || dayNum > 5) {
         setDailyCodingProblems([])
         return
       }

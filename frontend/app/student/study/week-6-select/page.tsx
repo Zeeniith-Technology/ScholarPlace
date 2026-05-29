@@ -33,7 +33,7 @@ export default function Week6SelectionPage() {
       description: 'Continue DSA with structured day-wise practice.',
       icon: Code,
       route: '/student/study/6?day=day-1',
-      comingSoon: true,
+      comingSoon: false,
       tone: {
         border: 'border-blue-200',
         ring: 'ring-blue-100',

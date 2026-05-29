@@ -132,6 +132,7 @@ export default function BugReportPage() {
                     page_name: '',
                     bug_description: '',
                     how_to_reproduce: '',
+                    report_type: 'bug',
                 })
                 setMediaFiles([])
             } else {
@@ -374,6 +375,7 @@ export default function BugReportPage() {
                                                 page_name: '',
                                                 bug_description: '',
                                                 how_to_reproduce: '',
+                                                report_type: 'bug',
                                             })
                                             setMediaFiles([])
                                             setError('')

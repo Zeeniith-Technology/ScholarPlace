@@ -22,8 +22,9 @@ import {
   Layout,
   List,
   Sparkles,
-  CheckCircle2, // Added CheckCircle2
+  CheckCircle2,
 } from 'lucide-react'
+
 
 // Types
 interface CodingProblem {
@@ -237,6 +238,29 @@ function CodingContent() {
             <p className="text-neutral-light ml-14">Master Data Structures and Algorithms week by week.</p>
           </div>
 
+          {/* ── Daily Tiered Practice Banner ────────────────────────────── */}
+          <div
+            onClick={() => router.push(`/student/coding/${weekParam}/tiered?day=day-1`)}
+            className="mb-6 p-5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white cursor-pointer hover:from-blue-700 hover:to-indigo-700 transition-all hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-0.5">New Feature</p>
+                <h2 className="text-lg font-bold">Daily Tiered Practice</h2>
+                <p className="text-sm text-blue-100 mt-0.5">12 problems · Easy / Medium / Hard · Solve any 6 to complete your daily goal</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2 group-hover:bg-white/30 transition-colors">
+              <span className="text-sm font-bold">Start</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* ── Classic Day-by-Day Problems ───────────────────────────────── */}
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Capstone Problems by Day</p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {DAYS.map((day) => (
               <Card
@@ -265,6 +289,7 @@ function CodingContent() {
       </StudentLayout>
     )
   }
+
 
   // Render: Problem Solving View
   return (
