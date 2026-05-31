@@ -269,8 +269,6 @@ export default class aiController {
             // 2. Fetch Data in Parallel
             const [progressResult, practiceTestResult, profileResult] = await Promise.all([
                 fetchData('tblStudentProgress', {
-                    notes: 0,
-                    bookmarks: 0,
                     days_completed: 1,
                     progress_percentage: 1,
                     status: 1,

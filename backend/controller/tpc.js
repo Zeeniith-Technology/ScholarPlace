@@ -4172,13 +4172,19 @@ export default class tpcController {
             const progressFilterBase = studentIdOrConditions.length ? { $or: studentIdOrConditions } : { student_id: '__NO_STUDENT__' };
             let testFilterBase = studentIdOrConditions.length ? { $or: [...studentIdOrConditions] } : { student_id: '__NO_STUDENT__' };
             const collegeIdTenant = collegeIdString;
+            const collegeIdTenantObj = collegeIdTenant && /^[0-9a-fA-F]{24}$/.test(collegeIdTenant) ? new ObjectId(collegeIdTenant) : null;
             const deptIdTenant = deptIdFilter?.toString?.() || deptIdFilter || null;
+            const deptIdTenantObj = deptIdTenant && /^[0-9a-fA-F]{24}$/.test(deptIdTenant) ? new ObjectId(deptIdTenant) : null;
+            
             const tenantClauses = [
-                ...(collegeIdTenant ? [{ college_id: collegeIdTenant }] : []),
-                ...(deptIdTenant ? [{ department_id: deptIdTenant }] : []),
+                ...(collegeIdTenant ? [{ college_id: { $in: [collegeIdTenant, collegeIdTenantObj].filter(Boolean) } }] : []),
+                ...(deptIdTenant ? [{ department_id: { $in: [deptIdTenant, deptIdTenantObj].filter(Boolean) } }] : []),
             ];
-            const progressFilter = tenantClauses.length ? { $and: [progressFilterBase, ...tenantClauses] } : progressFilterBase;
-            let testFilter = tenantClauses.length ? { $and: [testFilterBase, ...tenantClauses] } : testFilterBase;
+            
+            // To be completely safe against legacy data missing tenant columns, we rely primarily on student_id filtering
+            // If tenant columns exist, they must match. If they don't exist, we don't block them because studentIds already confirmed isolation.
+            const progressFilter = tenantClauses.length ? { $and: [progressFilterBase, { $or: [{ college_id: { $exists: false } }, { $and: tenantClauses }] }] } : progressFilterBase;
+            let testFilter = tenantClauses.length ? { $and: [testFilterBase, { $or: [{ college_id: { $exists: false } }, { $and: tenantClauses }] }] } : testFilterBase;
 
             // Get progress data
             const progressResponse = await fetchData(

@@ -309,7 +309,7 @@ export function Hero() {
             </div>
 
             {/* Subtitle — SEO friendly, clear, specific */}
-            <p className="text-[13px] sm:text-base text-gray-500 leading-relaxed max-w-lg text-justify">
+            <p className="text-[13px] sm:text-base text-gray-500 leading-relaxed max-w-lg">
               An all-in-one campus placement preparation platform. ScholarPlace guides students through a structured 3rd to 7th-semester curriculum, while empowering Department and College TPCs with real-time analytics and performance tracking to maximize hiring success.
             </p>
 

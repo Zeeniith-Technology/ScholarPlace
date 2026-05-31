@@ -210,16 +210,23 @@ export default class DeptTestController {
             const user = userRes.data[0];
 
             // 2. Build Query (Include past tests by removing scheduled_end filter)
+            const collegeIdStr = user.person_collage_id ? user.person_collage_id.toString() : null;
+            const { ObjectId } = await import('mongodb');
+            const collegeIdObj = collegeIdStr && /^[0-9a-fA-F]{24}$/.test(collegeIdStr) ? new ObjectId(collegeIdStr) : null;
+            
+            const deptIdStr = user.department_id ? user.department_id.toString() : null;
+            const deptIdObj = deptIdStr && /^[0-9a-fA-F]{24}$/.test(deptIdStr) ? new ObjectId(deptIdStr) : null;
+
             const query = {
                 status: 'active',
                 deleted: false,
-                // Tenant confirmation: only tests in student's college
-                college_id: user.person_collage_id,
+                // Tenant confirmation: match both string and ObjectId formats
+                college_id: { $in: [collegeIdStr, collegeIdObj].filter(Boolean) },
                 $or: [
                     // All dept students (confirm same department)
-                    { assignment_type: 'department', department_id: user.department_id },
-                    // Batch assignment
-                    { assignment_type: 'batch', assigned_to: user.semester },
+                    { assignment_type: 'department', department_id: { $in: [deptIdStr, deptIdObj].filter(Boolean) } },
+                    // Batch assignment (handling both string and number types)
+                    { assignment_type: 'batch', assigned_to: { $in: [user.semester, String(user.semester), Number(user.semester)] } },
                     // Student assignment by userId
                     { assignment_type: 'student', assigned_to: userId.toString() },
                     // Student assignment by email
