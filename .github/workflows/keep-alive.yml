@@ -1,0 +1,16 @@
+name: Keep Render Server Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render's 15-minute sleep
+    - cron: '*/14 * * * *'
+  # Allows you to trigger it manually from the Actions tab
+  workflow_dispatch: 
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Server
+        # Replace the URL below with your actual live Render URL
+        run: curl -s -o /dev/null -w "Status Code: %{http_code}\n"https://scholarplace-demo.onrender.com/health

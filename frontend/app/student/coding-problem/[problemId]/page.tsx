@@ -328,7 +328,9 @@ ${problem.function_signature} {
                 <div className="flex items-center gap-4 mb-6">
                     <button
                         onClick={() => {
-                            const dayParam = problem?.day ? `day-${problem.day}` : 'day-1';
+                            const dayString = problem?.day ? String(problem.day) : '1';
+                            const dayParam = dayString.startsWith('day-') ? dayString : `day-${dayString}`;
+                            
                             const backPath = problem?.week === 1
                                 ? `/student/study/week-1?day=${dayParam}#daily-coding-problems`
                                 : `/student/study/week-${problem?.week || 1}?day=${dayParam}#daily-coding-problems`
