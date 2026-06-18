@@ -299,14 +299,14 @@ export async function executeData(collectionName, data, operation, schema = null
                     try {
                         if (/^[0-9a-fA-F]{24}$/.test(updateFilter._id)) {
                             updateFilter._id = new ObjectId(updateFilter._id);
-                            // console.log('executeData: Converted string _id to ObjectId:', updateFilter._id.toString());
                         }
                     } catch (error) {
                         console.warn('Failed to convert _id to ObjectId in filter:', error.message);
                     }
                 } else if (updateFilter._id instanceof ObjectId) {
-                    // Already ObjectId, use it directly - don't recreate it
-                    // console.log('executeData: _id is already ObjectId, using directly:', updateFilter._id.toString());
+                    // Already ObjectId, use it directly
+                } else if (typeof updateFilter._id === 'object' && Object.keys(updateFilter._id).some(key => key.startsWith('$'))) {
+                    // It's a MongoDB operator like $ne, $in, etc - perfectly valid, no warning needed.
                 } else {
                     console.warn('executeData: _id is neither string nor ObjectId:', typeof updateFilter._id, updateFilter._id);
                 }
@@ -688,45 +688,73 @@ export function applyRoleBasedFilter(user, existingFilter = {}, collectionName =
 
         // TPC: All data in their college (no department filter, filter by college)
         if (userRole === 'tpc') {
-            // Filter by college_name or college_id
-            if (user.college_name) {
+            if (user.college_id) {
+                // Match both string and ObjectId formats — JWT carries string, DB may store either
+                const cidStr = user.college_id?.toString?.() || String(user.college_id);
+                const cidIsObjectId = typeof cidStr === 'string' && /^[0-9a-fA-F]{24}$/.test(cidStr);
+                roleFilter.$or = cidIsObjectId
+                    ? [{ college_id: cidStr }, { college_id: new ObjectId(cidStr) }]
+                    : [{ college_id: cidStr }];
+            } else if (user.college_name) {
                 roleFilter.college_name = user.college_name;
-            } else if (user.college_id) {
-                roleFilter.college_id = user.college_id;
             } else {
-                // If TPC user doesn't have college info, they can't see any data
-                roleFilter.college_name = null; // This will return no results
+                roleFilter.college_name = null; // No college info → return no results
             }
         }
 
         // DeptTPC: All data in their department (filter by department)
         if (userRole === 'depttpc') {
-            // Filter by department field (support both name/code and department_id)
             if (user.department || user.department_id) {
                 const deptName = user.department || null;
-                const deptId = user.department_id || null;
+                const deptIdRaw = user.department_id || null;
+                const deptIdStr = deptIdRaw?.toString?.() || deptIdRaw || null;
+                const deptIdIsObjectId = deptIdStr && typeof deptIdStr === 'string' && /^[0-9a-fA-F]{24}$/.test(deptIdStr);
 
-                // Prefer $or so we match legacy and new records
                 roleFilter.$or = [
-                    ...(deptId ? [{ department_id: deptId }, { department: deptId }] : []),
+                    ...(deptIdStr ? [
+                        { department_id: deptIdStr },
+                        ...(deptIdIsObjectId ? [{ department_id: new ObjectId(deptIdStr) }] : []),
+                        { department: deptIdStr }
+                    ] : []),
                     ...(deptName ? [{ department: deptName }, { department_id: deptName }] : [])
                 ];
             } else {
-                // If DeptTPC user doesn't have department in token, they can't see any data
-                roleFilter.department = null; // This will return no results
+                roleFilter.department = null; // No dept info → return no results
+            }
+        }
+
+        // CRMExec: Only their assigned CRM records
+        if (userRole === 'crmexec') {
+            const userId = user.id || user.userId || user.person_id || user._id;
+            const userIdStr = userId?.toString() || userId;
+
+            const crmCollectionsWithAssignedTo = ['tblcrmcolleges', 'tblcrmtasks'];
+            if (crmCollectionsWithAssignedTo.includes(collectionName.toLowerCase())) {
+                // assigned_to is stored as string in both schemas
+                roleFilter.assigned_to = userIdStr;
+            } else if (collectionName.toLowerCase() === 'tblcrmnotifications') {
+                // user_id is stored as string in notification schema
+                roleFilter.user_id = userIdStr;
             }
         }
 
         // Combine existing filter with role filter
         if (Object.keys(roleFilter).length > 0) {
-            // If existing filter has $or, we need to merge carefully
-            if (existingFilter.$or) {
+            if (existingFilter.$or && roleFilter.$or) {
+                // Both have $or — use $and to combine cleanly, remove top-level $or duplicate
+                const { $or: _existingOr, ...restExisting } = existingFilter;
+                return {
+                    ...restExisting,
+                    $and: [
+                        { $or: _existingOr },
+                        { $or: roleFilter.$or }
+                    ]
+                };
+            } else if (existingFilter.$or) {
+                // Only existing has $or — roleFilter has scalar fields, spread safely
                 return {
                     ...existingFilter,
-                    $and: [
-                        { $or: existingFilter.$or },
-                        roleFilter
-                    ]
+                    ...roleFilter
                 };
             } else {
                 return {

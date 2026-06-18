@@ -34,6 +34,18 @@ import contactController from './controller/contactController.js';
 import CertificateController from './controller/certificate.js';
 import WeeklyFeedbackController from './controller/weeklyFeedback.js';
 
+// CRM Controllers
+import CrmTeamController from './controller/crm/crmTeam.js';
+import CrmStatusesController from './controller/crm/crmStatuses.js';
+import CrmCollegesController from './controller/crm/crmColleges.js';
+import CrmContactsController from './controller/crm/crmContacts.js';
+import CrmActivitiesController from './controller/crm/crmActivities.js';
+import CrmTasksController from './controller/crm/crmTasks.js';
+import CrmDealsController from './controller/crm/crmDeals.js';
+import CrmNotificationsController from './controller/crm/crmNotifications.js';
+import CrmReportsController from './controller/crm/crmReports.js';
+import { requireCrmAccess } from './middleware/crmAccess.js';
+
 const router = express.Router();
 
 // Initialize controllers
@@ -66,6 +78,17 @@ const tpcCoding = new tpcCodingController();
 const certificate = new CertificateController();
 const weeklyFeedback = new WeeklyFeedbackController();
 // bugReportController is already exported as default instance, no need to instantiate
+
+// CRM Instances
+const crmTeam = new CrmTeamController();
+const crmStatuses = new CrmStatusesController();
+const crmColleges = new CrmCollegesController();
+const crmContacts = new CrmContactsController();
+const crmActivities = new CrmActivitiesController();
+const crmTasks = new CrmTasksController();
+const crmDeals = new CrmDealsController();
+const crmNotifications = new CrmNotificationsController();
+const crmReports = new CrmReportsController();
 
 // Default data routes
 router.post('/defaultdata/insertroles', defaultdata.insertroles, responsedata);
@@ -420,6 +443,64 @@ router.post('/tpc-college/feedback/student', auth, requireRole('TPC'), weeklyFee
 router.post('/superadmin/feedback/list', auth, requireRole('Superadmin'), weeklyFeedback.listFeedback.bind(weeklyFeedback), responsedata);
 router.post('/superadmin/feedback/analytics', auth, requireRole('Superadmin'), weeklyFeedback.getAnalytics.bind(weeklyFeedback), responsedata);
 router.post('/superadmin/feedback/student', auth, requireRole('Superadmin'), weeklyFeedback.getStudentFeedback.bind(weeklyFeedback), responsedata);
+// ─── CRM Routes ───────────────────────────────────────────────
+const crmRoles = ['Superadmin', 'CRMExec'];
+
+// Auth uses existing /auth/login
+
+// CRM Team (SuperAdmin only)
+router.post('/crm/team/list', auth, requireRole('Superadmin'), crmTeam.list.bind(crmTeam), responsedata);
+router.post('/crm/team/create', auth, requireRole('Superadmin'), crmTeam.create.bind(crmTeam), responsedata);
+router.post('/crm/team/deactivate', auth, requireRole('Superadmin'), crmTeam.deactivate.bind(crmTeam), responsedata);
+
+// CRM Statuses (SuperAdmin for write, all CRM for list)
+router.post('/crm/statuses/list', auth, requireRole(crmRoles), crmStatuses.list.bind(crmStatuses), responsedata);
+router.post('/crm/statuses/create', auth, requireRole('Superadmin'), crmStatuses.create.bind(crmStatuses), responsedata);
+router.post('/crm/statuses/update', auth, requireRole('Superadmin'), crmStatuses.update.bind(crmStatuses), responsedata);
+router.post('/crm/statuses/reorder', auth, requireRole('Superadmin'), crmStatuses.reorder.bind(crmStatuses), responsedata);
+router.post('/crm/statuses/archive', auth, requireRole('Superadmin'), crmStatuses.archive.bind(crmStatuses), responsedata);
+router.post('/crm/statuses/set-default', auth, requireRole('Superadmin'), crmStatuses.setDefault.bind(crmStatuses), responsedata);
+
+// CRM Colleges
+router.post('/crm/colleges/list', auth, requireRole(crmRoles), crmColleges.list.bind(crmColleges), responsedata);
+router.post('/crm/colleges/get', auth, requireRole(crmRoles), crmColleges.get.bind(crmColleges), responsedata);
+router.post('/crm/colleges/create', auth, requireRole(crmRoles), crmColleges.create.bind(crmColleges), responsedata);
+router.post('/crm/colleges/update', auth, requireRole(crmRoles), requireCrmAccess, crmColleges.update.bind(crmColleges), responsedata);
+router.post('/crm/colleges/delete', auth, requireRole(crmRoles), requireCrmAccess, crmColleges.delete.bind(crmColleges), responsedata);
+router.post('/crm/colleges/move-stage', auth, requireRole(crmRoles), requireCrmAccess, crmColleges.moveStage.bind(crmColleges), responsedata);
+router.post('/crm/colleges/assign', auth, requireRole('Superadmin'), crmColleges.assign.bind(crmColleges), responsedata);
+router.post('/crm/colleges/search', auth, requireRole(crmRoles), crmColleges.search.bind(crmColleges), responsedata);
+
+// CRM Contacts
+router.post('/crm/contacts/list', auth, requireRole(crmRoles), requireCrmAccess, crmContacts.list.bind(crmContacts), responsedata);
+router.post('/crm/contacts/create', auth, requireRole(crmRoles), requireCrmAccess, crmContacts.create.bind(crmContacts), responsedata);
+router.post('/crm/contacts/update', auth, requireRole(crmRoles), requireCrmAccess, crmContacts.update.bind(crmContacts), responsedata);
+router.post('/crm/contacts/delete', auth, requireRole('Superadmin'), crmContacts.delete.bind(crmContacts), responsedata);
+
+// CRM Activities
+router.post('/crm/activities/list', auth, requireRole(crmRoles), requireCrmAccess, crmActivities.list.bind(crmActivities), responsedata);
+router.post('/crm/activities/create', auth, requireRole(crmRoles), requireCrmAccess, crmActivities.create.bind(crmActivities), responsedata);
+
+// CRM Tasks
+router.post('/crm/tasks/list', auth, requireRole(crmRoles), crmTasks.list.bind(crmTasks), responsedata);
+router.post('/crm/tasks/create', auth, requireRole(crmRoles), requireCrmAccess, crmTasks.create.bind(crmTasks), responsedata);
+router.post('/crm/tasks/update', auth, requireRole(crmRoles), requireCrmAccess, crmTasks.update.bind(crmTasks), responsedata);
+router.post('/crm/tasks/mark-complete', auth, requireRole(crmRoles), requireCrmAccess, crmTasks.markComplete.bind(crmTasks), responsedata);
+router.post('/crm/tasks/delete', auth, requireRole('Superadmin'), crmTasks.delete.bind(crmTasks), responsedata);
+
+// CRM Deals
+router.post('/crm/deals/list', auth, requireRole(crmRoles), requireCrmAccess, crmDeals.list.bind(crmDeals), responsedata);
+router.post('/crm/deals/create', auth, requireRole(crmRoles), requireCrmAccess, crmDeals.create.bind(crmDeals), responsedata);
+router.post('/crm/deals/update', auth, requireRole(crmRoles), requireCrmAccess, crmDeals.update.bind(crmDeals), responsedata);
+router.post('/crm/deals/delete', auth, requireRole(crmRoles), requireCrmAccess, crmDeals.delete.bind(crmDeals), responsedata);
+
+// CRM Notifications
+router.post('/crm/notifications/list', auth, requireRole(crmRoles), crmNotifications.list.bind(crmNotifications), responsedata);
+router.post('/crm/notifications/mark-read', auth, requireRole(crmRoles), crmNotifications.markRead.bind(crmNotifications), responsedata);
+router.post('/crm/notifications/mark-all-read', auth, requireRole(crmRoles), crmNotifications.markAllRead.bind(crmNotifications), responsedata);
+
+// CRM Reports (Superadmin only)
+router.post('/crm/reports/pipeline', auth, requireRole('Superadmin'), crmReports.pipeline.bind(crmReports), responsedata);
+router.post('/crm/reports/team-stats', auth, requireRole('Superadmin'), crmReports.teamStats.bind(crmReports), responsedata);
 
 export default router;
-

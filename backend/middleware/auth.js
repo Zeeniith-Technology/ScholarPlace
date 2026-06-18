@@ -77,7 +77,7 @@ export const auth = async (req, res, next) => {
             }
 
             // Get role from JWT token (primary source of truth)
-            let userRole = decoded.role;
+            let userRole = decoded.role || decoded.person_role;
             let userDepartment = decoded.department;
             let userCollegeName = decoded.college_name;
             let userCollegeId = decoded.college_id;
@@ -179,7 +179,7 @@ export const optionalAuth = async (req, res, next) => {
             id: decoded.id || decoded.userId || decoded.person_id,
             userId: decoded.id || decoded.userId || decoded.person_id,
             person_id: decoded.id || decoded.userId || decoded.person_id,
-            role: (decoded.role || '').toLowerCase(),
+            role: (decoded.role || decoded.person_role || '').toLowerCase(),
             department: decoded.department,
             department_id: decoded.department_id || null,
             college_name: decoded.college_name,
@@ -203,7 +203,7 @@ export const requireRole = (...allowedRoles) => {
             const userRole = req.user?.role?.toLowerCase();
 
             // Special roles that don't need to be in tblRoles (e.g., Superadmin, TPC, DeptTPC, Student)
-            const specialRoles = ['superadmin', 'tpc', 'depttpc', 'student', 'admin'];
+            const specialRoles = ['superadmin', 'tpc', 'depttpc', 'student', 'admin', 'crmexec'];
 
             // Superadmin is always allowed
             if (userRole === 'superadmin') {

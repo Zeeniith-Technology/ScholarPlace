@@ -58,6 +58,7 @@ if (useCluster && cluster.isPrimary) {
         "http://localhost:5173",
         "https://scholarplace.in",
         "https://www.scholarplace.in",
+        "https://crm.scholarplace.in",
         process.env.FRONTEND_URL
     ].filter((v, i, a) => v && a.indexOf(v) === i); // Unique non-empty values
 

@@ -1,0 +1,22 @@
+export default {
+    name: { type: 'string', required: true },
+    slug: { type: 'string' },
+    type: { type: 'string', default: 'University' },
+    city: { type: 'string', default: '' },
+    state: { type: 'string', default: '' },
+    pincode: { type: 'string', default: '' },
+    website: { type: 'string', default: '' },
+    student_strength_approx: { type: 'number', default: 0 },
+    pipeline_status_id: { type: 'string', default: null }, 
+    assigned_to: { type: 'string', default: null }, 
+    assigned_to_name: { type: 'string', default: '' },
+    assigned_at: { type: 'date', default: null },
+    assigned_by_name: { type: 'string', default: '' },
+    source: { type: 'string', default: '' },
+    priority: { type: 'string', enum: ['high', 'medium', 'low'], default: 'medium' },
+    tags: { type: 'array', default: () => [] },
+    notes: { type: 'string', default: '' },
+    deleted: { type: 'boolean', default: false },
+    created_by: { type: 'string', required: true },
+    created_at: { type: 'date', default: () => new Date().toISOString() }
+};
