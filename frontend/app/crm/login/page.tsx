@@ -17,7 +17,11 @@ export default function CRMLogin() {
         setError('');
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+            const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+            if (!API_URL) {
+                setError('API URL not configured. Contact system administrator.');
+                return;
+            }
             const res = await axios.post(`${API_URL}/auth/login`, {
                 email,
                 password,
@@ -26,14 +30,13 @@ export default function CRMLogin() {
             if (res.data.success) {
                 const { token, user } = res.data.data;
                 const role = user.role?.toLowerCase() || user.person_role?.toLowerCase();
-                
+
                 if (role === 'superadmin' || role === 'crmexec') {
-                    // Store in localStorage for client-side hook reads
                     localStorage.setItem('crm_token', token);
                     localStorage.setItem('crm_user', JSON.stringify(user));
-                    // Also set a cookie so Next.js middleware (edge runtime) can verify JWT
-                    const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
-                    document.cookie = `crm_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+                    const maxAge = 7 * 24 * 60 * 60;
+                    const isHttps = window.location.protocol === 'https:';
+                    document.cookie = `crm_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict${isHttps ? '; Secure' : ''}`;
                     window.location.href = '/crm/dashboard';
                 } else {
                     setError('Access denied. You do not have CRM privileges.');
@@ -43,7 +46,11 @@ export default function CRMLogin() {
             }
         } catch (err: unknown) {
             if (err instanceof AxiosError) {
-                setError(err.response?.data?.message || 'Something went wrong');
+                if (!err.response) {
+                    setError('Cannot reach server. Check that NEXT_PUBLIC_API_BASE_URL is set correctly.');
+                } else {
+                    setError(err.response?.data?.message || 'Login failed');
+                }
             } else {
                 setError('An unexpected error occurred');
             }
