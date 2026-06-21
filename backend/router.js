@@ -103,10 +103,10 @@ router.post('/auth/reset-password', passwordReset.resetPassword.bind(passwordRes
 router.post('/auth/resend-otp', passwordReset.resendOTP.bind(passwordReset), responsedata);
 router.post('/auth/superadmin', superadmin.login, responsedata);
 
-// Exam routes (with auth middleware)
-router.post('/exam/insert', auth, exam.insertexam, responsedata);
-router.post('/exam/update', auth, exam.updateexam, responsedata);
-router.post('/exam/delete', auth, exam.deleteexam, responsedata);
+// Exam routes (list: all auth users; write: TPC and DeptTPC only)
+router.post('/exam/insert', auth, requireRole(['TPC', 'DeptTPC']), exam.insertexam, responsedata);
+router.post('/exam/update', auth, requireRole(['TPC', 'DeptTPC']), exam.updateexam, responsedata);
+router.post('/exam/delete', auth, requireRole(['TPC', 'DeptTPC']), exam.deleteexam, responsedata);
 router.post('/exam/list', auth, exam.listexam, responsedata);
 
 // College routes (superadmin only - superadmin role is always allowed, checked in requireRole)
@@ -219,34 +219,24 @@ router.post('/coding-problems/:problemId/submissions', auth, codingProblemsContr
 
 
 // Student Progress routes
-// List student progress: Students see only their own, Admin/Superadmin can filter
+// List: Student sees own; TPC sees college-scoped; DeptTPC sees dept-scoped; Superadmin sees all
 router.post('/student-progress/list', auth, studentProgress.listStudentProgress, responsedata);
-// Upsert student progress: Students can update their own progress
-router.post('/student-progress/upsert', auth, studentProgress.upsertStudentProgress, responsedata);
-// Complete a day: Students mark a day as completed
-router.post('/student-progress/complete-day', auth, studentProgress.completeDay.bind(studentProgress), responsedata);
-// Update practice test score: Students update their practice test scores
-router.post('/student-progress/update-practice-score', auth, studentProgress.updatePracticeScore.bind(studentProgress), responsedata);
-// Mark coding problem as completed: Students mark coding problems as solved
-router.post('/student-progress/complete-coding-problem', auth, studentProgress.completeCodingProblem.bind(studentProgress), responsedata);
-// Mark capstone week as completed: Students mark entire week as complete after capstone submission
-router.post('/student-progress/complete-capstone-week', auth, studentProgress.completeCapstoneWeek.bind(studentProgress), responsedata);
-// Check if specific week is completed
+// Read-only checks accessible to any authenticated role
 router.post('/student-progress/check-week-completion', auth, studentProgress.checkWeekCompletion.bind(studentProgress), responsedata);
-// Check weekly test eligibility: Check if student can take weekly test
-router.post('/student-progress/check-weekly-test-eligibility', auth, studentProgress.checkWeeklyTestEligibility.bind(studentProgress), responsedata);
-// Block student from retaking test: After window switch violation
-router.post('/student-progress/block-test-retake', auth, studentProgress.blockTestRetake.bind(studentProgress), responsedata);
-// Check if student is blocked from retaking test
-router.post('/student-progress/check-blocked-retake', auth, studentProgress.checkBlockedRetake.bind(studentProgress), responsedata);
-// Get bookmarks: Get bookmarks for a specific week
+router.post('/student-progress/check-blocked-retake', auth, requireRole('Student'), studentProgress.checkBlockedRetake.bind(studentProgress), responsedata);
 router.post('/student-progress/bookmarks/get', auth, studentProgress.getBookmarks.bind(studentProgress), responsedata);
-// Save bookmarks: Save bookmarks for a specific week
-router.post('/student-progress/bookmarks/save', auth, studentProgress.saveBookmarks.bind(studentProgress), responsedata);
-// Get progress summary: For dashboard
 router.post('/student-progress/summary', auth, studentProgress.getStudentProgressSummary.bind(studentProgress), responsedata);
+// Write routes: Student only (Superadmin bypasses requireRole automatically)
+router.post('/student-progress/upsert', auth, requireRole('Student'), studentProgress.upsertStudentProgress, responsedata);
+router.post('/student-progress/complete-day', auth, requireRole('Student'), studentProgress.completeDay.bind(studentProgress), responsedata);
+router.post('/student-progress/update-practice-score', auth, requireRole('Student'), studentProgress.updatePracticeScore.bind(studentProgress), responsedata);
+router.post('/student-progress/complete-coding-problem', auth, requireRole('Student'), studentProgress.completeCodingProblem.bind(studentProgress), responsedata);
+router.post('/student-progress/complete-capstone-week', auth, requireRole('Student'), studentProgress.completeCapstoneWeek.bind(studentProgress), responsedata);
+router.post('/student-progress/check-weekly-test-eligibility', auth, requireRole('Student'), studentProgress.checkWeeklyTestEligibility.bind(studentProgress), responsedata);
+router.post('/student-progress/block-test-retake', auth, requireRole('Student'), studentProgress.blockTestRetake.bind(studentProgress), responsedata);
+router.post('/student-progress/bookmarks/save', auth, requireRole('Student'), studentProgress.saveBookmarks.bind(studentProgress), responsedata);
 // Admin: List all students progress
-router.post('/student-progress/admin/list-all', auth, requireRole(['Admin', 'Superadmin']), studentProgress.listAllStudentsProgress, responsedata);
+router.post('/student-progress/admin/list-all', auth, requireRole('Superadmin'), studentProgress.listAllStudentsProgress, responsedata);
 
 // Profile routes
 // Get profile: All authenticated users
@@ -385,12 +375,6 @@ router.post('/dept-tpc/test/list', auth, requireRole('DeptTPC'), deptTest.listTe
 router.post('/dept-tpc/test/bulk-upload', auth, requireRole('DeptTPC'), deptTest.bulkUpload.bind(deptTest), responsedata);
 router.post('/dept-tpc/test/analytics', auth, requireRole('DeptTPC'), deptTest.getTestAnalytics.bind(deptTest), responsedata);
 router.post('/dept-tpc/students/search', auth, requireRole('DeptTPC'), deptTest.searchStudents.bind(deptTest), responsedata);
-
-// Student Dept Test Routes
-router.post('/student/tests/scheduled', auth, deptTest.getAvailableTests.bind(deptTest), responsedata);
-router.post('/student/dept-test/start', auth, deptTest.startTest.bind(deptTest), responsedata);
-router.post('/student/dept-test/submit', auth, deptTest.submitTest.bind(deptTest), responsedata);
-router.post('/student/dept-test/results', auth, deptTest.getTestResults.bind(deptTest), responsedata);
 
 // TPC Management Routes (Superadmin only)
 router.post('/tpc-management/create-college-tpc', auth, requireRole('Superadmin'), tpcManagement.createCollegeTpc.bind(tpcManagement), responsedata);

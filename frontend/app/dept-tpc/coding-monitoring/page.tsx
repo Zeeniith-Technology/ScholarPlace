@@ -129,14 +129,21 @@ function StudentDetailsModal({
                             <div className="w-1/3 border-r overflow-y-auto bg-neutral-50/50">
                                 {Object.entries(
                                     details.reduce((acc, item) => {
-                                        const weekKey = `Week ${item.week}`
+                                        const weekNum = Number(item.week)
+                                        const weekKey = isNaN(weekNum) ? 'Week ?' : `Week ${weekNum}`
                                         if (!acc[weekKey]) acc[weekKey] = {}
-                                        const dayKey = `Day ${item.day}`
+                                        const isCap = /(_CP\d+|capstone)/i.test(item.problem_id || '')
+                                        const dayNum = Number(item.day)
+                                        const dayKey = isCap
+                                            ? 'Capstone'
+                                            : (item.day == null || isNaN(dayNum) || dayNum === 0)
+                                                ? 'Pre-Week'
+                                                : `Day ${dayNum}`
                                         if (!acc[weekKey][dayKey]) acc[weekKey][dayKey] = []
                                         acc[weekKey][dayKey].push(item)
                                         return acc
                                     }, {} as Record<string, Record<string, CodingSubmissionDetail[]>>)
-                                ).sort((a, b) => parseInt(a[0].split(' ')[1]) - parseInt(b[0].split(' ')[1])) // Sort Weeks
+                                ).sort((a, b) => (parseInt(a[0].split(' ')[1]) || 0) - (parseInt(b[0].split(' ')[1]) || 0)) // Sort Weeks
                                     .map(([weekName, days]) => (
                                         <div key={weekName} className="border-b border-neutral-200/50">
                                             <details className="group/week" open>
@@ -146,7 +153,11 @@ function StudentDetailsModal({
                                                 </summary>
                                                 <div className="bg-neutral-50/30">
                                                     {Object.entries(days)
-                                                        .sort((a, b) => parseInt(a[0].split(' ')[1]) - parseInt(b[0].split(' ')[1])) // Sort Days
+                                                        .sort((a, b) => {
+                                                            // Pre-Week first, Capstone last, numeric days in between
+                                                            const rank = (s: string) => s === 'Pre-Week' ? -1 : s === 'Capstone' ? 999 : (parseInt(s.split(' ')[1]) || 0)
+                                                            return rank(a[0]) - rank(b[0])
+                                                        }) // Sort Days
                                                         .map(([dayName, problems]) => (
                                                             <div key={dayName}>
                                                                 <details className="group/day" open>

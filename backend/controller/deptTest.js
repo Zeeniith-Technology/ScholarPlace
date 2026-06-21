@@ -802,7 +802,7 @@ export default class DeptTestController {
             const { test_id } = req.body;
 
             if (!userId) return this.sendError(res, 401, 'Unauthorized');
-            if (userRole !== 'DeptTPC') return this.sendError(res, 403, 'Access denied');
+            if (userRole?.toLowerCase() !== 'depttpc') return this.sendError(res, 403, 'Access denied');
             if (!test_id) return this.sendError(res, 400, 'Test ID is required');
 
             // 1. Verify test ownership

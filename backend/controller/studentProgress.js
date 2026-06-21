@@ -147,9 +147,9 @@ export default class studentProgressController {
                     note: 'This should ONLY return data for the current logged-in student'
                 }); */
             } else {
-                console.warn('[StudentProgress] WARNING: Not filtering by student_id!', { userRole, userId });
+                // TPC / DeptTPC / Superadmin: applyRoleBasedFilter handles scoping via { req } in fetchOptions
             }
-            // Admin and Superadmin can view all or filter by student_id
+            // Superadmin sees all; TPC scoped to college; DeptTPC scoped to department or filter by student_id
 
             // If we already filtered by student_id manually (for Student role), 
             // do NOT pass 'req' to fetchData options to avoid double-filtering in applyRoleBasedFilter
@@ -333,7 +333,7 @@ export default class studentProgressController {
                 );
             } else {
                 // Insert new
-                if (auditEnabled) {
+                if (isProgressAuditEnabled()) {
                     console.warn('[StudentProgress][UpsertAudit] INSERT', {
                         route: req.originalUrl || req.path,
                         method: req.method,
@@ -576,13 +576,8 @@ export default class studentProgressController {
                 updated_at: new Date().toISOString()
             };
 
-            // Check if progress already exists - use $or to match both formats
-            const existingCheck = await fetchData(
-                'tblStudentProgress',
-                {},
-                { week: weekNum, ...studentIdFilter },
-                {}
-            );
+            // Re-use the fetch from earlier — same filter, nothing written to DB between then and now
+            const existingCheck = existing;
 
             // Atomic update to ensure days_completed is preserved even if other requests are concurrent
             if (existingCheck.data && existingCheck.data.length > 0) {
@@ -738,11 +733,12 @@ export default class studentProgressController {
                 requiredTests = 1;
             }
 
-            // Get current progress
+            // Get current progress — normalize ID to match both string and ObjectId formats
+            const { filter: studentIdFilter } = await this._normalizeStudentId(userId);
             const existing = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: week },
+                { week, ...studentIdFilter },
                 {}
             );
 
@@ -807,7 +803,7 @@ export default class studentProgressController {
                     },
                     'u',
                     studentProgressSchema,
-                    { student_id: userId, week: week }
+                    { week, ...studentIdFilter }
                 );
 
                 // Auto-generate certificate if week 8 is completed
@@ -855,12 +851,13 @@ export default class studentProgressController {
 
             // FIXED: Enforce week is a number to prevent duplicates
             const weekNum = parseInt(week, 10);
+            const { studentIdString, filter: studentIdFilter } = await controller._normalizeStudentId(userId);
 
             // Get existing progress
             const existing = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: week },
+                { week: weekNum, ...studentIdFilter },
                 {}
             );
 
@@ -941,12 +938,9 @@ export default class studentProgressController {
                 assignmentsCompleted = 1;
             }
 
-            // Note: studentIdString and studentIdFilter are already declared above (line 289)
-            // Reuse them here - no need to redeclare
-
             // Upsert progress
             const progressData = {
-                student_id: studentIdString, // ALWAYS string format
+                student_id: studentIdString,
                 week: weekNum,
                 practice_tests_completed: practiceTestsCompleted,
                 practice_test_scores: practiceTestScores,
@@ -955,13 +949,8 @@ export default class studentProgressController {
                 updated_at: new Date().toISOString()
             };
 
-            // Check if progress already exists - use $or to match both formats
-            const existingCheck = await fetchData(
-                'tblStudentProgress',
-                {},
-                { week: weekNum, ...studentIdFilter },
-                {}
-            );
+            // Re-use the fetch from above — same filter, nothing written yet
+            const existingCheck = existing;
 
             let response;
             if (existingCheck.data && existingCheck.data.length > 0) {
@@ -1119,19 +1108,21 @@ export default class studentProgressController {
             let totalDaysCompleted = 0;
             let weeksCompleted = 0;
             try {
-                const problemsRes = await fetchData(
-                    'tblCodingProblem',
-                    { week: 1, day: 1, question_id: 1 },
-                    { is_capstone: false, day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] }, deleted: { $ne: true } },
-                    {}
-                );
+                const [problemsRes, subsRes] = await Promise.all([
+                    fetchData(
+                        'tblCodingProblem',
+                        { week: 1, day: 1, question_id: 1 },
+                        { is_capstone: false, day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] }, deleted: { $ne: true } },
+                        {}
+                    ),
+                    fetchData(
+                        'tblCodingSubmissions',
+                        { problem_id: 1 },
+                        { ...progressFilter, status: 'passed' },
+                        {}
+                    )
+                ]);
                 const allDailyProblems = problemsRes.data || [];
-                const subsRes = await fetchData(
-                    'tblCodingSubmissions',
-                    { problem_id: 1 },
-                    { ...progressFilter, status: 'passed' },
-                    {}
-                );
                 const submissions = subsRes.data || [];
                 const passedProblemIds = new Set(submissions.map(s => s.problem_id).filter(Boolean));
 
@@ -1321,11 +1312,14 @@ export default class studentProgressController {
             // FIXED: Enforce week is a number to prevent duplicates
             const weekNum = parseInt(week, 10);
 
+            // Normalize student_id to handle both ObjectId and string formats in DB
+            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
+
             // Get existing progress
             const existing = await fetchData(
                 'tblStudentProgress',
                 {},
-                { student_id: userId, week: weekNum },
+                { week: weekNum, ...studentIdFilter },
                 {}
             );
 
@@ -1343,9 +1337,6 @@ export default class studentProgressController {
                 // Create new progress record
                 codingProblemsCompleted = [problem_id];
             }
-
-            // CRITICAL: Normalize student_id to string format
-            const { studentIdString, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
             // Update progress: set status to 'in_progress' when at least one problem is completed (so week shows "Continue")
             const currentStatus = existing.data?.[0]?.status || 'start';
@@ -1927,21 +1918,14 @@ export default class studentProgressController {
             // FIXED: Enforce week is a number for consistent querying
             const weekNum = parseInt(week, 10);
 
-            // Get student progress
-            const progressResult = await fetchData(
-                'tblStudentProgress',
-                {},
-                { student_id: userId, week: weekNum },
-                {}
-            );
+            // Normalize student_id to handle both ObjectId and string formats
+            const { studentIdString: _sid, filter: studentIdFilter } = await this._normalizeStudentId(userId);
 
-            // Get all practice tests for this week
-            const practiceTestResult = await fetchData(
-                'tblPracticeTest',
-                {},
-                { student_id: userId, week: { $in: [weekNum, String(weekNum)] } },
-                { sort: { day: 1, attempt: -1 } } // Get latest attempt for each day
-            );
+            // Fetch progress and practice tests in parallel
+            const [progressResult, practiceTestResult] = await Promise.all([
+                fetchData('tblStudentProgress', {}, { week: weekNum, ...studentIdFilter }, {}),
+                fetchData('tblPracticeTest', {}, { week: { $in: [weekNum, String(weekNum)] }, ...studentIdFilter }, { sort: { day: 1, attempt: -1 } })
+            ]);
 
             // Get all coding problems for this week from DATABASE (not static file)
             // Define required practice-test days: aptitude has no pre-week, only day-1..day-5

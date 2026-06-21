@@ -60,7 +60,8 @@ function Week1StudyContent() {
 
   // Week 1 has pre-week, Week 2+ starts from day-1
   const defaultDay = weekNum === 1 ? 'pre-week' : 'day-1'
-  const [selectedDay, setSelectedDay] = useState<string>(defaultDay)
+  const normDay = (d: string) => (d === 'day-pre-week' || d === 'day-0' || d === '0') ? 'pre-week' : d
+  const [selectedDay, setSelectedDay] = useState<string>(normDay(searchParams.get('day') || defaultDay))
   const [studyContent, setStudyContent] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentDayIndex, setCurrentDayIndex] = useState(0)
@@ -632,7 +633,7 @@ function Week1StudyContent() {
   }
 
   useEffect(() => {
-    const dayParam = searchParams.get('day') || defaultDay
+    const dayParam = normDay(searchParams.get('day') || defaultDay)
     setSelectedDay(dayParam)
     const dayIndex = days.findIndex(d => d.id === dayParam)
     setCurrentDayIndex(dayIndex >= 0 ? dayIndex : 0)
@@ -659,7 +660,7 @@ function Week1StudyContent() {
         clearInterval(progressUpdateInterval.current)
       }
     }
-  }, [searchParams, weekNum, overallProgress, defaultDay, days])
+  }, [searchParams])
 
 
 
@@ -679,7 +680,7 @@ function Week1StudyContent() {
   }
 
   const navigateToDay = (dayId: string) => {
-    router.push(`/student/study/${weekNum}?day=${dayId}`)
+    router.push(`/student/study/week-1?day=${dayId}`)
   }
 
   const goToNextDay = () => {
@@ -1212,13 +1213,13 @@ function Week1StudyContent() {
                         if (capstoneCompleted) {
                           const width = window.screen.width
                           const height = window.screen.height
-                          window.open(`/student/capstone-test/week-1`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
+                          window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
                           return
                         }
                         if (eligible) {
                           const width = window.screen.width
                           const height = window.screen.height
-                          window.open(`/student/capstone-test/week-1`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
+                          window.open(`/student/capstone-test/week-${weekNum}`, 'CapstoneTest', `width=${width},height=${height},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`)
                         } else {
                           setShowCapstoneUnlockModal(true)
                         }

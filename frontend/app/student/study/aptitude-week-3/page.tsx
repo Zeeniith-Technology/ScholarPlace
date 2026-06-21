@@ -460,9 +460,9 @@ function AptitudeWeek3Content() {
                         </div>
                         <div className="text-xs opacity-80">
                           {weeklyTestEligibility?.weekly_test_status?.passed
-                            ? `Completed ??? ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
+                            ? `Completed • ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
                             : weeklyTestEligibility?.eligible
-                              ? '50 questions ??? 60 minutes'
+                              ? '50 questions • 60 minutes'
                               : 'Click to check eligibility'
                           }
                         </div>

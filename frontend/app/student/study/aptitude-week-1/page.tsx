@@ -276,7 +276,7 @@ function AptitudeWeek1Content() {
     }
   }
 
-  // Check if student is blocked from retaking (tab switch etc.) â€” must pass before opening test
+  // Check if student is blocked from retaking (tab switch etc.) — must pass before opening test
   const checkBlockedRetake = async (): Promise<boolean> => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
@@ -314,7 +314,7 @@ function AptitudeWeek1Content() {
       }
     }
 
-    // Blocked from retake (e.g. tab switch) â€” require Dept TPC approval before opening test
+    // Blocked from retake (e.g. tab switch) — require Dept TPC approval before opening test
     const blocked = await checkBlockedRetake()
     if (blocked) {
       setShowBlockedModal(true)
@@ -613,9 +613,9 @@ function AptitudeWeek1Content() {
                         </div>
                         <div className="text-xs opacity-80">
                           {weeklyTestEligibility?.weekly_test_status?.passed
-                            ? `Completed â€¢ ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
+                            ? `Completed • ${weeklyTestEligibility?.weekly_test_status?.score ?? 0}%`
                             : weeklyTestEligibility?.eligible
-                              ? '50 questions â€¢ 60 minutes'
+                              ? '50 questions • 60 minutes'
                               : 'Click to check eligibility'
                           }
                         </div>
@@ -624,7 +624,7 @@ function AptitudeWeek1Content() {
                             {weeklyTestEligibility.practice_tests && !weeklyTestEligibility.practice_tests.eligible && (
                               <div className="flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3" />
-                                <span>Practice tests required (â‰¥70%)</span>
+                                <span>Practice tests required (≥70%)</span>
                               </div>
                             )}
                           </div>
@@ -718,7 +718,7 @@ function AptitudeWeek1Content() {
                               if (attempts > 0) {
                                 return (
                                   <p className="text-xs mt-1 font-semibold text-neutral-light/80">
-                                    Attempts: {attempts}/3 â€¢ Score: {dayStats?.score || 0}%
+                                    Attempts: {attempts}/3 • Score: {dayStats?.score || 0}%
                                   </p>
                                 )
                               }
@@ -839,7 +839,7 @@ function AptitudeWeek1Content() {
             You must complete all requirements before taking the weekly test:
           </p>
           <ul className="list-disc list-inside text-neutral-light space-y-1">
-            <li>Score â‰¥70% on all practice tests</li>
+            <li>Score ≥70% on all practice tests</li>
             {weeklyTestEligibility?.coding_problems && !weeklyTestEligibility.coding_problems.eligible && (
               <li>Complete all coding problems</li>
             )}

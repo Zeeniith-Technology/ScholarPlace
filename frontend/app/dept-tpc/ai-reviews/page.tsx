@@ -11,6 +11,23 @@ import { getApiBaseUrl } from '@/utils/api'
 import { FileCode, Sparkles, Loader2, Calendar, ChevronDown, ChevronRight, User, Search, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const toDayKey = (day: unknown): string => {
+  if (day == null) return 'pre-week'
+  // Strip any number of leading "day-" prefixes (handles "day-2", "day-day-2", "day-pre-week")
+  let s = String(day).trim().toLowerCase()
+  while (s.startsWith('day-')) s = s.slice(4)
+  if (s === '' || s === '0' || s === 'pre-week' || s === 'preweek' || s === 'nan') return 'pre-week'
+  const n = parseInt(s, 10)
+  return isNaN(n) ? 'pre-week' : `day-${n}`
+}
+const sortDayKey = (a: string, b: string) => {
+  if (a === 'capstone') return 1
+  if (b === 'capstone') return -1
+  if (a === 'pre-week') return -1
+  if (b === 'pre-week') return 1
+  return parseInt(a.replace('day-', ''), 10) - parseInt(b.replace('day-', ''), 10)
+}
+
 interface CodeReviewItem {
   _id: string
   submission_id: string
@@ -108,17 +125,12 @@ export default function DeptTPCAIReviewsPage() {
     const grouped = studentReviews.reduce<Record<string, Record<string, CodeReviewItem[]>>>((acc, r) => {
       const w = r.week ?? 0
       const wk = `week-${w}`
-      const dk = r.is_capstone ? 'capstone' : `day-${r.day ?? 0}`
+      const dk = r.is_capstone ? 'capstone' : toDayKey(r.day)
       if (!acc[wk]) acc[wk] = {}
       if (!acc[wk][dk]) acc[wk][dk] = []
       acc[wk][dk].push(r)
       return acc
     }, {})
-    const sortDayKey = (a: string, b: string) => {
-      if (a === 'capstone') return 1
-      if (b === 'capstone') return -1
-      return parseInt(a.replace('day-', ''), 10) - parseInt(b.replace('day-', ''), 10)
-    }
     const firstKeys = new Set<string>()
     Object.keys(grouped)
       .sort((a, b) => parseInt(a.replace('week-', ''), 10) - parseInt(b.replace('week-', ''), 10))
@@ -147,17 +159,11 @@ export default function DeptTPCAIReviewsPage() {
     router.push(`/dept-tpc/ai-reviews/view?submissionId=${encodeURIComponent(id)}`)
   }
 
-  const sortDayKey = (a: string, b: string) => {
-    if (a === 'capstone') return 1
-    if (b === 'capstone') return -1
-    return parseInt(a.replace('day-', ''), 10) - parseInt(b.replace('day-', ''), 10)
-  }
-
   const studentReviews = modalStudent ? reviews.filter((r) => r.student_name === modalStudent) : []
   const groupedForModal = studentReviews.reduce<Record<string, Record<string, CodeReviewItem[]>>>((acc, r) => {
     const w = r.week ?? 0
     const wk = `week-${w}`
-    const dk = r.is_capstone ? 'capstone' : `day-${r.day ?? 0}`
+    const dk = r.is_capstone ? 'capstone' : toDayKey(r.day)
     if (!acc[wk]) acc[wk] = {}
     if (!acc[wk][dk]) acc[wk][dk] = []
     acc[wk][dk].push(r)
@@ -276,7 +282,8 @@ export default function DeptTPCAIReviewsPage() {
                 <div className="divide-y divide-neutral-light/10 bg-white">
                   {dayKeys.map((dk) => {
                     const isCapstone = dk === 'capstone'
-                    const dayNum = isCapstone ? 0 : parseInt(dk.replace('day-', ''), 10)
+                    const isPreWeek = dk === 'pre-week'
+                    const dayNum = (isCapstone || isPreWeek) ? 0 : parseInt(dk.replace('day-', ''), 10)
                     const items = daysMap[dk]
                     const key = `${wk}-${dk}`
                     const open = modalDayOpen.has(key)
@@ -299,7 +306,7 @@ export default function DeptTPCAIReviewsPage() {
                           </span>
                           <Calendar className="w-4 h-4 text-neutral-light shrink-0" />
                           <span className="font-medium text-neutral">
-                            {isCapstone ? 'Capstone Project' : `Day ${dayNum}`}
+                            {isCapstone ? 'Capstone Project' : isPreWeek ? 'Pre-Week' : `Day ${dayNum}`}
                           </span>
                           <span className="text-neutral-light text-sm">
                             ({items.length} review{items.length !== 1 ? 's' : ''})

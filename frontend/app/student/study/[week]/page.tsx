@@ -63,7 +63,8 @@ function WeekStudyContent() {
 
   // Week 1 has pre-week, Week 2+ starts from day-1
   const defaultDay = weekNum === 1 ? 'pre-week' : 'day-1'
-  const [selectedDay, setSelectedDay] = useState<string>(defaultDay)
+  const normDay = (d: string) => (d === 'day-pre-week' || d === 'day-0' || d === '0') ? 'pre-week' : d
+  const [selectedDay, setSelectedDay] = useState<string>(normDay(searchParams.get('day') || defaultDay))
   const [studyContent, setStudyContent] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentDayIndex, setCurrentDayIndex] = useState(0)
@@ -627,7 +628,7 @@ function WeekStudyContent() {
   }
 
   useEffect(() => {
-    const dayParam = searchParams.get('day') || defaultDay
+    const dayParam = normDay(searchParams.get('day') || defaultDay)
     setSelectedDay(dayParam)
     const dayIndex = days.findIndex(d => d.id === dayParam)
     setCurrentDayIndex(dayIndex >= 0 ? dayIndex : 0)
@@ -655,7 +656,7 @@ function WeekStudyContent() {
         clearInterval(progressUpdateInterval.current)
       }
     }
-  }, [searchParams, weekNum, overallProgress, defaultDay, days])
+  }, [searchParams, weekNum])
 
 
 
@@ -675,7 +676,7 @@ function WeekStudyContent() {
   }
 
   const navigateToDay = (dayId: string) => {
-    router.push(`/student/study/${weekNum}?day=${dayId}`)
+    router.push(`/student/study/week-${weekNum}?day=${dayId}`)
   }
 
   const goToNextDay = () => {

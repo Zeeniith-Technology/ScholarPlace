@@ -454,18 +454,17 @@ export default class tpcController {
                 })));
             }
 
-            // Get student progress data
-            const progressResponse = await fetchData(
-                'tblStudentProgress',
-                {},
-                { student_id: { $in: students.map(s => s._id || s.person_id) } }
-            );
+            // Build student ID lists — tblStudentProgress stores student_id as string
+            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id))).filter(Boolean);
+            const progressFilter = studentIdStrings.length
+                ? { $or: [{ student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } }] }
+                : { _id: null };
 
+            const progressResponse = await fetchData('tblStudentProgress', {}, progressFilter);
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // FALLBACK: Get practice test data to derive scores when progress is empty/null
-            const studentIds = students.map(s => s._id || s.person_id);
-            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id)));
+            // Get practice test data to derive scores when progress has no score
             const practiceFilter = studentIdStrings.length ? { student_id: { $in: studentIdStrings } } : { _id: null };
             const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
             const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
@@ -535,9 +534,8 @@ export default class tpcController {
 
             // Get students needing attention (score < 50 or no progress)
             const needsAttention = students.filter(student => {
-                const studentProgress = progressData.find(p =>
-                    (p.student_id === student._id || p.student_id === student.person_id)
-                );
+                const sid = (student._id || student.person_id)?.toString();
+                const studentProgress = progressData.find(p => String(p.student_id) === sid);
                 return !studentProgress || (studentProgress.average_score && studentProgress.average_score < 50);
             }).length;
 
@@ -1633,20 +1631,21 @@ export default class tpcController {
 
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => s._id || s.person_id);
+            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id))).filter(Boolean);
+            const progressFilter = studentIdStrings.length
+                ? { $or: [{ student_id: { $in: studentIdStrings } }, { student_id: { $in: studentIds } }] }
+                : { _id: null };
 
-            // Get progress data
-            const progressResponse = await fetchData(
-                'tblStudentProgress',
-                {},
-                { student_id: { $in: studentIds } }
-            );
+            // Get progress and practice test data in parallel
+            const [progressResponse, practiceResponse] = await Promise.all([
+                fetchData('tblStudentProgress', {}, progressFilter),
+                studentIdStrings.length
+                    ? fetchData('tblPracticeTest', { student_id: 1, score: 1 }, { student_id: { $in: studentIdStrings } })
+                    : Promise.resolve({ data: [] })
+            ]);
 
             const progressData = progressResponse.success && progressResponse.data ? progressResponse.data : [];
 
-            // FALLBACK: Get practice test data to derive scores when progress is empty/null
-            const studentIdStrings = studentIds.map(id => (id && typeof id.toString === 'function' ? id.toString() : String(id)));
-            const practiceFilter = studentIdStrings.length ? { student_id: { $in: studentIdStrings } } : { _id: null };
-            const practiceResponse = await fetchData('tblPracticeTest', { student_id: 1, score: 1 }, practiceFilter);
             const practiceTests = practiceResponse.success && practiceResponse.data ? practiceResponse.data : [];
 
             // Calculate average by student from practice tests
@@ -1734,7 +1733,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -1756,7 +1755,7 @@ export default class tpcController {
                 return next();
             }
 
-            const collegeId = userInfo.user.collage_id || userCollegeId;
+            const collegeId = userInfo.user.person_collage_id || userInfo.user.collage_id || userCollegeId;
             if (!collegeId) {
                 res.locals.responseData = {
                     success: false,
@@ -1774,7 +1773,7 @@ export default class tpcController {
                 {
                     person_collage_id: collegeId,
                     person_deleted: false,
-                    person_role: 'Student',
+                    person_role: { $regex: /^student$/i },
                     department: { $exists: true, $ne: null, $ne: '' }
                 }
             );
@@ -1835,7 +1834,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -2099,7 +2098,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -2120,7 +2119,9 @@ export default class tpcController {
                 return next();
             }
 
-            const collegeId = userInfo.user.collage_id;
+            const { ObjectId } = await import('mongodb');
+            const collegeIdRaw = userInfo.user.person_collage_id || userInfo.user.collage_id || userInfo.user.college_id;
+            const collegeId = collegeIdRaw?.toString?.() || collegeIdRaw;
             if (!collegeId) {
                 res.locals.responseData = {
                     success: false,
@@ -2131,12 +2132,16 @@ export default class tpcController {
                 return next();
             }
 
+            const collegeIdIsObjectId = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId);
+
             // Build student filter
             let studentFilter = {
-                person_collage_id: collegeId,
+                person_collage_id: collegeIdIsObjectId
+                    ? { $in: [collegeId, new ObjectId(collegeId)] }
+                    : collegeId,
                 person_deleted: false,
                 person_status: 'active',
-                person_role: 'Student'
+                person_role: { $regex: /^student$/i }
             };
             if (department && department !== 'all') {
                 studentFilter.department = department;
@@ -2144,7 +2149,7 @@ export default class tpcController {
 
             const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             // Get practice tests grouped by week
             const practiceTestResponse = await fetchData(
@@ -2211,7 +2216,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -2244,10 +2249,14 @@ export default class tpcController {
                 return next();
             }
 
+            const { ObjectId: ObjectId_TL } = await import('mongodb');
+            const collegeIdIsObjectId_TL = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId);
+
             // Build student filter
             let studentFilter = {
-                // Confirm tenant by college (tblCollage._id) - support string/ObjectId storage
-                person_collage_id: { $in: [collegeId].filter(Boolean) },
+                person_collage_id: collegeIdIsObjectId_TL
+                    ? { $in: [collegeId, new ObjectId_TL(collegeId)] }
+                    : { $in: [collegeId] },
                 person_deleted: false,
                 person_role: { $regex: /^student$/i }
             };
@@ -2264,7 +2273,7 @@ export default class tpcController {
                 studentFilter
             );
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             // Build filter for practice tests
             // Tenant confirmation on practice tests too (college_id is now present on docs)
@@ -2362,7 +2371,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -2405,10 +2414,14 @@ export default class tpcController {
                 return next();
             }
 
+            const { ObjectId: ObjectId_TR } = await import('mongodb');
+            const collegeIdIsObjectId_TR = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId);
+
             // Get students
             let studentFilter = {
-                // Confirm tenant by college (tblCollage._id) - support string/ObjectId storage
-                person_collage_id: { $in: [collegeId].filter(Boolean) },
+                person_collage_id: collegeIdIsObjectId_TR
+                    ? { $in: [collegeId, new ObjectId_TR(collegeId)] }
+                    : { $in: [collegeId] },
                 person_deleted: false,
                 person_role: { $regex: /^student$/i }
             };
@@ -2418,7 +2431,7 @@ export default class tpcController {
 
             const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             // Get test results
             const testResponse = await fetchData(
@@ -2437,8 +2450,9 @@ export default class tpcController {
 
             // Combine with student data
             const results = tests.map(test => {
+                const testSid = String(test.student_id || '');
                 const student = students.find(s =>
-                    (s._id === test.student_id || s.person_id === test.student_id)
+                    String(s._id || s.person_id || '') === testSid
                 );
                 return {
                     studentId: test.student_id,
@@ -2506,7 +2520,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -2539,10 +2553,14 @@ export default class tpcController {
                 return next();
             }
 
+            const { ObjectId: ObjectId_GR } = await import('mongodb');
+            const collegeIdIsObjectId_GR = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId);
+
             // Get students
             let studentFilter = {
-                // Tenant confirmation: restrict to this college (tblCollage._id)
-                person_collage_id: { $in: [collegeId].filter(Boolean) },
+                person_collage_id: collegeIdIsObjectId_GR
+                    ? { $in: [collegeId, new ObjectId_GR(collegeId)] }
+                    : { $in: [collegeId] },
                 person_deleted: false,
                 person_role: { $regex: /^student$/i }
             };
@@ -2552,7 +2570,7 @@ export default class tpcController {
 
             const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             // Get progress data
             const progressResponse = await fetchData(
@@ -2583,12 +2601,9 @@ export default class tpcController {
             if (reportType === 'performance' || !reportType) {
                 // Performance Summary Report
                 const studentsWithProgress = students.map(student => {
-                    const progress = progressData.find(p =>
-                        (p.student_id === student._id || p.student_id === student.person_id)
-                    );
-                    const studentTests = practiceTests.filter(t =>
-                        (t.student_id === student._id || t.student_id === student.person_id)
-                    );
+                    const sid = String(student._id || student.person_id || '');
+                    const progress = progressData.find(p => String(p.student_id || '') === sid);
+                    const studentTests = practiceTests.filter(t => String(t.student_id || '') === sid);
                     const avgTestScore = studentTests.length > 0
                         ? Math.round(studentTests.reduce((sum, t) => sum + (t.score || 0), 0) / studentTests.length)
                         : 0;
@@ -2635,9 +2650,8 @@ export default class tpcController {
                     deptStats[dept].students.push(student);
                     deptStats[dept].totalStudents++;
 
-                    const progress = progressData.find(p =>
-                        (p.student_id === student._id || p.student_id === student.person_id)
-                    );
+                    const sSid = String(student._id || student.person_id || '');
+                    const progress = progressData.find(p => String(p.student_id || '') === sSid);
                     if (progress?.average_score) {
                         deptStats[dept].totalScores.push(progress.average_score);
                     }
@@ -2694,7 +2708,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'TPC') {
+            if (userRole?.toLowerCase() !== 'tpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -2791,7 +2805,7 @@ export default class tpcController {
                 {
                     person_collage_id: collegeIdFilter,
                     person_deleted: false,
-                    person_role: 'Student',
+                    person_role: { $regex: /^student$/i },
                     department: { $exists: true, $ne: null, $ne: '' }
                 }
             );
@@ -2867,7 +2881,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -3162,7 +3176,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -3462,7 +3476,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -3704,7 +3718,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -3747,19 +3761,24 @@ export default class tpcController {
             }
 
             // Get students in department
+            const { ObjectId: ObjectId_DTL } = await import('mongodb');
+            const collegeIdStr_DTL = collegeId?.toString?.() || collegeId;
+            const collegeIdIsOid_DTL = typeof collegeIdStr_DTL === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdStr_DTL);
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
                 { _id: 1 },
                 {
-                    person_collage_id: collegeId,
+                    person_collage_id: collegeIdIsOid_DTL
+                        ? { $in: [collegeIdStr_DTL, new ObjectId_DTL(collegeIdStr_DTL)] }
+                        : collegeIdStr_DTL,
                     ...departmentFilter,
                     person_deleted: false,
-                    person_role: 'Student',
+                    person_role: { $regex: /^student$/i },
                     person_status: 'active'
                 }
             );
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             // If no students in department, return empty list
             if (studentIds.length === 0) {
@@ -3874,7 +3893,7 @@ export default class tpcController {
                 return next();
             }
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = {
                     success: false,
                     status: 403,
@@ -3921,18 +3940,23 @@ export default class tpcController {
             }
 
             // Get students in department
+            const { ObjectId: ObjectId_DTR } = await import('mongodb');
+            const collegeIdStr_DTR = collegeId?.toString?.() || collegeId;
+            const collegeIdIsOid_DTR = typeof collegeIdStr_DTR === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdStr_DTR);
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
                 {},
                 {
-                    person_collage_id: collegeId,
+                    person_collage_id: collegeIdIsOid_DTR
+                        ? { $in: [collegeIdStr_DTR, new ObjectId_DTR(collegeIdStr_DTR)] }
+                        : collegeIdStr_DTR,
                     department: department,
                     person_deleted: false,
-                    person_role: 'Student'
+                    person_role: { $regex: /^student$/i }
                 }
             );
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
-            const studentIds = students.map(s => s._id || s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             // Get test results
             const testResponse = await fetchData(
@@ -3952,8 +3976,9 @@ export default class tpcController {
 
             // Combine with student data
             const results = tests.map(test => {
+                const testSid_DTR = String(test.student_id || '');
                 const student = students.find(s =>
-                    (s._id === test.student_id || s.person_id === test.student_id)
+                    String(s._id || s.person_id || '') === testSid_DTR
                 );
                 return {
                     studentId: test.student_id,
@@ -4826,13 +4851,13 @@ export default class tpcController {
                 studentFilter.department = userInfo.department;
             }
 
-            const students = await fetchData('tblPersonMaster', { person_id: 1 }, studentFilter);
+            const students = await fetchData('tblPersonMaster', { _id: 1, person_id: 1 }, studentFilter);
             if (!students.data || students.data.length === 0) {
                 res.locals.responseData = { success: true, status: 200, message: 'No students found', data: { totalStudents: 0, analytics: {} } };
                 return next();
             }
 
-            const studentIds = students.data.map(s => s.person_id);
+            const studentIds = students.data.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
             const practiceFilter = { student_id: { $in: studentIds } };
             if (week) practiceFilter.week = parseInt(week);
             if (category) practiceFilter.category = category;
@@ -5035,7 +5060,7 @@ export default class tpcController {
 
             console.log('[DeptTPC] Performance Request by:', userId, userRole);
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = { success: false, status: 403, message: 'Access denied' };
                 return next();
             }
@@ -5224,7 +5249,7 @@ export default class tpcController {
         try {
             const userId = req.userId || req.user?.id;
             const userRole = req.user?.role;
-            if (userRole !== 'DeptTPC') return next();
+            if (userRole?.toLowerCase() !== 'depttpc') return next();
 
             const userInfo = await this.getUserInfo(userId);
             const deptTpcUser = userInfo.user;
@@ -5385,7 +5410,7 @@ export default class tpcController {
             const userId = req.userId || req.user?.id;
             const userRole = req.user?.role;
 
-            if (userRole !== 'DeptTPC') {
+            if (userRole?.toLowerCase() !== 'depttpc') {
                 res.locals.responseData = { success: false, status: 403, message: 'Access denied' };
                 return next();
             }

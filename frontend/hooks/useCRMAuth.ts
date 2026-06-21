@@ -7,8 +7,13 @@ import type { CRMUser } from '@/types/crm.types';
 // H-04: Client-side expiry check prevents stale JWT dashboard flash
 function isTokenExpired(token: string): boolean {
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.exp * 1000 < Date.now();
+        const parts = token.split('.');
+        if (parts.length !== 3) return true;
+        // JWT uses base64url — convert to standard base64 before atob
+        const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
+        const payload = JSON.parse(atob(padded));
+        return payload.exp ? payload.exp * 1000 < Date.now() : false;
     } catch { return true; }
 }
 

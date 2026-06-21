@@ -257,16 +257,6 @@ export default class practiceTestController {
             const userId = req.userId || req.user?.id || req.user?.userId || req.user?.person_id || req.headers['x-user-id'];
             const userRole = req.user?.role || req.headers['x-user-role'];
 
-            console.log('[PracticeTest] listPracticeTests - userId:', userId, 'role:', userRole, {
-                userIdSource: {
-                    reqUserId: req.userId,
-                    reqUser_id: req.user?.id,
-                    reqUser_userId: req.user?.userId,
-                    reqUser_person_id: req.user?.person_id,
-                    header: req.headers['x-user-id']
-                }
-            });
-            console.log('[PracticeTest] Request filter:', filter);
 
             // Safety: auth is required for this route. If we still don't have a userId, return 401.
             if (!userId) {
@@ -294,23 +284,16 @@ export default class practiceTestController {
 
                 // Only add student_id if not already in filter
                 if (!finalFilter.student_id && !finalFilter.$or) {
-                    // Try to match student_id as both string and ObjectId
                     finalFilter.$or = [
                         { student_id: studentIdString },
                         { student_id: isObjectId ? new ObjectId(userId) : userId }
                     ];
-                    console.log('[PracticeTest] Added student_id filter with $or:', { studentIdString, isObjectId });
                 } else if (!finalFilter.student_id) {
-                    // If $or already exists, just add student_id as string (simpler)
                     finalFilter.student_id = studentIdString;
-                    console.log('[PracticeTest] Added student_id filter (string):', studentIdString);
-                } else {
-                    console.log('[PracticeTest] student_id already in filter:', finalFilter.student_id);
                 }
             }
             // Admin and Superadmin can view all or filter by student_id
 
-            console.log('[PracticeTest] Final filter before fetchData:', JSON.stringify(finalFilter, null, 2));
 
             // Don't pass req to avoid role-based filtering that might interfere with our manual filter
             // We're handling the student filter manually above
@@ -325,48 +308,6 @@ export default class practiceTestController {
                 fetchOptions
             );
 
-            console.log('[PracticeTest] Response data count:', response.data?.length || 0);
-            if (response.data && response.data.length > 0) {
-                console.log('[PracticeTest] First record student_id:', response.data[0].student_id);
-                console.log('[PracticeTest] Requested userId:', userId);
-                console.log('[PracticeTest] Student ID match check:', {
-                    requestedUserId: userId,
-                    firstRecordStudentId: response.data[0].student_id,
-                    match: response.data[0].student_id === userId || response.data[0].student_id === String(userId)
-                });
-                console.log('[PracticeTest] First record:', JSON.stringify(response.data[0], null, 2));
-            } else {
-                console.log('[PracticeTest] No data returned for userId:', userId);
-                // Debug: Try a direct query to see what's in the database
-                try {
-                    const db = getDB();
-                    if (db) {
-                        const collection = db.collection('tblPracticeTest');
-                        // Try query with just student_id as string
-                        const simpleFilter = { student_id: String(userId) };
-                        const directQuery = await collection.find(simpleFilter).limit(5).toArray();
-                        console.log('[PracticeTest] Direct DB query (simple filter) result count:', directQuery.length);
-                        if (directQuery.length > 0) {
-                            console.log('[PracticeTest] Direct DB query first record student_id:', directQuery[0].student_id);
-                            console.log('[PracticeTest] Direct DB query first record student_id type:', typeof directQuery[0].student_id);
-                        } else {
-                            // Try with ObjectId
-                            if (typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId)) {
-                                const objectIdFilter = { student_id: new ObjectId(userId) };
-                                const objectIdQuery = await collection.find(objectIdFilter).limit(5).toArray();
-                                console.log('[PracticeTest] Direct DB query (ObjectId filter) result count:', objectIdQuery.length);
-                            }
-                            // Count all documents
-                            const totalCount = await collection.countDocuments({});
-                            console.log('[PracticeTest] Total documents in collection:', totalCount);
-                        }
-                    }
-                } catch (dbError) {
-                    console.error('[PracticeTest] Error in direct DB query:', dbError);
-                }
-            }
-
-            console.log('[PracticeTest] Response before enrichment:', response.data?.length || 0);
 
             // Enrich practice test data with student information
             if (response.success && response.data && response.data.length > 0) {

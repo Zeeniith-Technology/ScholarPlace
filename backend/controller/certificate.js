@@ -280,7 +280,7 @@ export default class CertificateController {
             const userId = req.userId || req.user?.id;
             const userRole = req.user?.role;
             if (!userId) return this.sendError(res, 401, 'Unauthorized');
-            if (userRole !== 'DeptTPC') return this.sendError(res, 403, 'Access denied');
+            if (userRole?.toLowerCase() !== 'depttpc') return this.sendError(res, 403, 'Access denied');
 
             // Get TPC's department info
             const tpcRes = await fetchData('tblPersonMaster', {}, { _id: userId });

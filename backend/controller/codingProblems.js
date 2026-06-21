@@ -134,10 +134,14 @@ export async function getCodingProblemsByWeek(req, res) {
         const db = getDB();
         const collection = db.collection(COLLECTION_NAME);
 
-        // Capstone: match is_capstone as true, 1, or 'true' for DB compatibility
+        // Capstone: match by flag OR by question_id/position pattern (handles records seeded without is_capstone set)
         const problems = await collection.find({
             week: { $in: [week, String(week)] },
-            is_capstone: { $in: [true, 1, 'true'] },
+            $or: [
+                { is_capstone: { $in: [true, 1, 'true'] } },
+                { question_id: { $regex: /_CP\d+$/i } },
+                { position: { $regex: /^Capstone/i } }
+            ],
             deleted: { $ne: true },
             status: { $ne: 'archived' }
         }).sort({ question_id: 1 }).toArray();

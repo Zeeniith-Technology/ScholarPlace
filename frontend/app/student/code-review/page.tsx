@@ -9,6 +9,23 @@ import { Button } from '@/components/ui/Button'
 import { FileCode, Sparkles, Loader2, Calendar, Filter, ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const toDayKey = (day: unknown): string => {
+  if (day == null) return 'pre-week'
+  // Strip any number of leading "day-" prefixes (handles "day-2", "day-day-2", "day-pre-week")
+  let s = String(day).trim().toLowerCase()
+  while (s.startsWith('day-')) s = s.slice(4)
+  if (s === '' || s === '0' || s === 'pre-week' || s === 'preweek' || s === 'nan') return 'pre-week'
+  const n = parseInt(s, 10)
+  return isNaN(n) ? 'pre-week' : `day-${n}`
+}
+const sortDayKey = (a: string, b: string) => {
+  if (a === 'capstone') return 1
+  if (b === 'capstone') return -1
+  if (a === 'pre-week') return -1
+  if (b === 'pre-week') return 1
+  return parseInt(a.replace('day-', ''), 10) - parseInt(b.replace('day-', ''), 10)
+}
+
 interface CodeReviewItem {
   _id: string
   submission_id: string
@@ -95,17 +112,12 @@ export default function CodeReviewPage() {
     const byWeekDay = reviews.reduce<Record<string, Record<string, CodeReviewItem[]>>>((acc, r) => {
       const w = r.week ?? 0
       const wk = `week-${w}`
-      const dk = r.is_capstone ? 'capstone' : `day-${r.day ?? 0}`
+      const dk = r.is_capstone ? 'capstone' : toDayKey(r.day)
       if (!acc[wk]) acc[wk] = {}
       if (!acc[wk][dk]) acc[wk][dk] = []
       acc[wk][dk].push(r)
       return acc
     }, {})
-    const sortDayKey = (a: string, b: string) => {
-      if (a === 'capstone') return 1
-      if (b === 'capstone') return -1
-      return parseInt(a.replace('day-', ''), 10) - parseInt(b.replace('day-', ''), 10)
-    }
     const firstDays = Object.keys(byWeekDay)
       .sort((a, b) => parseInt(a.replace('week-', ''), 10) - parseInt(b.replace('week-', ''), 10))
       .map((wk) => {
@@ -125,18 +137,12 @@ export default function CodeReviewPage() {
   const grouped = reviews.reduce<Record<string, Record<string, CodeReviewItem[]>>>((acc, r) => {
     const w = r.week ?? 0
     const wk = `week-${w}`
-    const dk = r.is_capstone ? 'capstone' : `day-${r.day ?? 0}`
+    const dk = r.is_capstone ? 'capstone' : toDayKey(r.day)
     if (!acc[wk]) acc[wk] = {}
     if (!acc[wk][dk]) acc[wk][dk] = []
     acc[wk][dk].push(r)
     return acc
   }, {})
-
-  const sortDayKey = (a: string, b: string) => {
-    if (a === 'capstone') return 1
-    if (b === 'capstone') return -1
-    return parseInt(a.replace('day-', ''), 10) - parseInt(b.replace('day-', ''), 10)
-  }
 
   const weekKeys = Object.keys(grouped).sort((a, b) => parseInt(a.replace('week-', ''), 10) - parseInt(b.replace('week-', ''), 10))
 
@@ -267,7 +273,8 @@ export default function CodeReviewPage() {
                       <div className="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 border-t border-neutral-100">
                         {dayKeys.map((dk) => {
                           const isCapstoneSection = dk === 'capstone'
-                          const dayNum = isCapstoneSection ? 0 : parseInt(dk.replace('day-', ''), 10)
+                          const isPreWeek = dk === 'pre-week'
+                          const dayNum = (isCapstoneSection || isPreWeek) ? 0 : parseInt(dk.replace('day-', ''), 10)
                           const items = daysMap[dk]
 
                           return (
@@ -288,10 +295,10 @@ export default function CodeReviewPage() {
                                     "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm",
                                     isCapstoneSection ? "bg-purple-100 text-purple-600" : "bg-white border border-neutral-200 text-neutral-600"
                                   )}>
-                                    {isCapstoneSection ? <Sparkles className="w-4 h-4" /> : dayNum}
+                                    {isCapstoneSection ? <Sparkles className="w-4 h-4" /> : isPreWeek ? 'P' : dayNum}
                                   </div>
                                   <h3 className="font-semibold text-neutral">
-                                    {isCapstoneSection ? 'Capstone' : `Day ${dayNum}`}
+                                    {isCapstoneSection ? 'Capstone' : isPreWeek ? 'Pre-Week' : `Day ${dayNum}`}
                                   </h3>
                                 </div>
                                 <span className={cn(

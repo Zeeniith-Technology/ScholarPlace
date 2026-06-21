@@ -11,121 +11,60 @@ export default class superadminAnalyticsController {
             const { collegeId, departmentId } = req.body || {};
             const db = getDB();
 
-            // 1. College Stats (Aggregated)
             const collegeMatch = { deleted: false };
             if (collegeId) {
-                // Handle both string and ObjectId for collegeId
                 const { ObjectId } = await import('mongodb');
                 collegeMatch._id = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
-                    ? new ObjectId(collegeId)
-                    : collegeId;
+                    ? new ObjectId(collegeId) : collegeId;
             }
 
-            const collegeStats = await db.collection('tblCollage').aggregate([
-                { $match: collegeMatch },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: 1 },
-                        active: { $sum: { $cond: [{ $eq: ["$collage_status", 1] }, 1, 0] } },
-                        subscribed: { $sum: { $cond: [{ $eq: ["$collage_subscription_status", "active"] }, 1, 0] } }
-                    }
-                }
-            ]).toArray();
-
-            const cStats = collegeStats[0] || { total: 0, active: 0, subscribed: 0 };
-
-            // 2. Student Stats (Aggregated)
-            let studentMatch = {
-                person_role: 'Student',
-                person_deleted: { $ne: true }
-            };
+            let studentMatch = { person_role: { $regex: /^student$/i }, person_deleted: { $ne: true } };
             if (collegeId) studentMatch.person_collage_id = collegeId;
             if (departmentId) studentMatch.department = departmentId;
 
-            const studentStats = await db.collection('tblPersonMaster').aggregate([
-                { $match: studentMatch },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: 1 },
-                        active: { $sum: { $cond: [{ $eq: ["$person_status", "active"] }, 1, 0] } }
-                    }
-                }
-            ]).toArray();
+            // Phase 1: college stats + student stats + exam stats — all independent, run in parallel
+            const [collegeStats, studentStats, examStats] = await Promise.all([
+                db.collection('tblCollage').aggregate([
+                    { $match: collegeMatch },
+                    { $group: { _id: null, total: { $sum: 1 }, active: { $sum: { $cond: [{ $eq: ["$collage_status", 1] }, 1, 0] } }, subscribed: { $sum: { $cond: [{ $eq: ["$collage_subscription_status", "active"] }, 1, 0] } } } }
+                ]).toArray(),
+                db.collection('tblPersonMaster').aggregate([
+                    { $match: studentMatch },
+                    { $group: { _id: null, total: { $sum: 1 }, active: { $sum: { $cond: [{ $eq: ["$person_status", "active"] }, 1, 0] } } } }
+                ]).toArray(),
+                db.collection('tblExam').aggregate([
+                    { $project: { exam_status: 1, isUpcoming: { $gt: ["$exam_date", new Date()] } } },
+                    { $group: { _id: null, total: { $sum: 1 }, upcoming: { $sum: { $cond: [{ $and: ["$isUpcoming", { $ne: ["$exam_status", "completed"] }] }, 1, 0] } } } }
+                ]).toArray()
+            ]);
 
+            const cStats = collegeStats[0] || { total: 0, active: 0, subscribed: 0 };
             const sStats = studentStats[0] || { total: 0, active: 0 };
+            const eStats = examStats[0] || { total: 0, upcoming: 0 };
 
-            // 3. Progress Stats (Aggregated) - Only for filtered students if needed
-            // If filtering by college/dept, we first need matching student IDs, which is expensive.
-            // For general overview (no filters), we can aggregate directly.
-            // For filtered, it's safer to rely on the student match.
-
+            // Phase 2: build student ID list if filtering, then run progress + scores in parallel
             let studentIds = [];
             if (collegeId || departmentId) {
-                // If filtering, we need IDs. But we can use $lookup in aggregation to avoid fetching IDs. 
-                // For simplicity/performance balance:
-                const students = await db.collection('tblPersonMaster').find(studentMatch).project({ _id: 1, person_id: 1 }).toArray();
-                studentIds = students.map(s => s.person_id).filter(id => id); // Use person_id as link
+                const students = await db.collection('tblPersonMaster')
+                    .find(studentMatch).project({ person_id: 1 }).toArray();
+                studentIds = students.map(s => s.person_id).filter(Boolean);
             }
 
-            // Progress Aggregation
-            const progressMatch = (collegeId || departmentId)
-                ? { student_id: { $in: studentIds } }
-                : {};
+            const progressMatch = (collegeId || departmentId) ? { student_id: { $in: studentIds } } : {};
 
-            const progressStats = await db.collection('tblStudentProgress').aggregate([
-                { $match: progressMatch },
-                {
-                    $group: {
-                        _id: null,
-                        uniqueStudents: { $addToSet: "$student_id" }, // Count unique students with progress
-                        totalDays: { $sum: { $size: { $ifNull: ["$days_completed", []] } } },
-                        totalPracticeTests: { $sum: { $size: { $ifNull: ["$practice_tests", []] } } },
-                        totalCoding: { $sum: { $size: { $ifNull: ["$coding_problems.completed", []] } } }
-                    }
-                },
-                {
-                    $project: {
-                        withProgress: { $size: "$uniqueStudents" },
-                        totalDays: 1,
-                        totalPracticeTests: 1,
-                        totalCoding: 1
-                    }
-                }
-            ]).toArray();
+            const [progressStats, scoreStats] = await Promise.all([
+                db.collection('tblStudentProgress').aggregate([
+                    { $match: progressMatch },
+                    { $group: { _id: null, uniqueStudents: { $addToSet: "$student_id" }, totalDays: { $sum: { $size: { $ifNull: ["$days_completed", []] } } }, totalPracticeTests: { $sum: { $size: { $ifNull: ["$practice_tests", []] } } }, totalCoding: { $sum: { $size: { $ifNull: ["$coding_problems.completed", []] } } } } },
+                    { $project: { withProgress: { $size: "$uniqueStudents" }, totalDays: 1, totalPracticeTests: 1, totalCoding: 1 } }
+                ]).toArray(),
+                db.collection('tblPracticeTest').aggregate([
+                    { $match: progressMatch },
+                    { $group: { _id: null, avgScore: { $avg: "$score" } } }
+                ]).toArray()
+            ]);
 
             const pStats = progressStats[0] || { withProgress: 0, totalDays: 0, totalPracticeTests: 0, totalCoding: 0 };
-
-            // 4. Average Score Aggregation
-            const scoreStats = await db.collection('tblPracticeTest').aggregate([
-                { $match: progressMatch }, // Reuse same student match filter
-                {
-                    $group: {
-                        _id: null,
-                        avgScore: { $avg: "$score" }
-                    }
-                }
-            ]).toArray();
-
-            // 5. Exam Stats
-            const examStats = await db.collection('tblExam').aggregate([
-                {
-                    $project: {
-                        exam_status: 1,
-                        isUpcoming: { $gt: ["$exam_date", new Date()] } // Simple date check
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: 1 },
-                        upcoming: { $sum: { $cond: [{ $and: ["$isUpcoming", { $ne: ["$exam_status", "completed"] }] }, 1, 0] } }
-                    }
-                }
-            ]).toArray();
-
-            const eStats = examStats[0] || { total: 0, upcoming: 0 };
 
             // Engagement Rate
             const engagementRate = sStats.total > 0
@@ -187,65 +126,73 @@ export default class superadminAnalyticsController {
         try {
             const { collegeId, departmentId } = req.body || {};
 
-            // Build college filter (exclude deleted colleges)
+            // Phase 1: colleges + all students in parallel (eliminates N+1)
             let collegeFilter = { deleted: false };
-            if (collegeId) {
-                collegeFilter.collage_id = collegeId;
-            }
+            if (collegeId) collegeFilter.collage_id = collegeId;
 
-            // Get all colleges (excluding deleted ones)
-            const collegesResponse = await fetchData(
-                'tblCollage',
-                { collage_id: 1, collage_name: 1, collage_status: 1, collage_subscription_status: 1, collage_departments: 1 },
-                collegeFilter,
-                {}
-            );
+            let studentFilter = { person_role: { $regex: /^student$/i }, person_deleted: { $ne: true } };
+            if (collegeId) studentFilter.person_collage_id = collegeId;
+            if (departmentId) studentFilter.department = departmentId;
+
+            const [collegesResponse, allStudentsRes] = await Promise.all([
+                fetchData('tblCollage',
+                    { collage_id: 1, collage_name: 1, collage_status: 1, collage_subscription_status: 1, collage_departments: 1 },
+                    collegeFilter, {}),
+                fetchData('tblPersonMaster',
+                    { person_id: 1, person_status: 1, person_collage_id: 1 },
+                    studentFilter, {})
+            ]);
+
             const colleges = collegesResponse.data || [];
+            const allStudents = allStudentsRes.data || [];
+            // Use _id as the primary key — student_id in tblStudentProgress is stored as _id.toString()
+            const allStudentIds = allStudents.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
-            // Get statistics for each college
-            const collegeStats = await Promise.all(colleges.map(async (college) => {
-                // Build student filter (exclude soft-deleted)
-                let studentFilter = {
-                    person_role: 'Student',
-                    person_collage_id: college.collage_id,
-                    person_deleted: { $ne: true } // Exclude soft-deleted students
-                };
-                if (departmentId) {
-                    studentFilter.department = departmentId;
-                }
+            // Phase 2: progress + practice tests for known students in parallel
+            const [progressRes, practiceRes] = await Promise.all([
+                allStudentIds.length > 0
+                    ? fetchData('tblStudentProgress', { student_id: 1, days_completed: 1 }, { student_id: { $in: allStudentIds } }, {})
+                    : Promise.resolve({ data: [] }),
+                allStudentIds.length > 0
+                    ? fetchData('tblPracticeTest', { student_id: 1, score: 1 }, { student_id: { $in: allStudentIds } }, {})
+                    : Promise.resolve({ data: [] })
+            ]);
 
-                // Get students for this college
-                const studentsResponse = await fetchData(
-                    'tblPersonMaster',
-                    { person_id: 1, person_status: 1, department: 1 },
-                    studentFilter,
-                    {}
-                );
-                const students = studentsResponse.data || [];
+            // Build lookup maps for O(1) per-college assembly
+            const studentsByCollege = {};
+            allStudents.forEach(s => {
+                const cid = String(s.person_collage_id || '');
+                if (!studentsByCollege[cid]) studentsByCollege[cid] = [];
+                studentsByCollege[cid].push(s);
+            });
+
+            const progressByStudent = {};
+            (progressRes.data || []).forEach(p => {
+                const sid = String(p.student_id || '');
+                if (!progressByStudent[sid]) progressByStudent[sid] = [];
+                progressByStudent[sid].push(p);
+            });
+
+            const scoresByStudent = {};
+            (practiceRes.data || []).forEach(t => {
+                const sid = String(t.student_id || '');
+                if (!scoresByStudent[sid]) scoresByStudent[sid] = [];
+                scoresByStudent[sid].push(t.score || 0);
+            });
+
+            // Assemble stats per college from maps (no extra DB calls)
+            const collegeStats = colleges.map(college => {
+                const cidStr = String(college.collage_id || college._id || '');
+                const students = studentsByCollege[cidStr] || [];
                 const activeStudents = students.filter(s => s.person_status === 'active').length;
-
-                // Get progress for students in this college
-                const studentIds = students.map(s => s.person_id);
-                const progressResponse = await fetchData(
-                    'tblStudentProgress',
-                    { student_id: 1, days_completed: 1, practice_tests: 1 },
-                    studentIds.length > 0 ? { student_id: { $in: studentIds } } : { student_id: 'none' },
-                    {}
-                );
-                const progressData = progressResponse.data || [];
-                const studentsWithProgress = new Set(progressData.map(p => p.student_id)).size;
-                const totalDaysCompleted = progressData.reduce((sum, p) => sum + (p.days_completed?.length || 0), 0);
-
-                // Get practice test scores
-                const practiceTestResponse = await fetchData(
-                    'tblPracticeTest',
-                    { score: 1 },
-                    studentIds.length > 0 ? { student_id: { $in: studentIds } } : { student_id: 'none' },
-                    {}
-                );
-                const practiceTests = practiceTestResponse.data || [];
-                const averageScore = practiceTests.length > 0
-                    ? practiceTests.reduce((sum, t) => sum + (t.score || 0), 0) / practiceTests.length
+                const studentsWithProgress = students.filter(s => progressByStudent[(s._id || s.person_id)?.toString() || '']).length;
+                const totalDaysCompleted = students.reduce((sum, s) => {
+                    const sid = (s._id || s.person_id)?.toString() || '';
+                    return sum + (progressByStudent[sid] || []).reduce((a, p) => a + (p.days_completed?.length || 0), 0);
+                }, 0);
+                const allScores = students.flatMap(s => scoresByStudent[(s._id || s.person_id)?.toString() || ''] || []);
+                const averageScore = allScores.length > 0
+                    ? allScores.reduce((a, b) => a + b, 0) / allScores.length
                     : 0;
 
                 return {
@@ -254,27 +201,17 @@ export default class superadminAnalyticsController {
                     status: college.collage_status === 1 ? 'active' : 'inactive',
                     subscriptionStatus: college.collage_subscription_status || 'active',
                     departments: college.collage_departments || [],
-                    students: {
-                        total: students.length,
-                        active: activeStudents,
-                        withProgress: studentsWithProgress
-                    },
-                    progress: {
-                        totalDaysCompleted: totalDaysCompleted,
-                        averageScore: Math.round(averageScore)
-                    }
+                    students: { total: students.length, active: activeStudents, withProgress: studentsWithProgress },
+                    progress: { totalDaysCompleted, averageScore: Math.round(averageScore) }
                 };
-            }));
+            });
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 message: 'College statistics fetched successfully',
                 data: {
-                    filters: {
-                        collegeId: collegeId || null,
-                        departmentId: departmentId || null
-                    },
+                    filters: { collegeId: collegeId || null, departmentId: departmentId || null },
                     colleges: collegeStats
                 }
             };
@@ -300,7 +237,7 @@ export default class superadminAnalyticsController {
 
             // Build filter for students (exclude soft-deleted)
             let studentFilter = {
-                person_role: 'Student',
+                person_role: { $regex: /^student$/i },
                 person_deleted: { $ne: true } // Exclude soft-deleted students
             };
             if (collegeId) {
@@ -338,49 +275,42 @@ export default class superadminAnalyticsController {
             );
             const students = studentsResponse.data || [];
 
-            // Get progress for all students
-            const studentIds = students.map(s => s.person_id);
-            const progressResponse = await fetchData(
-                'tblStudentProgress',
-                {
-                    student_id: 1,
-                    week: 1,
-                    days_completed: 1,
-                    practice_tests: 1,
-                    coding_problems: 1
-                },
-                studentIds.length > 0 ? { student_id: { $in: studentIds } } : { student_id: 'none' },
-                {}
-            );
+            // student_id in tblStudentProgress is stored as _id.toString() — use string keys
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
+            const [progressResponse, practiceTestResponse] = await Promise.all([
+                studentIds.length > 0
+                    ? fetchData('tblStudentProgress',
+                        { student_id: 1, week: 1, days_completed: 1, practice_tests: 1, coding_problems: 1 },
+                        { student_id: { $in: studentIds } }, {})
+                    : Promise.resolve({ data: [] }),
+                studentIds.length > 0
+                    ? fetchData('tblPracticeTest',
+                        { student_id: 1, score: 1, day: 1 },
+                        { student_id: { $in: studentIds } }, {})
+                    : Promise.resolve({ data: [] })
+            ]);
+
             const progressData = progressResponse.data || [];
             const progressMap = new Map();
             progressData.forEach(p => {
-                if (!progressMap.has(p.student_id)) {
-                    progressMap.set(p.student_id, []);
-                }
-                progressMap.get(p.student_id).push(p);
+                const sid = String(p.student_id || '');
+                if (!progressMap.has(sid)) progressMap.set(sid, []);
+                progressMap.get(sid).push(p);
             });
 
-            // Get practice test scores
-            const practiceTestResponse = await fetchData(
-                'tblPracticeTest',
-                { student_id: 1, score: 1, day: 1 },
-                studentIds.length > 0 ? { student_id: { $in: studentIds } } : { student_id: 'none' },
-                {}
-            );
             const practiceTests = practiceTestResponse.data || [];
             const scoreMap = new Map();
             practiceTests.forEach(t => {
-                if (!scoreMap.has(t.student_id)) {
-                    scoreMap.set(t.student_id, []);
-                }
-                scoreMap.get(t.student_id).push(t.score || 0);
+                const sid = String(t.student_id || '');
+                if (!scoreMap.has(sid)) scoreMap.set(sid, []);
+                scoreMap.get(sid).push(t.score || 0);
             });
 
             // Combine data
             const studentAnalytics = students.map(student => {
-                const studentProgress = progressMap.get(student.person_id) || [];
-                const studentScores = scoreMap.get(student.person_id) || [];
+                const sid = (student._id || student.person_id)?.toString() || '';
+                const studentProgress = progressMap.get(sid) || [];
+                const studentScores = scoreMap.get(sid) || [];
 
                 const totalDaysCompleted = studentProgress.reduce((sum, p) => sum + (p.days_completed?.length || 0), 0);
                 const totalPracticeTests = studentProgress.reduce((sum, p) => sum + (p.practice_tests?.length || 0), 0);
@@ -390,7 +320,7 @@ export default class superadminAnalyticsController {
                     : 0;
 
                 return {
-                    studentId: student.person_id,
+                    studentId: sid || student.person_id,
                     name: student.person_name,
                     email: student.person_email,
                     collegeId: student.person_collage_id,
@@ -442,8 +372,8 @@ export default class superadminAnalyticsController {
 
             // Build student filter (exclude soft-deleted)
             let studentFilter = {
-                person_role: 'Student',
-                person_deleted: { $ne: true } // Exclude soft-deleted students
+                person_role: { $regex: /^student$/i },
+                person_deleted: { $ne: true }
             };
             if (collegeId) {
                 studentFilter.person_collage_id = collegeId;
@@ -455,12 +385,12 @@ export default class superadminAnalyticsController {
             // Get students
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
-                { person_id: 1, person_collage_id: 1, department: 1 },
+                { _id: 1, person_id: 1, person_collage_id: 1, department: 1 },
                 studentFilter,
                 {}
             );
             const students = studentsResponse.data || [];
-            const studentIds = students.map(s => s.person_id);
+            const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
             let chartData = {};
 
@@ -579,31 +509,26 @@ export default class superadminAnalyticsController {
     async getRecentActivity(req, res, next) {
         try {
             const { limit = 10 } = req.body || {};
-            const db = getDB();
 
-            // Get recent student registrations
-            const recentStudents = await db.collection('tblPersonMaster').find({
-                person_role: 'Student',
-                person_deleted: { $ne: true }
-            })
-                .sort({ created_at: -1 })
-                .limit(5)
-                .project({ person_name: 1, person_email: 1, created_at: 1, person_collage_id: 1 })
-                .toArray();
+            // Fetch all three sources in parallel using fetchData
+            const [studentsRes, testsRes, progressRes] = await Promise.all([
+                fetchData('tblPersonMaster',
+                    { person_name: 1, person_email: 1, created_at: 1, person_collage_id: 1 },
+                    { person_role: { $regex: /^student$/i }, person_deleted: { $ne: true } },
+                    { sort: { created_at: -1 }, limit: 5 }),
+                fetchData('tblPracticeTest',
+                    { student_id: 1, score: 1, day: 1, updated_at: 1 },
+                    {},
+                    { sort: { updated_at: -1 }, limit: 5 }),
+                fetchData('tblStudentProgress',
+                    { student_id: 1, week: 1, days_completed: 1, updated_at: 1 },
+                    {},
+                    { sort: { updated_at: -1 }, limit: 5 })
+            ]);
 
-            // Get recent test submissions (practice tests)
-            const recentTests = await db.collection('tblPracticeTest').find({})
-                .sort({ updated_at: -1 })
-                .limit(5)
-                .project({ student_id: 1, score: 1, day: 1, updated_at: 1 })
-                .toArray();
-
-            // Get recent progress updates
-            const recentProgress = await db.collection('tblStudentProgress').find({})
-                .sort({ updated_at: -1 })
-                .limit(5)
-                .project({ student_id: 1, week: 1, days_completed: 1, updated_at: 1 })
-                .toArray();
+            const recentStudents = studentsRes.data || [];
+            const recentTests = testsRes.data || [];
+            const recentProgress = progressRes.data || [];
 
             // Combine and format activities
             const activities = [];

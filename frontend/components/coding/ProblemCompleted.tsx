@@ -19,7 +19,14 @@ export function ProblemCompleted({ week = 1, day, onGoBack, onSolveAgain }: Prob
         if (onGoBack) {
             onGoBack()
         } else {
-            const dayParam = day ? `day-${day}` : 'day-1';
+            const rawDay: unknown = day
+            let dayParam: string
+            if (!rawDay || rawDay === 0 || rawDay === '0' || rawDay === 'pre-week') {
+                dayParam = 'pre-week'
+            } else {
+                const s = String(rawDay)
+                dayParam = s.startsWith('day-') ? s : `day-${s}`
+            }
             const path = week === 1
                 ? `/student/study/week-1?day=${dayParam}#daily-coding-problems`
                 : `/student/study/week-${week}?day=${dayParam}#daily-coding-problems`

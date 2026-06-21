@@ -834,7 +834,7 @@ function Week1PracticeContent() {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-secondary mb-1">
-                      {Math.ceil(questions.reduce((sum, q) => sum + parseInt(q.time_taken), 0) / 60)}
+                      {Math.ceil(questions.reduce((sum, q) => sum + (parseInt(q.time_taken) || 0), 0) / 60)}
                     </div>
                     <div className="text-sm text-neutral-light">Estimated Time (minutes)</div>
                   </div>
