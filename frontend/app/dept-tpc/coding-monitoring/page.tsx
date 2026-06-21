@@ -133,10 +133,13 @@ function StudentDetailsModal({
                                         const weekKey = isNaN(weekNum) ? 'Week ?' : `Week ${weekNum}`
                                         if (!acc[weekKey]) acc[weekKey] = {}
                                         const isCap = /(_CP\d+|capstone)/i.test(item.problem_id || '')
-                                        const dayNum = Number(item.day)
+                                        // day may be "day-1".."day-5", "pre-week", 0, 1, or null
+                                        let dayStr = String(item.day ?? '').trim().toLowerCase()
+                                        while (dayStr.startsWith('day-')) dayStr = dayStr.slice(4)
+                                        const dayNum = parseInt(dayStr, 10)
                                         const dayKey = isCap
                                             ? 'Capstone'
-                                            : (item.day == null || isNaN(dayNum) || dayNum === 0)
+                                            : (dayStr === '' || dayStr === 'pre-week' || dayStr === 'preweek' || dayStr === '0' || isNaN(dayNum))
                                                 ? 'Pre-Week'
                                                 : `Day ${dayNum}`
                                         if (!acc[weekKey][dayKey]) acc[weekKey][dayKey] = []
