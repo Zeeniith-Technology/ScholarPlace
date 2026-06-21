@@ -70,17 +70,19 @@ export default function CapstoneTestPage() {
 
     const getDefaultCode = useCallback((problem: CodingProblem) => {
         const sig = problem.function_signature || ''
+        // Full-program templates: read input from stdin, print the answer to stdout.
+        // (The judge compiles and runs the whole file and compares printed output.)
         if (selectedLanguage === 'cpp') {
-            return `#include <iostream>\n#include <vector>\n#include <string>\n\nusing namespace std;\n\n${sig} {\n    // Write your solution here\n    \n}\n\nint main() {\n    // You can test your function here\n    return 0;\n}`
+            return `#include <bits/stdc++.h>\nusing namespace std;\n\n${sig ? `// Suggested helper: ${sig}\n\n` : ''}int main() {\n    // Read input from stdin (see the Input / Output format for this problem)\n    // Compute the answer\n    // Print the result to stdout\n    return 0;\n}`
         }
         if (selectedLanguage === 'c') {
-            return `#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n// ${sig}\n\nvoid solve() {\n    // Write your solution here\n}\n\nint main() {\n    solve();\n    return 0;\n}`
+            return `#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n${sig ? `/* Suggested helper: ${sig} */\n\n` : ''}int main() {\n    /* Read input from stdin, compute, print result to stdout */\n    return 0;\n}`
         }
         if (selectedLanguage === 'python') {
-            return `import sys\nimport math\n\n# ${sig}\n\ndef solve():\n    # Write your solution here\n    pass\n\nif __name__ == "__main__":\n    solve()`
+            return `import sys\n\n${sig ? `# Suggested helper: ${sig}\n\n` : ''}def main():\n    data = sys.stdin.read()\n    # Parse input, compute, and print the result to stdout\n\nif __name__ == "__main__":\n    main()`
         }
         if (selectedLanguage === 'javascript') {
-            return `/**\n * ${sig}\n */\n\nfunction solve() {\n    // Write your solution here\n}\n\n// console.log(solve());`
+            return `${sig ? `// Suggested helper: ${sig}\n\n` : ''}const data = require('fs').readFileSync(0, 'utf8');\n// Parse input, compute, and print the result with console.log()`
         }
         return sig
     }, [selectedLanguage])
