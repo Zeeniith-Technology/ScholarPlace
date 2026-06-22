@@ -2,6 +2,32 @@ import jwt from 'jsonwebtoken';
 import { getDB, fetchData } from '../methods.js';
 
 /**
+ * In-memory cache for the "college still exists" check so we don't hit the DB on
+ * every authenticated request. College deletion is rare, so a 5-minute staleness
+ * window is acceptable (a deleted college's users get logged out within 5 min).
+ * The number of colleges is small, so this Map stays tiny.
+ */
+const collegeValidCache = new Map(); // key: String(collegeId) -> { valid: boolean, ts: number }
+const COLLEGE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function isCollegeValid(collegeId) {
+    const key = String(collegeId);
+    const now = Date.now();
+    const cached = collegeValidCache.get(key);
+    if (cached && (now - cached.ts) < COLLEGE_CACHE_TTL_MS) {
+        return cached.valid;
+    }
+    const { ObjectId } = await import('mongodb');
+    const collegeFilter = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
+        ? { _id: new ObjectId(collegeId), deleted: false }
+        : { _id: collegeId, deleted: false };
+    const collegeCheck = await fetchData('tblCollage', { _id: 1 }, collegeFilter, {});
+    const valid = !!(collegeCheck.success && collegeCheck.data && collegeCheck.data.length > 0);
+    collegeValidCache.set(key, { valid, ts: now });
+    return valid;
+}
+
+/**
  * JWT Authentication Middleware
  * Verifies JWT token from Authorization header
  */
@@ -60,12 +86,7 @@ export const auth = async (req, res, next) => {
             const roleFromToken = (decoded.role || '').toLowerCase();
             const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
             if (collegeIdFromToken && isCollegeUser) {
-                const { ObjectId } = await import('mongodb');
-                const collegeFilter = typeof collegeIdFromToken === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdFromToken)
-                    ? { _id: new ObjectId(collegeIdFromToken), deleted: false }
-                    : { _id: collegeIdFromToken, deleted: false };
-                const collegeCheck = await fetchData('tblCollage', { _id: 1 }, collegeFilter, {});
-                if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
+                if (!(await isCollegeValid(collegeIdFromToken))) {
                     res.locals.responseData = {
                         success: false,
                         status: 401,
@@ -164,12 +185,7 @@ export const optionalAuth = async (req, res, next) => {
         const roleFromToken = (decoded.role || '').toLowerCase();
         const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
         if (collegeIdFromToken && isCollegeUser) {
-            const { ObjectId } = await import('mongodb');
-            const collegeFilter = typeof collegeIdFromToken === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeIdFromToken)
-                ? { _id: new ObjectId(collegeIdFromToken), deleted: false }
-                : { _id: collegeIdFromToken, deleted: false };
-            const collegeCheck = await fetchData('tblCollage', { _id: 1 }, collegeFilter, {});
-            if (!collegeCheck.success || !collegeCheck.data || collegeCheck.data.length === 0) {
+            if (!(await isCollegeValid(collegeIdFromToken))) {
                 return next();
             }
         }

@@ -38,11 +38,30 @@ export async function connectDB() {
         }
         db = client.db(process.env.DB_NAME);
         console.log(`MongoDB connected successfully to db ${process.env.DB_NAME} (Pool: ${maxPoolSize})`);
+
+        // Ensure critical hot-path indexes exist (idempotent — no-op if already present).
+        // Non-fatal: a failure here must not block startup.
+        await ensureIndexes(db).catch(err => console.warn('ensureIndexes warning:', err.message));
     } catch (error) {
         console.error('Database connection error:', error);
         // Retry logic could be added here, but usually let process crash and restart is safer
         throw error;
     }
+}
+
+/**
+ * Ensure critical hot-path indexes exist. Runs on every startup; createIndex is
+ * idempotent so existing indexes are untouched. Keep this list to the queries
+ * that run on hot paths for many concurrent students.
+ * @param {Object} database - MongoDB database instance
+ */
+async function ensureIndexes(database) {
+    // AI cache lookups filter by {student_id, interaction_type, week, created_at} and
+    // sort created_at desc. Without this index every AI request full-scans the table.
+    await database.collection('tblAIInteraction').createIndex(
+        { student_id: 1, interaction_type: 1, week: 1, created_at: -1 },
+        { name: 'ai_cache_lookup', background: true }
+    );
 }
 
 /**
@@ -320,18 +339,6 @@ export async function executeData(collectionName, data, operation, schema = null
                 filter: updateFilter._id ? { _id: updateFilter._id.toString() } : 'using custom filter (no _id)'
             }); */
 
-            // Verify document exists before updating (for debugging)
-            // Use the full filter if _id is not present
-            const docExists = await collection.findOne(updateFilter._id ? { _id: updateFilter._id } : updateFilter);
-            /* console.log('executeData: Document exists check:', {
-                found: !!docExists,
-                docId: docExists?._id?.toString() || 'N/A',
-                docIdType: typeof docExists?._id,
-                queryId: updateFilter._id?.toString() || 'N/A (using custom filter)',
-                idsMatch: updateFilter._id ? (docExists?._id?.toString() === updateFilter._id?.toString()) : 'N/A (no _id in filter)',
-                filterUsed: updateFilter._id ? 'by _id' : 'by custom filter'
-            }); */
-
             // Check if data already contains MongoDB update operators ($push, $set, $unset, etc.)
             const hasUpdateOperators = data && typeof data === 'object' && Object.keys(data).some(key => key.startsWith('$'));
 
@@ -379,19 +386,7 @@ export async function executeData(collectionName, data, operation, schema = null
                     data: result
                 };
             } else {
-                // Use updateOne instead of findOneAndUpdate for more reliable results
-                // First check if document exists
-                const exists = await collection.findOne(updateFilter);
-                if (!exists) {
-                    // console.log('executeData: Document not found with filter:', updateFilter);
-                    return {
-                        success: false,
-                        message: 'No document found matching the filter',
-                        data: null
-                    };
-                }
-
-                // Perform the update
+                // Single update: rely on matchedCount for "not found" (avoids a redundant pre-check query)
                 const updateResult = await collection.updateOne(
                     updateFilter,
                     updateData,
