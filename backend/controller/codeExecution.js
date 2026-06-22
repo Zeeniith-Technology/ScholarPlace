@@ -1,4 +1,32 @@
 import axios from 'axios';
+import crypto from 'crypto';
+
+// In-memory execution cache: dedup identical (language, versionIndex, code, stdin)
+// JDoodle calls. Deterministic problems → same inputs yield same output, so this
+// kills credits wasted on double-clicks and unchanged re-runs (the capstone editor
+// re-runs all test cases on every click). Transient API failures are NOT cached.
+const EXEC_CACHE_TTL_MS = 10 * 60 * 1000;
+const EXEC_CACHE_MAX = 5000;
+const execCache = new Map(); // key -> { data, ts }
+
+function execCacheKey(lang, versionIndex, code, stdin) {
+    return crypto.createHash('sha1')
+        .update(`${lang} ${versionIndex} ${code} ${stdin}`)
+        .digest('hex');
+}
+function execCacheGet(key) {
+    const hit = execCache.get(key);
+    if (hit && (Date.now() - hit.ts) < EXEC_CACHE_TTL_MS) return hit.data;
+    if (hit) execCache.delete(key);
+    return null;
+}
+function execCacheSet(key, data) {
+    if (execCache.size >= EXEC_CACHE_MAX) {
+        const oldest = execCache.keys().next().value;
+        if (oldest !== undefined) execCache.delete(oldest);
+    }
+    execCache.set(key, { data, ts: Date.now() });
+}
 
 export default class codeExecutionController {
   async executeCode(req, res, next) {
@@ -69,18 +97,24 @@ export default class codeExecutionController {
           const testInput = testCase.input || '';
           const expectedOutput = (testCase.output || testCase.expected_output || testCase.expectedOutput || '').trim();
 
-          // Execute with JDoodle API
+          // Execute with JDoodle API (cache identical executions to save credits)
           try {
-            const response = await axios.post('https://api.jdoodle.com/v1/execute', {
-              clientId: CLIENT_ID,
-              clientSecret: CLIENT_SECRET,
-              script: code,
-              language: jdoodleConfig.language,
-              versionIndex: jdoodleConfig.versionIndex,
-              stdin: testInput
-            });
+            const cacheKey = execCacheKey(jdoodleConfig.language, jdoodleConfig.versionIndex, code, testInput);
+            let data = execCacheGet(cacheKey);
+            if (!data) {
+              const response = await axios.post('https://api.jdoodle.com/v1/execute', {
+                clientId: CLIENT_ID,
+                clientSecret: CLIENT_SECRET,
+                script: code,
+                language: jdoodleConfig.language,
+                versionIndex: jdoodleConfig.versionIndex,
+                stdin: testInput
+              });
+              data = response.data;
+              execCacheSet(cacheKey, data); // deterministic result (incl. compile/runtime errors)
+            }
 
-            const { output, statusCode, memory, cpuTime } = response.data;
+            const { output, statusCode, memory, cpuTime } = data;
 
             // Check for compilation/runtime errors
             if (statusCode && statusCode !== 200) {

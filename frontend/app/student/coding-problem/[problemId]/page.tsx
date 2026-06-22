@@ -252,7 +252,7 @@ ${problem.function_signature} {
 
             const result = await response.json()
 
-            if (response.ok) {
+            if (response.ok && result.status === 'passed') {
                 // Store submission_id for "View code review" (AI review runs after pass)
                 const sid = result.submission_id
                 if (sid) setLastSubmissionId(typeof sid === 'string' ? sid : String(sid))
@@ -265,7 +265,7 @@ ${problem.function_signature} {
                 }
                 // Record DSA progress so week shows "Continue" (at least one problem solved)
                 const weekNum = problem?.week
-                if (weekNum && (result.status === 'passed' || result.success)) {
+                if (weekNum) {
                     try {
                         await fetch(`${apiBaseUrl}/student-progress/complete-coding-problem`, {
                             method: 'POST',
@@ -277,6 +277,16 @@ ${problem.function_signature} {
                         })
                     } catch (_) { /* non-blocking */ }
                 }
+            } else if (response.ok) {
+                // Submission ran but failed hidden test cases — show full results, keep them editing.
+                // (Run only checks sample cases; Submit grades all of them.)
+                setRunResult({
+                    success: false,
+                    message: result.message || 'Some test cases failed. Fix and run again.',
+                    status: 'failed',
+                    testResults: result.testResults || []
+                })
+                setCanSubmit(false)
             } else {
                 alert(result.message || 'Error submitting solution')
             }
