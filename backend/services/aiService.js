@@ -46,6 +46,33 @@ class AIService {
                 }
             });
             console.log(`[AIService] Initialized with model: ${modelName}`);
+
+            // Wrap generateContent with retry-on-transient-error. With many concurrent
+            // students, Gemini intermittently returns 429 (rate limit) / 503 (overloaded);
+            // a short exponential backoff lets the request succeed instead of surfacing
+            // as a 500 to the user. Permanent errors (e.g. 400) are re-thrown immediately.
+            const rawGenerate = this.model.generateContent.bind(this.model);
+            const isTransientAIError = (err) => {
+                const msg = (err && (err.message || String(err))) || '';
+                return /(\b429\b|\b500\b|\b503\b|overloaded|RESOURCE_EXHAUSTED|UNAVAILABLE|rate limit|try again later|ECONNRESET|ETIMEDOUT|fetch failed|socket hang up)/i.test(msg);
+            };
+            this.model.generateContent = async (...args) => {
+                const maxAttempts = 4; // 1 initial + 3 retries
+                let lastErr;
+                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                    try {
+                        return await rawGenerate(...args);
+                    } catch (err) {
+                        lastErr = err;
+                        if (attempt === maxAttempts || !isTransientAIError(err)) throw err;
+                        // Exponential backoff with jitter: ~0.4s, 0.8s, 1.6s
+                        const delay = Math.min(8000, 400 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 300);
+                        console.warn(`[AIService] Transient Gemini error (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms: ${err.message || err}`);
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                }
+                throw lastErr;
+            };
         } else {
             console.warn('[AIService] Gemini API key not found. AI features will not work.');
         }
