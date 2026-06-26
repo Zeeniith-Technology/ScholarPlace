@@ -24,7 +24,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
             <CRMSidebar />
             <div className="flex-1 ml-64 flex flex-col">
                 <CRMTopBar />
-                <main className="flex-1 p-8 overflow-y-auto">
+                <main className="flex-1 p-6 overflow-hidden flex flex-col">
                     {children}
                 </main>
             </div>

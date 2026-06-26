@@ -111,7 +111,7 @@ export default function KanbanBoard({ colleges, statuses, onStageChange, isSuper
         colleges.filter(c => c.pipeline_status_id === statusId);
 
     return (
-        <div className="flex h-[calc(100vh-180px)] overflow-x-auto overflow-y-hidden pb-4 space-x-4">
+        <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-4 gap-4 scroll-smooth [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             {statuses.map(status => (
                 <div
                     key={status._id}

@@ -38,8 +38,8 @@ export default function CollegesPage() {
     useEffect(() => { fetchData(); }, []);
 
     return (
-        <>
-            <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
                     <button
                         onClick={() => setView('kanban')}
@@ -95,6 +95,6 @@ export default function CollegesPage() {
                     onSuccess={() => { setAssignCollegeId(null); fetchData(); }}
                 />
             )}
-        </>
+        </div>
     );
 }
