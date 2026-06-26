@@ -149,6 +149,7 @@ async function migrateCodingProblems(dryRun = true) {
                 problem.updated_at = new Date();
                 problem.deleted = false;
                 problem.status = 'active';
+                problem.is_capstone = true; // All problems in this JSON are capstone
 
                 // Insert into database
                 await collection.insertOne(problem);

@@ -110,6 +110,22 @@ export default function KanbanBoard({ colleges, statuses, onStageChange, isSuper
     const getCollegesForStatus = (statusId: string) =>
         colleges.filter(c => c.pipeline_status_id === statusId);
 
+    if (statuses.length === 0) {
+        return (
+            <div className="flex flex-col flex-1 items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50">
+                <Building className="h-12 w-12 text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">No Pipeline Stages</h3>
+                <p className="text-gray-500 text-sm mb-4">You need to set up your pipeline stages before managing colleges.</p>
+                <Link 
+                    href="/crm/pipeline-setup" 
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                    Go to Pipeline Setup
+                </Link>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-4 gap-4 scroll-smooth [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             {statuses.map(status => (
