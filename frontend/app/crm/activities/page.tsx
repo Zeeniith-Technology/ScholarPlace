@@ -14,7 +14,7 @@ export default function ActivitiesPage() {
 
     const fetchActivities = async () => {
         try {
-            const res = await crmApi.post('/crm/activities/list', {});
+            const res: any = await crmApi.post('/crm/activities/list', {});
             if (res.success) {
                 setActivities(res.data);
             }

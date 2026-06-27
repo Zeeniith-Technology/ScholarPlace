@@ -35,7 +35,7 @@ export default function CollegeDetailPage() {
 
     const fetchData = async () => {
         try {
-            const [colRes, actRes, conRes, taskRes] = await Promise.all([
+            const [colRes, actRes, conRes, taskRes]: any[] = await Promise.all([
                 crmApi.post('/crm/colleges/get', { id: collegeId }),
                 crmApi.post('/crm/activities/list', { college_id: collegeId }),
                 crmApi.post('/crm/contacts/list', { college_id: collegeId }),

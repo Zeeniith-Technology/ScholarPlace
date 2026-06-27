@@ -51,6 +51,7 @@ export interface CRMActivity {
     outcome: string;
     activity_date: string;
     next_follow_up_date?: string;
+    created_at?: string;
 }
 
 export interface CRMTask {
@@ -60,6 +61,7 @@ export interface CRMTask {
     assigned_to_name: string;
     title: string;
     due_date: string;
+    description?: string;
     priority: 'high' | 'medium' | 'low';
     is_completed: boolean;
 }

@@ -14,7 +14,7 @@ export default function ContactsPage() {
 
     const fetchContacts = async () => {
         try {
-            const res = await crmApi.post('/crm/contacts/list', {});
+            const res: any = await crmApi.post('/crm/contacts/list', {});
             if (res.success) {
                 setContacts(res.data);
             }

@@ -14,7 +14,7 @@ export default function DealsPage() {
 
     const fetchDeals = async () => {
         try {
-            const res = await crmApi.post('/crm/deals/list', {});
+            const res: any = await crmApi.post('/crm/deals/list', {});
             if (res.success) {
                 setDeals(res.data);
             }

@@ -14,7 +14,7 @@ export default function TasksPage() {
 
     const fetchTasks = async () => {
         try {
-            const res = await crmApi.post('/crm/tasks/list', {});
+            const res: any = await crmApi.post('/crm/tasks/list', {});
             if (res.success) {
                 setTasks(res.data);
             }

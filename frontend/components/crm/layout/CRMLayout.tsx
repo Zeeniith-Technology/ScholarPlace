@@ -20,9 +20,9 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="h-screen w-full bg-gray-50 overflow-hidden">
             <CRMSidebar />
-            <div className="flex-1 ml-64 flex flex-col">
+            <div className="flex flex-col h-full ml-64 w-[calc(100%-16rem)]">
                 <CRMTopBar />
                 <main className="flex-1 p-6 overflow-hidden flex flex-col">
                     {children}
