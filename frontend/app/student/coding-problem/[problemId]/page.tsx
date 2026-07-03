@@ -565,12 +565,28 @@ ${problem.function_signature} {
                                             theme="vs-dark"
                                             value={solution}
                                             onChange={(value) => setSolution(value || '')}
+                                            onMount={(editor: any) => {
+                                                // Anti-cheat: block pasting external code into daily DSA problems.
+                                                // Catches keyboard (Ctrl/Cmd+V), right-click, and menu paste.
+                                                const block = (e: any) => { e.preventDefault(); e.stopPropagation() }
+                                                editor.getContainerDomNode().addEventListener('paste', block, true)
+                                                editor.onKeyDown((e: any) => {
+                                                    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') {
+                                                        e.preventDefault(); e.stopPropagation()
+                                                    }
+                                                    // Shift+Insert is an alternate paste shortcut
+                                                    if (e.shiftKey && e.code === 'Insert') {
+                                                        e.preventDefault(); e.stopPropagation()
+                                                    }
+                                                })
+                                            }}
                                             options={{
                                                 minimap: { enabled: false },
                                                 fontSize: 14,
                                                 scrollBeyondLastLine: false,
                                                 automaticLayout: true,
                                                 readOnly: false,
+                                                formatOnPaste: false,
                                             }}
                                         />
                                     </div>
