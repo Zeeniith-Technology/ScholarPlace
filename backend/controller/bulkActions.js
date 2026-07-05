@@ -164,12 +164,12 @@ class BulkActionsController {
                 person_role: { $regex: /^student$/i },
                 ...(myCollegeId ? { person_collage_id: myCollegeId } : {}),
             };
-            // DeptTPC: restrict to their department by default
-            if (role.toLowerCase() === 'depttpc' && myDeptId) {
-                studentFilter.department_id = myDeptId;
-            }
-            // Optional extra department filter from request (TPC may filter by dept)
-            if (department_id) {
+            // DeptTPC: always restricted to their own department — the request-body
+            // department_id must NOT override this (would let a DeptTPC export another
+            // department's students). Only TPC/admin may filter by a department.
+            if (role.toLowerCase() === 'depttpc') {
+                studentFilter.department_id = myDeptId || '__NO_DEPT__';
+            } else if (department_id) {
                 studentFilter.department_id = department_id;
             }
 

@@ -1,5 +1,7 @@
 
 import { fetchData, executeData } from '../methods.js';
+import { ObjectId } from 'mongodb';
+import { personBelongsToTenant } from '../utils/tenantKeys.js';
 import tpcController from './tpc.js'; // Reuse getUserInfo helper
 
 /**
@@ -234,10 +236,51 @@ export default class tpcCodingController {
                 return next();
             }
 
-            // 1. Verify Access (TPC Scope)
-            // Reuse logic or trust middleware (assuming TPC role check is done)
-            // For depth, we could verify student belongs to TPC's scope, 
-            // but strict role middleware + studentId check is usually sufficient for internal tools.
+            // 1. Verify Access (SECURITY: without this, any authenticated user could
+            // fetch any student's submissions and source code across colleges).
+            const userInfo = await this.tpcBase.getUserInfo(userId);
+            if (!userInfo.found) {
+                res.locals.responseData = { success: false, status: 403, message: 'Unauthorized' };
+                return next();
+            }
+            const caller = userInfo.user;
+            const callerRole = (caller.person_role || '').toLowerCase();
+
+            if (callerRole !== 'superadmin' && callerRole !== 'admin') {
+                if (callerRole !== 'tpc' && callerRole !== 'depttpc') {
+                    res.locals.responseData = { success: false, status: 403, message: 'TPC access required' };
+                    return next();
+                }
+
+                // Fetch the target student and confirm they belong to the caller's tenant
+                const sidStr = String(studentId);
+                const sidFilter = /^[0-9a-fA-F]{24}$/.test(sidStr)
+                    ? { $or: [{ _id: sidStr }, { _id: new ObjectId(sidStr) }] }
+                    : { _id: sidStr };
+                const personRes = await fetchData('tblPersonMaster',
+                    { person_collage_id: 1, department_id: 1, department: 1 }, sidFilter);
+                const person = personRes?.data?.[0];
+
+                const callerCollege = caller.person_collage_id || caller.collage_id || caller.college_id;
+                const callerDeptId = callerRole === 'depttpc' ? caller.department_id : null;
+                const callerDeptName = callerRole === 'depttpc' ? caller.department : null;
+
+                // College must match; for DeptTPC the department must match too
+                // (by id, or by name to mirror getCodingStats's legacy fallback)
+                const deptNameMatches = callerDeptName && person &&
+                    String(person.department || '').trim().toLowerCase() === String(callerDeptName).trim().toLowerCase();
+                const allowed = person && (
+                    callerRole === 'tpc'
+                        ? personBelongsToTenant(person, callerCollege)
+                        : (personBelongsToTenant(person, callerCollege, callerDeptId) ||
+                           (personBelongsToTenant(person, callerCollege) && deptNameMatches))
+                );
+
+                if (!allowed) {
+                    res.locals.responseData = { success: false, status: 403, message: 'Student not in your college/department' };
+                    return next();
+                }
+            }
 
             // 2. Fetch Passed Submissions
             const submissionRes = await fetchData('tblCodingSubmissions',

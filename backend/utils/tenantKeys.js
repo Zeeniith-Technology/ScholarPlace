@@ -138,7 +138,8 @@ export function buildPersonMasterFilter(collegeId, options = {}) {
             if (trimmed) {
                 deptConditions.push({ department: trimmed });
                 try {
-                    deptConditions.push({ department: new RegExp(`^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+                    // Whitespace-tolerant: stored department names sometimes carry stray spaces
+                    deptConditions.push({ department: new RegExp(`^\\s*${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') });
                 } catch (_) {}
             }
         }
@@ -151,7 +152,8 @@ export function buildPersonMasterFilter(collegeId, options = {}) {
                 { [KEY_DEPARTMENT]: trimmed },
             ];
             try {
-                filter.$or.push({ department: new RegExp(`^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+                // Whitespace-tolerant: stored department names sometimes carry stray spaces
+                filter.$or.push({ department: new RegExp(`^\\s*${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i') });
             } catch (_) {}
         }
     }

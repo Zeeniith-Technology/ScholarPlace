@@ -2,7 +2,7 @@ import { executeData, fetchData, getDB } from '../methods.js';
 import practiceTestSchema from '../schema/practiceTest.js';
 import { ObjectId } from 'mongodb';
 import aiService from '../services/aiService.js';
-import { getCollegeAndDepartmentForStudent } from '../utils/tenantKeys.js';
+import { getCollegeAndDepartmentForStudent, getTenantFromUser, buildPersonMasterFilter, buildStudentIdFilter } from '../utils/tenantKeys.js';
 import testAnalysisSchema from '../schema/testAnalysis.js';
 import studentProgressController from './studentProgress.js';
 
@@ -272,9 +272,12 @@ export default class practiceTestController {
             // Build filter - merge with request filter
             let finalFilter = { ...(filter || {}) };
 
+            // Tenant scoping by role (SECURITY: without this, TPC/DeptTPC would see
+            // every college's practice tests — cross-college data leak).
+            const normalizedRole = (userRole || '').toString().toLowerCase();
+
             // If student, only show their own tests (unless already specified in filter)
-            // Check both 'Student' and 'student' for role
-            if ((userRole === 'Student' || userRole === 'student') && userId) {
+            if (normalizedRole === 'student' && userId) {
                 // Convert userId to string for consistent matching
                 const studentIdString = userId.toString();
 
@@ -291,6 +294,47 @@ export default class practiceTestController {
                 } else if (!finalFilter.student_id) {
                     finalFilter.student_id = studentIdString;
                 }
+            } else if (normalizedRole === 'tpc' || normalizedRole === 'depttpc') {
+                // TPC: all students in their college. DeptTPC: their department only.
+                // Scope via PersonMaster student IDs (per tenantKeys.js pattern) so legacy
+                // practice-test records without college_id/department_id are still scoped
+                // correctly by who the student is.
+                const { collegeId, departmentId, departmentName } = getTenantFromUser(req.user);
+
+                if (!collegeId) {
+                    // No college on the token → return nothing rather than everything
+                    res.locals.responseData = {
+                        success: true,
+                        status: 200,
+                        message: 'Practice tests fetched successfully',
+                        data: []
+                    };
+                    return next();
+                }
+
+                const personFilter = buildPersonMasterFilter(collegeId, {
+                    ...(normalizedRole === 'depttpc' ? { departmentId, departmentName } : {}),
+                    role: 'student',
+                    includeInactive: true, // include inactive students' history in monitoring
+                });
+                const studentsRes = await fetchData('tblPersonMaster', { _id: 1 }, personFilter);
+                const allowedIds = (studentsRes.data || []).map(s => s._id);
+
+                if (allowedIds.length === 0) {
+                    res.locals.responseData = {
+                        success: true,
+                        status: 200,
+                        message: 'Practice tests fetched successfully',
+                        data: []
+                    };
+                    return next();
+                }
+
+                const { filter: studentIdFilter } = buildStudentIdFilter(allowedIds);
+                // AND the tenant scope with any client filter so it can only narrow, never widen
+                finalFilter = Object.keys(finalFilter).length > 0
+                    ? { $and: [finalFilter, studentIdFilter] }
+                    : studentIdFilter;
             }
             // Admin and Superadmin can view all or filter by student_id
 
@@ -363,8 +407,6 @@ export default class practiceTestController {
                         student_rollno: student?.person_rollno || ''
                     };
                 });
-
-                console.log('[PracticeTest] Enriched data sample:', enrichedData[0]);
 
                 res.locals.responseData = {
                     success: true,
