@@ -887,9 +887,12 @@ export default class tpcManagementController {
                 dept_tpc_contact: p.contact_number || null
             }));
 
-            // Legacy: merge with tblDeptTPC if any records exist
+            // Legacy: merge with tblDeptTPC if any records exist.
+            // SECURITY: project only safe fields — an empty projection leaked
+            // dept_tpc_password hashes to the browser.
+            const legacyProjection = { _id: 1, department_id: 1, dept_tpc_name: 1, dept_tpc_email: 1, dept_tpc_contact: 1, dept_tpc_status: 1 };
             const legacyFilter = { dept_tpc_deleted: false };
-            const legacyResponse = await fetchData(deptTpcTable, {}, legacyFilter, {});
+            const legacyResponse = await fetchData(deptTpcTable, legacyProjection, legacyFilter, {});
             const legacyList = legacyResponse.success && legacyResponse.data ? legacyResponse.data : [];
             const legacyIds = new Set(legacyList.map(l => l.department_id?.toString()));
             const combined = [

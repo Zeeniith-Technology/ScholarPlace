@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { useRouter } from 'next/navigation'
-import { getAuthHeader, clearAuth } from '@/utils/auth'
+import { getAuthHeader, clearAuth, startImpersonation } from '@/utils/auth'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -64,61 +65,67 @@ export default function SuperadminStudentsPage() {
     person_status: 'active',
   })
   const [isCreating, setIsCreating] = useState(false)
+  // Server-side pagination + department filter
+  const [departments, setDepartments] = useState<any[]>([])
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all')
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
+  const PAGE_SIZE = 50
+  // Inactive-student radar: '' = everyone, otherwise days since last login
+  const [inactiveFilter, setInactiveFilter] = useState<string>('')
+  // Account-control actions (suspend/activate, reset password, move college)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [actionStudent, setActionStudent] = useState<any>(null)
+  const [actionType, setActionType] = useState<'suspend' | 'activate' | 'reset' | 'move' | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [moveCollege, setMoveCollege] = useState('')
+  const [moveDepartment, setMoveDepartment] = useState('')
+  const [isActing, setIsActing] = useState(false)
+
+  // Auth is enforced by SuperadminLayout. Reference data loads once; students
+  // reload on any filter/page change. Filter changes reset to page 1.
+  useEffect(() => {
+    fetchColleges()
+    fetchDepartments()
+    // Deep link from the dashboard's "Add Student" quick action
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('create') === '1') {
+      setShowCreateModal(true)
+    }
+  }, [])
 
   useEffect(() => {
-    checkAuth()
-    fetchColleges()
-    fetchStudents()
-  }, [selectedCollege, statusFilter])
+    setPage(1)
+  }, [selectedCollege, selectedDepartment, statusFilter, inactiveFilter])
 
-  const checkAuth = async () => {
+  // Changing college invalidates a department picked under the previous college
+  useEffect(() => {
+    setSelectedDepartment('all')
+  }, [selectedCollege])
+
+  useEffect(() => {
+    fetchStudents()
+  }, [selectedCollege, selectedDepartment, statusFilter, inactiveFilter, page])
+
+  const fetchDepartments = async () => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       const authHeader = getAuthHeader()
-      if (!authHeader) {
-        router.push('/superadmin/login')
-        return
-      }
-      
-      // Verify authentication by fetching profile (requires valid JWT token)
-      const profileRes = await fetch(`${apiBaseUrl}/profile/get`, {
+      if (!authHeader) return
+      const response = await fetch(`${apiBaseUrl}/department/list`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({
+          filter: { deleted: false },
+          projection: { department_name: 1, department_code: 1, collage_id: 1, department_college_id: 1 },
+          options: { sort: { department_name: 1 } },
+        }),
       })
-      
-      // Only redirect on 401/403 (authentication errors)
-      if (profileRes.status === 401 || profileRes.status === 403) {
-        console.log('[Students Page] Authentication failed, clearing token and redirecting to login')
-        clearAuth()
-        window.location.href = '/superadmin/login'
-        return
-      }
-
-      if (!profileRes.ok) {
-        console.error('[Students Page] Profile fetch failed with status:', profileRes.status)
-        // Don't redirect on other errors
-        return
-      }
-
-      const profileResult = await profileRes.json()
-      const userRole = profileResult.data?.role || profileResult.data?.person_role
-      if (!profileResult.success || userRole !== 'superadmin') {
-        console.log('[Students Page] Invalid role or failed profile check, clearing token and redirecting to login')
-        clearAuth()
-        window.location.href = '/superadmin/login'
-        return
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) setDepartments(data.data || [])
       }
     } catch (error) {
-      console.error('[Students Page] Auth verification error:', error)
-      // Only redirect if we have no token
-      const authHeader = getAuthHeader()
-      if (!authHeader) {
-        clearAuth()
-        window.location.href = '/superadmin/login'
-      }
+      console.error('Error fetching departments:', error)
     }
   }
 
@@ -139,14 +146,18 @@ export default function SuperadminStudentsPage() {
         },
         body: JSON.stringify({
           filter: {},
-          projection: { collage_id: 1, collage_name: 1 },
+          // tblCollage has no collage_id field — the id IS _id
+          projection: { collage_name: 1 },
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setColleges(data.data || [])
+          setColleges((data.data || []).map((c: any) => ({
+            ...c,
+            collage_id: String(c._id), // normalize for dropdown + name lookups
+          })))
         }
       }
     } catch (error) {
@@ -164,10 +175,12 @@ export default function SuperadminStudentsPage() {
         return
       }
 
-      const body: Record<string, unknown> = { limit: 500 }
+      const body: Record<string, unknown> = { limit: PAGE_SIZE, page }
       if (searchTerm.trim()) body.search = searchTerm.trim()
       if (selectedCollege !== 'all') body.collegeId = selectedCollege
+      if (selectedDepartment !== 'all') body.departmentId = selectedDepartment
       if (statusFilter !== 'all') body.status = statusFilter
+      if (inactiveFilter) body.inactiveDays = parseInt(inactiveFilter)
 
       const response = await fetch(`${apiBaseUrl}/superadmin/analytics/students`, {
         method: 'POST',
@@ -181,18 +194,21 @@ export default function SuperadminStudentsPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          // API returns { data: { students: [...] } } or { data: [...] }
-          const studentsData = Array.isArray(data.data.students) 
-            ? data.data.students 
-            : Array.isArray(data.data) 
-            ? data.data 
+          // API returns { data: { students: [...], pagination } } or { data: [...] }
+          const studentsData = Array.isArray(data.data.students)
+            ? data.data.students
+            : Array.isArray(data.data)
+            ? data.data
             : []
           setStudents(studentsData)
+          setPagination(data.data.pagination || null)
         } else {
           setStudents([])
+          setPagination(null)
         }
       } else {
         setStudents([])
+        setPagination(null)
       }
     } catch (error) {
       console.error('Error fetching students:', error)
@@ -208,7 +224,11 @@ export default function SuperadminStudentsPage() {
     await fetchStudents()
   }
 
-  const handleSearch = () => fetchStudents()
+  const handleSearch = () => {
+    // New search always starts at page 1; if already there, refetch directly
+    if (page !== 1) setPage(1)
+    else fetchStudents()
+  }
 
   const fetchStudentDetail = async (student: any) => {
     try {
@@ -323,9 +343,144 @@ export default function SuperadminStudentsPage() {
     setNewStudent({ ...newStudent, person_password: password })
   }
 
+  /** "3d ago" / "2h ago" / "Never" from an ISO last_login timestamp */
+  const formatLastActive = (iso: string | null | undefined) => {
+    if (!iso) return 'Never'
+    const ms = Date.now() - new Date(iso).getTime()
+    if (isNaN(ms)) return 'Never'
+    const mins = Math.floor(ms / 60000)
+    if (mins < 60) return mins <= 1 ? 'Just now' : `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days}d ago`
+    return new Date(iso).toLocaleDateString()
+  }
+
+  /** amber past 7 days, red past 14, neutral otherwise */
+  const lastActiveColor = (iso: string | null | undefined) => {
+    if (!iso) return 'text-red-600'
+    const days = (Date.now() - new Date(iso).getTime()) / 86400000
+    if (days >= 14) return 'text-red-600'
+    if (days >= 7) return 'text-amber-600'
+    return 'text-neutral-light'
+  }
+
+  const openAction = (student: any, type: 'suspend' | 'activate' | 'reset' | 'move') => {
+    setActionStudent(student)
+    setActionType(type)
+    setOpenMenuId(null)
+    setNewPassword('')
+    setMoveCollege('')
+    setMoveDepartment('')
+  }
+
+  const closeAction = () => {
+    setActionStudent(null)
+    setActionType(null)
+  }
+
+  const performAction = async () => {
+    if (!actionStudent || !actionType) return
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    const authHeader = getAuthHeader()
+    if (!authHeader) {
+      showToast('Authentication required. Please login again.', 'error')
+      return
+    }
+
+    let endpoint = ''
+    let body: Record<string, unknown> = { studentId: actionStudent.studentId }
+    if (actionType === 'suspend' || actionType === 'activate') {
+      endpoint = '/superadmin/students/update-status'
+      body.status = actionType === 'suspend' ? 'suspended' : 'active'
+    } else if (actionType === 'reset') {
+      if (newPassword.length < 8) {
+        showToast('Password must be at least 8 characters', 'warning')
+        return
+      }
+      endpoint = '/superadmin/students/reset-password'
+      body.newPassword = newPassword
+    } else if (actionType === 'move') {
+      if (!moveCollege || !moveDepartment) {
+        showToast('Select both a college and a department', 'warning')
+        return
+      }
+      endpoint = '/superadmin/students/move'
+      body.collegeId = moveCollege
+      body.departmentId = moveDepartment
+    }
+
+    try {
+      setIsActing(true)
+      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify(body),
+      })
+      const data = await response.json()
+      if (data.success) {
+        showToast(data.message || 'Done', 'success')
+        closeAction()
+        fetchStudents()
+      } else {
+        showToast(data.message || 'Action failed', 'error')
+      }
+    } catch (error) {
+      console.error('Error performing student action:', error)
+      showToast('Action failed', 'error')
+    } finally {
+      setIsActing(false)
+    }
+  }
+
+  /** Start a read-only "View As" session for this student and open their dashboard */
+  const handleViewAs = async (student: any) => {
+    setOpenMenuId(null)
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    const authHeader = getAuthHeader()
+    if (!authHeader) {
+      showToast('Authentication required. Please login again.', 'error')
+      return
+    }
+    try {
+      const res = await fetch(`${apiBaseUrl}/superadmin/impersonate/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ studentId: student.studentId }),
+      })
+      const data = await res.json()
+      if (data.success && data.data?.token) {
+        startImpersonation(data.data.token, {
+          studentId: data.data.student.id,
+          studentName: data.data.student.name,
+          studentEmail: data.data.student.email,
+        })
+        // Full navigation so the student token is picked up cleanly everywhere
+        window.location.href = '/student/dashboard'
+      } else {
+        showToast(data.message || 'Could not start View As', 'error')
+      }
+    } catch (error) {
+      console.error('Error starting impersonation:', error)
+      showToast('Could not start View As', 'error')
+    }
+  }
+
+  const generateResetPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let password = ''
+    for (let i = 0; i < 10; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setNewPassword(password)
+  }
+
   const displayStudents = Array.isArray(students) ? students : []
 
   return (
+
+    <SuperadminLayout>
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -396,7 +551,7 @@ export default function SuperadminStudentsPage() {
 
         {/* Filters */}
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="md:col-span-2 flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-light" />
@@ -425,6 +580,24 @@ export default function SuperadminStudentsPage() {
               ]}
             />
             <Select
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Departments' },
+                // When a college is chosen, only show its departments
+                ...departments
+                  .filter((d) => {
+                    if (selectedCollege === 'all') return true
+                    const deptCollege = String(d.collage_id || d.department_college_id || '')
+                    return deptCollege === selectedCollege
+                  })
+                  .map((d) => ({
+                    value: String(d._id),
+                    label: d.department_name || d.department_code || 'Unknown'
+                  }))
+              ]}
+            />
+            <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
@@ -435,14 +608,49 @@ export default function SuperadminStudentsPage() {
               ]}
             />
           </div>
+          {/* Inactive-student radar: last login older than N days (or never) */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            <span className="text-sm text-neutral-light flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Last login:
+            </span>
+            <div className="flex items-center gap-1 bg-background-elevated rounded-lg p-1">
+              {[
+                { value: '', label: 'Everyone' },
+                { value: '7', label: '7d+ inactive' },
+                { value: '14', label: '14d+ inactive' },
+                { value: '30', label: '30d+ inactive' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setInactiveFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    inactiveFilter === opt.value ? 'bg-white shadow text-neutral' : 'text-neutral-light hover:text-neutral'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {inactiveFilter && (
+              <span className="text-xs text-amber-600 font-medium">
+                Showing students who haven't logged in for {inactiveFilter}+ days (includes never-logged-in)
+              </span>
+            )}
+          </div>
         </Card>
 
         {/* Students Table */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-neutral">
-              Students ({displayStudents.length})
+              Students ({pagination ? pagination.total : displayStudents.length})
             </h2>
+            {pagination && pagination.totalPages > 1 && (
+              <span className="text-sm text-neutral-light">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+            )}
           </div>
 
           {isLoading ? (
@@ -458,6 +666,7 @@ export default function SuperadminStudentsPage() {
                     <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Email</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">College</th>
                     <th className="text-center py-3 px-4 text-sm font-semibold text-neutral">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Last Active</th>
                     <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Days Completed</th>
                     <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Avg Score</th>
                     <th className="text-center py-3 px-4 text-sm font-semibold text-neutral">Actions</th>
@@ -466,7 +675,7 @@ export default function SuperadminStudentsPage() {
                 <tbody>
                   {displayStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-neutral-light">
+                      <td colSpan={8} className="py-8 text-center text-neutral-light">
                         No students found
                       </td>
                     </tr>
@@ -476,7 +685,7 @@ export default function SuperadminStudentsPage() {
                         <td className="py-3 px-4 text-sm text-neutral">{student.name || 'N/A'}</td>
                         <td className="py-3 px-4 text-sm text-neutral-light">{student.email}</td>
                         <td className="py-3 px-4 text-sm text-neutral-light">
-                          {colleges.find(c => c.collage_id === student.collegeId)?.collage_name || 'N/A'}
+                          {colleges.find(c => String(c.collage_id) === String(student.collegeId))?.collage_name || 'N/A'}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
@@ -496,25 +705,115 @@ export default function SuperadminStudentsPage() {
                             {student.status}
                           </span>
                         </td>
+                        <td className={`py-3 px-4 text-sm text-right whitespace-nowrap ${lastActiveColor(student.lastLogin)}`}>
+                          {formatLastActive(student.lastLogin)}
+                        </td>
                         <td className="py-3 px-4 text-sm text-neutral text-right">{student.progress.totalDaysCompleted}</td>
                         <td className="py-3 px-4 text-sm text-neutral text-right">
                           <span className="font-semibold">{student.progress.averageScore}%</span>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => fetchStudentDetail(student)}
-                            className="p-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => fetchStudentDetail(student)}
+                              className="p-2"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <div className="relative">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setOpenMenuId(openMenuId === student.studentId ? null : student.studentId)}
+                                className="p-2"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                              {openMenuId === student.studentId && (
+                                <>
+                                  <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                                  <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-background-surface border border-neutral-light/20 rounded-lg shadow-lg py-1 text-left">
+                                    <button
+                                      onClick={() => handleViewAs(student)}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral hover:bg-background-elevated"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                      View as (read-only)
+                                    </button>
+                                    <div className="my-1 border-t border-neutral-light/10" />
+                                    {student.status === 'suspended' ? (
+                                      <button
+                                        onClick={() => openAction(student, 'activate')}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-background-elevated"
+                                      >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Activate account
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => openAction(student, 'suspend')}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-background-elevated"
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                        Suspend account
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => openAction(student, 'reset')}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral hover:bg-background-elevated"
+                                    >
+                                      <RefreshCw className="w-4 h-4" />
+                                      Reset password
+                                    </button>
+                                    <button
+                                      onClick={() => openAction(student, 'move')}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral hover:bg-background-elevated"
+                                    >
+                                      <Building2 className="w-4 h-4" />
+                                      Move college/dept
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
+
+              {/* Pagination controls */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-light/10">
+                  <p className="text-sm text-neutral-light">
+                    Showing {(pagination.page - 1) * pagination.limit + 1}
+                    –{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={page <= 1 || isLoading}
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-neutral px-2">{pagination.page} / {pagination.totalPages}</span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={page >= pagination.totalPages || isLoading}
+                      onClick={() => setPage(p => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </Card>
@@ -737,6 +1036,126 @@ export default function SuperadminStudentsPage() {
           </div>
         )}
 
+        {/* Account-control action modal (suspend / activate / reset / move) */}
+        {actionStudent && actionType && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-xl max-w-md w-full">
+              <div className="border-b border-neutral-light/20 p-5 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-neutral">
+                  {actionType === 'suspend' && 'Suspend Account'}
+                  {actionType === 'activate' && 'Activate Account'}
+                  {actionType === 'reset' && 'Reset Password'}
+                  {actionType === 'move' && 'Move Student'}
+                </h2>
+                <Button variant="secondary" size="sm" onClick={closeAction} className="p-2">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="p-3 rounded-lg bg-background-elevated">
+                  <p className="text-sm font-medium text-neutral">{actionStudent.name}</p>
+                  <p className="text-xs text-neutral-light">{actionStudent.email}</p>
+                </div>
+
+                {actionType === 'suspend' && (
+                  <p className="text-sm text-neutral">
+                    Suspending blocks this student from logging in until you activate them again.
+                    Their progress and test data are kept.
+                  </p>
+                )}
+                {actionType === 'activate' && (
+                  <p className="text-sm text-neutral">
+                    This restores login access for the student.
+                  </p>
+                )}
+
+                {actionType === 'reset' && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral mb-2">
+                      New Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Min 8 characters"
+                        className="flex-1"
+                      />
+                      <Button variant="secondary" onClick={generateResetPassword} className="px-4">
+                        Generate
+                      </Button>
+                    </div>
+                    <p className="text-xs text-neutral-light mt-1">
+                      Share this password with the student — it is not emailed automatically.
+                    </p>
+                  </div>
+                )}
+
+                {actionType === 'move' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral mb-2">
+                        Target College <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={moveCollege}
+                        onChange={(e) => { setMoveCollege(e.target.value); setMoveDepartment('') }}
+                        options={[
+                          { value: '', label: 'Select College' },
+                          ...colleges.map((c) => ({ value: c.collage_id || '', label: c.collage_name || 'Unknown' })),
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral mb-2">
+                        Target Department <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={moveDepartment}
+                        onChange={(e) => setMoveDepartment(e.target.value)}
+                        disabled={!moveCollege}
+                        options={[
+                          { value: '', label: moveCollege ? 'Select Department' : 'Pick a college first' },
+                          ...departments
+                            .filter((d) => String(d.collage_id || d.department_college_id || '') === moveCollege)
+                            .map((d) => ({ value: String(d._id), label: d.department_name || d.department_code || 'Unknown' })),
+                        ]}
+                      />
+                    </div>
+                    <p className="text-xs text-neutral-light">
+                      The server rejects the move if the department doesn't belong to the selected college.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="primary"
+                    onClick={performAction}
+                    disabled={isActing}
+                    className={`flex-1 ${actionType === 'suspend' ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                  >
+                    {isActing
+                      ? 'Working...'
+                      : actionType === 'suspend'
+                      ? 'Suspend'
+                      : actionType === 'activate'
+                      ? 'Activate'
+                      : actionType === 'reset'
+                      ? 'Reset Password'
+                      : 'Move Student'}
+                  </Button>
+                  <Button variant="secondary" onClick={closeAction}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Create Student Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -886,5 +1305,6 @@ export default function SuperadminStudentsPage() {
         />
       )}
     </div>
+    </SuperadminLayout>
   )
 }

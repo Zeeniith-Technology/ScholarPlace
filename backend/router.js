@@ -20,6 +20,10 @@ import testAnalysisController from './controller/testAnalysis.js';
 import tpcController from './controller/tpc.js';
 import tpcManagementController from './controller/tpcManagement.js';
 import errorLogController from './controller/superadmin/errorLogs.js';
+import studentAdminController from './controller/superadmin/studentAdmin.js';
+import announcementController from './controller/announcements.js';
+import settingsController from './controller/superadmin/settings.js';
+import impersonationController from './controller/superadmin/impersonation.js';
 
 import questionController from './controller/questionController.js';
 import PasswordResetController from './controller/passwordReset.js';
@@ -28,6 +32,7 @@ import DeptTestController from './controller/deptTest.js';
 import * as codingProblemsController from './controller/codingProblems.js';
 import { responsedata } from './methods.js';
 import { auth, requireRole, optionalAuth } from './middleware/auth.js';
+import { requireAIEnabled } from './middleware/aiGate.js';
 import tpcCodingController from './controller/tpcCoding.js';
 import bugReportController from './controller/bugReport.js';
 import contactController from './controller/contactController.js';
@@ -284,26 +289,26 @@ router.post('/test-analysis/weekly', auth, testAnalysis.analyzeWeeklyTest.bind(t
 // Execute code: All authenticated users (students can test their code)
 router.post('/code/execute', auth, codeExecution.executeCode.bind(codeExecution), responsedata);
 
-// AI Routes
+// AI Routes — guarded by the ai_features_enabled kill-switch (Platform Settings)
 // Code Review: Students can get AI feedback on their code
-router.post('/ai/code-review', auth, ai.reviewCode.bind(ai), responsedata);
+router.post('/ai/code-review', auth, requireAIEnabled, ai.reviewCode.bind(ai), responsedata);
 // AI Tutor Hint: Get hints for coding problems (max 3 per problem)
-router.post('/ai/hint', auth, ai.getHint.bind(ai), responsedata);
+router.post('/ai/hint', auth, requireAIEnabled, ai.getHint.bind(ai), responsedata);
 // Generate Learning Path: Personalized learning recommendations
-router.post('/ai/learning-path', auth, ai.generateLearningPath.bind(ai), responsedata);
+router.post('/ai/learning-path', auth, requireAIEnabled, ai.generateLearningPath.bind(ai), responsedata);
 // Generate Questions: AI-generated practice questions
-router.post('/ai/generate-questions', auth, ai.generateQuestions.bind(ai), responsedata);
+router.post('/ai/generate-questions', auth, requireAIEnabled, ai.generateQuestions.bind(ai), responsedata);
 // Analyze Performance: AI performance analysis and feedback
-router.post('/ai/analyze-performance', auth, ai.analyzePerformance.bind(ai), responsedata);
+router.post('/ai/analyze-performance', auth, requireAIEnabled, ai.analyzePerformance.bind(ai), responsedata);
 // Answer Question: AI tutor answers student questions (scope-restricted)
-router.post('/ai/answer-question', auth, ai.answerQuestion.bind(ai), responsedata);
+router.post('/ai/answer-question', auth, requireAIEnabled, ai.answerQuestion.bind(ai), responsedata);
 
 // Study Help (Clarify & Learn + Quick checks) – names avoid "AI"
 router.post('/study-help/conversation/start', auth, studyHelp.startSession.bind(studyHelp), responsedata);
-router.post('/study-help/conversation/ask', auth, studyHelp.ask.bind(studyHelp), responsedata);
+router.post('/study-help/conversation/ask', auth, requireAIEnabled, studyHelp.ask.bind(studyHelp), responsedata);
 router.post('/study-help/conversation/history', auth, studyHelp.getHistory.bind(studyHelp), responsedata);
 router.post('/study-help/conversation/list', auth, studyHelp.listSessions.bind(studyHelp), responsedata);
-router.post('/study-help/generate-check', auth, studyHelp.generateCheck.bind(studyHelp), responsedata);
+router.post('/study-help/generate-check', auth, requireAIEnabled, studyHelp.generateCheck.bind(studyHelp), responsedata);
 router.post('/study-help/check/list', auth, studyHelp.listChecks.bind(studyHelp), responsedata);
 router.post('/study-help/check/get', auth, studyHelp.getCheck.bind(studyHelp), responsedata);
 router.post('/study-help/check/submit', auth, studyHelp.submitAttempt.bind(studyHelp), responsedata);
@@ -325,6 +330,28 @@ router.post('/superadmin/analytics/students', auth, requireRole('Superadmin'), s
 router.post('/superadmin/analytics/graphical', auth, requireRole('Superadmin'), superadminAnalytics.getGraphicalAnalytics.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/recent-activity', auth, requireRole('Superadmin'), superadminAnalytics.getRecentActivity.bind(superadminAnalytics), responsedata);
 router.post('/superadmin/analytics/security', auth, requireRole('Superadmin'), superadminAnalytics.getSecurityViolations.bind(superadminAnalytics), responsedata);
+router.post('/superadmin/ai-usage', auth, requireRole('Superadmin'), superadminAnalytics.getAIUsage.bind(superadminAnalytics), responsedata);
+router.post('/superadmin/ops/health', auth, requireRole('Superadmin'), superadminAnalytics.getOpsHealth.bind(superadminAnalytics), responsedata);
+
+// Superadmin Student Administration (account controls)
+router.post('/superadmin/students/update-status', auth, requireRole('Superadmin'), studentAdminController.updateStudentStatus, responsedata);
+router.post('/superadmin/students/reset-password', auth, requireRole('Superadmin'), studentAdminController.resetStudentPassword, responsedata);
+router.post('/superadmin/students/move', auth, requireRole('Superadmin'), studentAdminController.moveStudent, responsedata);
+
+// Announcements — superadmin manages, students read their active feed
+router.post('/superadmin/announcements/create', auth, requireRole('Superadmin'), announcementController.create, responsedata);
+router.post('/superadmin/announcements/list', auth, requireRole('Superadmin'), announcementController.list, responsedata);
+router.post('/superadmin/announcements/update', auth, requireRole('Superadmin'), announcementController.update, responsedata);
+router.post('/superadmin/announcements/delete', auth, requireRole('Superadmin'), announcementController.remove, responsedata);
+router.post('/student/announcements/active', auth, requireRole('Student'), announcementController.activeForStudent, responsedata);
+
+// Platform settings (runtime toggles without redeploy)
+router.post('/superadmin/settings/get', auth, requireRole('Superadmin'), settingsController.get, responsedata);
+router.post('/superadmin/settings/update', auth, requireRole('Superadmin'), settingsController.update, responsedata);
+
+// Student impersonation ("View As") — read-only, audit-logged
+router.post('/superadmin/impersonate/start', auth, requireRole('Superadmin'), impersonationController.start, responsedata);
+router.post('/superadmin/impersonate/logs', auth, requireRole('Superadmin'), impersonationController.logs, responsedata);
 
 // TPC Coding Monitoring
 router.post('/tpc/coding/stats', auth, (req, res, next) => tpcCoding.getCodingStats(req, res, next), responsedata);
@@ -405,6 +432,7 @@ router.post('/contact/delete', auth, requireRole('Superadmin'), contactControlle
 // Certificate routes
 router.post('/student/certificate', auth, requireRole('Student'), certificate.getStudentCertificate.bind(certificate), responsedata);
 router.post('/dept-tpc/certificates', auth, requireRole('DeptTPC'), certificate.getDeptCertificates.bind(certificate), responsedata);
+router.post('/superadmin/certificates', auth, requireRole('Superadmin'), certificate.getAllCertificates.bind(certificate), responsedata);
 
 // ─── Weekly Feedback Routes ───────────────────────────────────────────────
 

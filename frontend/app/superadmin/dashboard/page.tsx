@@ -7,35 +7,30 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
-import { getAuthHeader, clearAuth } from '@/utils/auth'
+import { getAuthHeader } from '@/utils/auth'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import {
   Building2,
   Users,
   TrendingUp,
   Award,
-  BookOpen,
   Activity,
   RefreshCw,
   ArrowRight,
-  BarChart3,
-  MessageSquare,
   Target,
   Zap,
   Shield,
-  Settings,
   FileText,
   ChevronRight,
   CheckCircle2,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   Clock,
   Bell,
   Plus,
-  Eye,
   Download as DownloadIcon,
-  LogOut,
   Code,
-  Bug,
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -73,6 +68,23 @@ interface College {
   usage?: number
 }
 
+/** Format a timestamp as a relative time ("5m ago"); returns '' for missing/invalid input. */
+function formatRelativeTime(ts: unknown): string {
+  if (!ts) return ''
+  const d = new Date(ts as string)
+  if (isNaN(d.getTime())) return ''
+  const diffMs = Date.now() - d.getTime()
+  if (diffMs < 0) return d.toLocaleString()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return d.toLocaleDateString()
+}
+
 /**
  * Superadmin Dashboard - Interactive with Real Data
  * Route: /superadmin/dashboard
@@ -88,97 +100,120 @@ export default function SuperadminDashboardPage() {
   const [search, setSearch] = useState('')
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [recentActivity, setRecentActivity] = useState<any[]>([])
+  // Real platform health: measured API latency + error-log volume (last 24h)
+  const [health, setHealth] = useState<{ apiOnline: boolean; latencyMs: number | null; errors24h: number | null }>({
+    apiOnline: false,
+    latencyMs: null,
+    errors24h: null,
+  })
+  // Subscriptions that are expired or expire within 14 days (from the optional
+  // collage_subscription_end_date set on the Colleges page)
+  const [expiringSubs, setExpiringSubs] = useState<{ name: string; daysLeft: number }[]>([])
 
-  // Verify authentication via API and fetch data from database
-  useEffect(() => {
-    let isMounted = true
-
-    const verifyAuthAndFetchData = async () => {
-      try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-
-        // Verify authentication by fetching profile (requires valid JWT token)
-        const authHeader = getAuthHeader()
-        console.log('[Dashboard] Auth check - Header exists:', !!authHeader)
-
-        if (!authHeader) {
-          console.log('[Dashboard] No auth token found, redirecting to login')
-          clearAuth() // Clear any invalid data
-          // Use router.push for better UX - auth state is already cleared
-          router.push('/superadmin/login')
-          return
-        }
-
-        console.log('[Dashboard] Fetching profile with token...')
-        const profileRes = await fetch(`${apiBaseUrl}/profile/get`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': authHeader,
-          },
+  const fetchExpiringSubscriptions = async () => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      const authHeader = getAuthHeader()
+      if (!authHeader) return
+      const res = await fetch(`${apiBaseUrl}/collage/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({
+          projection: { collage_name: 1, collage_subscription_status: 1, collage_subscription_end_date: 1 },
+        }),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (!data.success || !Array.isArray(data.data)) return
+      const alerts = data.data
+        .filter((c: any) => c.collage_subscription_end_date && c.collage_subscription_status !== 'inactive')
+        .map((c: any) => {
+          const end = new Date(String(c.collage_subscription_end_date).slice(0, 10) + 'T23:59:59')
+          return { name: c.collage_name, daysLeft: Math.ceil((end.getTime() - Date.now()) / 86400000) }
         })
+        .filter((c: any) => !isNaN(c.daysLeft) && c.daysLeft <= 14)
+        .sort((a: any, b: any) => a.daysLeft - b.daysLeft)
+      setExpiringSubs(alerts)
+    } catch { /* alert banner is best-effort */ }
+  }
 
-        console.log('[Dashboard] Profile response status:', profileRes.status)
-
-        // Only redirect on 401/403 (authentication errors)
-        if (profileRes.status === 401 || profileRes.status === 403) {
-          console.log('[Dashboard] Authentication failed, clearing token and redirecting to login')
-          clearAuth() // Clear invalid token from localStorage
-          // Use router.push for better UX - token is already cleared
-          router.push('/superadmin/login')
-          return
-        }
-
-        if (!profileRes.ok) {
-          console.error('[Dashboard] Profile fetch failed with status:', profileRes.status)
-          // Don't redirect on other errors, might be temporary network issue
-          return
-        }
-
-        const profileResult = await profileRes.json()
-        console.log('[Dashboard] Full profile result:', JSON.stringify(profileResult, null, 2))
-
-        // Check role from either 'role' or 'person_role' field
-        const userRole = profileResult.data?.role || profileResult.data?.person_role
-
-        console.log('[Dashboard] Extracted role:', userRole)
-
-        if (!profileResult.success) {
-          console.log('[Dashboard] Profile request failed, clearing token and redirecting to login')
-          clearAuth() // Clear invalid token
-          router.push('/superadmin/login')
-          return
-        }
-
-        if (userRole !== 'superadmin') {
-          console.log('[Dashboard] Role mismatch - expected superadmin, got:', userRole, 'clearing token and redirecting to login')
-          clearAuth() // Clear token for wrong role
-          router.push('/superadmin/login')
-          return
-        }
-
-        console.log('[Dashboard] ✅ Auth verified successfully!')
-
-        console.log('[Dashboard] Auth verified, fetching dashboard data...')
-
-        // Authentication verified via database, now fetch all dashboard data from database
-        await fetchDashboardData()
-      } catch (error) {
-        console.error('[Dashboard] Auth verification error:', error)
-        // Only redirect if we have no token
-        const authHeader = getAuthHeader()
-        if (!authHeader) {
-          clearAuth() // Clear any invalid token
-          router.push('/superadmin/login')
-        }
-        // Otherwise, don't redirect - might be a temporary network issue
-      }
+  const fetchHealth = async () => {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    // 1. API reachability + latency (public health endpoint)
+    let apiOnline = false
+    let latencyMs: number | null = null
+    try {
+      const t0 = performance.now()
+      const res = await fetch(`${apiBaseUrl}/health`, { cache: 'no-store' })
+      latencyMs = Math.round(performance.now() - t0)
+      apiOnline = res.ok
+    } catch {
+      apiOnline = false
+      latencyMs = null
     }
+    // 2. Error logs in the last 24 hours (best-effort; page still works if this fails)
+    let errors24h: number | null = null
+    try {
+      const authHeader = getAuthHeader()
+      if (authHeader) {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        const res = await fetch(`${apiBaseUrl}/superadmin/error-logs/list`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({
+            filter: { timestamp: { $gte: since } },
+            options: { limit: 1, count: true },
+            projection: { _id: 1 },
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && typeof data.count === 'number') errors24h = data.count
+        }
+      }
+    } catch { /* leave null — shown as em dash */ }
+    setHealth({ apiOnline, latencyMs, errors24h })
+  }
 
-    verifyAuthAndFetchData()
+  // Auth is enforced by SuperadminLayout (useSuperadminAuth); just load data.
+  useEffect(() => {
+    fetchDashboardData()
+    fetchHealth()
+    fetchExpiringSubscriptions()
   }, []) // Empty dependency array - only run on mount
 
-  const fetchDashboardData = async () => {
+  // Fetch only the overview stats, for a specific college (or all).
+  // Takes collegeId explicitly to avoid stale-closure reads of state.
+  const fetchOverview = async (collegeId: string) => {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    const authHeader = getAuthHeader()
+    if (!authHeader) return
+    try {
+      const overviewRes = await fetch(`${apiBaseUrl}/superadmin/analytics/overview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({
+          collegeId: collegeId !== 'all' ? collegeId : undefined,
+        }),
+      })
+      if (overviewRes.ok) {
+        const overviewData = await overviewRes.json()
+        if (overviewData.success && overviewData.data) {
+          setStats(overviewData.data)
+        }
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error fetching overview:', error)
+    }
+  }
+
+  const handleCollegeFilterChange = async (collegeId: string) => {
+    setSelectedCollege(collegeId)
+    await fetchOverview(collegeId)
+    setLastRefresh(new Date())
+  }
+
+  const fetchDashboardData = async (collegeId?: string) => {
     try {
       setIsLoading(true)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
@@ -186,7 +221,6 @@ export default function SuperadminDashboardPage() {
       // Get auth header for all requests
       const authHeader = getAuthHeader()
       if (!authHeader) {
-        console.log('[Dashboard] No auth token in fetchDashboardData, redirecting to login')
         setIsLoading(false)
         router.push('/superadmin/login')
         return
@@ -198,12 +232,13 @@ export default function SuperadminDashboardPage() {
         'Authorization': authHeader,
       }
 
-      // Fetch overview stats
+      // Fetch overview stats (respect the currently selected college filter)
+      const effectiveCollege = collegeId ?? selectedCollege
       const overviewRes = await fetch(`${apiBaseUrl}/superadmin/analytics/overview`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          collegeId: selectedCollege !== 'all' ? selectedCollege : undefined,
+          collegeId: effectiveCollege !== 'all' ? effectiveCollege : undefined,
         }),
       })
 
@@ -249,15 +284,18 @@ export default function SuperadminDashboardPage() {
       if (activityRes.ok) {
         const activityData = await activityRes.json()
         if (activityData.success && activityData.data) {
-          // Map activity to include icons and format timestamps
-          const mappedActivity = (activityData.data.activities || []).map((activity: any, index: number) => ({
-            id: `activity-${index}`,
-            message: activity.message,
-            timestamp: activity.timestamp,
-            icon: activity.type === 'registration' ? 'Award' :
-              activity.type === 'test' ? 'FileText' :
-                activity.type === 'progress' ? 'TrendingUp' : 'CheckCircle2',
-          }))
+          // Map activity to include icons and format timestamps.
+          // Backend sends { type, message, timestamp } — nothing else.
+          const mappedActivity = (activityData.data.activities || [])
+            .filter((activity: any) => activity && activity.message)
+            .map((activity: any, index: number) => ({
+              id: `activity-${index}`,
+              message: activity.message,
+              time: formatRelativeTime(activity.timestamp),
+              icon: activity.type === 'registration' ? 'Award' :
+                activity.type === 'test' ? 'FileText' :
+                  activity.type === 'progress' ? 'TrendingUp' : 'CheckCircle2',
+            }))
           setRecentActivity(mappedActivity)
         }
       }
@@ -272,12 +310,7 @@ export default function SuperadminDashboardPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await fetchDashboardData()
-  }
-
-  const handleLogout = () => {
-    clearAuth()
-    window.location.href = '/superadmin/login'
+    await Promise.all([fetchDashboardData(), fetchHealth()])
   }
 
   const filteredColleges = colleges.filter((c) => {
@@ -323,60 +356,9 @@ export default function SuperadminDashboardPage() {
     },
   ]
 
-  const quickActions = [
-    {
-      title: 'Platform Analytics',
-      description: 'View comprehensive platform-wide statistics and insights',
-      icon: BarChart3,
-      color: 'blue',
-      action: () => router.push('/superadmin/analytics'),
-    },
-    {
-      title: 'Student Management',
-      description: 'View and manage all students across the platform',
-      icon: Users,
-      color: 'green',
-      action: () => router.push('/superadmin/students'),
-    },
-    {
-      title: 'College Management',
-      description: 'Add, edit, and manage colleges in the platform',
-      icon: Building2,
-      color: 'purple',
-      action: () => router.push('/superadmin/colleges'),
-    },
-    {
-      title: 'Syllabus Management',
-      description: 'Import and manage syllabus data from Excel files',
-      icon: FileText,
-      color: 'orange',
-      action: () => router.push('/superadmin/syllabus'),
-    },
-    {
-      title: 'Bug Reports',
-      description: 'Manage and review bug reports from students and staff',
-      icon: Bug,
-      color: 'red',
-      action: () => router.push('/superadmin/bug-reports'),
-    },
-    {
-      title: 'System Error Logs',
-      description: 'View and investigate system error logs',
-      icon: AlertCircle,
-      color: 'red',
-      action: () => router.push('/superadmin/error-logs'),
-    },
-    {
-      title: 'Contact Inquiries',
-      description: 'View and manage contact form submissions',
-      icon: MessageSquare,
-      color: 'blue',
-      action: () => router.push('/superadmin/contact-inquiries'),
-    },
-  ]
-
   if (isLoading && !stats) {
     return (
+      <SuperadminLayout>
       <div className="min-h-screen bg-gray-50">
         <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
           {/* Header Skeleton */}
@@ -405,10 +387,12 @@ export default function SuperadminDashboardPage() {
           </div>
         </div>
       </div>
+      </SuperadminLayout>
     )
   }
 
   return (
+    <SuperadminLayout>
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5">
       <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -421,11 +405,24 @@ export default function SuperadminDashboardPage() {
               Real-time insights and management dashboard
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="text-xs text-neutral-light flex items-center gap-2">
               <Clock className="w-3 h-3" />
               Last updated: {lastRefresh.toLocaleTimeString()}
             </div>
+            <select
+              value={selectedCollege}
+              onChange={(e) => handleCollegeFilterChange(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-neutral-light/20 bg-white text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              title="Filter platform stats by college"
+            >
+              <option value="all">All Colleges</option>
+              {colleges.map((c) => (
+                <option key={c.collage_id} value={c.collage_id}>
+                  {c.collage_name}
+                </option>
+              ))}
+            </select>
             <Button
               variant="secondary"
               onClick={handleRefresh}
@@ -435,16 +432,38 @@ export default function SuperadminDashboardPage() {
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button
-              variant="secondary"
-              onClick={handleLogout}
-              className="flex items-center gap-2 border-red-500/20 hover:bg-red-500/10 hover:text-red-600"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </Button>
           </div>
         </div>
+
+        {/* Subscription expiry alert */}
+        {expiringSubs.length > 0 && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-700">
+                {expiringSubs.length} college subscription{expiringSubs.length !== 1 ? 's' : ''} need{expiringSubs.length === 1 ? 's' : ''} attention
+              </p>
+              <ul className="text-sm text-amber-700/90 mt-1 space-y-0.5">
+                {expiringSubs.map((s, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{s.name}</span>
+                    {s.daysLeft < 0
+                      ? ` — expired ${Math.abs(s.daysLeft)} day${Math.abs(s.daysLeft) !== 1 ? 's' : ''} ago`
+                      : s.daysLeft === 0
+                      ? ' — expires today'
+                      : ` — expires in ${s.daysLeft} day${s.daysLeft !== 1 ? 's' : ''}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => router.push('/superadmin/colleges')}
+              className="shrink-0 text-sm font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800"
+            >
+              Manage
+            </button>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -487,7 +506,8 @@ export default function SuperadminDashboardPage() {
           })}
         </div>
 
-        {/* Quick Actions Panel */}
+        {/* Quick Actions — true tasks only. Plain navigation lives in the sidebar,
+            so no duplicate nav cards/buttons here. */}
         <Card className="p-6 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 transition-all duration-300 hover:shadow-lg animate-smooth-appear" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -496,38 +516,16 @@ export default function SuperadminDashboardPage() {
             </div>
             <Zap className="w-8 h-8 text-primary transition-transform duration-300 hover:scale-110" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button
               variant="primary"
-              onClick={() => router.push('/superadmin/students')}
+              onClick={() => router.push('/superadmin/students?create=1')}
               className="flex items-center justify-center gap-2 h-auto py-4"
             >
               <Plus className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold">Add Student</p>
-                <p className="text-xs opacity-90">Quick create</p>
-              </div>
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => router.push('/superadmin/students/compare')}
-              className="flex items-center justify-center gap-2 h-auto py-4"
-            >
-              <BarChart3 className="w-5 h-5" />
-              <div className="text-left">
-                <p className="font-semibold">Compare Students</p>
-                <p className="text-xs opacity-90">Side-by-side</p>
-              </div>
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => showToast('Report generation feature coming soon', 'info')}
-              className="flex items-center justify-center gap-2 h-auto py-4"
-            >
-              <DownloadIcon className="w-5 h-5" />
-              <div className="text-left">
-                <p className="font-semibold">Generate Report</p>
-                <p className="text-xs opacity-90">Export data</p>
+                <p className="text-xs opacity-90">Opens the create form</p>
               </div>
             </Button>
             <Button
@@ -535,44 +533,14 @@ export default function SuperadminDashboardPage() {
               onClick={() => router.push('/superadmin/analytics')}
               className="flex items-center justify-center gap-2 h-auto py-4"
             >
-              <Eye className="w-5 h-5" />
+              <DownloadIcon className="w-5 h-5" />
               <div className="text-left">
-                <p className="font-semibold">View Analytics</p>
-                <p className="text-xs opacity-90">Deep insights</p>
+                <p className="font-semibold">Export Data</p>
+                <p className="text-xs opacity-90">Via Analytics page</p>
               </div>
             </Button>
           </div>
         </Card>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => {
-            const Icon = action.icon
-            return (
-              <Card
-                key={action.title}
-                className="group p-6 border-2 border-neutral-light/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer bg-gradient-to-br from-white to-secondary/5 animate-smooth-appear"
-                onClick={action.action}
-                style={{
-                  animationDelay: `${(index + 4) * 100}ms`,
-                }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110">
-                    <Icon className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-neutral-light group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" />
-                </div>
-                <h3 className="text-lg font-semibold text-neutral mb-2 group-hover:text-primary transition-colors duration-300">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-neutral-light leading-relaxed">
-                  {action.description}
-                </p>
-              </Card>
-            )
-          })}
-        </div>
 
         {/* Colleges Overview */}
         <Card className="p-6 border-2 border-neutral-light/20">
@@ -616,9 +584,6 @@ export default function SuperadminDashboardPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-xs font-medium text-neutral-light uppercase tracking-wide mb-1">
-                        {college.collage_id}
-                      </p>
                       <h4 className="text-lg font-semibold text-neutral group-hover:text-primary transition-colors">
                         {college.collage_name}
                       </h4>
@@ -723,14 +688,6 @@ export default function SuperadminDashboardPage() {
                 <Bell className="w-5 h-5 text-primary" />
                 Recent Activity
               </h3>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => router.push('/superadmin/students')}
-                className="text-xs"
-              >
-                View All
-              </Button>
             </div>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {recentActivity.length === 0 ? (
@@ -750,9 +707,10 @@ export default function SuperadminDashboardPage() {
                         <Icon className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral">{activity.student}</p>
-                        <p className="text-xs text-neutral-light">{activity.message}</p>
-                        <p className="text-xs text-neutral-light mt-1">{activity.time}</p>
+                        <p className="text-sm font-medium text-neutral">{activity.message}</p>
+                        {activity.time && (
+                          <p className="text-xs text-neutral-light mt-1">{activity.time}</p>
+                        )}
                       </div>
                     </div>
                   )
@@ -761,38 +719,74 @@ export default function SuperadminDashboardPage() {
             </div>
           </Card>
 
-          {/* Platform Health */}
+          {/* Platform Health — real measurements (API ping + 24h error volume) */}
           <Card className="p-6 border-2 border-neutral-light/20">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-neutral">Platform Health</h3>
-              <Shield className="w-5 h-5 text-green-600" />
+              <Shield className={`w-5 h-5 ${health.apiOnline ? 'text-green-600' : 'text-red-600'}`} />
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-between p-3 rounded-lg border mb-4 ${
+              health.apiOnline
+                ? 'bg-green-500/10 border-green-500/20'
+                : 'bg-red-500/10 border-red-500/20'
+            }`}>
+              <div className="flex items-center gap-3">
+                {health.apiOnline ? (
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm font-medium text-neutral">System Status</p>
-                    <p className="text-xs text-neutral-light">All systems operational</p>
-                  </div>
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-600" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-neutral">Backend API</p>
+                  <p className="text-xs text-neutral-light">
+                    {health.apiOnline
+                      ? `Online — ${health.latencyMs}ms response`
+                      : 'Unreachable'}
+                  </p>
                 </div>
-                <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
-                  Healthy
-                </Badge>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-neutral-light/10">
+              <Badge className={health.apiOnline
+                ? 'bg-green-500/20 text-green-600 border-green-500/30'
+                : 'bg-red-500/20 text-red-600 border-red-500/30'}>
+                {health.apiOnline ? 'Online' : 'Down'}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border mb-4 bg-background-elevated border-neutral-light/10">
+              <div className="flex items-center gap-3">
+                <AlertCircle className={`w-5 h-5 ${(health.errors24h ?? 0) > 0 ? 'text-orange-500' : 'text-green-600'}`} />
                 <div>
-                  <p className="text-xs text-neutral-light mb-1">Active Colleges</p>
-                  <p className="text-2xl font-bold text-neutral">
-                    {stats?.colleges.active || 0} / {stats?.colleges.total || 0}
-                  </p>
+                  <p className="text-sm font-medium text-neutral">Errors (last 24h)</p>
+                  <p className="text-xs text-neutral-light">From system error logs</p>
                 </div>
-                <div>
-                  <p className="text-xs text-neutral-light mb-1">Subscribed</p>
-                  <p className="text-2xl font-bold text-neutral">
-                    {stats?.colleges.subscribed || 0}
-                  </p>
-                </div>
+              </div>
+              <span className={`text-lg font-bold ${(health.errors24h ?? 0) > 0 ? 'text-orange-500' : 'text-neutral'}`}>
+                {health.errors24h ?? '—'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-neutral-light mb-1">Active Colleges</p>
+                <p className="text-2xl font-bold text-neutral">
+                  {stats?.colleges.active || 0} / {stats?.colleges.total || 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-light mb-1">Subscribed</p>
+                <p className="text-2xl font-bold text-neutral">
+                  {stats?.colleges.subscribed || 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-light mb-1">Active Students</p>
+                <p className="text-2xl font-bold text-neutral">
+                  {stats?.students.active || 0} / {stats?.students.total || 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-light mb-1">Practice Tests Taken</p>
+                <p className="text-2xl font-bold text-neutral">
+                  {stats?.progress.totalPracticeTests || 0}
+                </p>
               </div>
             </div>
           </Card>
@@ -806,5 +800,6 @@ export default function SuperadminDashboardPage() {
         />
       )}
     </div>
+    </SuperadminLayout>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
+import { Building2, Search, MapPin, Mail, UserCog, Layers, Users2, Pencil } from 'lucide-react'
 
 interface Department {
   _id?: string
@@ -47,6 +49,7 @@ interface College {
   collage_type?: string
   collage_departments?: string[] // Array of department IDs
   collage_subscription_status?: string
+  collage_subscription_end_date?: string // ISO date (YYYY-MM-DD); optional — no date means no countdown
   created_at?: string
   updated_at?: string
   deleted?: boolean
@@ -101,6 +104,18 @@ export default function CollegesManagementPage() {
   const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({})
   const [createTpcAccount, setCreateTpcAccount] = useState(true)
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null)
+
+  // Click-away listener for dropdown
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (activeDropdownId) {
+        setActiveDropdownId(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [activeDropdownId])
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
@@ -178,7 +193,7 @@ export default function CollegesManagementPage() {
       const collegesWithStats = (listResult.data || []).map((college: any) => {
         // Find matching analytics data
         const analytics = analyticsResult.success && analyticsResult.data
-          ? analyticsResult.data.colleges?.find((a: any) => a.collegeId === college._id)
+          ? analyticsResult.data.colleges?.find((a: any) => String(a.collegeId) === String(college._id))
           : null
 
         return {
@@ -254,7 +269,6 @@ export default function CollegesManagementPage() {
             ...dept,
             department_tpc_name: matchingDeptTpc.dept_tpc_name,
             department_tpc_id: matchingDeptTpc.dept_tpc_email,
-            department_tpc_password: matchingDeptTpc.dept_tpc_password,
             department_tpc_contact: matchingDeptTpc.dept_tpc_contact,
           }
         }
@@ -335,6 +349,20 @@ export default function CollegesManagementPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  /** Countdown pill for the optional subscription end date */
+  const subscriptionInfo = (college: College): { label: string; cls: string } | null => {
+    if (college.collage_subscription_status === 'inactive') {
+      return { label: 'Subscription inactive', cls: 'bg-red-500/10 text-red-600' }
+    }
+    if (!college.collage_subscription_end_date) return null
+    const end = new Date(String(college.collage_subscription_end_date).slice(0, 10) + 'T23:59:59')
+    if (isNaN(end.getTime())) return null
+    const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000)
+    if (daysLeft < 0) return { label: `Subscription expired ${Math.abs(daysLeft)}d ago`, cls: 'bg-red-500/10 text-red-600' }
+    if (daysLeft <= 14) return { label: `Subscription expires in ${daysLeft}d`, cls: 'bg-amber-500/10 text-amber-700' }
+    return { label: `Subscribed till ${end.toLocaleDateString()}`, cls: 'bg-green-500/10 text-green-600' }
+  }
+
   const handleOpenModal = (college?: College) => {
     if (college) {
       setEditingCollege(college)
@@ -352,6 +380,10 @@ export default function CollegesManagementPage() {
         collage_logo: college.collage_logo,
         collage_status: college.collage_status,
         collage_type: college.collage_type,
+        collage_subscription_status: college.collage_subscription_status || 'active',
+        collage_subscription_end_date: college.collage_subscription_end_date
+          ? String(college.collage_subscription_end_date).slice(0, 10)
+          : '',
       })
     } else {
       setEditingCollege(null)
@@ -975,54 +1007,58 @@ export default function CollegesManagementPage() {
   ]
 
   return (
+    <SuperadminLayout>
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-10">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-neutral">
-              College Management
-            </h1>
-            <p className="text-neutral-dark mt-1">
-              Manage colleges, their details, and status
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            onClick={() => handleOpenModal()}
-            className="px-6"
-          >
-            + Add New College
-          </Button>
-        </header>
+      <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Toast Notification */}
+        {/* ── Toast ── */}
         {toast && (
-          <div
-            className={`rounded-md px-4 py-3 text-sm ${toast.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-              }`}
-          >
-            {toast.message}
+          <div className="fixed top-6 right-6 z-[60] animate-fade-in">
+            <div className={`rounded-lg px-4 py-3 text-sm font-medium shadow-lg flex items-center gap-2 ${
+              toast.type === 'success' ? 'bg-secondary text-white' : 'bg-red-600 text-white'
+            }`}>
+              {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+            </div>
           </div>
         )}
 
-        {/* Filters */}
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-neutral">Colleges</h1>
+              <p className="text-sm text-neutral-light mt-0.5">
+                {colleges.length} total · {colleges.filter(c => c.collage_status === 1).length} active
+              </p>
+            </div>
+          </div>
+          <Button variant="primary" onClick={() => handleOpenModal()} className="px-5">
+            + Add College
+          </Button>
+        </div>
+
+        {/* ── Filters ── */}
         <Card className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-light pointer-events-none z-10" />
               <Input
-                placeholder="Search by name, city, state, or email..."
+                placeholder="Search by name, city, or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
+                className="w-full pl-10 border-neutral-light/30 focus:border-primary"
               />
             </div>
-            <div className="w-full sm:w-48">
+            {/* Select renders its own w-full wrapper — constrain it from outside,
+                otherwise it claims the whole flex row and crushes the search input */}
+            <div className="w-full sm:w-48 shrink-0">
               <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as 'all' | '1' | '0')}
+                className="border-neutral-light/30 focus:border-primary"
                 options={[
                   { value: 'all', label: 'All Status' },
                   { value: '1', label: 'Active' },
@@ -1033,201 +1069,218 @@ export default function CollegesManagementPage() {
           </div>
         </Card>
 
-        {/* Colleges List */}
+        {/* ── College Cards ── */}
         {loading ? (
-          <Card className="p-8 text-center">
-            <p className="text-neutral-dark">Loading colleges...</p>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="rounded-xl border border-neutral-light/15 bg-background-surface p-5 animate-pulse">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-neutral-light/15" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-neutral-light/15 rounded w-2/3" />
+                    <div className="h-3 bg-neutral-light/10 rounded w-1/3" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-neutral-light/10 rounded w-full" />
+                  <div className="h-3 bg-neutral-light/10 rounded w-3/4" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : filteredColleges.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-neutral-dark">
-              {colleges.length === 0 ? 'No colleges found. Add your first college!' : 'No colleges match your search.'}
+          <div className="text-center py-20">
+            <p className="text-neutral font-medium">
+              {colleges.length === 0 ? 'No colleges added yet.' : 'No colleges match your search.'}
             </p>
-          </Card>
+            <p className="text-sm text-neutral-light mt-1">
+              {colleges.length === 0 && 'Click "+ Add College" to get started.'}
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {filteredColleges.map((college) => (
-              <Card key={college._id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-neutral">
-                        {college.collage_name}
-                      </h3>
+              <div
+                key={college._id}
+                className="rounded-xl border border-neutral-light/15 bg-background-surface hover:border-primary/25 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col relative overflow-hidden"
+              >
+                {/* Status accent bar */}
+                <div className={`h-1 w-full ${college.collage_status === 1 ? 'bg-secondary' : 'bg-neutral-light/40'}`} />
+
+                <div className="p-5 flex flex-col flex-1">
+                {/* Card Header */}
+                <div className="flex items-start gap-3 mb-4">
+                  <div className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white font-heading font-bold text-base shadow-sm ${
+                    college.collage_status === 1
+                      ? 'bg-gradient-to-br from-primary to-primary-dark'
+                      : 'bg-gradient-to-br from-neutral-light to-neutral-light/70'
+                  }`}>
+                    {college.collage_name?.charAt(0)?.toUpperCase() || 'C'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-semibold text-neutral truncate" title={college.collage_name}>
+                      {college.collage_name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
                       <Badge
-                        variant={college.collage_status === 1 ? 'success' : 'secondary'}
+                        variant={college.collage_status === 1 ? 'success' : 'warning'}
+                        className="text-xs px-1.5 py-0"
                       >
                         {college.collage_status === 1 ? 'Active' : 'Inactive'}
                       </Badge>
+                      {college.collage_type && (
+                        <span className="text-sm text-neutral-dark">{college.collage_type}</span>
+                      )}
                     </div>
-                    <p className="text-sm text-neutral-dark">{college.collage_type}</p>
+                    {(() => {
+                      const sub = subscriptionInfo(college)
+                      return sub ? (
+                        <span className={`inline-flex mt-1.5 px-1.5 py-0.5 rounded text-xs font-medium ${sub.cls}`}>
+                          {sub.label}
+                        </span>
+                      ) : null
+                    })()}
                   </div>
-                </div>
 
-                <div className="space-y-2 text-sm text-neutral-dark mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">📍</span>
-                    <span>
-                      {college.collage_city}, {college.collage_state}, {college.collage_country}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">📧</span>
-                    <span>{college.collage_email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">📞</span>
-                    <span>{college.collage_contact_number}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">👤</span>
-                    <span>TPC: {college.tpc_users?.[0]?.name ?? college.collage_tpc_person ?? '—'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">🏛️</span>
-                    <span>
-                      Departments: {college.collage_departments?.length || 0}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Departments Section */}
-                {college.collage_departments && college.collage_departments.length > 0 && (
-                  <div className="mb-4 p-3 bg-background-elevated rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-neutral">Departments:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {college.collage_departments.map((deptId) => {
-                        const dept = departments.find(d => d._id === deptId)
-                        return dept ? (
-                          <Badge key={deptId} variant="secondary" className="text-xs">
-                            {dept.department_code} - {dept.department_name}
-                          </Badge>
-                        ) : null
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleOpenModal(college)}
-                    className="px-4 text-sm"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant={college.collage_status === 1 ? 'secondary' : 'primary'}
-                    onClick={() => handleToggleStatus(college)}
-                    className="px-4 text-sm"
-                  >
-                    {college.collage_status === 1 ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setSelectedCollegeForTpc(college)
-                        setTpcOperationMode('create')
-                        setCollegeTpcData({
-                          name: '',
-                          email: '',
-                          password: '',
-                          contact: '',
-                        })
-                        setShowCollegeTpcModal(true)
+                  {/* 3-dot menu */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveDropdownId(activeDropdownId === college._id ? null : college._id!)
                       }}
-                      className="px-3 text-xs"
+                      className="p-1.5 -mr-1.5 -mt-1 rounded-md hover:bg-background-elevated text-neutral-light hover:text-neutral transition-colors"
                     >
-                      Create TPC
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setSelectedCollegeForTpc(college)
-                        setTpcOperationMode('update')
-                        setCollegeTpcData({
-                          name: college.tpc_users?.[0]?.name ?? college.collage_tpc_person ?? '',
-                          email: college.collage_tpc_email ?? '',
-                          password: '',
-                          contact: college.collage_tpc_contact ?? '',
-                        })
-                        setShowCollegeTpcModal(true)
-                      }}
-                      className="px-3 text-xs"
-                      disabled={!(college.collage_tpc_email || college.tpc_users?.[0])}
-                    >
-                      Update TPC
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={async () => {
-                        if (confirm(`Are you sure you want to delete the TPC account for ${college.collage_name}? This action cannot be undone.`)) {
-                          setFormLoading(true)
-                          try {
-                            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-                            const headers = getAuthHeaders()
-                            if (!headers) {
-                              showToast('Authentication required. Please login again.', 'error')
-                              router.push('/superadmin/login')
-                              return
-                            }
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                    </button>
 
-                            const deleteData = {
-                              collage_id: college._id,
-                              tpc_email: college.collage_tpc_email,
-                            }
-
-                            const res = await fetch(`${apiBase}/tpc-management/delete-college-tpc`, {
-                              method: 'POST',
-                              headers,
-                              body: JSON.stringify(deleteData),
+                    {activeDropdownId === college._id && (
+                      <div
+                        className="absolute right-0 top-full mt-1 w-48 bg-background-surface border border-neutral-light/15 rounded-lg shadow-xl overflow-hidden z-20 animate-scale-in"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => {
+                            setActiveDropdownId(null)
+                            setSelectedCollegeForTpc(college)
+                            setTpcOperationMode('create')
+                            setCollegeTpcData({ name: '', email: '', password: '', contact: '' })
+                            setShowCollegeTpcModal(true)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-neutral hover:bg-background-elevated transition-colors"
+                        >Create TPC</button>
+                        <button
+                          onClick={() => {
+                            setActiveDropdownId(null)
+                            setSelectedCollegeForTpc(college)
+                            setTpcOperationMode('update')
+                            setCollegeTpcData({
+                              name: college.tpc_users?.[0]?.name ?? college.collage_tpc_person ?? '',
+                              email: college.collage_tpc_email ?? '',
+                              password: '',
+                              contact: college.collage_tpc_contact ?? '',
                             })
-
-                            const result = await res.json()
-                            if (result.success) {
-                              showToast('College TPC account deleted successfully', 'success')
-                              fetchColleges()
-                            } else {
-                              showToast(result.message || 'Failed to delete College TPC', 'error')
+                            setShowCollegeTpcModal(true)
+                          }}
+                          disabled={!(college.collage_tpc_email || college.tpc_users?.[0])}
+                          className="w-full text-left px-3 py-2 text-sm text-neutral hover:bg-background-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >Update TPC</button>
+                        <button
+                          onClick={async () => {
+                            setActiveDropdownId(null)
+                            if (confirm(`Delete the TPC account for ${college.collage_name}?`)) {
+                              setFormLoading(true)
+                              try {
+                                const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+                                const headers = getAuthHeaders()
+                                if (!headers) { showToast('Authentication required.', 'error'); router.push('/superadmin/login'); return }
+                                const res = await fetch(`${apiBase}/tpc-management/delete-college-tpc`, { method: 'POST', headers, body: JSON.stringify({ collage_id: college._id, tpc_email: college.collage_tpc_email }) })
+                                const result = await res.json()
+                                result.success ? showToast('TPC deleted.', 'success') : showToast(result.message || 'Failed.', 'error')
+                                fetchColleges()
+                              } catch (error: any) { showToast(error.message || 'Failed.', 'error') } finally { setFormLoading(false) }
                             }
-                          } catch (error: any) {
-                            showToast(error.message || 'Operation failed', 'error')
-                          } finally {
-                            setFormLoading(false)
-                          }
-                        }
-                      }}
-                      className="px-3 text-xs text-red-600 hover:text-red-700"
-                      disabled={!(college.collage_tpc_email || college.tpc_users?.[0]) || formLoading}
-                    >
-                      Delete TPC
-                    </Button>
+                          }}
+                          disabled={!(college.collage_tpc_email || college.tpc_users?.[0]) || formLoading}
+                          className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >Delete TPC</button>
+                        <div className="h-px bg-neutral-light/15 my-0.5" />
+                        <button
+                          onClick={() => { setActiveDropdownId(null); handleToggleStatus(college) }}
+                          className="w-full text-left px-3 py-2 text-sm text-neutral hover:bg-background-elevated transition-colors"
+                        >{college.collage_status === 1 ? 'Deactivate' : 'Activate'}</button>
+                        <button
+                          onClick={() => { setActiveDropdownId(null); setDeletingCollege(college) }}
+                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >Delete College</button>
+                      </div>
+                    )}
                   </div>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setSelectedCollegeForDept(college)
-                      setShowDepartmentModal(true)
-                    }}
-                    className="px-4 text-sm"
-                  >
-                    Manage Departments
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setDeletingCollege(college)}
-                    className="px-4 text-sm text-red-600 hover:text-red-700"
-                  >
-                    Delete
-                  </Button>
                 </div>
-              </Card>
+
+                {/* Key Details */}
+                <div className="space-y-2 text-sm text-neutral-dark flex-1">
+                  {(college.collage_city || college.collage_state) && (
+                    <p className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 shrink-0 text-neutral-light/70" />
+                      {[college.collage_city, college.collage_state].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                  {college.collage_email && (
+                    <p className="flex items-center gap-2 truncate" title={college.collage_email}>
+                      <Mail className="w-4 h-4 shrink-0 text-neutral-light/70" />
+                      <span className="truncate">{college.collage_email}</span>
+                    </p>
+                  )}
+                  <p className="flex items-center gap-2">
+                    <UserCog className="w-4 h-4 shrink-0 text-neutral-light/70" />
+                    <span>TPC:&nbsp;<span className="text-neutral font-medium">{college.tpc_users?.[0]?.name ?? college.collage_tpc_person ?? '—'}</span></span>
+                  </p>
+                </div>
+
+                {/* Stats Row */}
+                <div className="flex items-center flex-wrap gap-2 mt-4 pt-3.5 border-t border-neutral-light/10">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-sm text-neutral-dark">
+                    <Layers className="w-3.5 h-3.5 text-primary/70" />
+                    <span className="font-semibold text-neutral">{college.collage_departments?.length || 0}</span>
+                    {(college.collage_departments?.length || 0) === 1 ? 'dept' : 'depts'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-sm text-neutral-dark">
+                    <Users2 className="w-3.5 h-3.5 text-primary/70" />
+                    <span className="font-semibold text-neutral">{college.studentCount || 0}</span>
+                    {(college.studentCount || 0) === 1 ? 'student' : 'students'}
+                  </span>
+                  {(college.activeStudents || 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/10 text-sm text-secondary font-medium">
+                      {college.activeStudents} active
+                    </span>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-2 mt-3.5">
+                  <button
+                    onClick={() => handleOpenModal(college)}
+                    className="inline-flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-neutral border border-neutral-light/20 rounded-lg hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => { setSelectedCollegeForDept(college); setShowDepartmentModal(true) }}
+                    className="inline-flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+                  >
+                    <Layers className="w-4 h-4" />
+                    Departments
+                  </button>
+                </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
+
+      </div>
 
         {/* Add/Edit Modal */}
         {showModal && (
@@ -1381,6 +1434,36 @@ export default function CollegesManagementPage() {
                     💡 You can create College TPC account separately using &quot;Manage College TPC&quot; button on the college card.
                   </p>
 
+                  {/* Subscription — only editable on existing colleges */}
+                  {editingCollege && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-neutral-light/20">
+                      <Select
+                        label="Subscription Status"
+                        value={formData.collage_subscription_status || 'active'}
+                        onChange={(e) =>
+                          setFormData({ ...formData, collage_subscription_status: e.target.value })
+                        }
+                        options={[
+                          { value: 'active', label: 'Active' },
+                          { value: 'inactive', label: 'Inactive' },
+                        ]}
+                      />
+                      <div>
+                        <Input
+                          label="Subscription End Date"
+                          type="date"
+                          value={formData.collage_subscription_end_date || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, collage_subscription_end_date: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-neutral-dark mt-1">
+                          Optional — powers the expiry countdown on cards and the dashboard alert. Leave empty for no expiry.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-4 pt-4">
                     <Button
                       type="submit"
@@ -1501,31 +1584,8 @@ export default function CollegesManagementPage() {
                                     </button>
                                   </div>
                                 )}
-                                {dept.department_tpc_password && (
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-neutral-dark">TPC Password:</span>
-                                    <span className="text-xs font-mono text-neutral">
-                                      {showPassword[dept._id || ''] ? dept.department_tpc_password : '••••••••'}
-                                    </span>
-                                    <button
-                                      onClick={() => setShowPassword({ ...showPassword, [dept._id || '']: !showPassword[dept._id || ''] })}
-                                      className="text-primary hover:text-primary/80 ml-1"
-                                      title="Toggle password visibility"
-                                    >
-                                      {showPassword[dept._id || ''] ? '👁️' : '👁️‍🗨️'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(dept.department_tpc_password || '')
-                                        showToast('TPC Password copied to clipboard', 'success')
-                                      }}
-                                      className="text-primary hover:text-primary/80 ml-1"
-                                      title="Copy password"
-                                    >
-                                      📋
-                                    </button>
-                                  </div>
-                                )}
+                                {/* Password display removed: passwords are stored hashed and are never
+                                    returned by the API. Reset via the Edit DeptTPC flow instead. */}
                                 {dept.department_tpc_contact && (
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-xs text-neutral-dark">TPC Contact:</span>
@@ -2045,8 +2105,8 @@ export default function CollegesManagementPage() {
             </Card>
           </div>
         )}
-      </div>
     </div>
+    </SuperadminLayout>
   )
 }
 

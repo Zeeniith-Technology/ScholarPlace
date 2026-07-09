@@ -310,4 +310,52 @@ export default class CertificateController {
             next();
         }
     }
+
+    /**
+     * Superadmin: platform-wide certificates overview.
+     * Route: POST /superadmin/certificates
+     * Returns totals, a by-college breakdown, and the full issued list enriched
+     * with college names.
+     */
+    async getAllCertificates(req, res, next) {
+        try {
+            const [certRes, collegeRes] = await Promise.all([
+                fetchData('tblCertificate', {}, { deleted: { $ne: true } }, { sort: { issued_at: -1 } }),
+                fetchData('tblCollage', { collage_name: 1 }, { deleted: { $ne: true } }),
+            ]);
+
+            const certs = certRes.data || [];
+            const collegeNameById = new Map((collegeRes.data || []).map(c => [String(c._id), c.collage_name]));
+
+            const byCollege = {};
+            const list = certs.map(c => {
+                const collegeName = collegeNameById.get(String(c.college_id)) || 'Unknown college';
+                byCollege[collegeName] = (byCollege[collegeName] || 0) + 1;
+                return {
+                    _id: String(c._id),
+                    student_name: c.student_name || 'Unknown',
+                    student_email: c.student_email || '',
+                    college: collegeName,
+                    cloudinary_url: c.cloudinary_url || null,
+                    issued_at: c.issued_at || c.created_at || null,
+                };
+            });
+
+            res.locals.responseData = {
+                success: true, status: 200,
+                message: 'Certificates overview fetched',
+                data: {
+                    total: certs.length,
+                    collegesRepresented: Object.keys(byCollege).length,
+                    byCollege,
+                    certificates: list,
+                }
+            };
+            next();
+        } catch (err) {
+            console.error('[Certificate] getAllCertificates error:', err.message);
+            this.sendError(res, 500, err.message);
+            next();
+        }
+    }
 }

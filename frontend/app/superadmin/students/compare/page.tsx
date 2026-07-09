@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -196,6 +197,8 @@ export default function StudentComparePage() {
   }
 
   return (
+
+    <SuperadminLayout>
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -437,5 +440,6 @@ export default function StudentComparePage() {
         />
       )}
     </div>
+    </SuperadminLayout>
   )
 }

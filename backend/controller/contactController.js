@@ -69,28 +69,24 @@ class ContactController {
     async getAllContacts(req, res, next) {
         try {
             const { page = 1, limit = 20, status } = req.body;
-            const skip = (page - 1) * limit;
+            const safeLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+            const safePage = Math.max(parseInt(page) || 1, 1);
+            const skip = (safePage - 1) * safeLimit;
 
             const filter = {};
             if (status && status !== 'all') {
                 filter.status = status;
             }
 
-            // Fetch inquiries
+            // Fetch inquiries. NOTE: projection must be {} (all fields) — previously
+            // the filter object was passed as the projection, so status-filtered
+            // requests returned documents stripped of name/email/message.
             const result = await fetchData(
                 'contact',
+                {},
                 filter,
-                filter,
-                { skip, limit, sort: { created_at: -1 } }
+                { skip, limit: safeLimit, sort: { created_at: -1 }, count: true }
             );
-
-            // Get total count for pagination
-            // Note: fetchData wrapper might not return total count directly in standard way, 
-            // but we'll use what we get. If needed we can adjust.
-            // For now assuming result.data is the array.
-
-            // To get count we might need another call or if fetchData supports it.
-            // Let's assume basic fetching first.
 
             // Convert _id to string for frontend compatibility
             const inquiries = (result.data || []).map(contact => ({
@@ -98,12 +94,20 @@ class ContactController {
                 _id: contact._id.toString()
             }));
 
+            const totalCount = typeof result.count === 'number' ? result.count : inquiries.length;
+
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 message: 'Inquiries fetched successfully',
                 data: {
                     inquiries: inquiries,
+                    pagination: {
+                        page: safePage,
+                        limit: safeLimit,
+                        total: totalCount,
+                        totalPages: Math.max(1, Math.ceil(totalCount / safeLimit))
+                    }
                 }
             };
             return next();

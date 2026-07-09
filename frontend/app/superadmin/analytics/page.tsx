@@ -2,7 +2,17 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAuthHeader, clearAuth } from '@/utils/auth'
+import { getAuthHeader } from '@/utils/auth'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
@@ -36,62 +46,15 @@ export default function SuperadminAnalyticsPage() {
   const [studentAnalytics, setStudentAnalytics] = useState<any[]>([])
   const [selectedCollege, setSelectedCollege] = useState<string>('all')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  // Chart data (from /superadmin/analytics/graphical)
+  const [scoreDistribution, setScoreDistribution] = useState<{ range: string; count: number }[]>([])
+  const [weekProgress, setWeekProgress] = useState<{ week: string; days: number }[]>([])
 
+  // Auth is enforced by SuperadminLayout (useSuperadminAuth).
+  // Refetch data when the college filter changes.
   useEffect(() => {
-    checkAuth()
     fetchData()
   }, [selectedCollege])
-
-  const checkAuth = async () => {
-    try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
-      const authHeader = getAuthHeader()
-      if (!authHeader) {
-        router.push('/superadmin/login')
-        return
-      }
-      
-      // Verify authentication by fetching profile (requires valid JWT token)
-      const profileRes = await fetch(`${apiBaseUrl}/profile/get`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-        },
-      })
-      
-      // Only redirect on 401/403 (authentication errors)
-      if (profileRes.status === 401 || profileRes.status === 403) {
-        console.log('[Analytics Page] Authentication failed, clearing token and redirecting to login')
-        clearAuth()
-        window.location.href = '/superadmin/login'
-        return
-      }
-
-      if (!profileRes.ok) {
-        console.error('[Analytics Page] Profile fetch failed with status:', profileRes.status)
-        // Don't redirect on other errors
-        return
-      }
-
-      const profileResult = await profileRes.json()
-      const userRole = profileResult.data?.role || profileResult.data?.person_role
-      if (!profileResult.success || userRole !== 'superadmin') {
-        console.log('[Analytics Page] Invalid role or failed profile check, clearing token and redirecting to login')
-        clearAuth()
-        window.location.href = '/superadmin/login'
-        return
-      }
-    } catch (error) {
-      console.error('[Analytics Page] Auth verification error:', error)
-      // Only redirect if we have no token
-      const authHeader = getAuthHeader()
-      if (!authHeader) {
-        clearAuth()
-        window.location.href = '/superadmin/login'
-      }
-    }
-  }
 
   const fetchData = async () => {
     try {
@@ -144,6 +107,32 @@ export default function SuperadminAnalyticsPage() {
         setCollegeStats([])
       }
 
+      // Fetch chart data in parallel (score distribution + weekly progress)
+      const [scoreRes, progressRes] = await Promise.all([
+        fetch(`${apiBaseUrl}/superadmin/analytics/graphical`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ chartType: 'score-distribution', collegeId: selectedCollege !== 'all' ? selectedCollege : undefined }),
+        }),
+        fetch(`${apiBaseUrl}/superadmin/analytics/graphical`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ chartType: 'progress-timeline', collegeId: selectedCollege !== 'all' ? selectedCollege : undefined }),
+        }),
+      ])
+      if (scoreRes.ok) {
+        const d = await scoreRes.json()
+        const dist = d?.data?.scoreDistribution || {}
+        setScoreDistribution(Object.entries(dist).map(([range, count]) => ({ range, count: Number(count) })))
+      }
+      if (progressRes.ok) {
+        const d = await progressRes.json()
+        const wp = d?.data?.weekProgress || {}
+        setWeekProgress(
+          Object.entries(wp)
+            .sort(([a], [b]) => Number(a) - Number(b))
+            .map(([week, days]) => ({ week: `Week ${week}`, days: Number(days) }))
+        )
+      }
+
       // Fetch student analytics
       const studentsRes = await fetch(`${apiBaseUrl}/superadmin/analytics/students`, {
         method: 'POST',
@@ -153,8 +142,19 @@ export default function SuperadminAnalyticsPage() {
       if (studentsRes.ok) {
         const studentsData = await studentsRes.json()
         if (studentsData.success) {
-          setStudentAnalytics(studentsData.data)
+          // Backend returns { data: { filters, students: [...] } } — unwrap the array.
+          // (Storing the raw object here made the Top Students table render nothing.)
+          const list = Array.isArray(studentsData.data?.students)
+            ? studentsData.data.students
+            : Array.isArray(studentsData.data)
+              ? studentsData.data
+              : []
+          setStudentAnalytics(list)
+        } else {
+          setStudentAnalytics([])
         }
+      } else {
+        setStudentAnalytics([])
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -182,8 +182,21 @@ export default function SuperadminAnalyticsPage() {
     }
   }
 
+  // The dropdown filters BOTH tables: college rows client-side, students server-side.
+  const visibleColleges = Array.isArray(collegeStats)
+    ? (selectedCollege === 'all'
+      ? collegeStats
+      : collegeStats.filter((c) => c.collegeId === selectedCollege))
+    : []
+
+  // collegeId -> name lookup for the Top Students "College" column
+  const collegeNameById = new Map<string, string>(
+    (Array.isArray(collegeStats) ? collegeStats : []).map((c) => [String(c.collegeId), c.collegeName])
+  )
+
   if (isLoading && !overview) {
     return (
+      <SuperadminLayout>
       <div className="min-h-screen bg-background px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-96">
@@ -191,10 +204,12 @@ export default function SuperadminAnalyticsPage() {
           </div>
         </div>
       </div>
+      </SuperadminLayout>
     )
   }
 
   return (
+    <SuperadminLayout>
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -298,6 +313,53 @@ export default function SuperadminAnalyticsPage() {
           </div>
         )}
 
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-neutral mb-1">Score Distribution</h2>
+            <p className="text-sm text-neutral-light mb-4">Practice test scores across all attempts</p>
+            {scoreDistribution.length === 0 || scoreDistribution.every(s => s.count === 0) ? (
+              <div className="h-64 flex items-center justify-center text-neutral-light text-sm">
+                No test data yet
+              </div>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={scoreDistribution} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="range" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(v: any) => [`${v} tests`, 'Count']} />
+                    <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-neutral mb-1">Weekly Progress</h2>
+            <p className="text-sm text-neutral-light mb-4">Total study days completed per week</p>
+            {weekProgress.length === 0 ? (
+              <div className="h-64 flex items-center justify-center text-neutral-light text-sm">
+                No progress data yet
+              </div>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weekProgress} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="week" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(v: any) => [`${v} days`, 'Completed']} />
+                    <Bar dataKey="days" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Card>
+        </div>
+
         {/* College Statistics */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -330,14 +392,14 @@ export default function SuperadminAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(collegeStats) && collegeStats.length === 0 ? (
+                {visibleColleges.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-neutral-light">
                       No college data available
                     </td>
                   </tr>
                 ) : (
-                  Array.isArray(collegeStats) && collegeStats.map((college) => (
+                  visibleColleges.map((college) => (
                     <tr key={college.collegeId} className="border-b border-neutral-light/10 hover:bg-background-elevated">
                       <td className="py-3 px-4 text-sm text-neutral">{college.collegeName}</td>
                       <td className="py-3 px-4">
@@ -372,6 +434,7 @@ export default function SuperadminAnalyticsPage() {
                   <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Rank</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Name</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Email</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">College</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Days Completed</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Practice Tests</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Coding Problems</th>
@@ -379,20 +442,23 @@ export default function SuperadminAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(studentAnalytics) && studentAnalytics.length === 0 ? (
+                {studentAnalytics.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-neutral-light">
+                    <td colSpan={8} className="py-8 text-center text-neutral-light">
                       No student data available
                     </td>
                   </tr>
                 ) : (
-                  Array.isArray(studentAnalytics) && studentAnalytics.slice(0, 20).map((student, index) => (
+                  studentAnalytics.slice(0, 20).map((student, index) => (
                     <tr key={student.studentId || index} className="border-b border-neutral-light/10 hover:bg-background-elevated">
                       <td className="py-3 px-4 text-sm text-neutral">
                         <span className="font-semibold">#{index + 1}</span>
                       </td>
                       <td className="py-3 px-4 text-sm text-neutral">{student.name || 'N/A'}</td>
                       <td className="py-3 px-4 text-sm text-neutral-light">{student.email || 'N/A'}</td>
+                      <td className="py-3 px-4 text-sm text-neutral-light">
+                        {collegeNameById.get(String(student.collegeId)) || '—'}
+                      </td>
                       <td className="py-3 px-4 text-sm text-neutral text-right">{student.progress?.totalDaysCompleted || 0}</td>
                       <td className="py-3 px-4 text-sm text-neutral text-right">{student.progress?.totalPracticeTests || 0}</td>
                       <td className="py-3 px-4 text-sm text-neutral text-right">{student.progress?.totalCodingProblems || 0}</td>
@@ -415,5 +481,6 @@ export default function SuperadminAnalyticsPage() {
         />
       )}
     </div>
+    </SuperadminLayout>
   )
 }

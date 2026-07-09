@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NavDropdown } from '@/components/ui/NavDropdown'
+import { AnnouncementBanner } from '@/components/student/AnnouncementBanner'
 
 interface StudentLayoutProps {
   children: React.ReactNode
@@ -231,6 +232,9 @@ export function StudentLayout({ children }: StudentLayoutProps) {
           </div>
         </div>
       </header>
+
+      {/* Platform announcements (dismissible) */}
+      <AnnouncementBanner />
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-background">

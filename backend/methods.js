@@ -126,6 +126,30 @@ export function objectId(data, objectIdFields = ['personId', '_id', 'userId']) {
 }
 
 /**
+ * Map an HTTP status to a readable error code for the error log.
+ * Controllers rarely set an explicit `code`, so derive one from the status
+ * instead of logging everything as UNKNOWN_ERROR.
+ */
+function errorCodeFromStatus(status) {
+    const map = {
+        400: 'BAD_REQUEST',
+        401: 'UNAUTHORIZED',
+        403: 'FORBIDDEN',
+        404: 'NOT_FOUND',
+        409: 'CONFLICT',
+        413: 'PAYLOAD_TOO_LARGE',
+        422: 'VALIDATION_ERROR',
+        429: 'RATE_LIMITED',
+        500: 'SERVER_ERROR',
+        502: 'BAD_GATEWAY',
+        503: 'SERVICE_UNAVAILABLE',
+    };
+    const s = parseInt(status, 10);
+    if (!s || isNaN(s)) return 'UNKNOWN_ERROR';
+    return map[s] || `HTTP_${s}`;
+}
+
+/**
  * Log Error to tblerrorlog Collection
  * @param {Object} errorInfo - Error information
  */
@@ -139,6 +163,7 @@ async function logError(errorInfo) {
             filter: errorInfo.filter || {},
             error_message: errorInfo.error_message || '',
             error_code: errorInfo.error_code || '',
+            http_status: errorInfo.http_status ?? null,
             timestamp: new Date(),
             ip_address: errorInfo.ip_address || ''
         };
@@ -791,6 +816,7 @@ export async function responsedata(req, res, next) {
             res.status(responseData.status || 200).json(response);
         } else {
             // Error response
+            const httpStatus = responseData?.status || 500;
             const errorInfo = {
                 route: req.originalUrl,
                 frontend_page: req.headers.referer || '',
@@ -798,7 +824,9 @@ export async function responsedata(req, res, next) {
                 payload: req.body || {},
                 filter: req.body?.filter || req.body?.query || {}, // Get filter from req.body instead of req.query
                 error_message: responseData?.error || responseData?.message || 'Unknown error',
-                error_code: responseData?.code || 'UNKNOWN_ERROR',
+                // Explicit controller code wins; otherwise derive from the HTTP status
+                error_code: responseData?.code || errorCodeFromStatus(httpStatus),
+                http_status: httpStatus,
                 ip_address: req.ip || req.connection.remoteAddress || req.socket.remoteAddress || ''
             };
 
@@ -826,6 +854,7 @@ export async function responsedata(req, res, next) {
             filter: req.body?.filter || req.body?.query || {}, // Get filter from req.body instead of req.query
             error_message: error.message,
             error_code: 'RESPONSE_MIDDLEWARE_ERROR',
+            http_status: 500,
             ip_address: req.ip || req.connection.remoteAddress || req.socket.remoteAddress || ''
         };
 

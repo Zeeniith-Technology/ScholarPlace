@@ -1,4 +1,5 @@
 import { executeData, fetchData, getDB } from '../../methods.js';
+import { ObjectId } from 'mongodb';
 
 export default class superadminAnalyticsController {
 
@@ -127,8 +128,9 @@ export default class superadminAnalyticsController {
             const { collegeId, departmentId } = req.body || {};
 
             // Phase 1: colleges + all students in parallel (eliminates N+1)
+            // NOTE: tblCollage has no collage_id field — the college id IS _id.
             let collegeFilter = { deleted: false };
-            if (collegeId) collegeFilter.collage_id = collegeId;
+            if (collegeId) collegeFilter._id = collegeId; // fetchData converts string _id to ObjectId
 
             let studentFilter = { person_role: { $regex: /^student$/i }, person_deleted: { $ne: true } };
             if (collegeId) studentFilter.person_collage_id = collegeId;
@@ -196,7 +198,9 @@ export default class superadminAnalyticsController {
                     : 0;
 
                 return {
-                    collegeId: college.collage_id,
+                    // tblCollage has no collage_id field — returning it sent undefined
+                    // to every consumer (college cards showed 0 students, filters broke)
+                    collegeId: String(college._id),
                     collegeName: college.collage_name,
                     status: college.collage_status === 1 ? 'active' : 'inactive',
                     subscriptionStatus: college.collage_subscription_status || 'active',
@@ -233,7 +237,13 @@ export default class superadminAnalyticsController {
      */
     async getStudentAnalytics(req, res, next) {
         try {
-            const { collegeId, departmentId, limit = 100, search, status } = req.body || {};
+            const { collegeId, departmentId, limit = 100, page = 1, search, status, inactiveDays } = req.body || {};
+
+            // Helper: match an id stored as either a string or an ObjectId
+            const idMatch = (id) => {
+                const s = String(id);
+                return /^[0-9a-fA-F]{24}$/.test(s) ? { $in: [s, new ObjectId(s)] } : s;
+            };
 
             // Build filter for students (exclude soft-deleted)
             let studentFilter = {
@@ -241,23 +251,55 @@ export default class superadminAnalyticsController {
                 person_deleted: { $ne: true } // Exclude soft-deleted students
             };
             if (collegeId) {
-                studentFilter.person_collage_id = collegeId;
+                studentFilter.person_collage_id = idMatch(collegeId);
             }
             if (departmentId) {
-                studentFilter.department = departmentId;
+                // Students store the department reference in department_id (id) and
+                // department (name/legacy id) — match either, as string or ObjectId.
+                studentFilter.$and = [{
+                    $or: [
+                        { department_id: idMatch(departmentId) },
+                        { department: String(departmentId) }
+                    ]
+                }];
             }
             if (status && status !== 'all') {
                 studentFilter.person_status = status;
             }
+            // Inactive-student radar: last_login older than N days, or never logged in.
+            // last_login is stored as an ISO string, so lexicographic $lt is correct.
+            const inactiveDaysNum = parseInt(inactiveDays);
+            if (inactiveDaysNum > 0) {
+                const cutoff = new Date(Date.now() - Math.min(inactiveDaysNum, 365) * 24 * 60 * 60 * 1000).toISOString();
+                studentFilter.$and = [...(studentFilter.$and || []), {
+                    $or: [
+                        { last_login: { $lt: cutoff } },
+                        { last_login: { $exists: false } },
+                        { last_login: null }
+                    ]
+                }];
+            }
             if (search && typeof search === 'string' && search.trim()) {
                 const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const searchRegex = { $regex: escaped, $options: 'i' };
-                studentFilter.$or = [
-                    { person_name: searchRegex },
-                    { person_email: searchRegex },
-                    { enrollment_number: searchRegex }
-                ];
+                const searchOr = {
+                    $or: [
+                        { person_name: searchRegex },
+                        { person_email: searchRegex },
+                        { enrollment_number: searchRegex }
+                    ]
+                };
+                // Combine with the department $or (if any) via $and so both apply
+                studentFilter.$and = [...(studentFilter.$and || []), searchOr];
             }
+
+            // Pagination (page/limit) + total count for the UI
+            const safeLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 500);
+            const safePage = Math.max(parseInt(page) || 1, 1);
+            const skip = (safePage - 1) * safeLimit;
+
+            const db = getDB();
+            const totalCount = await db.collection('tblPersonMaster').countDocuments(studentFilter);
 
             // Get students
             const studentsResponse = await fetchData(
@@ -268,10 +310,12 @@ export default class superadminAnalyticsController {
                     person_email: 1,
                     person_collage_id: 1,
                     person_status: 1,
-                    department: 1
+                    department: 1,
+                    department_id: 1,
+                    last_login: 1
                 },
                 studentFilter,
-                { limit: parseInt(limit) }
+                { limit: safeLimit, skip, sort: { person_name: 1 } }
             );
             const students = studentsResponse.data || [];
 
@@ -326,6 +370,7 @@ export default class superadminAnalyticsController {
                     collegeId: student.person_collage_id,
                     department: student.department,
                     status: student.person_status,
+                    lastLogin: student.last_login || null,
                     progress: {
                         totalDaysCompleted,
                         totalPracticeTests,
@@ -346,6 +391,12 @@ export default class superadminAnalyticsController {
                     filters: {
                         collegeId: collegeId || null,
                         departmentId: departmentId || null
+                    },
+                    pagination: {
+                        page: safePage,
+                        limit: safeLimit,
+                        total: totalCount,
+                        totalPages: Math.max(1, Math.ceil(totalCount / safeLimit))
                     },
                     students: studentAnalytics
                 }
@@ -604,19 +655,85 @@ export default class superadminAnalyticsController {
      */
     async getSecurityViolations(req, res, next) {
         try {
-            // Note: This assumes you have a security violations collection
-            // For now, we'll return a structure that can be populated later
-            // You can create a tblSecurityViolations collection if needed
+            // Real violation data lives in tblBlockedTestRetake — one record per
+            // student/week/test blocked for a proctoring violation (tab switch etc.).
+            // blocked=true → still blocked; blocked=false + approved_at → resolved.
+            const violationsRes = await fetchData(
+                'tblBlockedTestRetake',
+                {},
+                {},
+                { sort: { blocked_at: -1 }, limit: 500 }
+            );
+            const violations = violationsRes.data || [];
+
+            // Enrich with student name / email / college
+            const studentIds = [...new Set(violations.map(v => String(v.student_id || '')).filter(Boolean))];
+            const objectIds = studentIds.filter(id => /^[0-9a-fA-F]{24}$/.test(id)).map(id => new ObjectId(id));
+            const personsRes = studentIds.length > 0
+                ? await fetchData('tblPersonMaster',
+                    { person_name: 1, person_email: 1, person_collage_id: 1, department: 1 },
+                    { $or: [{ _id: { $in: objectIds } }, { _id: { $in: studentIds } }] })
+                : { data: [] };
+            const personMap = new Map((personsRes.data || []).map(p => [String(p._id), p]));
+
+            // College names for grouping
+            const collegesRes = await fetchData('tblCollage', { collage_name: 1 }, { deleted: false });
+            const collegeNameById = new Map((collegesRes.data || []).map(c => [String(c._id), c.collage_name]));
+
+            const enriched = violations.map(v => {
+                const p = personMap.get(String(v.student_id));
+                return {
+                    _id: v._id,
+                    student_id: v.student_id,
+                    student_name: p?.person_name || 'Unknown',
+                    student_email: p?.person_email || '',
+                    college: collegeNameById.get(String(p?.person_collage_id)) || '—',
+                    department: p?.department || '',
+                    week: v.week,
+                    test_type: v.test_type,
+                    reason: v.blocked_reason || 'Violation',
+                    blocked: v.blocked === true,
+                    blocked_at: v.blocked_at,
+                    approved_at: v.approved_at || null,
+                };
+            });
+
+            // Aggregations
+            const currentlyBlocked = enriched.filter(v => v.blocked).length;
+            const resolved = enriched.filter(v => !v.blocked).length;
+
+            const byReason = {};
+            const byCollege = {};
+            const violatorCounts = new Map();
+            enriched.forEach(v => {
+                // Normalize reason to a short key (first sentence)
+                const reasonKey = String(v.reason).split('.')[0].slice(0, 60);
+                byReason[reasonKey] = (byReason[reasonKey] || 0) + 1;
+                byCollege[v.college] = (byCollege[v.college] || 0) + 1;
+                const k = v.student_id;
+                violatorCounts.set(k, {
+                    student_name: v.student_name,
+                    student_email: v.student_email,
+                    college: v.college,
+                    count: (violatorCounts.get(k)?.count || 0) + 1,
+                });
+            });
+            const topViolators = [...violatorCounts.values()]
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 message: 'Security violations fetched successfully',
                 data: {
-                    totalViolations: 0,
-                    violationsByType: {},
-                    recentViolations: [],
-                    topViolators: []
+                    totalViolations: enriched.length,
+                    currentlyBlocked,
+                    resolved,
+                    violationsByType: byReason,
+                    violationsByCollege: byCollege,
+                    topViolators,
+                    recentViolations: enriched.slice(0, 100),
                 }
             };
             next();
@@ -625,6 +742,196 @@ export default class superadminAnalyticsController {
                 success: false,
                 status: 500,
                 message: 'Failed to fetch security violations',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    /**
+     * AI + code-execution usage overview (cost visibility)
+     * Route: POST /superadmin/ai-usage
+     */
+    async getAIUsage(req, res, next) {
+        try {
+            const { days = 14 } = req.body || {};
+            const windowDays = Math.min(Math.max(parseInt(days) || 14, 1), 90);
+            const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+            const sinceIso = since.toISOString();
+
+            const db = getDB();
+
+            // AI interactions (created_at stored as ISO string by executeData)
+            const interactions = await db.collection('tblAIInteraction')
+                .find({ $or: [{ created_at: { $gte: sinceIso } }, { created_at: { $gte: since } }] })
+                .project({ interaction_type: 1, was_out_of_scope: 1, ai_provider: 1, student_id: 1, created_at: 1 })
+                .toArray();
+
+            const totalAllTime = await db.collection('tblAIInteraction').countDocuments({});
+
+            const byType = {};
+            const byDay = {};
+            let outOfScope = 0;
+            const perStudent = new Map();
+            interactions.forEach(i => {
+                byType[i.interaction_type || 'unknown'] = (byType[i.interaction_type || 'unknown'] || 0) + 1;
+                const day = String(i.created_at).slice(0, 10);
+                byDay[day] = (byDay[day] || 0) + 1;
+                if (i.was_out_of_scope) outOfScope++;
+                const sid = String(i.student_id || 'unknown');
+                perStudent.set(sid, (perStudent.get(sid) || 0) + 1);
+            });
+
+            // Top AI consumers with names
+            const topIds = [...perStudent.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const idStrs = topIds.map(([id]) => id).filter(id => id !== 'unknown');
+            const objIds = idStrs.filter(id => /^[0-9a-fA-F]{24}$/.test(id)).map(id => new ObjectId(id));
+            const personsRes = idStrs.length > 0
+                ? await fetchData('tblPersonMaster', { person_name: 1, person_email: 1 },
+                    { $or: [{ _id: { $in: objIds } }, { _id: { $in: idStrs } }] })
+                : { data: [] };
+            const nameMap = new Map((personsRes.data || []).map(p => [String(p._id), p]));
+            const topStudents = topIds.map(([id, count]) => ({
+                student_name: nameMap.get(id)?.person_name || 'Unknown',
+                student_email: nameMap.get(id)?.person_email || '',
+                calls: count,
+            }));
+
+            // Code execution (JDoodle) estimate from stored submissions:
+            // each submission ran test_results.length test cases ≈ that many credits.
+            // "Run" calls aren't persisted, so this is a lower bound.
+            const submissions = await db.collection('tblCodingSubmissions')
+                .find({ submitted_at: { $gte: since } })
+                .project({ submitted_at: 1, test_results: 1 })
+                .toArray();
+            const jdoodleByDay = {};
+            let jdoodleCredits = 0;
+            submissions.forEach(s => {
+                const day = new Date(s.submitted_at).toISOString().slice(0, 10);
+                const credits = Array.isArray(s.test_results) ? s.test_results.length : 1;
+                jdoodleByDay[day] = (jdoodleByDay[day] || 0) + credits;
+                jdoodleCredits += credits;
+            });
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'AI usage fetched successfully',
+                data: {
+                    windowDays,
+                    ai: {
+                        totalInWindow: interactions.length,
+                        totalAllTime,
+                        outOfScope,
+                        byType,
+                        byDay,
+                        topStudents,
+                    },
+                    codeExecution: {
+                        submissionsInWindow: submissions.length,
+                        estimatedCredits: jdoodleCredits,
+                        creditsByDay: jdoodleByDay,
+                        note: 'Submit-only lower bound; Run calls are not persisted',
+                    },
+                }
+            };
+            next();
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Failed to fetch AI usage',
+                error: error.message
+            };
+            next();
+        }
+    }
+
+    /**
+     * POST /superadmin/ops/health
+     * Error-log intelligence for the ops dashboard: 24h/7d volume, a per-day
+     * trend, a 4xx-vs-5xx split, the noisiest routes, and the most recent errors.
+     * (Latency comes from the public /health ping and cost from /ai-usage — the
+     * frontend composes those; this endpoint owns the error-trend piece.)
+     */
+    async getOpsHealth(req, res, next) {
+        try {
+            const db = getDB();
+            const col = db.collection('tblerrorlog');
+            const now = Date.now();
+            const since24h = new Date(now - 24 * 60 * 60 * 1000);
+            const since7d = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+            const [errors24h, errors7d, last7dDocs, recent] = await Promise.all([
+                col.countDocuments({ timestamp: { $gte: since24h } }),
+                col.countDocuments({ timestamp: { $gte: since7d } }),
+                col.find({ timestamp: { $gte: since7d } })
+                    .project({ http_status: 1, error_code: 1, route: 1, backend_route: 1, timestamp: 1 })
+                    .toArray(),
+                col.find({})
+                    .project({ http_status: 1, error_code: 1, route: 1, backend_route: 1, error_message: 1, timestamp: 1 })
+                    .sort({ timestamp: -1 })
+                    .limit(8)
+                    .toArray(),
+            ]);
+
+            // Per-day trend (last 7 days, oldest→newest, gap-filled with 0)
+            const dayCounts = {};
+            const statusSplit = { c4xx: 0, c5xx: 0, other: 0 };
+            const routeCounts = {};
+            for (const e of last7dDocs) {
+                const key = new Date(e.timestamp).toISOString().slice(0, 10);
+                dayCounts[key] = (dayCounts[key] || 0) + 1;
+
+                const s = e.http_status;
+                if (s >= 500) statusSplit.c5xx++;
+                else if (s >= 400) statusSplit.c4xx++;
+                else statusSplit.other++;
+
+                const r = e.route || e.backend_route || 'unknown';
+                routeCounts[r] = (routeCounts[r] || 0) + 1;
+            }
+
+            const byDay = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now - i * 24 * 60 * 60 * 1000);
+                const key = d.toISOString().slice(0, 10);
+                byDay.push({ date: key, count: dayCounts[key] || 0 });
+            }
+
+            const topRoutes = Object.entries(routeCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([route, count]) => ({ route, count }));
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Ops health fetched',
+                data: {
+                    errors: {
+                        last24h: errors24h,
+                        last7d: errors7d,
+                        byDay,
+                        statusSplit,
+                        topRoutes,
+                        recent: recent.map(e => ({
+                            route: e.route || e.backend_route || '',
+                            error_code: e.error_code || '',
+                            http_status: e.http_status ?? null,
+                            error_message: e.error_message || '',
+                            timestamp: e.timestamp,
+                        })),
+                    },
+                }
+            };
+            next();
+        } catch (error) {
+            console.error('[Ops] getOpsHealth error:', error);
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Failed to fetch ops health',
                 error: error.message
             };
             next();

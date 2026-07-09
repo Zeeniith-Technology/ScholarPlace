@@ -36,43 +36,7 @@ class AIService {
              * - gemini-2.0-flash  (alternative)
              */
             const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
-            this.model = this.genAI.getGenerativeModel({
-                model: modelName,
-                generationConfig: {
-                    temperature: 0.7,      // Faster than 1.0
-                    topK: 20,              // Faster than default 40
-                    topP: 0.8,             // Faster than default 0.95
-                    maxOutputTokens: 8192, // Increased limit for detailed reviews
-                }
-            });
-            console.log(`[AIService] Initialized with model: ${modelName}`);
-
-            // Wrap generateContent with retry-on-transient-error. With many concurrent
-            // students, Gemini intermittently returns 429 (rate limit) / 503 (overloaded);
-            // a short exponential backoff lets the request succeed instead of surfacing
-            // as a 500 to the user. Permanent errors (e.g. 400) are re-thrown immediately.
-            const rawGenerate = this.model.generateContent.bind(this.model);
-            const isTransientAIError = (err) => {
-                const msg = (err && (err.message || String(err))) || '';
-                return /(\b429\b|\b500\b|\b503\b|overloaded|RESOURCE_EXHAUSTED|UNAVAILABLE|rate limit|try again later|ECONNRESET|ETIMEDOUT|fetch failed|socket hang up)/i.test(msg);
-            };
-            this.model.generateContent = async (...args) => {
-                const maxAttempts = 4; // 1 initial + 3 retries
-                let lastErr;
-                for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                    try {
-                        return await rawGenerate(...args);
-                    } catch (err) {
-                        lastErr = err;
-                        if (attempt === maxAttempts || !isTransientAIError(err)) throw err;
-                        // Exponential backoff with jitter: ~0.4s, 0.8s, 1.6s
-                        const delay = Math.min(8000, 400 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 300);
-                        console.warn(`[AIService] Transient Gemini error (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms: ${err.message || err}`);
-                        await new Promise(r => setTimeout(r, delay));
-                    }
-                }
-                throw lastErr;
-            };
+            this._buildModel(modelName);
         } else {
             console.warn('[AIService] Gemini API key not found. AI features will not work.');
         }
@@ -84,6 +48,65 @@ class AIService {
             'Loops', 'Arrays', 'Functions', 'Input/Output',
             'DSA Basics', 'Programming Fundamentals'
         ];
+    }
+
+    /**
+     * (Re)build this.model for the given model name and re-apply the
+     * retry-on-transient-error wrapper. Called once at boot and again whenever
+     * the Platform Settings "Gemini model" value changes, so a model switch takes
+     * effect live without a redeploy. All call sites reference this.model at call
+     * time, so they pick up the new instance automatically.
+     */
+    _buildModel(modelName) {
+        if (!this.genAI) return;
+        this.modelName = modelName;
+        this.model = this.genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                temperature: 0.7,      // Faster than 1.0
+                topK: 20,              // Faster than default 40
+                topP: 0.8,             // Faster than default 0.95
+                maxOutputTokens: 8192, // Increased limit for detailed reviews
+            }
+        });
+        console.log(`[AIService] Initialized with model: ${modelName}`);
+
+        // Wrap generateContent with retry-on-transient-error. With many concurrent
+        // students, Gemini intermittently returns 429 (rate limit) / 503 (overloaded);
+        // a short exponential backoff lets the request succeed instead of surfacing
+        // as a 500 to the user. Permanent errors (e.g. 400) are re-thrown immediately.
+        const rawGenerate = this.model.generateContent.bind(this.model);
+        const isTransientAIError = (err) => {
+            const msg = (err && (err.message || String(err))) || '';
+            return /(\b429\b|\b500\b|\b503\b|overloaded|RESOURCE_EXHAUSTED|UNAVAILABLE|rate limit|try again later|ECONNRESET|ETIMEDOUT|fetch failed|socket hang up)/i.test(msg);
+        };
+        this.model.generateContent = async (...args) => {
+            const maxAttempts = 4; // 1 initial + 3 retries
+            let lastErr;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    return await rawGenerate(...args);
+                } catch (err) {
+                    lastErr = err;
+                    if (attempt === maxAttempts || !isTransientAIError(err)) throw err;
+                    // Exponential backoff with jitter: ~0.4s, 0.8s, 1.6s
+                    const delay = Math.min(8000, 400 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 300);
+                    console.warn(`[AIService] Transient Gemini error (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms: ${err.message || err}`);
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+            throw lastErr;
+        };
+    }
+
+    /**
+     * Switch the active Gemini model at runtime (called by the settings update
+     * endpoint). No-op if the model is unchanged or AI isn't configured.
+     */
+    reloadModel(modelName) {
+        if (!modelName || !this.genAI || modelName === this.modelName) return;
+        console.log(`[AIService] Reloading model: ${this.modelName} → ${modelName}`);
+        this._buildModel(modelName);
     }
 
     /**

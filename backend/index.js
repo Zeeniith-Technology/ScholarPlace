@@ -177,7 +177,20 @@ if (useCluster && cluster.isPrimary) {
 
     // Connect to MongoDB first
     connectDB()
-        .then(() => {
+        .then(async () => {
+            // Apply persisted platform settings now that the DB is connected, so a
+            // model chosen in the admin UI survives restarts (not just env).
+            try {
+                const [{ getSetting }, aiServiceModule] = await Promise.all([
+                    import('./utils/settings.js'),
+                    import('./services/aiService.js'),
+                ]);
+                const model = await getSetting('gemini_model');
+                if (model) aiServiceModule.default.reloadModel(model);
+            } catch (e) {
+                console.warn('[Startup] Could not apply persisted settings:', e.message);
+            }
+
             // Use router for ALL routes
             app.use('/', router);
 

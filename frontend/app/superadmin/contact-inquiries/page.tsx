@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -44,10 +45,19 @@ export default function ContactInquiriesPage() {
         setIsMessageExpanded(false)
     }, [selectedInquiry])
 
-    // Fetch inquiries on mount
+    // Server-side pagination
+    const [page, setPage] = useState(1)
+    const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number } | null>(null)
+    const PAGE_SIZE = 20
+
+    // Status filter is applied server-side; changing it restarts at page 1
+    useEffect(() => {
+        setPage(1)
+    }, [statusFilter])
+
     useEffect(() => {
         fetchInquiries()
-    }, [])
+    }, [page, statusFilter])
 
     const fetchInquiries = async () => {
         try {
@@ -64,13 +74,18 @@ export default function ContactInquiriesPage() {
                     'Content-Type': 'application/json',
                     'Authorization': authHeader
                 },
-                body: JSON.stringify({ status: statusFilter !== 'all' ? statusFilter : undefined })
+                body: JSON.stringify({
+                    status: statusFilter !== 'all' ? statusFilter : undefined,
+                    page,
+                    limit: PAGE_SIZE,
+                })
             })
 
             const data = await response.json()
 
             if (data.success) {
                 setInquiries(data.data.inquiries || [])
+                setPagination(data.data.pagination || null)
             } else {
                 showToast(data.message || 'Failed to fetch inquiries', 'error')
             }
@@ -153,6 +168,8 @@ export default function ContactInquiriesPage() {
     })
 
     return (
+
+      <SuperadminLayout>
         <div className="min-h-screen bg-background-surface p-8">
             {toast && (
                 <Toast
@@ -249,6 +266,28 @@ export default function ContactInquiriesPage() {
                                     ))
                                 )}
                             </div>
+                            {/* Pagination */}
+                            {pagination && pagination.totalPages > 1 && (
+                                <div className="flex items-center justify-between p-3 border-t border-neutral-light/10">
+                                    <button
+                                        disabled={page <= 1 || isLoading}
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        className="text-sm px-3 py-1.5 rounded-lg border border-neutral-light/20 disabled:opacity-40 hover:bg-neutral-light/10"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-xs text-neutral-light">
+                                        {pagination.page} / {pagination.totalPages} ({pagination.total} total)
+                                    </span>
+                                    <button
+                                        disabled={page >= pagination.totalPages || isLoading}
+                                        onClick={() => setPage(p => p + 1)}
+                                        className="text-sm px-3 py-1.5 rounded-lg border border-neutral-light/20 disabled:opacity-40 hover:bg-neutral-light/10"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
                         </Card>
                     </div>
 
@@ -341,5 +380,6 @@ export default function ContactInquiriesPage() {
                 </div>
             </div>
         </div>
+      </SuperadminLayout>
     )
 }

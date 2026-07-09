@@ -6,6 +6,7 @@
 import { executeData, fetchData, getDB } from '../methods.js';
 import questionSchema from '../schema/tblQuestion.js';
 import { ObjectId } from 'mongodb';
+import { getSetting } from '../utils/settings.js';
 
 /**
  * Seeded Fisher-Yates shuffle algorithm
@@ -105,7 +106,8 @@ export default class questionController {
 
             // NEW: Anti-Cheating Shuffle for Weekly Tests
             // Check if shuffling is enabled AND this is a weekly test
-            const shuffleEnabled = process.env.ENABLE_SHUFFLE === 'true';
+            // Runtime toggle (Platform Settings) with env fallback — no redeploy needed
+            const shuffleEnabled = await getSetting('enable_shuffle');
             const isWeeklyTest = filter?.tags?.includes('weekly-aptitude-test');
             const weekNumber = filter?.week;
 
@@ -151,14 +153,17 @@ export default class questionController {
 
                 console.log(`[Shuffle] Shuffled ${questions.length} questions and their options`);
             } else if (!shuffleEnabled && isWeeklyTest) {
-                console.log('[Shuffle] Disabled via ENABLE_SHUFFLE env flag');
+                console.log('[Shuffle] Disabled via enable_shuffle platform setting');
             }
 
             res.locals.responseData = {
                 success: true,
                 status: 200,
                 message: 'Questions fetched successfully',
-                data: questions
+                // With options.count the payload becomes { questions, total } so the
+                // admin Question Bank can paginate server-side; legacy callers that
+                // don't send count keep getting the plain array
+                data: options?.count ? { questions, total: response.count } : questions
             };
             next();
         } catch (error) {

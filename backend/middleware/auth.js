@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { getDB, fetchData } from '../methods.js';
+import { isImpersonationReadAllowed } from '../utils/impersonation.js';
 
 /**
  * In-memory cache for the "college still exists" check so we don't hit the DB on
@@ -32,6 +33,12 @@ async function isCollegeValid(collegeId) {
  * Verifies JWT token from Authorization header
  */
 export const auth = async (req, res, next) => {
+    // Authentication failures MUST end the request here. The terminal `responsedata`
+    // responder runs AFTER the route controller, so calling next() on failure would
+    // let the controller run with no authenticated user and overwrite our 401 with a
+    // success payload (auth bypass). Send the error directly and stop the chain.
+    const fail = (status, message, error) => res.status(status).json({ success: false, message, error });
+
     try {
         // Get token from Authorization header (Bearer token)
         const authHeader = req.headers.authorization;
@@ -45,26 +52,14 @@ export const auth = async (req, res, next) => {
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             // console.log('[Auth Middleware] No valid auth header found');
-            res.locals.responseData = {
-                success: false,
-                status: 401,
-                message: 'Authentication required',
-                error: 'No token provided'
-            };
-            return next();
+            return fail(401, 'Authentication required', 'No token provided');
         }
 
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
         if (!token) {
             // console.log('[Auth Middleware] Token is empty after removing Bearer prefix');
-            res.locals.responseData = {
-                success: false,
-                status: 401,
-                message: 'Authentication required',
-                error: 'No token provided'
-            };
-            return next();
+            return fail(401, 'Authentication required', 'No token provided');
         }
 
         // console.log('[Auth Middleware] Token found, length:', token.length);
@@ -87,13 +82,7 @@ export const auth = async (req, res, next) => {
             const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
             if (collegeIdFromToken && isCollegeUser) {
                 if (!(await isCollegeValid(collegeIdFromToken))) {
-                    res.locals.responseData = {
-                        success: false,
-                        status: 401,
-                        message: 'Your college account has been removed. Please contact administrator.',
-                        error: 'College deleted'
-                    };
-                    return next();
+                    return fail(401, 'Your college account has been removed. Please contact administrator.', 'College deleted');
                 }
             }
 
@@ -122,6 +111,15 @@ export const auth = async (req, res, next) => {
             // Also set req.userId for backward compatibility
             req.userId = req.user.id;
 
+            // Impersonation ("View As"): a token minted for a superadmin to view a
+            // student is READ-ONLY. Restrict it to the read allowlist and block
+            // everything else (all writes, code/AI cost, admin routes) — fail closed.
+            if (decoded.impersonated === true) {
+                if (!isImpersonationReadAllowed(req.path)) {
+                    return fail(403, 'This action is disabled while viewing as a student (read-only session)', 'IMPERSONATION_READONLY');
+                }
+            }
+
             // console.log('[Auth Middleware] User authenticated:', {
             //     // userId: req.userId,
             //     // userRole: req.user.role,
@@ -131,37 +129,15 @@ export const auth = async (req, res, next) => {
             next();
         } catch (error) {
             if (error.name === 'JsonWebTokenError') {
-                res.locals.responseData = {
-                    success: false,
-                    status: 401,
-                    message: 'Invalid token',
-                    error: 'Token verification failed'
-                };
+                return fail(401, 'Invalid token', 'Token verification failed');
             } else if (error.name === 'TokenExpiredError') {
-                res.locals.responseData = {
-                    success: false,
-                    status: 401,
-                    message: 'Token expired',
-                    error: 'Please login again'
-                };
+                return fail(401, 'Token expired', 'Please login again');
             } else {
-                res.locals.responseData = {
-                    success: false,
-                    status: 401,
-                    message: 'Authentication failed',
-                    error: error.message
-                };
+                return fail(401, 'Authentication failed', error.message);
             }
-            next();
         }
     } catch (error) {
-        res.locals.responseData = {
-            success: false,
-            status: 500,
-            message: 'Authentication middleware error',
-            error: error.message
-        };
-        next();
+        return fail(500, 'Authentication middleware error', error.message);
     }
 };
 
@@ -214,6 +190,21 @@ export const optionalAuth = async (req, res, next) => {
  * @param {Array} allowedRoles - Array of allowed role names
  */
 export const requireRole = (...allowedRoles) => {
+    // Support both requireRole('Superadmin') and requireRole(['TPC', 'DeptTPC'])
+    const roles = allowedRoles.flat();
+
+    // A denial MUST end the request here — the terminal `responsedata` responder
+    // runs AFTER the route's controller, so calling next() on denial would let the
+    // controller run and overwrite our 403 with a success payload (authz bypass).
+    // Send the error response directly and stop the chain (fail-closed).
+    const deny = (res, status, error) => {
+        return res.status(status).json({
+            success: false,
+            message: status === 403 ? 'Access denied' : 'Role verification failed',
+            error
+        });
+    };
+
     return async (req, res, next) => {
         try {
             const userRole = req.user?.role?.toLowerCase();
@@ -226,25 +217,19 @@ export const requireRole = (...allowedRoles) => {
                 return next();
             }
 
-            if (!allowedRoles || allowedRoles.length === 0) {
+            if (!roles || roles.length === 0) {
                 return next();
             }
 
             if (!userRole) {
-                res.locals.responseData = {
-                    success: false,
-                    status: 403,
-                    message: 'Access denied',
-                    error: 'User role not found'
-                };
-                return next();
+                return deny(res, 403, 'User role not found');
             }
 
             // Check if user's role matches any allowed role
             let isRoleAllowed = false;
 
-            for (const allowedRole of allowedRoles) {
-                const normalizedAllowed = allowedRole.toLowerCase();
+            for (const allowedRole of roles) {
+                const normalizedAllowed = String(allowedRole).toLowerCase();
 
                 if (userRole === normalizedAllowed) {
                     // For special roles, direct match is enough
@@ -267,24 +252,13 @@ export const requireRole = (...allowedRoles) => {
             }
 
             if (!isRoleAllowed) {
-                res.locals.responseData = {
-                    success: false,
-                    status: 403,
-                    message: 'Access denied',
-                    error: `Only ${allowedRoles.join(', ')} can access this resource`
-                };
-                return next();
+                return deny(res, 403, `Only ${roles.join(', ')} can access this resource`);
             }
 
             next();
         } catch (error) {
-            res.locals.responseData = {
-                success: false,
-                status: 500,
-                message: 'Role verification failed',
-                error: error.message
-            };
-            next();
+            // Fail closed: a role-check error must not let the request through.
+            return deny(res, 500, error.message);
         }
     };
 };

@@ -44,8 +44,13 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
+        // Fallback lives INSIDE var(): if the next/font variable fails to attach
+        // (e.g. Google Fonts download fails in local dev), var() substitutes
+        // system-ui instead of invalidating the whole font-family declaration
+        // (which is what made pages render in the browser's default serif).
+        // On production (variable present) this renders exactly as before.
+        sans: ['var(--font-inter, system-ui)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-poppins, system-ui)', 'system-ui', 'sans-serif'],
       },
       animation: {
         'gradient': 'gradient 8s ease infinite',

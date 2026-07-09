@@ -5,6 +5,17 @@
 
 const TOKEN_KEY = 'authToken'
 const AUTH_DATA_KEY = 'auth'
+// Impersonation ("View As"): while active, AUTH_DATA_KEY holds the student's
+// read-only token and IMP_BACKUP_KEY holds the superadmin's real session to
+// restore on exit. IMP_META_KEY drives the "viewing as" banner.
+const IMP_BACKUP_KEY = 'auth_impersonation_backup'
+const IMP_META_KEY = 'auth_impersonation_meta'
+
+export interface ImpersonationMeta {
+  studentId: string
+  studentName: string
+  studentEmail: string
+}
 
 export interface AuthData {
   isAuthenticated: boolean
@@ -105,6 +116,50 @@ export function getAuthHeader(): string | null {
   }
   
   return `Bearer ${token}`
+}
+
+/**
+ * Enter impersonation: back up the current (superadmin) session, then make the
+ * student's read-only token the active auth so student pages load as them.
+ */
+export function startImpersonation(impersonationToken: string, meta: ImpersonationMeta): void {
+  if (typeof window === 'undefined') return
+  const current = localStorage.getItem(AUTH_DATA_KEY)
+  if (current) localStorage.setItem(IMP_BACKUP_KEY, current)
+  const authData: AuthData = {
+    isAuthenticated: true,
+    token: impersonationToken,
+    email: meta.studentEmail,
+    role: 'Student',
+    timestamp: new Date().toISOString(),
+  }
+  localStorage.setItem(AUTH_DATA_KEY, JSON.stringify(authData))
+  localStorage.setItem(IMP_META_KEY, JSON.stringify(meta))
+}
+
+/**
+ * Exit impersonation: restore the superadmin session and clear impersonation state.
+ * Returns true if a session was restored.
+ */
+export function exitImpersonation(): boolean {
+  if (typeof window === 'undefined') return false
+  const backup = localStorage.getItem(IMP_BACKUP_KEY)
+  if (backup) localStorage.setItem(AUTH_DATA_KEY, backup)
+  else localStorage.removeItem(AUTH_DATA_KEY)
+  localStorage.removeItem(IMP_BACKUP_KEY)
+  localStorage.removeItem(IMP_META_KEY)
+  return !!backup
+}
+
+/** Current impersonation metadata, or null if not impersonating. */
+export function getImpersonation(): ImpersonationMeta | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(IMP_META_KEY)
+    return raw ? (JSON.parse(raw) as ImpersonationMeta) : null
+  } catch {
+    return null
+  }
 }
 
 /**

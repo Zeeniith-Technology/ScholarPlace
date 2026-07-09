@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -29,7 +30,9 @@ import {
     Trash2,
     RefreshCw,
     BarChart3,
+    Download,
 } from 'lucide-react'
+import { exportToCSV } from '@/utils/exportUtils'
 
 interface BugReport {
     _id: string
@@ -88,9 +91,18 @@ export default function SuperadminBugReportsPage() {
         critical: 0,
     })
 
+    // Date-range filter (sent to backend as date_from / date_to)
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+
+    // Any filter change restarts at page 1
+    useEffect(() => {
+        setPagination(prev => (prev.current_page === 1 ? prev : { ...prev, current_page: 1 }))
+    }, [selectedStatus, selectedPriority, selectedRole, dateFrom, dateTo])
+
     useEffect(() => {
         fetchReports()
-    }, [selectedStatus, selectedPriority, selectedRole, pagination.current_page])
+    }, [selectedStatus, selectedPriority, selectedRole, dateFrom, dateTo, pagination.current_page])
 
     const fetchReports = async () => {
         try {
@@ -115,7 +127,17 @@ export default function SuperadminBugReportsPage() {
                 requestBody.priority = selectedPriority
             }
             if (selectedRole !== 'all') {
-                requestBody.role = selectedRole
+                // Backend filters on reporter_role (sending "role" was silently ignored)
+                requestBody.reporter_role = selectedRole
+            }
+            if (dateFrom) {
+                requestBody.date_from = dateFrom
+            }
+            if (dateTo) {
+                // Include the whole "to" day (input gives midnight at day start)
+                const end = new Date(dateTo)
+                end.setHours(23, 59, 59, 999)
+                requestBody.date_to = end.toISOString()
             }
 
             const response = await fetch(`${apiBaseUrl}/bug-report/all`, {
@@ -136,17 +158,14 @@ export default function SuperadminBugReportsPage() {
                     setPagination(data.data.pagination)
                 }
 
-                // Calculate stats from all reports
-                const allReports = data.data.reports || []
-                setStats({
-                    total: data.data.pagination?.total_count || 0,
-                    new: allReports.filter((r: BugReport) => r.status === 'new').length,
-                    in_progress: allReports.filter((r: BugReport) => r.status === 'in_progress').length,
-                    hold: allReports.filter((r: BugReport) => r.status === 'hold').length,
-                    solved: allReports.filter((r: BugReport) => r.status === 'solved').length,
-                    not_a_bug: allReports.filter((r: BugReport) => r.status === 'not_a_bug').length,
-                    critical: allReports.filter((r: BugReport) => r.priority === 'critical').length,
-                })
+                // Use the backend's platform-wide stats (per-page recounts were wrong)
+                if (data.data.stats) {
+                    setStats(prev => ({
+                        ...prev,
+                        ...data.data.stats,
+                        critical: (data.data.reports || []).filter((r: BugReport) => r.priority === 'critical').length,
+                    }))
+                }
             }
         } catch (error) {
             console.error('Failed to fetch bug reports:', error)
@@ -342,7 +361,28 @@ export default function SuperadminBugReportsPage() {
             report.reported_by.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
+    /** Export the currently filtered reports as a flat CSV */
+    const handleExportCSV = () => {
+        if (filteredReports.length === 0) return
+        const rows = filteredReports.map((r) => ({
+            page: r.page_name,
+            url: r.page_url,
+            description: r.bug_description,
+            status: r.status,
+            priority: r.priority,
+            reporter_name: r.reported_by?.name || '',
+            reporter_email: r.reported_by?.email || '',
+            reporter_role: r.reported_by?.role || '',
+            admin_notes: r.admin_notes || '',
+            created_at: r.created_at,
+            resolved_at: r.resolved_at || '',
+        }))
+        exportToCSV(rows, `bug_reports_${new Date().toISOString().slice(0, 10)}.csv`)
+    }
+
     return (
+
+      <SuperadminLayout>
         <div className="min-h-screen bg-background p-4 md:p-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
@@ -356,13 +396,23 @@ export default function SuperadminBugReportsPage() {
                             <p className="text-sm text-neutral-light">Monitor and manage all platform bug reports</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => fetchReports()}
-                        className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent/80 text-white rounded-lg font-semibold transition-all"
-                    >
-                        <RefreshCw className="w-5 h-5" />
-                        Refresh
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleExportCSV}
+                            disabled={filteredReports.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-background-surface border border-neutral-light/30 hover:bg-background-elevated text-neutral rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Download className="w-5 h-5" />
+                            Export CSV
+                        </button>
+                        <button
+                            onClick={() => fetchReports()}
+                            className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent/80 text-white rounded-lg font-semibold transition-all"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
                 {/* Statistics */}
@@ -524,6 +574,36 @@ export default function SuperadminBugReportsPage() {
                                     <option value="dept_tpc">Dept TPC</option>
                                     <option value="superadmin">Superadmin</option>
                                 </select>
+                            </div>
+
+                            {/* Date range */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(e) => setDateFrom(e.target.value)}
+                                    max={dateTo || undefined}
+                                    className="w-full px-3 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral text-sm focus:outline-none focus:border-accent/50"
+                                    title="From date"
+                                />
+                                <span className="text-neutral-light text-sm">to</span>
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                    min={dateFrom || undefined}
+                                    className="w-full px-3 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral text-sm focus:outline-none focus:border-accent/50"
+                                    title="To date"
+                                />
+                                {(dateFrom || dateTo) && (
+                                    <button
+                                        onClick={() => { setDateFrom(''); setDateTo('') }}
+                                        className="text-xs text-neutral-light hover:text-red-500 whitespace-nowrap"
+                                        title="Clear dates"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -816,5 +896,6 @@ export default function SuperadminBugReportsPage() {
                 </Modal>
             )}
         </div>
+      </SuperadminLayout>
     )
 }

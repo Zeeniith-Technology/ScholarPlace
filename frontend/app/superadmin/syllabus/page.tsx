@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
+import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import * as XLSX from 'xlsx'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -620,6 +621,7 @@ export default function SyllabusManagementPage() {
   }
 
   return (
+    <SuperadminLayout>
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-10">
       <div className="max-w-6xl mx-auto space-y-8">
         <header className="space-y-3">
@@ -850,6 +852,7 @@ export default function SyllabusManagementPage() {
         </Card>
       </div>
     </div>
+    </SuperadminLayout>
   )
 }
 
