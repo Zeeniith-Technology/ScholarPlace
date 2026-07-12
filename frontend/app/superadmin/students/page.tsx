@@ -269,10 +269,35 @@ export default function SuperadminStudentsPage() {
       const progressData = progressRes.ok ? await progressRes.json() : { data: [] }
       const practiceData = practiceRes.ok ? await practiceRes.json() : { data: [] }
 
+      // Raw progress is an array of week records from tblStudentProgress.
+      // Compute summary stats from the actual field names in that schema:
+      //   days_completed         → string[] of day keys
+      //   practice_test_scores   → { day, score, date }[]
+      //   coding_problems_completed → string[] of problem IDs
+      const rawProgress: any[] = progressData.data || []
+      const practiceTests: any[] = practiceData.data || []
+
+      const totalDaysCompleted = rawProgress.reduce(
+        (sum: number, p: any) => sum + (p.days_completed?.length || 0), 0
+      )
+      const totalPracticeTests = rawProgress.reduce(
+        (sum: number, p: any) => sum + (p.practice_test_scores?.length || 0), 0
+      )
+      const totalCodingProblems = rawProgress.reduce(
+        (sum: number, p: any) => sum + (p.coding_problems_completed?.length || 0), 0
+      )
+      const scores = practiceTests.map((t: any) => t.score || 0).filter((s: number) => s > 0)
+      const averageScore = scores.length > 0
+        ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+        : 0
+
       setStudentDetailData({
         ...student,
-        progress: progressData.data || [],
-        practiceTests: practiceData.data || [],
+        // Raw arrays for the timeline and test list
+        progressWeeks: rawProgress,
+        practiceTests,
+        // Computed summary object for the stat cards
+        progressStats: { totalDaysCompleted, totalPracticeTests, totalCodingProblems, averageScore },
       })
     } catch (error) {
       console.error('Error fetching student detail:', error)
@@ -895,7 +920,7 @@ export default function SuperadminStudentsPage() {
                         <div>
                           <p className="text-sm text-neutral-light">Days Completed</p>
                           <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.progress?.totalDaysCompleted || 0}
+                            {studentDetailData.progressStats?.totalDaysCompleted ?? 0}
                           </p>
                         </div>
                       </div>
@@ -908,7 +933,7 @@ export default function SuperadminStudentsPage() {
                         <div>
                           <p className="text-sm text-neutral-light">Avg Score</p>
                           <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.progress?.averageScore || 0}%
+                            {studentDetailData.progressStats?.averageScore ?? 0}%
                           </p>
                         </div>
                       </div>
@@ -921,7 +946,7 @@ export default function SuperadminStudentsPage() {
                         <div>
                           <p className="text-sm text-neutral-light">Practice Tests</p>
                           <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.practiceTests?.length || 0}
+                            {studentDetailData.practiceTests?.length ?? 0}
                           </p>
                         </div>
                       </div>
@@ -934,7 +959,7 @@ export default function SuperadminStudentsPage() {
                         <div>
                           <p className="text-sm text-neutral-light">Coding Problems</p>
                           <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.progress?.totalCodingProblems || 0}
+                            {studentDetailData.progressStats?.totalCodingProblems ?? 0}
                           </p>
                         </div>
                       </div>
@@ -942,20 +967,22 @@ export default function SuperadminStudentsPage() {
                   </div>
 
                   {/* Progress Timeline */}
-                  {studentDetailData.progress && studentDetailData.progress.length > 0 && (
+                  {studentDetailData.progressWeeks && studentDetailData.progressWeeks.length > 0 && (
                     <Card className="p-6">
                       <h3 className="text-xl font-semibold text-neutral mb-4 flex items-center gap-2">
                         <BarChart3 className="w-5 h-5" />
                         Progress Timeline
                       </h3>
                       <div className="space-y-4">
-                        {studentDetailData.progress.map((progress: any, index: number) => (
+                        {studentDetailData.progressWeeks.map((progress: any, index: number) => (
                           <div key={index} className="flex items-center gap-4 p-4 bg-background-elevated rounded-lg">
                             <div className="flex-1">
                               <p className="font-semibold text-neutral">Week {progress.week}</p>
                               <p className="text-sm text-neutral-light">
-                                Days: {progress.days_completed?.length || 0} | 
-                                Practice Tests: {progress.practice_tests?.length || 0}
+                                Days: {progress.days_completed?.length || 0} |
+                                {/* practice_test_scores is the correct field in tblStudentProgress */}
+                                Practice Tests: {progress.practice_test_scores?.length || 0} |
+                                Coding: {progress.coding_problems_completed?.length || 0}
                               </p>
                             </div>
                             <div className="text-right">

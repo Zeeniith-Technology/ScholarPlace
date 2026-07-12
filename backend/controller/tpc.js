@@ -516,7 +516,9 @@ export default class tpcController {
                 }
 
                 // Tests completed: prefer progress, fallback to practice test count
-                if (progress && progress.total_practice_tests) {
+                if (progress && progress.practice_test_scores && progress.practice_test_scores.length > 0) {
+                    totalTestsCompleted += progress.practice_test_scores.length;
+                } else if (progress && progress.total_practice_tests) {
                     totalTestsCompleted += progress.total_practice_tests;
                 } else {
                     const practice = avgByStudent[sid];
@@ -525,7 +527,9 @@ export default class tpcController {
                     }
                 }
 
-                if (progress && progress.total_days_completed) {
+                if (progress && progress.days_completed && progress.days_completed.length > 0) {
+                    totalDaysCompleted += progress.days_completed.length;
+                } else if (progress && progress.total_days_completed) {
                     totalDaysCompleted += progress.total_days_completed;
                 }
             });
@@ -1039,14 +1043,19 @@ export default class tpcController {
                 const progressTests = progress && progress.total_practice_tests != null && Number(progress.total_practice_tests) > 0 ? Number(progress.total_practice_tests) : null;
                 const averageScore = progressScore != null ? progressScore : derivedAvg;
                 const totalPracticeTests = progressTests != null ? progressTests : derivedTestCount;
+                
+                // Use array lengths from schema rather than non-existent flat properties
+                const daysCompletedCount = progress?.days_completed?.length || progress?.total_days_completed || 0;
+                const codingProblemsCount = progress?.coding_problems_completed?.length || progress?.total_coding_problems || 0;
+
                 return {
                     ...student,
                     progress: {
                         ...(progress || {}),
                         average_score: averageScore,
-                        total_days_completed: progress?.total_days_completed ?? 0,
+                        total_days_completed: daysCompletedCount,
                         total_practice_tests: totalPracticeTests,
-                        total_coding_problems: progress?.total_coding_problems ?? 0
+                        total_coding_problems: codingProblemsCount
                     }
                 };
             });
@@ -1355,14 +1364,18 @@ export default class tpcController {
                 const averageScore = (progress && (progress.average_score !== undefined && progress.average_score !== null && progress.average_score > 0))
                     ? progress.average_score
                     : derivedAvg;
+                const daysCompletedCount = progress?.days_completed?.length || progress?.total_days_completed || 0;
+                const codingProblemsCount = progress?.coding_problems_completed?.length || progress?.total_coding_problems || 0;
+                const testScoresCount = progress?.practice_test_scores?.length || progress?.total_practice_tests || practiceAvg?.count || 0;
+
                 return {
                     ...student,
                     progress: {
                         ...(progress || {}),
                         average_score: averageScore,
-                        total_days_completed: progress?.total_days_completed ?? 0,
-                        total_practice_tests: progress?.total_practice_tests ?? (practiceAvg?.count || 0),
-                        total_coding_problems: progress?.total_coding_problems ?? 0
+                        total_days_completed: daysCompletedCount,
+                        total_practice_tests: testScoresCount,
+                        total_coding_problems: codingProblemsCount
                     }
                 };
             });
@@ -2028,7 +2041,7 @@ export default class tpcController {
                     if (progress.average_score) {
                         departmentStats[deptKey].totalScores.push(progress.average_score);
                     }
-                    departmentStats[deptKey].totalDaysCompleted += progress.total_days_completed || 0;
+                    departmentStats[deptKey].totalDaysCompleted += progress.days_completed?.length || progress.total_days_completed || 0;
                 }
 
                 const deptTests = practiceTests.filter(t =>
@@ -2614,8 +2627,8 @@ export default class tpcController {
                         department: student.department || '',
                         enrollmentNumber: student.enrollment_number || '',
                         averageScore: progress?.average_score || avgTestScore || 0,
-                        daysCompleted: progress?.total_days_completed || 0,
-                        testsCompleted: studentTests.length,
+                        daysCompleted: progress?.days_completed?.length || progress?.total_days_completed || 0,
+                        testsCompleted: progress?.practice_test_scores?.length || studentTests.length || 0,
                         status: student.person_status
                     };
                 });
@@ -4311,9 +4324,9 @@ export default class tpcController {
                         department: student.department || department,
                         enrollmentNumber: student.enrollment_number || '',
                         averageScore: progress?.average_score || avgTestScore || 0,
-                        daysCompleted: progress?.total_days_completed || 0,
+                        daysCompleted: progress?.days_completed?.length || progress?.total_days_completed || 0,
                         weeksCompleted: weeksCompleted,
-                        testsCompleted: studentTests.length,
+                        testsCompleted: progress?.practice_test_scores?.length || studentTests.length || 0,
                         lastActivityDate: lastActivityDate,
                         scoreTrend: scoreTrend,
                         dsaAverage: dsaAverage,

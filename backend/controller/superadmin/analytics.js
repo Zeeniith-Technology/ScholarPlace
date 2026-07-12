@@ -56,7 +56,17 @@ export default class superadminAnalyticsController {
             const [progressStats, scoreStats] = await Promise.all([
                 db.collection('tblStudentProgress').aggregate([
                     { $match: progressMatch },
-                    { $group: { _id: null, uniqueStudents: { $addToSet: "$student_id" }, totalDays: { $sum: { $size: { $ifNull: ["$days_completed", []] } } }, totalPracticeTests: { $sum: { $size: { $ifNull: ["$practice_tests", []] } } }, totalCoding: { $sum: { $size: { $ifNull: ["$coding_problems.completed", []] } } } } },
+                    {
+                        $group: {
+                            _id: null,
+                            uniqueStudents: { $addToSet: "$student_id" },
+                            totalDays: { $sum: { $size: { $ifNull: ["$days_completed", []] } } },
+                            // practice_test_scores is the actual field in tblStudentProgress
+                            totalPracticeTests: { $sum: { $size: { $ifNull: ["$practice_test_scores", []] } } },
+                            // coding_problems_completed is the actual field in tblStudentProgress
+                            totalCoding: { $sum: { $size: { $ifNull: ["$coding_problems_completed", []] } } }
+                        }
+                    },
                     { $project: { withProgress: { $size: "$uniqueStudents" }, totalDays: 1, totalPracticeTests: 1, totalCoding: 1 } }
                 ]).toArray(),
                 db.collection('tblPracticeTest').aggregate([
@@ -324,7 +334,7 @@ export default class superadminAnalyticsController {
             const [progressResponse, practiceTestResponse] = await Promise.all([
                 studentIds.length > 0
                     ? fetchData('tblStudentProgress',
-                        { student_id: 1, week: 1, days_completed: 1, practice_tests: 1, coding_problems: 1 },
+                        { student_id: 1, week: 1, days_completed: 1, practice_test_scores: 1, coding_problems_completed: 1 },
                         { student_id: { $in: studentIds } }, {})
                     : Promise.resolve({ data: [] }),
                 studentIds.length > 0
@@ -351,14 +361,20 @@ export default class superadminAnalyticsController {
             });
 
             // Combine data
+            // Field names in tblStudentProgress:
+            //   days_completed         -> array of completed day keys e.g. ['pre-week','day-1']
+            //   practice_test_scores   -> array of { day, score, date } (NOT practice_tests)
+            //   coding_problems_completed -> array of problem IDs (NOT coding_problems.completed)
             const studentAnalytics = students.map(student => {
                 const sid = (student._id || student.person_id)?.toString() || '';
                 const studentProgress = progressMap.get(sid) || [];
                 const studentScores = scoreMap.get(sid) || [];
 
                 const totalDaysCompleted = studentProgress.reduce((sum, p) => sum + (p.days_completed?.length || 0), 0);
-                const totalPracticeTests = studentProgress.reduce((sum, p) => sum + (p.practice_tests?.length || 0), 0);
-                const totalCodingProblems = studentProgress.reduce((sum, p) => sum + (p.coding_problems?.completed?.length || 0), 0);
+                // practice_test_scores is the correct field name in tblStudentProgress
+                const totalPracticeTests = studentProgress.reduce((sum, p) => sum + (p.practice_test_scores?.length || 0), 0);
+                // coding_problems_completed is the correct field name in tblStudentProgress
+                const totalCodingProblems = studentProgress.reduce((sum, p) => sum + (p.coding_problems_completed?.length || 0), 0);
                 const averageScore = studentScores.length > 0
                     ? studentScores.reduce((sum, s) => sum + s, 0) / studentScores.length
                     : 0;
@@ -599,9 +615,12 @@ export default class superadminAnalyticsController {
 
             // Add test submissions
             recentTests.forEach(test => {
+                // test.day is stored as e.g. "day-4" — strip the prefix for display
+                const rawDay = String(test.day || '');
+                const dayLabel = rawDay.replace(/^day-/i, '').trim();
                 activities.push({
                     type: 'test',
-                    message: `Practice test completed (Day ${test.day}, Score: ${test.score || 0})`,
+                    message: `Practice test completed (Day ${dayLabel}, Score: ${test.score || 0})`,
                     timestamp: test.updated_at || new Date(),
                     details: {
                         studentId: test.student_id,
@@ -612,9 +631,11 @@ export default class superadminAnalyticsController {
 
             // Add progress updates
             recentProgress.forEach(progress => {
+                const daysCount = progress.days_completed?.length || 0;
+                const daysLabel = daysCount === 1 ? '1 day completed' : `${daysCount} days completed`;
                 activities.push({
                     type: 'progress',
-                    message: `Week ${progress.week} progress updated (${progress.days_completed?.length || 0} days)`,
+                    message: `Week ${progress.week} progress updated — ${daysLabel}`,
                     timestamp: progress.updated_at || new Date(),
                     details: {
                         studentId: progress.student_id,
