@@ -201,11 +201,13 @@ export default function StudentDashboardPage() {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
       // Check for tests/exams
+      const authHeader = getAuthHeader()
       const response = await fetch(`${apiBaseUrl}/exam/list`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({
           filter: {},

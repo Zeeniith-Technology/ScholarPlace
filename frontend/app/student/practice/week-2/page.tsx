@@ -223,11 +223,13 @@ function Week2PracticeContent() {
     try {
       setIsLoading(true)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      const authHeader = getAuthHeader()
       const response = await fetch(`${apiBaseUrl}/questions/week2`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({ day: dayParam }),
       })
@@ -428,11 +430,13 @@ function Week2PracticeContent() {
       })
 
       // Save detailed practice test data to tblPracticeTest (includes AI analysis)
+      const authHeader = getAuthHeader()
       const detailedTestResponse = await fetch(`${apiBaseUrl}/practice-test/save`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({
           week: 2,
@@ -462,6 +466,7 @@ function Week2PracticeContent() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({
           week: 2,

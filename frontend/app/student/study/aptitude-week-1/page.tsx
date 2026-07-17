@@ -81,11 +81,16 @@ function AptitudeWeek1Content() {
     try {
       setIsLoading(true)
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      // Auth-protected route — attach the JWT like the page's other calls.
+      // (Was missing → 401 "No token provided" → "will be loaded here" placeholder.)
+      const authHeader = getAuthHeader()
+
       const response = await fetch(`${apiBaseUrl}/syllabus/aptitude-week1-content`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({ day }),
       })

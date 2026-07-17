@@ -116,11 +116,13 @@ export default function StudentTestsPage() {
       const eligibility = await checkWeeklyTestEligibility(1)
       setWeeklyTestEligibility(eligibility)
 
+      const authHeader = getAuthHeader()
       const response = await fetch(`${apiBaseUrl}/exam/list`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({
           filter: {},
