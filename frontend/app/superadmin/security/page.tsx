@@ -38,6 +38,8 @@ export default function SuperadminSecurityPage() {
   const [error, setError] = useState('')
   // 'all' | 'blocked' | 'resolved'
   const [statusFilter, setStatusFilter] = useState<'all' | 'blocked' | 'resolved'>('all')
+  const [collegeFilter, setCollegeFilter] = useState<string>('all')
+  const [deptFilter, setDeptFilter] = useState<string>('all')
 
   const fetchData = async () => {
     try {
@@ -75,9 +77,32 @@ export default function SuperadminSecurityPage() {
     fetchData()
   }
 
-  const visibleViolations = (data?.recentViolations || []).filter(v =>
-    statusFilter === 'all' ? true : statusFilter === 'blocked' ? v.blocked : !v.blocked
-  )
+  // Production dept/college names can carry stray whitespace — normalize for
+  // both the dropdown options and the comparisons.
+  const norm = (s: string | number | undefined | null) => String(s ?? '').trim()
+
+  const allViolations = data?.recentViolations || []
+  const collegeOptions = Array.from(new Set(allViolations.map(v => norm(v.college)).filter(Boolean))).sort()
+  // Departments shown are scoped to the selected college
+  const deptOptions = Array.from(new Set(
+    allViolations
+      .filter(v => collegeFilter === 'all' || norm(v.college) === collegeFilter)
+      .map(v => norm(v.department))
+      .filter(Boolean)
+  )).sort()
+
+  const visibleViolations = allViolations.filter(v => {
+    if (statusFilter !== 'all' && (statusFilter === 'blocked' ? !v.blocked : v.blocked)) return false
+    if (collegeFilter !== 'all' && norm(v.college) !== collegeFilter) return false
+    if (deptFilter !== 'all' && norm(v.department) !== deptFilter) return false
+    return true
+  })
+
+  // Changing college invalidates a department picked under the previous college
+  const handleCollegeFilter = (value: string) => {
+    setCollegeFilter(value)
+    setDeptFilter('all')
+  }
 
   return (
     <SuperadminLayout>
@@ -189,18 +214,42 @@ export default function SuperadminSecurityPage() {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <h2 className="text-xl font-semibold text-neutral">Violation Log</h2>
-                <div className="flex items-center gap-1 bg-background-elevated rounded-lg p-1">
-                  {(['all', 'blocked', 'resolved'] as const).map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setStatusFilter(f)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                        statusFilter === f ? 'bg-white shadow text-neutral' : 'text-neutral-light hover:text-neutral'
-                      }`}
-                    >
-                      {f === 'all' ? `All (${data.totalViolations})` : f === 'blocked' ? `Blocked (${data.currentlyBlocked})` : `Resolved (${data.resolved})`}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* College filter */}
+                  <select
+                    value={collegeFilter}
+                    onChange={(e) => handleCollegeFilter(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg border border-neutral-light/30 bg-white text-xs font-medium text-neutral focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    title="Filter by college"
+                  >
+                    <option value="all">All Colleges</option>
+                    {collegeOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  {/* Department filter (scoped to selected college) */}
+                  <select
+                    value={deptFilter}
+                    onChange={(e) => setDeptFilter(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg border border-neutral-light/30 bg-white text-xs font-medium text-neutral focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+                    title="Filter by department"
+                    disabled={deptOptions.length === 0}
+                  >
+                    <option value="all">All Departments</option>
+                    {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  {/* Status tabs */}
+                  <div className="flex items-center gap-1 bg-background-elevated rounded-lg p-1">
+                    {(['all', 'blocked', 'resolved'] as const).map(f => (
+                      <button
+                        key={f}
+                        onClick={() => setStatusFilter(f)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          statusFilter === f ? 'bg-white shadow text-neutral' : 'text-neutral-light hover:text-neutral'
+                        }`}
+                      >
+                        {f === 'all' ? `All (${data.totalViolations})` : f === 'blocked' ? `Blocked (${data.currentlyBlocked})` : `Resolved (${data.resolved})`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -209,6 +258,7 @@ export default function SuperadminSecurityPage() {
                     <tr className="border-b border-neutral-light/20">
                       <th className="text-left py-3 px-4 font-semibold text-neutral">Student</th>
                       <th className="text-left py-3 px-4 font-semibold text-neutral">College</th>
+                      <th className="text-left py-3 px-4 font-semibold text-neutral">Department</th>
                       <th className="text-left py-3 px-4 font-semibold text-neutral">Test</th>
                       <th className="text-left py-3 px-4 font-semibold text-neutral">Reason</th>
                       <th className="text-center py-3 px-4 font-semibold text-neutral">Status</th>
@@ -217,7 +267,7 @@ export default function SuperadminSecurityPage() {
                   </thead>
                   <tbody>
                     {visibleViolations.length === 0 ? (
-                      <tr><td colSpan={6} className="py-8 text-center text-neutral-light">No violations match this filter</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-neutral-light">No violations match this filter</td></tr>
                     ) : (
                       visibleViolations.map(v => (
                         <tr key={v._id} className="border-b border-neutral-light/10 hover:bg-background-elevated">
@@ -226,6 +276,7 @@ export default function SuperadminSecurityPage() {
                             <p className="text-xs text-neutral-light">{v.student_email}</p>
                           </td>
                           <td className="py-3 px-4 text-neutral-light">{v.college}</td>
+                          <td className="py-3 px-4 text-neutral-light">{norm(v.department) || '—'}</td>
                           <td className="py-3 px-4 text-neutral">Week {v.week} · {v.test_type}</td>
                           <td className="py-3 px-4 text-neutral-light max-w-[280px]">
                             <span className="line-clamp-2" title={v.reason}>{v.reason}</span>
