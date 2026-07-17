@@ -86,6 +86,8 @@ export default function CodingProblemPage() {
     const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null)
     const [showCodeReviewModal, setShowCodeReviewModal] = useState(false)
     const [codeReviewSubmissionId, setCodeReviewSubmissionId] = useState<string | null>(null)
+    // Next problem in the same day — powers the "Next Problem" CTA after passing
+    const [nextProblemId, setNextProblemId] = useState<string | null>(null)
 
     const BOILERPLATES: Record<string, string> = {
         cpp: `#include <iostream>
@@ -133,6 +135,39 @@ ${problem.function_signature} {
             fetchProblem()
         }
     }, [problemId])
+
+    // Work out the next problem in the same day, so a passed problem can offer a
+    // "Next Problem" button (keeps the solving flow going instead of forcing a
+    // trip back to the Learning page).
+    useEffect(() => {
+        if (!problem) return
+        let cancelled = false
+        const loadNext = async () => {
+            try {
+                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+                const authHeader = getAuthHeader()
+                if (!authHeader) return
+                const rawDay: unknown = problem.day
+                const dayNum = (rawDay === 0 || rawDay === '0' || rawDay === 'pre-week')
+                    ? 0
+                    : (parseInt(String(rawDay ?? '1').replace('day-', '')) || 1)
+                const res = await fetch(`${apiBaseUrl}/coding-problems/daily/${problem.week}/${dayNum}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+                })
+                if (!res.ok) return
+                const data = await res.json()
+                const list: any[] = data?.success && Array.isArray(data.problems) ? data.problems : []
+                const idx = list.findIndex((p: any) => String(p.question_id) === String(problemId))
+                const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null
+                if (!cancelled) setNextProblemId(next ? String(next.question_id) : null)
+            } catch {
+                if (!cancelled) setNextProblemId(null)
+            }
+        }
+        loadNext()
+        return () => { cancelled = true }
+    }, [problem, problemId])
 
     const fetchProblem = async () => {
         try {
@@ -510,7 +545,7 @@ ${problem.function_signature} {
 
                             {isProblemCompleted ? (
                                 <div className="space-y-4">
-                                    <ProblemCompleted week={problem.week} day={problem.day} />
+                                    <ProblemCompleted week={problem.week} day={problem.day} nextProblemId={nextProblemId} />
                                     <Button
                                         onClick={async () => {
                                             let sid = lastSubmissionId

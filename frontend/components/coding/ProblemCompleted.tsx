@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { CheckCircle2, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useRouter } from 'next/navigation'
 
@@ -10,9 +10,10 @@ interface ProblemCompletedProps {
     day?: number;
     onGoBack?: () => void;
     onSolveAgain?: () => void;
+    nextProblemId?: string | null;
 }
 
-export function ProblemCompleted({ week = 1, day, onGoBack, onSolveAgain }: ProblemCompletedProps) {
+export function ProblemCompleted({ week = 1, day, onGoBack, onSolveAgain, nextProblemId }: ProblemCompletedProps) {
     const router = useRouter()
 
     const handleGoBack = () => {
@@ -42,7 +43,7 @@ export function ProblemCompleted({ week = 1, day, onGoBack, onSolveAgain }: Prob
                 You have successfully passed all test cases for this problem.
                 Great job! 🚀
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3 flex-wrap justify-center">
                 {onSolveAgain && (
                     <Button
                         onClick={onSolveAgain}
@@ -54,12 +55,27 @@ export function ProblemCompleted({ week = 1, day, onGoBack, onSolveAgain }: Prob
                 )}
                 <Button
                     onClick={handleGoBack}
-                    className="bg-green-600 hover:bg-green-700 text-white min-w-[150px]"
+                    variant={nextProblemId ? 'ghost' : undefined}
+                    className={nextProblemId
+                        ? 'border border-green-500/50 text-green-400 hover:bg-green-500/10'
+                        : 'bg-green-600 hover:bg-green-700 text-white min-w-[150px]'}
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Questions
                 </Button>
+                {nextProblemId && (
+                    <Button
+                        onClick={() => router.push(`/student/coding-problem/${nextProblemId}`)}
+                        className="bg-green-600 hover:bg-green-700 text-white min-w-[160px]"
+                    >
+                        Next Problem
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                )}
             </div>
+            {!nextProblemId && (
+                <p className="text-sm text-green-500/80 mt-4">🎉 That was the last problem for this day — nice work!</p>
+            )}
         </div>
     )
 }

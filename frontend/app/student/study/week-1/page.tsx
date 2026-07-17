@@ -168,6 +168,24 @@ function Week1StudyContent() {
     fetchBookmarks()
   }, [])
 
+  // Scroll to the Daily Coding Problems section when arriving via the
+  // #daily-coding-problems anchor (e.g. returning after solving a problem).
+  // That section renders only once content finishes loading, so a plain hash
+  // navigation lands at the top; we scroll once loading is done, then strip the
+  // hash so day navigation doesn't keep re-scrolling.
+  useEffect(() => {
+    if (isLoading) return
+    if (typeof window === 'undefined' || window.location.hash !== '#daily-coding-problems') return
+    const t = setTimeout(() => {
+      const el = document.getElementById('daily-coding-problems')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    }, 150)
+    return () => clearTimeout(t)
+  }, [isLoading])
+
   // Fetch coding problems when day changes
   useEffect(() => {
     fetchDailyCodingProblems(selectedDay) // Fetch daily problems

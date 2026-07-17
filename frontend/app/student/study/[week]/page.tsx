@@ -161,6 +161,24 @@ function WeekStudyContent() {
     fetchBookmarks()
   }, [])
 
+  // Scroll to the Daily Coding Problems section when arriving via the
+  // #daily-coding-problems anchor (e.g. returning after solving a problem).
+  // That section renders only once content finishes loading, so a plain hash
+  // navigation lands at the top; we scroll once loading is done, then strip the
+  // hash so day navigation doesn't keep re-scrolling.
+  useEffect(() => {
+    if (isLoading) return
+    if (typeof window === 'undefined' || window.location.hash !== '#daily-coding-problems') return
+    const t = setTimeout(() => {
+      const el = document.getElementById('daily-coding-problems')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    }, 150)
+    return () => clearTimeout(t)
+  }, [isLoading])
+
   // Fetch coding problems when day changes
   useEffect(() => {
     fetchDailyCodingProblems(selectedDay) // Fetch daily problems
@@ -1466,7 +1484,7 @@ function WeekStudyContent() {
                     )}
 
                     {/* Daily Coding Problems Section */}
-                    <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-purple-500/5">
+                    <Card id="daily-coding-problems" className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-purple-500/5">
                       <div className="p-6">
                         <div className="flex items-start justify-between gap-4 mb-4">
                           <div className="flex-1">
