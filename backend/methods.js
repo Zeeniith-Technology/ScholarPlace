@@ -153,7 +153,7 @@ function errorCodeFromStatus(status) {
  * Log Error to tblerrorlog Collection
  * @param {Object} errorInfo - Error information
  */
-async function logError(errorInfo) {
+export async function logError(errorInfo) {
     try {
         const errorLog = {
             route: errorInfo.route || '',

@@ -1,6 +1,49 @@
 import jwt from 'jsonwebtoken';
-import { getDB, fetchData } from '../methods.js';
+import { getDB, fetchData, logError } from '../methods.js';
 import { isImpersonationReadAllowed } from '../utils/impersonation.js';
+
+/**
+ * Auth failures are answered directly by the middleware and never pass through
+ * the `responsedata` responder — the only place that writes to tblerrorlog — so
+ * they are normally invisible in the error log. That's deliberate for noise
+ * (bots, logged-out tabs, health pings)... but it also hides *real* client bugs,
+ * e.g. an authenticated page whose fetch forgot the Authorization header.
+ *
+ * Heuristic: only log an auth failure when the request's Referer points at an
+ * authenticated in-app area (a logged-in user's page hitting a protected route
+ * with a bad/missing token = a genuine signal). Anonymous / no-referer / bot
+ * traffic is skipped, so the log stays clean.
+ */
+const AUTHED_AREA_RE = /\/(student|tpc|dept-tpc|superadmin|crm)(\/|$|\?)/;
+
+function isInternalAppReferer(referer) {
+    if (!referer) return false;
+    try {
+        return AUTHED_AREA_RE.test(new URL(referer).pathname);
+    } catch {
+        // Non-URL referer — fall back to a plain substring check
+        return AUTHED_AREA_RE.test(referer);
+    }
+}
+
+/** Fire-and-forget: log an auth failure only if it looks like a real client/session bug. */
+function logAuthFailureIfInternal(req, status, message, error) {
+    try {
+        const referer = req.headers.referer || req.headers.referrer || '';
+        if (!isInternalAppReferer(referer)) return;
+        logError({
+            route: req.originalUrl,
+            frontend_page: referer,
+            backend_route: req.path,
+            payload: req.body || {},
+            filter: {},
+            error_message: error || message || 'Auth failure',
+            error_code: status === 403 ? 'FORBIDDEN' : 'UNAUTHORIZED',
+            http_status: status,
+            ip_address: req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '',
+        }).catch(() => { /* logging must never break auth */ });
+    } catch { /* never throw from the logging path */ }
+}
 
 /**
  * In-memory cache for the "college still exists" check so we don't hit the DB on
@@ -37,7 +80,12 @@ export const auth = async (req, res, next) => {
     // responder runs AFTER the route controller, so calling next() on failure would
     // let the controller run with no authenticated user and overwrite our 401 with a
     // success payload (auth bypass). Send the error directly and stop the chain.
-    const fail = (status, message, error) => res.status(status).json({ success: false, message, error });
+    const fail = (status, message, error) => {
+        // Surface real client/session bugs (see logAuthFailureIfInternal) without
+        // flooding the log with anonymous traffic. Fire-and-forget, after the response.
+        logAuthFailureIfInternal(req, status, message, error);
+        return res.status(status).json({ success: false, message, error });
+    };
 
     try {
         // Get token from Authorization header (Bearer token)
