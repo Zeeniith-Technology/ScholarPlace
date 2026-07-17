@@ -586,11 +586,17 @@ function WeekStudyContent() {
         ? `${apiBaseUrl}/syllabus/week1-content`
         : `${apiBaseUrl}/syllabus/week-content`
 
+      // This route is auth-protected — send the JWT Bearer token like every other
+      // fetch on this page. (Was missing, causing 401 "No token provided" and the
+      // "will be loaded here" placeholder.)
+      const authHeader = getAuthHeader()
+
       const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify({
           day,
