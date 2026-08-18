@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { AuthLayout } from '@/components/layouts/AuthLayout'
 import { Toast, useToast } from '@/components/ui/Toast'
 
@@ -338,7 +338,7 @@ export default function SignupPage() {
               aria-required="true"
             />
 
-            <Select
+            <FilterSelect
               label="College *"
               options={
                 isLoadingColleges
@@ -348,8 +348,8 @@ export default function SignupPage() {
                     : [{ value: '', label: 'Select a college' }, ...colleges]
               }
               value={formData.collegeId}
-              onChange={(e) => {
-                const selectedCollegeId = e.target.value
+              onChange={(v) => {
+                const selectedCollegeId = v
                 console.log('[Signup] College selected:', selectedCollegeId)
                 setFormData({ ...formData, collegeId: selectedCollegeId, department: '' })
                 if (errors.collegeId) {
@@ -358,12 +358,11 @@ export default function SignupPage() {
               }}
               error={errors.collegeId}
               disabled={isLoadingColleges}
-              aria-required="true"
             />
 
             {/* Department field - Required for Students and DeptTPC */}
             {(formData.role === 'student' || formData.role === 'depttpc') && formData.collegeId && (
-              <Select
+              <FilterSelect
                 label="Department *"
                 options={
                   departments.length === 0
@@ -371,14 +370,13 @@ export default function SignupPage() {
                     : [{ value: '', label: 'Select a department' }, ...departments]
                 }
                 value={formData.department}
-                onChange={(e) => {
-                  setFormData({ ...formData, department: e.target.value })
+                onChange={(v) => {
+                  setFormData({ ...formData, department: v })
                   if (errors.department) {
                     setErrors({ ...errors, department: '' })
                   }
                 }}
                 error={errors.department}
-                aria-required="true"
                 disabled={departments.length === 0}
               />
             )}
@@ -454,13 +452,12 @@ export default function SignupPage() {
               aria-required="true"
             />
 
-            <Select
+            <FilterSelect
               label="Role"
               options={roleOptions}
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(v) => setFormData({ ...formData, role: v })}
               error={errors.role}
-              aria-required="true"
             />
 
             <div className="space-y-5 pt-2">

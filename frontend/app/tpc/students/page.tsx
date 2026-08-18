@@ -6,11 +6,11 @@ import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
 import { getApiBaseUrl } from '@/utils/api'
-import { Users, Search, Filter, RefreshCw, TrendingUp, Award, AlertCircle } from 'lucide-react'
+import { Users, Search, Filter, RefreshCw, TrendingUp, Award, AlertCircle, Layers } from 'lucide-react'
 
 /**
  * TPC Students Page
@@ -224,28 +224,26 @@ function TPCStudentsContent() {
               />
             </div>
             {departments.length > 0 && (
-              <select
+              <FilterSelect
                 value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="shrink-0 px-3 py-2 h-10 sm:h-[38px] border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm focus:outline-none focus:ring-2 focus:ring-primary min-w-[150px]"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept.value} value={dept.value}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setDepartmentFilter}
+                widthClass="shrink-0 min-w-[150px]"
+                icon={Layers}
+                options={[
+                  { value: 'all', label: 'All Departments' },
+                  ...departments.map((dept: any) => ({ value: dept.value, label: dept.name })),
+                ]}
+              />
             )}
-            <Select
+            <FilterSelect
               options={[
                 { value: 'all', label: 'All Status' },
                 { value: 'active', label: 'Active' },
                 { value: 'inactive', label: 'Inactive' },
               ]}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-40 shrink-0"
+              onChange={setStatusFilter}
+              widthClass="w-full sm:w-40 shrink-0"
             />
             <button
               type="button"

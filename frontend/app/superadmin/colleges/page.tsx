@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
@@ -1055,10 +1055,9 @@ export default function CollegesManagementPage() {
             {/* Select renders its own w-full wrapper — constrain it from outside,
                 otherwise it claims the whole flex row and crushes the search input */}
             <div className="w-full sm:w-48 shrink-0">
-              <Select
+              <FilterSelect
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | '1' | '0')}
-                className="border-neutral-light/30 focus:border-primary"
+                onChange={(v) => setStatusFilter(v as 'all' | '1' | '0')}
                 options={[
                   { value: 'all', label: 'All Status' },
                   { value: '1', label: 'Active' },
@@ -1437,11 +1436,11 @@ export default function CollegesManagementPage() {
                   {/* Subscription — only editable on existing colleges */}
                   {editingCollege && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-neutral-light/20">
-                      <Select
+                      <FilterSelect
                         label="Subscription Status"
                         value={formData.collage_subscription_status || 'active'}
-                        onChange={(e) =>
-                          setFormData({ ...formData, collage_subscription_status: e.target.value })
+                        onChange={(v) =>
+                          setFormData({ ...formData, collage_subscription_status: v })
                         }
                         options={[
                           { value: 'active', label: 'Active' },
@@ -1749,11 +1748,11 @@ export default function CollegesManagementPage() {
                       placeholder="Optional description"
                     />
                   </div>
-                  <Select
+                  <FilterSelect
                     label="Status *"
                     value={newDepartment.department_status?.toString() || '1'}
-                    onChange={(e) =>
-                      setNewDepartment({ ...newDepartment, department_status: parseInt(e.target.value) })
+                    onChange={(v) =>
+                      setNewDepartment({ ...newDepartment, department_status: parseInt(v) })
                     }
                     options={[
                       { value: '1', label: 'Active' },

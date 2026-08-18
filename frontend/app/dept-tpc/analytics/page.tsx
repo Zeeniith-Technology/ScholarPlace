@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
@@ -456,16 +457,17 @@ export default function DepartmentTPCAnalyticsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-sm text-neutral-light">Weeks:</label>
-                    <select
-                      value={selectedWeeks}
-                      onChange={(e) => setSelectedWeeks(Number(e.target.value))}
-                      className="px-3 py-1 border border-neutral-light rounded-lg bg-background text-neutral text-sm"
-                    >
-                      <option value={4}>4 weeks</option>
-                      <option value={8}>8 weeks</option>
-                      <option value={12}>12 weeks</option>
-                      <option value={16}>16 weeks</option>
-                    </select>
+                    <FilterSelect
+                      value={String(selectedWeeks)}
+                      onChange={(v) => setSelectedWeeks(Number(v))}
+                      widthClass="w-32"
+                      options={[
+                        { value: '4', label: '4 weeks' },
+                        { value: '8', label: '8 weeks' },
+                        { value: '12', label: '12 weeks' },
+                        { value: '16', label: '16 weeks' },
+                      ]}
+                    />
                   </div>
                 </div>
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -19,6 +20,7 @@ import {
   Filter,
   Download,
   ChevronRight,
+  Layers,
 } from 'lucide-react'
 
 /**
@@ -234,37 +236,30 @@ export default function TPCAnalyticsPage() {
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <label className="text-sm text-neutral-light">Weeks:</label>
-                <select
-                  value={selectedWeeks}
-                  onChange={(e) => {
-                    setSelectedWeeks(Number(e.target.value))
-                    handleFilterChange()
-                  }}
-                  className="px-3 py-1 border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm"
-                >
-                  <option value={4}>4 Weeks</option>
-                  <option value={8}>8 Weeks</option>
-                  <option value={12}>12 Weeks</option>
-                  <option value={16}>16 Weeks</option>
-                </select>
+                <FilterSelect
+                  value={String(selectedWeeks)}
+                  onChange={(v) => { setSelectedWeeks(Number(v)); handleFilterChange() }}
+                  widthClass="w-32"
+                  options={[
+                    { value: '4', label: '4 Weeks' },
+                    { value: '8', label: '8 Weeks' },
+                    { value: '12', label: '12 Weeks' },
+                    { value: '16', label: '16 Weeks' },
+                  ]}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-neutral-light">Department:</label>
-                <select
+                <FilterSelect
                   value={selectedDepartment}
-                  onChange={(e) => {
-                    setSelectedDepartment(e.target.value)
-                    handleFilterChange()
-                  }}
-                  className="px-3 py-1 border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm"
-                >
-                  <option value="all">All Departments</option>
-                  {departments.map((dept) => (
-                    <option key={dept.value || dept.name} value={dept.value || dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => { setSelectedDepartment(v); handleFilterChange() }}
+                  widthClass="w-48"
+                  icon={Layers}
+                  options={[
+                    { value: 'all', label: 'All Departments' },
+                    ...departments.map((dept: any) => ({ value: dept.value || dept.name, label: dept.name })),
+                  ]}
+                />
               </div>
             </div>
           </div>

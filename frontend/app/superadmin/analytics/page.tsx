@@ -15,7 +15,7 @@ import {
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { exportAnalyticsData } from '@/utils/exportUtils'
 import {
@@ -364,18 +364,16 @@ export default function SuperadminAnalyticsPage() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-neutral">College Performance</h2>
-            <Select
+            <FilterSelect
               value={selectedCollege}
-              onChange={(e) => setSelectedCollege(e.target.value)}
-              className="w-48"
-            >
-              <option value="all">All Colleges</option>
-              {Array.isArray(collegeStats) && collegeStats.map((college) => (
-                <option key={college.collegeId} value={college.collegeId}>
-                  {college.collegeName}
-                </option>
-              ))}
-            </Select>
+              onChange={setSelectedCollege}
+              widthClass="w-56"
+              icon={Building2}
+              options={[
+                { value: 'all', label: 'All Colleges' },
+                ...(Array.isArray(collegeStats) ? collegeStats.map((college: any) => ({ value: college.collegeId, label: college.collegeName })) : []),
+              ]}
+            />
           </div>
 
           <div className="overflow-x-auto">

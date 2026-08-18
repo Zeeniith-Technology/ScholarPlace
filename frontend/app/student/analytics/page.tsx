@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getAuthHeader } from '@/utils/auth'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -738,15 +739,12 @@ export default function StudentAnalyticsPage() {
             <div className="mt-6 space-y-4">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-neutral">AI insights for week</span>
-                <select
-                  value={aiWeek}
-                  onChange={(e) => setAiWeek(Number(e.target.value))}
-                  className="rounded-lg border border-neutral-light/30 bg-background-surface px-3 py-2 text-sm text-neutral focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  {[1, 2, 3, 4, 5, 6].map((w) => (
-                    <option key={w} value={w}>Week {w}</option>
-                  ))}
-                </select>
+                <FilterSelect
+                  value={String(aiWeek)}
+                  onChange={(v) => setAiWeek(Number(v))}
+                  widthClass="w-32"
+                  options={[1, 2, 3, 4, 5, 6].map((w) => ({ value: String(w), label: `Week ${w}` }))}
+                />
               </div>
               <PerformanceAnalysis
                 week={aiWeek}

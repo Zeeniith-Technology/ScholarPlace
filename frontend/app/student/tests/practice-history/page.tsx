@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader, getCurrentUserFromToken } from '@/utils/auth'
@@ -212,42 +213,35 @@ function PracticeTestHistoryContent() {
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-neutral">Week:</label>
-              <select
-                value={filterWeek || ''}
-                onChange={(e) => {
-                  const week = e.target.value ? parseInt(e.target.value) : null
+              <FilterSelect
+                value={filterWeek ? String(filterWeek) : ''}
+                onChange={(v) => {
+                  const week = v ? parseInt(v) : null
                   setFilterWeek(week)
                   fetchPracticeTests(week, filterDay)
                 }}
-                className="px-3 py-1.5 rounded-lg border border-neutral-light/20 bg-background-surface text-neutral text-sm"
-              >
-                <option value="">All Weeks</option>
-                <option value="1">Week 1</option>
-                <option value="2">Week 2</option>
-                <option value="3">Week 3</option>
-                <option value="4">Week 4</option>
-                <option value="5">Week 5</option>
-                <option value="6">Week 6</option>
-                <option value="7">Week 7</option>
-                <option value="8">Week 8</option>
-              </select>
+                widthClass="w-36"
+                options={[
+                  { value: '', label: 'All Weeks' },
+                  ...[1, 2, 3, 4, 5, 6, 7, 8].map(w => ({ value: String(w), label: `Week ${w}` })),
+                ]}
+              />
             </div>
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-neutral">Day:</label>
-              <select
+              <FilterSelect
                 value={filterDay || ''}
-                onChange={(e) => {
-                  const day = e.target.value || null
+                onChange={(v) => {
+                  const day = v || null
                   setFilterDay(day)
                   fetchPracticeTests(filterWeek, day)
                 }}
-                className="px-3 py-1.5 rounded-lg border border-neutral-light/20 bg-background-surface text-neutral text-sm"
-              >
-                <option value="">All Days</option>
-                {Object.entries(days).map(([key, value]) => (
-                  <option key={key} value={key}>{value.label}</option>
-                ))}
-              </select>
+                widthClass="w-36"
+                options={[
+                  { value: '', label: 'All Days' },
+                  ...Object.entries(days).map(([key, value]) => ({ value: key, label: (value as any).label })),
+                ]}
+              />
             </div>
           </div>
         </Card>

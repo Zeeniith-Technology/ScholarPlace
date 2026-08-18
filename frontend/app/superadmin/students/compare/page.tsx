@@ -5,7 +5,7 @@ import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { exportStudentComparison } from '@/utils/exportUtils'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
+  Building2,
 } from 'lucide-react'
 
 /**
@@ -217,9 +218,11 @@ export default function StudentComparePage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Select
+            <FilterSelect
               value={selectedCollege}
-              onChange={(e) => setSelectedCollege(e.target.value)}
+              onChange={setSelectedCollege}
+              widthClass="w-full sm:w-56"
+              icon={Building2}
               options={[
                 { value: 'all', label: 'All Colleges' },
                 ...(Array.isArray(colleges) ? colleges.map((college) => ({

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { FilterSelect } from '@/components/ui/FilterSelect';
 import { Loader2, RefreshCw, AlertTriangle, Eye, ChevronLeft, ChevronRight, Search, Download } from 'lucide-react';
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout';
 import { getAuthHeader } from '@/utils/auth';
@@ -323,19 +324,17 @@ export default function ErrorLogsPage() {
                 <div className="flex items-center justify-between p-4 border-t bg-gray-50">
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500 hidden sm:inline">Rows per page:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1); // Reset to first page
-                            }}
-                            className="text-sm border rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
+                        <FilterSelect
+                            value={String(pageSize)}
+                            onChange={(v) => { setPageSize(Number(v)); setCurrentPage(1); }}
+                            widthClass="w-24"
+                            options={[
+                                { value: '10', label: '10' },
+                                { value: '25', label: '25' },
+                                { value: '50', label: '50' },
+                                { value: '100', label: '100' },
+                            ]}
+                        />
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-6">

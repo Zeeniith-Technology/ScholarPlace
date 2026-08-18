@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import { FilterSelect } from '@/components/ui/FilterSelect'
+import { X } from 'lucide-react';
 import crmApi from '@/lib/crmApi';
 
 interface QuickAddModalProps {
@@ -136,33 +137,31 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }: QuickAddMo
                             <div>
                                 <label className={labelCls}>College Type</label>
                                 <div className="relative">
-                                    <select
+                                    <FilterSelect
                                         value={formData.type}
-                                        onChange={e => set('type', e.target.value)}
-                                        className={inputCls + ' appearance-none pr-8'}
-                                    >
-                                        <option>University</option>
-                                        <option>College</option>
-                                        <option>Institute</option>
-                                        <option>Polytechnic</option>
-                                        <option>Other</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        onChange={v => set('type', v)}
+                                        options={[
+                                            { value: 'University', label: 'University' },
+                                            { value: 'College', label: 'College' },
+                                            { value: 'Institute', label: 'Institute' },
+                                            { value: 'Polytechnic', label: 'Polytechnic' },
+                                            { value: 'Other', label: 'Other' },
+                                        ]}
+                                    />
                                 </div>
                             </div>
                             <div>
                                 <label className={labelCls}>Priority</label>
                                 <div className="relative">
-                                    <select
+                                    <FilterSelect
                                         value={formData.priority}
-                                        onChange={e => set('priority', e.target.value)}
-                                        className={inputCls + ' appearance-none pr-8'}
-                                    >
-                                        <option value="high">🔴 High</option>
-                                        <option value="medium">🟡 Medium</option>
-                                        <option value="low">🟢 Low</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        onChange={v => set('priority', v)}
+                                        options={[
+                                            { value: 'high', label: '🔴 High' },
+                                            { value: 'medium', label: '🟡 Medium' },
+                                            { value: 'low', label: '🟢 Low' },
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -183,21 +182,21 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }: QuickAddMo
                             <div>
                                 <label className={labelCls}>Source</label>
                                 <div className="relative">
-                                    <select
+                                    <FilterSelect
                                         value={formData.source}
-                                        onChange={e => set('source', e.target.value)}
-                                        className={inputCls + ' appearance-none pr-8'}
-                                    >
-                                        <option value="">Select source</option>
-                                        <option>Cold Call</option>
-                                        <option>Reference</option>
-                                        <option>LinkedIn</option>
-                                        <option>Website</option>
-                                        <option>Event</option>
-                                        <option>Email Campaign</option>
-                                        <option>Other</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        onChange={v => set('source', v)}
+                                        placeholder="Select source"
+                                        options={[
+                                            { value: '', label: 'Select source' },
+                                            { value: 'Cold Call', label: 'Cold Call' },
+                                            { value: 'Reference', label: 'Reference' },
+                                            { value: 'LinkedIn', label: 'LinkedIn' },
+                                            { value: 'Website', label: 'Website' },
+                                            { value: 'Event', label: 'Event' },
+                                            { value: 'Email Campaign', label: 'Email Campaign' },
+                                            { value: 'Other', label: 'Other' },
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         </div>

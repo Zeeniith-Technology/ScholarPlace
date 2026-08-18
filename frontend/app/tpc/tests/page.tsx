@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -20,6 +21,7 @@ import {
   CheckCircle2,
   Filter,
   Download,
+  Layers,
 } from 'lucide-react'
 
 /**
@@ -272,21 +274,16 @@ export default function TPCTestsPage() {
               {departments.length > 0 && (
                 <div className="flex items-center gap-2">
                   <label className="text-sm text-neutral-light">Department:</label>
-                  <select
+                  <FilterSelect
                     value={departmentFilter}
-                    onChange={(e) => {
-                      setDepartmentFilter(e.target.value)
-                      handleFilterApply()
-                    }}
-                    className="px-3 py-1 border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="all">All Departments</option>
-                    {departments.map((dept) => (
-                      <option key={dept.value || dept.name} value={dept.value || dept.name}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => { setDepartmentFilter(v); handleFilterApply() }}
+                    widthClass="w-48"
+                    icon={Layers}
+                    options={[
+                      { value: 'all', label: 'All Departments' },
+                      ...departments.map((dept: any) => ({ value: dept.value || dept.name, label: dept.name })),
+                    ]}
+                  />
                 </div>
               )}
               <div className="flex items-center gap-2">

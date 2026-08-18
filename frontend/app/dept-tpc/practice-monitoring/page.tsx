@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader } from '@/utils/auth'
@@ -472,16 +473,14 @@ export default function DeptTPCPracticeMonitoringPage() {
                                 <label className="block text-sm font-medium text-neutral mb-2">
                                     Week
                                 </label>
-                                <select
-                                    value={weekFilter}
-                                    onChange={(e) => setWeekFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                                    className="w-full px-4 py-2 rounded-lg border border-neutral-light/20 bg-background-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                >
-                                    <option value="all">All Weeks</option>
-                                    {[1, 2, 3, 4, 5, 6].map(week => (
-                                        <option key={week} value={week}>Week {week}</option>
-                                    ))}
-                                </select>
+                                <FilterSelect
+                                    value={String(weekFilter)}
+                                    onChange={(v) => setWeekFilter(v === 'all' ? 'all' : parseInt(v))}
+                                    options={[
+                                        { value: 'all', label: 'All Weeks' },
+                                        ...[1, 2, 3, 4, 5, 6].map(week => ({ value: String(week), label: `Week ${week}` })),
+                                    ]}
+                                />
                             </div>
                         </div>
                     </Card>

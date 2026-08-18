@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
@@ -410,19 +411,16 @@ export default function SuperadminDashboardPage() {
               <Clock className="w-3 h-3" />
               Last updated: {lastRefresh.toLocaleTimeString()}
             </div>
-            <select
+            <FilterSelect
               value={selectedCollege}
-              onChange={(e) => handleCollegeFilterChange(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-neutral-light/20 bg-white text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              title="Filter platform stats by college"
-            >
-              <option value="all">All Colleges</option>
-              {colleges.map((c) => (
-                <option key={c.collage_id} value={c.collage_id}>
-                  {c.collage_name}
-                </option>
-              ))}
-            </select>
+              onChange={handleCollegeFilterChange}
+              widthClass="w-56"
+              icon={Building2}
+              options={[
+                { value: 'all', label: 'All Colleges' },
+                ...colleges.map((c) => ({ value: c.collage_id, label: c.collage_name })),
+              ]}
+            />
             <Button
               variant="secondary"
               onClick={handleRefresh}

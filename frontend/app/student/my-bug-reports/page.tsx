@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
@@ -222,18 +223,18 @@ export default function MyBugReportsPage() {
                             {/* Status Filter */}
                             <div className="relative">
                                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-light" />
-                                <select
+                                <FilterSelect
                                     value={selectedStatus}
-                                    onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="pl-10 pr-8 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral focus:outline-none focus:border-accent/50 appearance-none cursor-pointer"
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="new">New</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="hold">On Hold</option>
-                                    <option value="solved">Solved</option>
-                                    <option value="not_a_bug">Not a Bug</option>
-                                </select>
+                                    onChange={setSelectedStatus}
+                                    options={[
+                                        { value: 'all', label: 'All Status' },
+                                        { value: 'new', label: 'New' },
+                                        { value: 'in_progress', label: 'In Progress' },
+                                        { value: 'hold', label: 'On Hold' },
+                                        { value: 'solved', label: 'Solved' },
+                                        { value: 'not_a_bug', label: 'Not a Bug' },
+                                    ]}
+                                />
                             </div>
                         </div>
                     </Card>

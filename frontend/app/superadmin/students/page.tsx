@@ -7,7 +7,7 @@ import { getAuthHeader, clearAuth, startImpersonation } from '@/utils/auth'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { exportStudentData } from '@/utils/exportUtils'
 import {
@@ -26,6 +26,7 @@ import {
   User,
   Mail,
   Building2,
+  Layers,
   Calendar,
   TrendingUp,
   BookOpen,
@@ -593,9 +594,10 @@ export default function SuperadminStudentsPage() {
                 Search
               </Button>
             </div>
-            <Select
+            <FilterSelect
+              icon={Building2}
               value={selectedCollege}
-              onChange={(e) => setSelectedCollege(e.target.value)}
+              onChange={setSelectedCollege}
               options={[
                 { value: 'all', label: 'All Colleges' },
                 ...(Array.isArray(colleges) ? colleges.map((college) => ({
@@ -604,9 +606,10 @@ export default function SuperadminStudentsPage() {
                 })) : [])
               ]}
             />
-            <Select
+            <FilterSelect
+              icon={Layers}
               value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
+              onChange={setSelectedDepartment}
               options={[
                 { value: 'all', label: 'All Departments' },
                 // When a college is chosen, only show its departments
@@ -622,9 +625,9 @@ export default function SuperadminStudentsPage() {
                   }))
               ]}
             />
-            <Select
+            <FilterSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={setStatusFilter}
               options={[
                 { value: 'all', label: 'All Status' },
                 { value: 'active', label: 'Active' },
@@ -1126,9 +1129,10 @@ export default function SuperadminStudentsPage() {
                       <label className="block text-sm font-medium text-neutral mb-2">
                         Target College <span className="text-red-500">*</span>
                       </label>
-                      <Select
+                      <FilterSelect
                         value={moveCollege}
-                        onChange={(e) => { setMoveCollege(e.target.value); setMoveDepartment('') }}
+                        onChange={(v) => { setMoveCollege(v); setMoveDepartment('') }}
+                        placeholder="Select College"
                         options={[
                           { value: '', label: 'Select College' },
                           ...colleges.map((c) => ({ value: c.collage_id || '', label: c.collage_name || 'Unknown' })),
@@ -1139,9 +1143,9 @@ export default function SuperadminStudentsPage() {
                       <label className="block text-sm font-medium text-neutral mb-2">
                         Target Department <span className="text-red-500">*</span>
                       </label>
-                      <Select
+                      <FilterSelect
                         value={moveDepartment}
-                        onChange={(e) => setMoveDepartment(e.target.value)}
+                        onChange={setMoveDepartment}
                         disabled={!moveCollege}
                         options={[
                           { value: '', label: moveCollege ? 'Select Department' : 'Pick a college first' },
@@ -1241,9 +1245,10 @@ export default function SuperadminStudentsPage() {
                   <label className="block text-sm font-medium text-neutral mb-2">
                     College <span className="text-red-500">*</span>
                   </label>
-                  <Select
+                  <FilterSelect
                     value={newStudent.person_collage_id}
-                    onChange={(e) => setNewStudent({ ...newStudent, person_collage_id: e.target.value })}
+                    onChange={(v) => setNewStudent({ ...newStudent, person_collage_id: v })}
+                    placeholder="Select College"
                     options={[
                       { value: '', label: 'Select College' },
                       ...(Array.isArray(colleges) ? colleges.map((college) => ({

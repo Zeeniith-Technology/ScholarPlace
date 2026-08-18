@@ -65,8 +65,13 @@ const config: Config = {
         'shimmer': 'shimmer 2s linear infinite',
         'smooth-appear': 'smoothAppear 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
         'stagger-fade': 'staggerFade 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        'dropdown-in': 'dropdownIn 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
       },
       keyframes: {
+        dropdownIn: {
+          '0%': { opacity: '0', transform: 'translateY(-4px) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
         gradient: {
           '0%, 100%': {
             'background-size': '200% 200%',

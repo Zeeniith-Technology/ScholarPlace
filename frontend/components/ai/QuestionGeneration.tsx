@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Input } from '@/components/ui/Input'
 import { AIService } from '@/lib/aiService'
 import {
@@ -112,9 +112,9 @@ export function QuestionGeneration({ onClose, onQuestionsGenerated }: QuestionGe
                 <label className="block text-sm font-medium text-neutral mb-2">
                   Difficulty
                 </label>
-                <Select
+                <FilterSelect
                   value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value as any)}
+                  onChange={(v) => setDifficulty(v as any)}
                   disabled={isLoading}
                   options={[
                     { value: 'easy', label: 'Easy' },

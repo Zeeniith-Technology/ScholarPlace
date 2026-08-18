@@ -65,7 +65,7 @@ export function TPCLayout({ children }: TPCLayoutProps) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div

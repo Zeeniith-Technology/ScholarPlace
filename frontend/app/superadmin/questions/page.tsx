@@ -5,7 +5,7 @@ import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Modal } from '@/components/ui/Modal'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
@@ -464,23 +464,23 @@ export default function SuperadminQuestionsPage() {
                 />
               </div>
               <div className="w-full sm:w-32 shrink-0">
-                <Select
+                <FilterSelect
                   value={weekFilter}
-                  onChange={e => setWeekFilter(e.target.value)}
+                  onChange={setWeekFilter}
                   options={[{ value: '', label: 'All Weeks' }, ...WEEKS.map(w => ({ value: w, label: `Week ${w}` }))]}
                 />
               </div>
               <div className="w-full sm:w-36 shrink-0">
-                <Select
+                <FilterSelect
                   value={difficultyFilter}
-                  onChange={e => setDifficultyFilter(e.target.value)}
+                  onChange={setDifficultyFilter}
                   options={[{ value: '', label: 'All Difficulty' }, ...DIFFICULTIES.map(d => ({ value: d, label: d }))]}
                 />
               </div>
               <div className="w-full sm:w-36 shrink-0">
-                <Select
+                <FilterSelect
                   value={typeFilter}
-                  onChange={e => setTypeFilter(e.target.value)}
+                  onChange={setTypeFilter}
                   options={[
                     { value: '', label: 'All Types' },
                     { value: 'aptitude', label: 'Aptitude' },
@@ -617,10 +617,10 @@ export default function SuperadminQuestionsPage() {
               placeholder="e.g. Q201"
               disabled={!!editingId}
             />
-            <Select
+            <FilterSelect
               label="Week"
               value={form.week}
-              onChange={e => setForm(f => ({ ...f, week: e.target.value }))}
+              onChange={v => setForm(f => ({ ...f, week: v }))}
               options={WEEKS.map(w => ({ value: w, label: `Week ${w}` }))}
             />
             <Input
@@ -671,16 +671,16 @@ export default function SuperadminQuestionsPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Select
+            <FilterSelect
               label="Difficulty"
               value={form.difficulty}
-              onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}
+              onChange={v => setForm(f => ({ ...f, difficulty: v }))}
               options={DIFFICULTIES.map(d => ({ value: d, label: d }))}
             />
-            <Select
+            <FilterSelect
               label="Type"
               value={form.question_type}
-              onChange={e => setForm(f => ({ ...f, question_type: e.target.value }))}
+              onChange={v => setForm(f => ({ ...f, question_type: v }))}
               options={[
                 { value: 'aptitude', label: 'Aptitude' },
                 { value: 'coding', label: 'Coding' },

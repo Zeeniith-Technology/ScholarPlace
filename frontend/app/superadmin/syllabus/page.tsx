@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 
 /**
  * Superadmin Syllabus Management Page
@@ -710,10 +710,10 @@ export default function SyllabusManagementPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select
+            <FilterSelect
               label="Select Week"
               value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
+              onChange={setSelectedWeek}
               options={[
                 { value: '1', label: 'Week 1' },
                 { value: '2', label: 'Week 2' },
@@ -726,10 +726,10 @@ export default function SyllabusManagementPage() {
               ]}
             />
 
-            <Select
+            <FilterSelect
               label="Content Type"
               value={contentType}
-              onChange={(e) => setContentType(e.target.value as 'DSA' | 'Aptitude')}
+              onChange={(v) => setContentType(v as 'DSA' | 'Aptitude')}
               options={[
                 { value: 'DSA', label: 'DSA Topics' },
                 { value: 'Aptitude', label: 'Aptitude Topics' },

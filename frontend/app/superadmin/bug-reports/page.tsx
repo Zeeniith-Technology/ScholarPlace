@@ -5,6 +5,7 @@ import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Modal } from '@/components/ui/Modal'
 import { getAuthHeader } from '@/utils/auth'
 import {
@@ -520,61 +521,46 @@ export default function SuperadminBugReportsPage() {
                         {/* Filter Row */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* Status Filter */}
-                            <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-light" />
-                                <select
-                                    value={selectedStatus}
-                                    onChange={(e) => {
-                                        setSelectedStatus(e.target.value)
-                                        setPagination((prev) => ({ ...prev, current_page: 1 }))
-                                    }}
-                                    className="w-full pl-10 pr-8 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral focus:outline-none focus:border-accent/50 appearance-none cursor-pointer"
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="new">New</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="hold">On Hold</option>
-                                    <option value="solved">Solved</option>
-                                    <option value="not_a_bug">Not a Bug</option>
-                                </select>
-                            </div>
+                            <FilterSelect
+                                icon={Filter}
+                                value={selectedStatus}
+                                onChange={(v) => { setSelectedStatus(v); setPagination((prev) => ({ ...prev, current_page: 1 })) }}
+                                options={[
+                                    { value: 'all', label: 'All Status' },
+                                    { value: 'new', label: 'New' },
+                                    { value: 'in_progress', label: 'In Progress' },
+                                    { value: 'hold', label: 'On Hold' },
+                                    { value: 'solved', label: 'Solved' },
+                                    { value: 'not_a_bug', label: 'Not a Bug' },
+                                ]}
+                            />
 
                             {/* Priority Filter */}
-                            <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-light" />
-                                <select
-                                    value={selectedPriority}
-                                    onChange={(e) => {
-                                        setSelectedPriority(e.target.value)
-                                        setPagination((prev) => ({ ...prev, current_page: 1 }))
-                                    }}
-                                    className="w-full pl-10 pr-8 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral focus:outline-none focus:border-accent/50 appearance-none cursor-pointer"
-                                >
-                                    <option value="all">All Priority</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="critical">Critical</option>
-                                </select>
-                            </div>
+                            <FilterSelect
+                                icon={Filter}
+                                value={selectedPriority}
+                                onChange={(v) => { setSelectedPriority(v); setPagination((prev) => ({ ...prev, current_page: 1 })) }}
+                                options={[
+                                    { value: 'all', label: 'All Priority' },
+                                    { value: 'low', label: 'Low' },
+                                    { value: 'medium', label: 'Medium' },
+                                    { value: 'high', label: 'High' },
+                                    { value: 'critical', label: 'Critical' },
+                                ]}
+                            />
 
                             {/* Role Filter */}
-                            <div className="relative">
-                                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-light" />
-                                <select
-                                    value={selectedRole}
-                                    onChange={(e) => {
-                                        setSelectedRole(e.target.value)
-                                        setPagination((prev) => ({ ...prev, current_page: 1 }))
-                                    }}
-                                    className="w-full pl-10 pr-8 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral focus:outline-none focus:border-accent/50 appearance-none cursor-pointer"
-                                >
-                                    <option value="all">All Roles</option>
-                                    <option value="student">Student</option>
-                                    <option value="dept_tpc">Dept TPC</option>
-                                    <option value="superadmin">Superadmin</option>
-                                </select>
-                            </div>
+                            <FilterSelect
+                                icon={Shield}
+                                value={selectedRole}
+                                onChange={(v) => { setSelectedRole(v); setPagination((prev) => ({ ...prev, current_page: 1 })) }}
+                                options={[
+                                    { value: 'all', label: 'All Roles' },
+                                    { value: 'student', label: 'Student' },
+                                    { value: 'dept_tpc', label: 'Dept TPC' },
+                                    { value: 'superadmin', label: 'Superadmin' },
+                                ]}
+                            />
 
                             {/* Date range */}
                             <div className="flex items-center gap-2">
@@ -794,17 +780,17 @@ export default function SuperadminBugReportsPage() {
                             {/* Status Update */}
                             <div className="mb-3">
                                 <label className="text-sm text-neutral-light mb-1 block">Update Status</label>
-                                <select
+                                <FilterSelect
                                     value={editStatus}
-                                    onChange={(e) => setEditStatus(e.target.value)}
-                                    className="w-full px-3 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral focus:outline-none focus:border-accent/50"
-                                >
-                                    <option value="new">New</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="hold">On Hold</option>
-                                    <option value="solved">Solved</option>
-                                    <option value="not_a_bug">Not a Bug</option>
-                                </select>
+                                    onChange={setEditStatus}
+                                    options={[
+                                        { value: 'new', label: 'New' },
+                                        { value: 'in_progress', label: 'In Progress' },
+                                        { value: 'hold', label: 'On Hold' },
+                                        { value: 'solved', label: 'Solved' },
+                                        { value: 'not_a_bug', label: 'Not a Bug' },
+                                    ]}
+                                />
                             </div>
 
                             {/* Admin Notes */}

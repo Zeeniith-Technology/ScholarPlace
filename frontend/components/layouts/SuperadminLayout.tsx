@@ -16,6 +16,8 @@ import {
   Activity,
   Settings2,
   Award,
+  ClipboardList,
+  Code2,
   Bug,
   AlertCircle,
   MessageSquare,
@@ -45,6 +47,8 @@ const navigation = [
   { name: 'Question Bank', href: '/superadmin/questions', icon: Library },
   { name: 'Certificates', href: '/superadmin/certificates', icon: Award },
   { name: 'Feedback / NPS', href: '/superadmin/feedback', icon: MessageSquareHeart },
+  { name: 'Aptitude Monitoring', href: '/superadmin/practice-monitoring', icon: ClipboardList },
+  { name: 'Coding Monitoring', href: '/superadmin/coding-monitoring', icon: Code2 },
   { name: 'Test Security', href: '/superadmin/security', icon: ShieldAlert },
   { name: 'AI Usage', href: '/superadmin/ai-usage', icon: Sparkles },
   { name: 'Announcements', href: '/superadmin/announcements', icon: Megaphone },
@@ -118,7 +122,10 @@ export function SuperadminLayout({ children }: SuperadminLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    // h-screen + overflow-hidden pins the shell to the viewport so the sidebar
+    // stays fixed and only the <main> content area scrolls (was min-h-screen,
+    // which let the whole page — sidebar included — grow and scroll together).
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div

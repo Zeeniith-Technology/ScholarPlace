@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { X } from 'lucide-react';
 import crmApi from '@/lib/crmApi';
 
@@ -92,15 +93,15 @@ export default function TaskForm({ isOpen, onClose, onSuccess, collegeId }: Task
 
                         <div>
                             <label className="block font-medium text-gray-700 mb-1">Priority</label>
-                            <select 
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 outline-none"
+                            <FilterSelect
                                 value={formData.priority}
-                                onChange={e => setFormData({...formData, priority: e.target.value})}
-                            >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </select>
+                                onChange={v => setFormData({...formData, priority: v})}
+                                options={[
+                                    { value: 'low', label: 'Low' },
+                                    { value: 'medium', label: 'Medium' },
+                                    { value: 'high', label: 'High' },
+                                ]}
+                            />
                         </div>
 
                         <div>

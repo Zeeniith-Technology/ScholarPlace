@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { X } from 'lucide-react';
 import crmApi from '@/lib/crmApi';
 
@@ -80,17 +81,15 @@ export default function AssignModal({ isOpen, onClose, onSuccess, collegeId }: A
                     <div className="space-y-4 text-sm">
                         <div>
                             <label className="block font-medium text-gray-700 mb-1">Assign To *</label>
-                            <select 
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 outline-none"
+                            <FilterSelect
                                 value={selectedUser}
-                                onChange={e => setSelectedUser(e.target.value)}
-                            >
-                                <option value="">Select Executive...</option>
-                                {team.map(t => (
-                                    <option key={t._id} value={t._id}>{t.person_name} ({t.person_role})</option>
-                                ))}
-                            </select>
+                                onChange={setSelectedUser}
+                                placeholder="Select Executive..."
+                                options={[
+                                    { value: '', label: 'Select Executive...' },
+                                    ...team.map(t => ({ value: t._id, label: `${t.person_name} (${t.person_role})` })),
+                                ]}
+                            />
                         </div>
 
                         <div>

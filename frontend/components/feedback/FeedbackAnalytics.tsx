@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import {
   BarChart3, Star, TrendingUp, Users, MessageSquare,
   ChevronDown, RefreshCw, Download, Filter
@@ -165,19 +166,15 @@ export function FeedbackAnalytics({ apiBase, title = 'Student Pulse — Feedback
         </div>
         <div className="flex items-center gap-3">
           {/* Week filter */}
-          <div className="relative">
-            <select
-              value={selectedWeek}
-              onChange={e => setSelectedWeek(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
-              className="appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-xl bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Weeks</option>
-              {analytics?.weeks.map(w => (
-                <option key={w.week_number} value={w.week_number}>Week {w.week_number}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
+          <FilterSelect
+            value={String(selectedWeek)}
+            onChange={v => setSelectedWeek(v === 'all' ? 'all' : parseInt(v, 10))}
+            widthClass="w-36"
+            options={[
+              { value: 'all', label: 'All Weeks' },
+              ...(analytics?.weeks || []).map(w => ({ value: String(w.week_number), label: `Week ${w.week_number}` })),
+            ]}
+          />
           <button onClick={fetchAnalytics} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>

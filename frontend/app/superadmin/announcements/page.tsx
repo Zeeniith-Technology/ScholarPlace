@@ -5,7 +5,7 @@ import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Modal } from '@/components/ui/Modal'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
@@ -368,10 +368,10 @@ export default function SuperadminAnnouncementsPage() {
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Select
+            <FilterSelect
               label="Severity"
               value={form.severity}
-              onChange={e => setForm(f => ({ ...f, severity: e.target.value as Announcement['severity'] }))}
+              onChange={v => setForm(f => ({ ...f, severity: v as Announcement['severity'] }))}
               options={[
                 { value: 'info', label: 'Info (blue)' },
                 { value: 'success', label: 'Success (green)' },
@@ -379,10 +379,10 @@ export default function SuperadminAnnouncementsPage() {
                 { value: 'critical', label: 'Critical (red)' },
               ]}
             />
-            <Select
+            <FilterSelect
               label="Audience"
               value={form.target_college_id}
-              onChange={e => setForm(f => ({ ...f, target_college_id: e.target.value }))}
+              onChange={v => setForm(f => ({ ...f, target_college_id: v }))}
               options={[
                 { value: '', label: 'All colleges' },
                 ...colleges.map(c => ({ value: c._id, label: c.collage_name })),

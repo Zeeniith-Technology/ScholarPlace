@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { X } from 'lucide-react';
 import crmApi from '@/lib/crmApi';
 
@@ -71,31 +72,31 @@ export default function ActivityForm({ isOpen, onClose, onSuccess, collegeId }: 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block font-medium text-gray-700 mb-1">Type *</label>
-                                <select 
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 outline-none"
+                                <FilterSelect
                                     value={formData.type}
-                                    onChange={e => setFormData({...formData, type: e.target.value})}
-                                >
-                                    <option value="call">Call</option>
-                                    <option value="email">Email</option>
-                                    <option value="whatsapp">WhatsApp</option>
-                                    <option value="meeting">Meeting</option>
-                                    <option value="note">Internal Note</option>
-                                </select>
+                                    onChange={v => setFormData({...formData, type: v})}
+                                    options={[
+                                        { value: 'call', label: 'Call' },
+                                        { value: 'email', label: 'Email' },
+                                        { value: 'whatsapp', label: 'WhatsApp' },
+                                        { value: 'meeting', label: 'Meeting' },
+                                        { value: 'note', label: 'Internal Note' },
+                                    ]}
+                                />
                             </div>
                             <div>
                                 <label className="block font-medium text-gray-700 mb-1">Outcome</label>
-                                <select 
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 outline-none"
+                                <FilterSelect
                                     value={formData.outcome}
-                                    onChange={e => setFormData({...formData, outcome: e.target.value})}
-                                >
-                                    <option value="na">N/A</option>
-                                    <option value="positive">Positive</option>
-                                    <option value="neutral">Neutral</option>
-                                    <option value="negative">Negative</option>
-                                    <option value="no_response">No Response</option>
-                                </select>
+                                    onChange={v => setFormData({...formData, outcome: v})}
+                                    options={[
+                                        { value: 'na', label: 'N/A' },
+                                        { value: 'positive', label: 'Positive' },
+                                        { value: 'neutral', label: 'Neutral' },
+                                        { value: 'negative', label: 'Negative' },
+                                        { value: 'no_response', label: 'No Response' },
+                                    ]}
+                                />
                             </div>
                         </div>
 

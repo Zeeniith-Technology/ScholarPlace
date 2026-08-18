@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { getAuthHeader } from '@/utils/auth'
-import { ShieldAlert, ShieldCheck, Ban, RefreshCw, AlertTriangle } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, Ban, RefreshCw, AlertTriangle, Building2, Layers } from 'lucide-react'
 
 interface Violation {
   _id: string
@@ -216,26 +217,22 @@ export default function SuperadminSecurityPage() {
                 <h2 className="text-xl font-semibold text-neutral">Violation Log</h2>
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* College filter */}
-                  <select
+                  <FilterSelect
                     value={collegeFilter}
-                    onChange={(e) => handleCollegeFilter(e.target.value)}
-                    className="px-3 py-1.5 rounded-lg border border-neutral-light/30 bg-white text-xs font-medium text-neutral focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    title="Filter by college"
-                  >
-                    <option value="all">All Colleges</option>
-                    {collegeOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    onChange={handleCollegeFilter}
+                    widthClass="w-48"
+                    icon={Building2}
+                    options={[{ value: 'all', label: 'All Colleges' }, ...collegeOptions.map(c => ({ value: c, label: c }))]}
+                  />
                   {/* Department filter (scoped to selected college) */}
-                  <select
+                  <FilterSelect
                     value={deptFilter}
-                    onChange={(e) => setDeptFilter(e.target.value)}
-                    className="px-3 py-1.5 rounded-lg border border-neutral-light/30 bg-white text-xs font-medium text-neutral focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
-                    title="Filter by department"
+                    onChange={setDeptFilter}
+                    widthClass="w-52"
+                    icon={Layers}
                     disabled={deptOptions.length === 0}
-                  >
-                    <option value="all">All Departments</option>
-                    {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                    options={[{ value: 'all', label: 'All Departments' }, ...deptOptions.map(d => ({ value: d, label: d }))]}
+                  />
                   {/* Status tabs */}
                   <div className="flex items-center gap-1 bg-background-elevated rounded-lg p-1">
                     {(['all', 'blocked', 'resolved'] as const).map(f => (

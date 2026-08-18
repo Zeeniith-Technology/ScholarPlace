@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
@@ -633,17 +634,15 @@ function ScheduleTestContent() {
                                         {/* Module Selection */}
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Module *</label>
-                                            <select
-                                                name="module"
-                                                required
+                                            <FilterSelect
                                                 value={formData.module}
-                                                onChange={handleInputChange}
-                                                className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none"
-                                            >
-                                                <option value="">Select Module</option>
-                                                <option value="DSA">DSA (Data Structures & Algorithms)</option>
-                                                <option value="Aptitude">Aptitude</option>
-                                            </select>
+                                                onChange={(v) => setFormData(prev => ({ ...prev, module: v }))}
+                                                options={[
+                                                    { value: '', label: 'Select Module' },
+                                                    { value: 'DSA', label: 'DSA (Data Structures & Algorithms)' },
+                                                    { value: 'Aptitude', label: 'Aptitude' },
+                                                ]}
+                                            />
                                         </div>
 
                                         {/* Topic Input */}
@@ -666,12 +665,12 @@ function ScheduleTestContent() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">Difficulty *</label>
-                                                <select name="difficulty" value={formData.difficulty} onChange={handleInputChange} className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none">
-                                                    <option value="Easy">Easy</option>
-                                                    <option value="Medium">Medium</option>
-                                                    <option value="Hard">Hard</option>
-                                                    <option value="Mixed">Mixed</option>
-                                                </select>
+                                                <FilterSelect value={formData.difficulty} onChange={(v) => setFormData(prev => ({ ...prev, difficulty: v }))} options={[
+                                                    { value: 'Easy', label: 'Easy' },
+                                                    { value: 'Medium', label: 'Medium' },
+                                                    { value: 'Hard', label: 'Hard' },
+                                                    { value: 'Mixed', label: 'Mixed' },
+                                                ]} />
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">No. of Questions *</label>
@@ -828,21 +827,14 @@ function ScheduleTestContent() {
                             </div>
 
                             <div className="w-full md:w-64">
-                                <select
+                                <FilterSelect
                                     value={selectedTestId}
-                                    onChange={(e) => {
-                                        setSelectedTestId(e.target.value)
-                                        fetchTestAnalytics(e.target.value)
-                                    }}
-                                    className="w-full px-3 py-2 rounded-lg border border-neutral-light/20 bg-background-main outline-none focus:ring-2 focus:ring-primary/20"
-                                >
-                                    <option value="">Select a Test to View Results</option>
-                                    {viewTests.map((test: any) => (
-                                        <option key={test._id} value={test._id}>
-                                            {test.title} ({new Date(test.created_at).toLocaleDateString()})
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(v) => { setSelectedTestId(v); fetchTestAnalytics(v) }}
+                                    options={[
+                                        { value: '', label: 'Select a Test to View Results' },
+                                        ...viewTests.map((test: any) => ({ value: test._id, label: `${test.title} (${new Date(test.created_at).toLocaleDateString()})` })),
+                                    ]}
+                                />
                             </div>
                         </div>
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
 import { Settings2, RefreshCw, Save, AlertTriangle } from 'lucide-react'
@@ -146,10 +146,10 @@ export default function SuperadminSettingsPage() {
                           </button>
                         ) : def.options ? (
                           <div className="w-52">
-                            <Select
+                            <FilterSelect
                               value={values[def.key] ?? ''}
-                              onChange={e => setValue(def.key, e.target.value)}
-                              options={def.options.map(o => ({ value: o, label: o }))}
+                              onChange={v => setValue(def.key, v)}
+                              options={def.options.map((o: string) => ({ value: o, label: o }))}
                             />
                           </div>
                         ) : (

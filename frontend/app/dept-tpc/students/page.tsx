@@ -6,7 +6,7 @@ import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
 import { getApiBaseUrl } from '@/utils/api'
@@ -194,15 +194,15 @@ export default function DepartmentTPCStudentsPage() {
                 className="pl-10 w-full"
               />
             </div>
-            <Select
+            <FilterSelect
               options={[
                 { value: 'all', label: 'All Status' },
                 { value: 'active', label: 'Active' },
                 { value: 'inactive', label: 'Inactive' },
               ]}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-40 shrink-0"
+              onChange={setStatusFilter}
+              widthClass="w-full sm:w-40 shrink-0"
             />
             <button
               type="button"

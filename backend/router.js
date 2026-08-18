@@ -24,6 +24,7 @@ import studentAdminController from './controller/superadmin/studentAdmin.js';
 import announcementController from './controller/announcements.js';
 import settingsController from './controller/superadmin/settings.js';
 import impersonationController from './controller/superadmin/impersonation.js';
+import monitoringController from './controller/superadmin/monitoring.js';
 
 import questionController from './controller/questionController.js';
 import PasswordResetController from './controller/passwordReset.js';
@@ -352,6 +353,12 @@ router.post('/superadmin/settings/update', auth, requireRole('Superadmin'), sett
 // Student impersonation ("View As") — read-only, audit-logged
 router.post('/superadmin/impersonate/start', auth, requireRole('Superadmin'), impersonationController.start, responsedata);
 router.post('/superadmin/impersonate/logs', auth, requireRole('Superadmin'), impersonationController.logs, responsedata);
+
+// Superadmin monitoring — cross-college aptitude (practice) + coding visibility
+router.post('/superadmin/monitoring/practice', auth, requireRole('Superadmin'), monitoringController.practice, responsedata);
+router.post('/superadmin/monitoring/practice-detail', auth, requireRole('Superadmin'), monitoringController.practiceDetail, responsedata);
+router.post('/superadmin/monitoring/coding', auth, requireRole('Superadmin'), monitoringController.coding, responsedata);
+router.post('/superadmin/monitoring/coding-detail', auth, requireRole('Superadmin'), monitoringController.codingDetail, responsedata);
 
 // TPC Coding Monitoring
 router.post('/tpc/coding/stats', auth, (req, res, next) => tpcCoding.getCodingStats(req, res, next), responsedata);

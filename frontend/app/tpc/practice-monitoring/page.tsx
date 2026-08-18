@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader } from '@/utils/auth'
 import {
@@ -266,16 +267,14 @@ export default function TPCPracticeMonitoringPage() {
                                 <label className="block text-sm font-medium text-neutral mb-2">
                                     Week
                                 </label>
-                                <select
-                                    value={weekFilter}
-                                    onChange={(e) => setWeekFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                                    className="w-full px-4 py-2 rounded-lg border border-neutral-light/20 bg-background-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                >
-                                    <option value="all">All Weeks</option>
-                                    {[1, 2, 3, 4, 5, 6].map(week => (
-                                        <option key={week} value={week}>Week {week}</option>
-                                    ))}
-                                </select>
+                                <FilterSelect
+                                    value={String(weekFilter)}
+                                    onChange={(v) => setWeekFilter(v === 'all' ? 'all' : parseInt(v))}
+                                    options={[
+                                        { value: 'all', label: 'All Weeks' },
+                                        ...[1, 2, 3, 4, 5, 6].map(week => ({ value: String(week), label: `Week ${week}` })),
+                                    ]}
+                                />
                             </div>
 
                             {/* Category Filter */}
@@ -283,15 +282,15 @@ export default function TPCPracticeMonitoringPage() {
                                 <label className="block text-sm font-medium text-neutral mb-2">
                                     Category
                                 </label>
-                                <select
+                                <FilterSelect
                                     value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="w-full px-4 py-2 rounded-lg border border-neutral-light/20 bg-background-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                >
-                                    <option value="all">All Categories</option>
-                                    <option value="DSA">DSA</option>
-                                    <option value="Aptitude">Aptitude</option>
-                                </select>
+                                    onChange={setCategoryFilter}
+                                    options={[
+                                        { value: 'all', label: 'All Categories' },
+                                        { value: 'DSA', label: 'DSA' },
+                                        { value: 'Aptitude', label: 'Aptitude' },
+                                    ]}
+                                />
                             </div>
                         </div>
                     </Card>

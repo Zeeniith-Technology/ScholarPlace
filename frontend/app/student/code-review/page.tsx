@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuthHeader } from '@/utils/auth'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { FileCode, Sparkles, Loader2, Calendar, Filter, ChevronDown, ChevronRight } from 'lucide-react'
@@ -175,33 +176,27 @@ export default function CodeReviewPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 bg-white rounded-lg border border-neutral-200 p-1 shadow-sm">
-              <Filter className="w-4 h-4 text-neutral-400 ml-2" />
-              <select
-                value={weekFilter}
-                onChange={(e) => setWeekFilter(e.target.value === '' ? '' : Number(e.target.value))}
-                className="bg-transparent border-none text-sm text-neutral focus:ring-0 cursor-pointer py-1.5"
-              >
-                <option value="">All weeks</option>
-                {WEEKS.map((w) => (
-                  <option key={w} value={w}>Week {w}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              icon={Filter}
+              value={String(weekFilter)}
+              onChange={(v) => setWeekFilter(v === '' ? '' : Number(v))}
+              widthClass="w-40"
+              options={[
+                { value: '', label: 'All weeks' },
+                ...WEEKS.map((w) => ({ value: String(w), label: `Week ${w}` })),
+              ]}
+            />
 
-            <div className="flex items-center gap-2 bg-white rounded-lg border border-neutral-200 p-1 shadow-sm">
-              <Calendar className="w-4 h-4 text-neutral-400 ml-2" />
-              <select
-                value={dayFilter}
-                onChange={(e) => setDayFilter(e.target.value === '' ? '' : Number(e.target.value))}
-                className="bg-transparent border-none text-sm text-neutral focus:ring-0 cursor-pointer py-1.5"
-              >
-                <option value="">All days</option>
-                {DAYS.map((d) => (
-                  <option key={d} value={d}>Day {d}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              icon={Calendar}
+              value={String(dayFilter)}
+              onChange={(v) => setDayFilter(v === '' ? '' : Number(v))}
+              widthClass="w-40"
+              options={[
+                { value: '', label: 'All days' },
+                ...DAYS.map((d) => ({ value: String(d), label: `Day ${d}` })),
+              ]}
+            />
 
             <Button
               variant="ghost"

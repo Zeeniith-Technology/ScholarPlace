@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
+import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -25,6 +26,7 @@ import {
   RefreshCw,
   Building2,
   Filter,
+  Layers,
 } from 'lucide-react'
 
 /**
@@ -332,18 +334,16 @@ export default function TPCDashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             {departments.length > 0 && (
-              <select
+              <FilterSelect
                 value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-3 py-2 border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept.name || dept.code || dept.value} value={dept.name || dept.code || dept.value}>
-                    {dept.name || dept.code || dept.value}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedDepartment}
+                widthClass="w-52"
+                icon={Layers}
+                options={[
+                  { value: 'all', label: 'All Departments' },
+                  ...departments.map((dept: any) => ({ value: dept.name || dept.code || dept.value, label: dept.name || dept.code || dept.value })),
+                ]}
+              />
             )}
             <button
               onClick={handleRefresh}
