@@ -148,22 +148,13 @@ router.post('/syllabus/aptitude-week6-content', auth, syllabus.getAptitudeWeek6C
 // Get dynamic week content (supports Week 2+): All authenticated users
 router.post('/syllabus/week-content', auth, syllabus.getWeekContent, responsedata);
 
-// Questions routes (Week 1 DSA Practice Questions)
-// Get questions by day: All authenticated users
-router.post('/questions/week1', auth, questions.getWeek1QuestionsByDay, responsedata);
-// Get all Week 1 questions organized by day: All authenticated users
-router.post('/questions/week1/all', auth, questions.getAllWeek1Questions, responsedata);
-// Get question by ID: All authenticated users
-router.post('/questions/week1/get', auth, questions.getQuestionById, responsedata);
-// Week 2 questions routes
-router.post('/questions/week2', auth, questions.getWeek2QuestionsByDay, responsedata);
-router.post('/questions/week2/all', auth, questions.getAllWeek2Questions, responsedata);
-
-// Coding Problems routes
-// Get coding problems by day: All authenticated users
+// Coding problems by day (reads tblQuestion coding docs). Kept as-is.
+// NOTE: the static-file-backed routes /questions/week1, /questions/week1/all,
+// /questions/week1/get, /questions/week2, /questions/week2/all, and /questions/coding/get
+// were removed 2026-08-19. They served seed-era static data (data/questions.js,
+// week2Questions.js, codingProblems.js) that had drifted from the DB; their pages now
+// redirect to the DB-backed flows. Do NOT re-add them — student content lives in the DB.
 router.post('/questions/coding', auth, questions.getCodingProblemsByDay, responsedata);
-// Get coding problem by ID: All authenticated users
-router.post('/questions/coding/get', auth, questions.getCodingProblemById, responsedata);
 
 // ========================================
 // Question Management Routes (tblQuestion collection)
