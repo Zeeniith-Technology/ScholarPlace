@@ -63,6 +63,15 @@ interface AnswerState {
 function Week2PracticeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // DEPRECATED: this page serves a static, seed-era aptitude set (data/week2Questions.js
+  // via /questions/week2) that can drift from the Question Bank. Redirect to the
+  // DB-backed aptitude practice. See Update Log 2026-08-18.
+  useEffect(() => {
+    const dayParam = searchParams.get('day') || 'day-1'
+    router.replace(`/student/practice/aptitude-week-2?day=${dayParam}`)
+  }, [searchParams, router])
+
   const [day, setDay] = useState<string>('day-1')
   const [questions, setQuestions] = useState<Question[]>([])
   const [isLoading, setIsLoading] = useState(true)

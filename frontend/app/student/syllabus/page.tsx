@@ -335,8 +335,11 @@ export default function StudentSyllabusPage() {
     if (week === 1) {
       router.push('/student/study/week-1-select')
     } else {
-      // For other weeks, go to coding dashboard or generic week view
-      router.push(`/student/coding/week-${week}`)
+      // Weeks 2+: go to the study page's Daily Coding Problems (the canonical
+      // tblCodingProblem set). The old `/student/coding/week-N` page reads a
+      // stale tblQuestion set via /questions/coding and its problems 404 on
+      // submit — see Update Log 2026-08-18.
+      router.push(`/student/study/week-${week}?day=day-1#daily-coding-problems`)
     }
   }
 

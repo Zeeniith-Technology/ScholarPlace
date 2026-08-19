@@ -75,6 +75,15 @@ function CodingContent() {
   const weekNum = weekParam ? weekParam.replace('week-', '') : '1';
   const weekLabel = `Week ${weekNum}`;
 
+  // DEPRECATED PAGE: this legacy coding view lists a stale tblQuestion set via
+  // /questions/coding (removed problems that 404 on submit). Redirect any
+  // remaining bookmark/history hits to the canonical study-page coding flow
+  // (tblCodingProblem). See Update Log 2026-08-18.
+  useEffect(() => {
+    const day = searchParams.get('day') || 'day-1'
+    router.replace(`/student/study/week-${weekNum}?day=${day}#daily-coding-problems`)
+  }, [weekNum, searchParams, router])
+
   // Data State
   const [problems, setProblems] = useState<CodingProblem[]>([])
   const [loading, setLoading] = useState(false)

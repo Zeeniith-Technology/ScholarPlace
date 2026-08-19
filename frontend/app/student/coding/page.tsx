@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { StudentLayout } from '@/components/layouts/StudentLayout'
 import { Card } from '@/components/ui/Card'
@@ -58,6 +58,13 @@ const WEEKS = [
 
 export default function CodingDashboardPage() {
     const router = useRouter()
+
+    // DEPRECATED: this overview linked to /student/coding/week-N, a legacy page that
+    // listed old tblQuestion coding docs (drifted from tblCodingProblem). The canonical
+    // coding entry is the syllabus roadmap. Redirect. See Update Log 2026-08-18.
+    useEffect(() => {
+        router.replace('/student/syllabus')
+    }, [router])
 
     return (
         <StudentLayout>
