@@ -429,21 +429,36 @@ function AptitudeWeek5Content() {
               </button>
 
               <div className="space-y-2">
-                {days.map((day) => (
+                {days.map((day) => {
+                  const isActive = selectedDay === day.id
+                  // Aptitude "complete": student scored >= 70% on that day's practice test,
+                  // which the backend returns in practice_tests.days. Sidebar tick only.
+                  const isCompleted = weeklyTestEligibility?.practice_tests?.days?.some((d: any) => d.day === day.id) || false
+                  return (
                   <button
                     key={day.id}
                     onClick={() => navigateToDay(day.id)}
                     className={cn(
                       'w-full text-left p-3 rounded-lg transition-all',
-                      selectedDay === day.id
+                      isActive
                         ? 'bg-accent/20 text-accent border-2 border-accent/30'
-                        : 'hover:bg-background-elevated text-neutral-light'
+                        : isCompleted
+                          ? 'bg-green-500/10 text-green-700 border border-green-500/30 hover:bg-green-500/20'
+                          : 'hover:bg-background-elevated text-neutral-light'
                     )}
                   >
-                    <div className="font-semibold">{day.label}</div>
-                    <div className="text-xs mt-1">{day.title}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="font-semibold">{day.label}</div>
+                        <div className="text-xs mt-1">{day.title}</div>
+                      </div>
+                      {isCompleted && (
+                        <CheckCircle2 className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-accent' : 'text-green-600')} />
+                      )}
+                    </div>
                   </button>
-                ))}
+                  )
+                })}
               </div>
 
               {selectedDay === 'day-5' && (

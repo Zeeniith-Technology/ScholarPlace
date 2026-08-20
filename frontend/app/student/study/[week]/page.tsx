@@ -1251,7 +1251,9 @@ function WeekStudyContent() {
                       onClick={() => navigateToDay(day.id)}
                       className={`w-full text-left p-3 rounded-lg transition-all ${isActive
                         ? 'bg-primary text-white'
-                        : 'bg-background-elevated text-neutral hover:bg-primary/10'
+                        : isCompleted
+                          ? 'bg-green-500/10 text-green-700 hover:bg-green-500/20 border border-green-500/30'
+                          : 'bg-background-elevated text-neutral hover:bg-primary/10'
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -1260,7 +1262,7 @@ function WeekStudyContent() {
                           <div className="text-xs opacity-80">{day.title}</div>
                         </div>
                         {isCompleted && (
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                          <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-green-600'}`} />
                         )}
                       </div>
                     </button>

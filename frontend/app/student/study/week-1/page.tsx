@@ -565,7 +565,7 @@ function Week1StudyContent() {
     const totalTests = 1
     const totalItems = totalDays + totalAssignments + totalTests
 
-    const daysCompleted = dbProgress.days_completed?.length || 0
+    const daysCompleted = (dbProgress.verified_days ?? dbProgress.days_completed)?.length || 0
     const assignmentsCompleted = dbProgress.assignments_completed || 0
     const testsCompleted = dbProgress.tests_completed || 0
 
@@ -1164,7 +1164,11 @@ function Week1StudyContent() {
   }
 
   const currentDay = days[currentDayIndex]
-  const isDayCompleted = dbProgress?.days_completed?.includes(selectedDay) || false
+  // A day is "complete" (green) once the student passes >= 6 of its daily coding
+  // problems, which the backend exposes as verified_days on the progress record.
+  // Fall back to days_completed for any manual completions. (Matches the Week 2+ page.)
+  const completedDays = (dbProgress?.verified_days ?? dbProgress?.days_completed) || []
+  const isDayCompleted = completedDays.includes(selectedDay) || false
 
   return (
     <StudentLayout>
@@ -1196,7 +1200,7 @@ function Week1StudyContent() {
 
               <div className="space-y-1">
                 {days.map((day, idx) => {
-                  const isCompleted = dbProgress?.days_completed?.includes(day.id) || false
+                  const isCompleted = completedDays.includes(day.id) || false
                   const isActive = selectedDay === day.id
 
                   return (
@@ -1205,7 +1209,9 @@ function Week1StudyContent() {
                       onClick={() => navigateToDay(day.id)}
                       className={`w-full text-left p-3 rounded-lg transition-all ${isActive
                         ? 'bg-primary text-white'
-                        : 'bg-background-elevated text-neutral hover:bg-primary/10'
+                        : isCompleted
+                          ? 'bg-green-500/10 text-green-700 hover:bg-green-500/20 border border-green-500/30'
+                          : 'bg-background-elevated text-neutral hover:bg-primary/10'
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -1214,7 +1220,7 @@ function Week1StudyContent() {
                           <div className="text-xs opacity-80">{day.title}</div>
                         </div>
                         {isCompleted && (
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                          <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-green-600'}`} />
                         )}
                       </div>
                     </button>
