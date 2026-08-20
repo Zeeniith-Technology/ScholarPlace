@@ -188,13 +188,22 @@ export default class studentProgressController {
                     const problemsRes = await fetchData(
                         'tblCodingProblem',
                         { week: 1, day: 1, question_id: 1 },
-                        { week: { $in: weeksInResponse }, is_capstone: false, day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] }, deleted: { $ne: true } },
+                        // Daily problems store is_capstone as undefined (only the ~10 capstone
+                        // docs set it true), so exclude with $ne:true — { is_capstone:false }
+                        // matched zero daily docs and always produced empty verified_days.
+                        { week: { $in: weeksInResponse }, is_capstone: { $ne: true }, day: { $in: ['day-1', 'day-2', 'day-3', 'day-4', 'day-5', 1, 2, 3, 4, 5] }, deleted: { $ne: true } },
                         {}
                     );
+                    // tblCodingSubmissions is keyed by student_id and has NO week/day field —
+                    // the week/day linkage comes from each problem_id's membership in
+                    // problemsByDay below. Scope to the students in this response. (The old
+                    // { ...finalFilter } carried `week`, which matched zero submission docs
+                    // and made verified_days always empty.)
+                    const studentIdsInResp = [...new Set(response.data.map(r => r.student_id).filter(Boolean))];
                     const subsRes = await fetchData(
                         'tblCodingSubmissions',
                         { problem_id: 1 },
-                        { ...finalFilter, status: 'passed' },
+                        { student_id: { $in: studentIdsInResp }, status: 'passed' },
                         {}
                     );
                     const allDaily = problemsRes.data || [];
