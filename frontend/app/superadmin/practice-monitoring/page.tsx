@@ -8,22 +8,28 @@ import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Modal } from '@/components/ui/Modal'
 import { getAuthHeader } from '@/utils/auth'
 import { exportToCSV } from '@/utils/exportUtils'
-import { ClipboardList, RefreshCw, Search, Download, Eye, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Building2, Layers, CalendarDays } from 'lucide-react'
+import { ClipboardList, RefreshCw, Search, Download, Eye, CheckCircle2, XCircle, Building2, Layers, CalendarDays, ChevronDown, ChevronRight } from 'lucide-react'
 
-interface Attempt {
-  _id: string
+interface Row {
+  studentId: string
   student_name: string
   student_email: string
   college: string
   department: string
-  week: number
-  day: string
-  category: string
-  attempt: number
+  tests: number
+  avgScore: number
+  bestScore: number
+  lastActive: string | null
+}
+
+interface StudentAttempt {
+  _id: string
+  week: number | null
+  day: string | null
   score: number
+  attempt: number
   correct: number
   total: number
-  time_spent: number
   completed_at: string | null
 }
 
@@ -37,7 +43,6 @@ interface QDetail {
   time_spent: number
 }
 
-const PAGE_SIZE = 50
 const WEEKS = ['1', '2', '3', '4', '5', '6']
 
 function scoreColor(score: number) {
@@ -46,12 +51,36 @@ function scoreColor(score: number) {
   return 'text-red-600'
 }
 
+const DAY_RANK = (d: string | null) => {
+  if (d === 'pre-week') return -1
+  const m = /^day-(\d+)$/.exec(d || '')
+  if (m) return parseInt(m[1])
+  if (d === 'capstone') return 90
+  return 99
+}
+const dayLabel = (d: string | null) => {
+  if (!d) return 'Other'
+  if (d === 'pre-week') return 'Pre-Week'
+  if (d === 'capstone') return 'Capstone'
+  const m = /^day-(\d+)$/.exec(d)
+  return m ? `Day ${m[1]}` : d
+}
+
+function relative(iso: string | null) {
+  if (!iso) return '—'
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  if (isNaN(days)) return '—'
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 30) return `${days}d ago`
+  return new Date(iso).toLocaleDateString()
+}
+
 export default function PracticeMonitoringPage() {
   const [isLoading, setIsLoading] = useState(true)
-  const [attempts, setAttempts] = useState<Attempt[]>([])
-  const [total, setTotal] = useState(0)
+  const [rows, setRows] = useState<Row[]>([])
+  const [totalTests, setTotalTests] = useState(0)
   const [avgScore, setAvgScore] = useState(0)
-  const [page, setPage] = useState(1)
 
   const [colleges, setColleges] = useState<{ _id: string; collage_name: string }[]>([])
   const [departments, setDepartments] = useState<any[]>([])
@@ -61,8 +90,16 @@ export default function PracticeMonitoringPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  const [detail, setDetail] = useState<{ student_name: string; week: number; day: string; score: number; correct: number; total: number; questions: QDetail[] } | null>(null)
-  const [detailLoading, setDetailLoading] = useState(false)
+  // Student → week/day-grouped attempts
+  const [studentDetail, setStudentDetail] = useState<{ student_name: string; attempts: StudentAttempt[] } | null>(null)
+  const [studentLoading, setStudentLoading] = useState(false)
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set())
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const toggleWeek = (wk: number) => setExpandedWeeks(prev => { const n = new Set(prev); n.has(wk) ? n.delete(wk) : n.add(wk); return n })
+  const toggleDay = (key: string) => setExpandedDays(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
+  // One attempt → question-level answers
+  const [qDetail, setQDetail] = useState<{ student_name: string; week: number; day: string; score: number; correct: number; total: number; questions: QDetail[] } | null>(null)
+  const [qLoading, setQLoading] = useState(false)
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
 
@@ -71,10 +108,8 @@ export default function PracticeMonitoringPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  useEffect(() => { setPage(1) }, [collegeFilter, deptFilter, weekFilter, debouncedSearch])
   useEffect(() => { setDeptFilter('all') }, [collegeFilter])
 
-  // Reference data (colleges + departments) for the dropdowns
   useEffect(() => {
     const authHeader = getAuthHeader()
     if (!authHeader) return
@@ -90,7 +125,7 @@ export default function PracticeMonitoringPage() {
       setIsLoading(true)
       const authHeader = getAuthHeader()
       if (!authHeader) return
-      const body: any = { page, limit: PAGE_SIZE }
+      const body: any = {}
       if (collegeFilter !== 'all') body.collegeId = collegeFilter
       if (deptFilter !== 'all') body.departmentId = deptFilter
       if (weekFilter !== 'all') body.week = weekFilter
@@ -100,43 +135,58 @@ export default function PracticeMonitoringPage() {
       })
       const d = await res.json()
       if (d.success && d.data) {
-        setAttempts(d.data.attempts || [])
-        setTotal(d.data.total || 0)
+        setRows(d.data.students || [])
+        setTotalTests(d.data.summary?.totalTests ?? 0)
         setAvgScore(d.data.summary?.avgScore ?? 0)
       }
     } catch (e) { console.error('practice monitoring load error', e) }
     finally { setIsLoading(false) }
-  }, [apiBaseUrl, page, collegeFilter, deptFilter, weekFilter, debouncedSearch])
+  }, [apiBaseUrl, collegeFilter, deptFilter, weekFilter, debouncedSearch])
 
   useEffect(() => { load() }, [load])
 
-  const openDetail = async (attemptId: string) => {
+  const openStudent = async (studentId: string) => {
     try {
-      setDetailLoading(true)
-      setDetail({ student_name: '', week: 0, day: '', score: 0, correct: 0, total: 0, questions: [] })
+      setStudentLoading(true)
+      setStudentDetail({ student_name: '', attempts: [] })
+      setExpandedWeeks(new Set())
+      setExpandedDays(new Set())
+      const authHeader = getAuthHeader()
+      if (!authHeader) return
+      const res = await fetch(`${apiBaseUrl}/superadmin/monitoring/practice-student`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authHeader }, body: JSON.stringify({ studentId }),
+      })
+      const d = await res.json()
+      if (d.success && d.data) setStudentDetail(d.data)
+    } catch (e) { console.error('student detail error', e) }
+    finally { setStudentLoading(false) }
+  }
+
+  const openAnswers = async (attemptId: string) => {
+    try {
+      setQLoading(true)
+      setQDetail({ student_name: '', week: 0, day: '', score: 0, correct: 0, total: 0, questions: [] })
       const authHeader = getAuthHeader()
       if (!authHeader) return
       const res = await fetch(`${apiBaseUrl}/superadmin/monitoring/practice-detail`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authHeader }, body: JSON.stringify({ attemptId }),
       })
       const d = await res.json()
-      if (d.success && d.data) setDetail(d.data)
-    } catch (e) { console.error('detail error', e) }
-    finally { setDetailLoading(false) }
+      if (d.success && d.data) setQDetail(d.data)
+    } catch (e) { console.error('answers error', e) }
+    finally { setQLoading(false) }
   }
 
   const deptOptions = departments.filter(d => collegeFilter === 'all' || String(d.collage_id || d.department_college_id || '') === collegeFilter)
 
   const handleExport = () => {
-    if (attempts.length === 0) return
-    exportToCSV(attempts.map(a => ({
-      student: a.student_name, email: a.student_email, college: a.college, department: a.department,
-      week: a.week, day: a.day, score: a.score, correct: a.correct, total: a.total,
-      date: a.completed_at ? new Date(a.completed_at).toLocaleString() : '',
-    })), `practice_monitoring_${new Date().toISOString().slice(0, 10)}.csv`)
+    if (rows.length === 0) return
+    exportToCSV(rows.map(r => ({
+      student: r.student_name, email: r.student_email, college: r.college, department: r.department,
+      tests: r.tests, avg_score: r.avgScore, best_score: r.bestScore,
+      last_active: r.lastActive ? new Date(r.lastActive).toLocaleString() : '',
+    })), `aptitude_monitoring_${new Date().toISOString().slice(0, 10)}.csv`)
   }
-
-  const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1)
 
   return (
     <SuperadminLayout>
@@ -149,7 +199,7 @@ export default function PracticeMonitoringPage() {
                 <ClipboardList className="w-8 h-8 text-primary" />
                 Aptitude Monitoring
               </h1>
-              <p className="text-neutral-light mt-1">Every student's practice-test attempts — filter by college, department and week</p>
+              <p className="text-neutral-light mt-1">Every student's practice performance — click a student to see week &amp; day breakdown</p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="secondary" onClick={handleExport} className="flex items-center gap-2 text-sm font-medium">
@@ -179,8 +229,9 @@ export default function PracticeMonitoringPage() {
           </Card>
 
           {/* Stat cards */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-5"><p className="text-3xl font-bold text-neutral">{total}</p><p className="text-sm text-neutral-light mt-1">Attempts (filtered)</p></Card>
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="p-5"><p className="text-3xl font-bold text-neutral">{rows.length}</p><p className="text-sm text-neutral-light mt-1">Students with attempts</p></Card>
+            <Card className="p-5"><p className="text-3xl font-bold text-neutral">{totalTests}</p><p className="text-sm text-neutral-light mt-1">Total attempts</p></Card>
             <Card className="p-5"><p className={`text-3xl font-bold ${scoreColor(avgScore)}`}>{avgScore}%</p><p className="text-sm text-neutral-light mt-1">Average score</p></Card>
           </div>
 
@@ -188,77 +239,151 @@ export default function PracticeMonitoringPage() {
           <Card className="overflow-hidden">
             {isLoading ? (
               <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>
-            ) : attempts.length === 0 ? (
+            ) : rows.length === 0 ? (
               <div className="p-16 text-center">
                 <ClipboardList className="w-12 h-12 text-neutral-light mx-auto mb-4 opacity-40" />
                 <h3 className="text-xl font-semibold text-neutral mb-2">No attempts found</h3>
-                <p className="text-neutral-light">No practice tests match these filters yet.</p>
+                <p className="text-neutral-light">No students match these filters, or none have taken a practice test yet.</p>
               </div>
             ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-neutral-light/20 bg-background-elevated">
-                        <th className="text-left py-3 px-4 font-semibold text-neutral">Student</th>
-                        <th className="text-left py-3 px-4 font-semibold text-neutral">College</th>
-                        <th className="text-left py-3 px-4 font-semibold text-neutral">Department</th>
-                        <th className="text-center py-3 px-4 font-semibold text-neutral">Week / Day</th>
-                        <th className="text-center py-3 px-4 font-semibold text-neutral">Score</th>
-                        <th className="text-center py-3 px-4 font-semibold text-neutral">Correct</th>
-                        <th className="text-right py-3 px-4 font-semibold text-neutral">When</th>
-                        <th className="text-right py-3 px-4 font-semibold text-neutral">Answers</th>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-light/20 bg-background-elevated">
+                      <th className="text-left py-3 px-4 font-semibold text-neutral">Student</th>
+                      <th className="text-left py-3 px-4 font-semibold text-neutral">College</th>
+                      <th className="text-left py-3 px-4 font-semibold text-neutral">Department</th>
+                      <th className="text-center py-3 px-4 font-semibold text-neutral">Attempts</th>
+                      <th className="text-center py-3 px-4 font-semibold text-neutral">Avg</th>
+                      <th className="text-center py-3 px-4 font-semibold text-neutral">Best</th>
+                      <th className="text-right py-3 px-4 font-semibold text-neutral">Last Active</th>
+                      <th className="text-right py-3 px-4 font-semibold text-neutral">Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(r => (
+                      <tr key={r.studentId} className="border-b border-neutral-light/10 hover:bg-background-elevated">
+                        <td className="py-3 px-4"><p className="font-medium text-neutral">{r.student_name}</p><p className="text-xs text-neutral-light">{r.student_email}</p></td>
+                        <td className="py-3 px-4 text-neutral-light">{r.college}</td>
+                        <td className="py-3 px-4 text-neutral-light">{r.department}</td>
+                        <td className="py-3 px-4 text-center text-neutral">{r.tests}</td>
+                        <td className={`py-3 px-4 text-center font-semibold ${scoreColor(r.avgScore)}`}>{r.avgScore}%</td>
+                        <td className={`py-3 px-4 text-center font-medium ${scoreColor(r.bestScore)}`}>{r.bestScore}%</td>
+                        <td className="py-3 px-4 text-right text-neutral-light whitespace-nowrap">{relative(r.lastActive)}</td>
+                        <td className="py-3 px-4 text-right">
+                          <button onClick={() => openStudent(r.studentId)} className="inline-flex items-center gap-1 text-primary hover:underline text-sm font-medium">
+                            <Eye className="w-4 h-4" /> View
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {attempts.map(a => (
-                        <tr key={a._id} className="border-b border-neutral-light/10 hover:bg-background-elevated">
-                          <td className="py-3 px-4"><p className="font-medium text-neutral">{a.student_name}</p><p className="text-xs text-neutral-light">{a.student_email}</p></td>
-                          <td className="py-3 px-4 text-neutral-light">{a.college}</td>
-                          <td className="py-3 px-4 text-neutral-light">{a.department}</td>
-                          <td className="py-3 px-4 text-center text-neutral-light whitespace-nowrap">W{a.week} · {a.day}</td>
-                          <td className={`py-3 px-4 text-center font-semibold ${scoreColor(a.score)}`}>{a.score}%</td>
-                          <td className="py-3 px-4 text-center text-neutral">{a.correct}/{a.total}</td>
-                          <td className="py-3 px-4 text-right text-neutral-light whitespace-nowrap">{a.completed_at ? new Date(a.completed_at).toLocaleDateString() : '—'}</td>
-                          <td className="py-3 px-4 text-right">
-                            <button onClick={() => openDetail(a._id)} className="inline-flex items-center gap-1 text-primary hover:underline text-sm font-medium">
-                              <Eye className="w-4 h-4" /> View
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-light/20">
-                  <p className="text-sm text-neutral-light">{total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(p => Math.max(p - 1, 1))} className="flex items-center gap-1 text-sm font-medium"><ChevronLeft className="w-4 h-4" /> Prev</Button>
-                    <span className="text-sm text-neutral px-2">{page} / {totalPages}</span>
-                    <Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(p + 1, totalPages))} className="flex items-center gap-1 text-sm font-medium">Next <ChevronRight className="w-4 h-4" /></Button>
-                  </div>
-                </div>
-              </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Card>
         </div>
       </div>
 
-      {/* Question-level detail modal */}
-      <Modal isOpen={!!detail} onClose={() => setDetail(null)} title="Aptitude Attempt — Answers" size="xl">
-        {detailLoading || !detail ? (
+      {/* Student → week/day grouped attempts */}
+      <Modal isOpen={!!studentDetail} onClose={() => setStudentDetail(null)} title="Aptitude — Week &amp; Day Breakdown" size="lg">
+        {studentLoading || !studentDetail ? (
+          <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-background-elevated">
+              <p className="font-semibold text-neutral">{studentDetail.student_name}</p>
+              <p className="text-xs text-neutral-light">{studentDetail.attempts.length} attempt{studentDetail.attempts.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+              {studentDetail.attempts.length === 0 ? (
+                <p className="text-sm text-neutral-light text-center py-6">No attempts</p>
+              ) : (() => {
+                const byWeek = new Map<number, Map<string, StudentAttempt[]>>()
+                for (const a of studentDetail.attempts) {
+                  const wk = a.week ?? 0
+                  const day = a.day ?? 'other'
+                  if (!byWeek.has(wk)) byWeek.set(wk, new Map())
+                  const dm = byWeek.get(wk)!
+                  if (!dm.has(day)) dm.set(day, [])
+                  dm.get(day)!.push(a)
+                }
+                const weeks = [...byWeek.keys()].sort((a, b) => (a === 0 ? 999 : a) - (b === 0 ? 999 : b))
+                return weeks.map(wk => {
+                  const dm = byWeek.get(wk)!
+                  const days = [...dm.keys()].sort((a, b) => DAY_RANK(a) - DAY_RANK(b))
+                  const weekOpen = expandedWeeks.has(wk)
+                  const weekBest = Math.max(...[...dm.values()].flat().map(a => a.score))
+                  return (
+                    <div key={wk} className="border border-neutral-light/15 rounded-lg overflow-hidden">
+                      <button type="button" onClick={() => toggleWeek(wk)} className="w-full px-3 py-2 bg-background-elevated flex items-center justify-between hover:bg-background-elevated/70 transition-colors">
+                        <span className="flex items-center gap-1.5 font-semibold text-sm text-neutral">
+                          {weekOpen ? <ChevronDown className="w-4 h-4 text-neutral-light" /> : <ChevronRight className="w-4 h-4 text-neutral-light" />}
+                          {wk === 0 ? 'Other' : `Week ${wk}`}
+                        </span>
+                        <span className={`text-xs font-semibold ${scoreColor(weekBest)}`}>Best {weekBest}%</span>
+                      </button>
+                      {weekOpen && (
+                      <div className="divide-y divide-neutral-light/10">
+                        {days.map(day => {
+                          const items = dm.get(day)!.sort((a, b) => a.attempt - b.attempt)
+                          const best = Math.max(...items.map(a => a.score))
+                          const dayKey = `${wk}:${day}`
+                          const dayOpen = expandedDays.has(dayKey)
+                          return (
+                            <div key={day}>
+                              <button type="button" onClick={() => toggleDay(dayKey)} className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-background-elevated/40 transition-colors">
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-neutral-light uppercase tracking-wide">
+                                  {dayOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                  {dayLabel(day)}
+                                </span>
+                                <span className={`text-xs font-semibold ${scoreColor(best)}`}>Best {best}%</span>
+                              </button>
+                              {dayOpen && (
+                              <div className="space-y-1.5 px-3 pb-2.5">
+                                {items.map(a => (
+                                  <div key={a._id} className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-sm text-neutral">Attempt {a.attempt} · <span className="text-neutral-light">{a.correct}/{a.total} correct</span></p>
+                                      <p className="text-xs text-neutral-light">{a.completed_at ? new Date(a.completed_at).toLocaleDateString() : '—'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                      <span className={`font-semibold text-sm ${scoreColor(a.score)}`}>{a.score}%</span>
+                                      <button onClick={() => openAnswers(a._id)} className="text-primary hover:underline text-xs font-medium">Answers</button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      )}
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* One attempt → question-level answers */}
+      <Modal isOpen={!!qDetail} onClose={() => setQDetail(null)} title="Attempt — Answers" size="xl">
+        {qLoading || !qDetail ? (
           <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-lg bg-background-elevated">
               <div>
-                <p className="font-semibold text-neutral">{detail.student_name}</p>
-                <p className="text-xs text-neutral-light">Week {detail.week} · {detail.day}</p>
+                <p className="font-semibold text-neutral">{qDetail.student_name}</p>
+                <p className="text-xs text-neutral-light">Week {qDetail.week} · {qDetail.day}</p>
               </div>
-              <span className={`text-lg font-bold ${scoreColor(detail.score)}`}>{detail.score}% <span className="text-sm text-neutral-light font-medium">({detail.correct}/{detail.total})</span></span>
+              <span className={`text-lg font-bold ${scoreColor(qDetail.score)}`}>{qDetail.score}% <span className="text-sm text-neutral-light font-medium">({qDetail.correct}/{qDetail.total})</span></span>
             </div>
             <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-              {detail.questions.map((q, i) => (
+              {qDetail.questions.map((q, i) => (
                 <div key={i} className={`p-3 rounded-lg border ${q.is_correct ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
                   <div className="flex items-start gap-2">
                     {q.is_correct ? <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />}

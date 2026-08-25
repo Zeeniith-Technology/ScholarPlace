@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FilterSelect } from '@/components/ui/FilterSelect'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { X } from 'lucide-react';
 import crmApi from '@/lib/crmApi';
 
@@ -125,11 +126,9 @@ export default function ActivityForm({ isOpen, onClose, onSuccess, collegeId }: 
 
                         <div>
                             <label className="block font-medium text-gray-700 mb-1">Next Follow-up Date</label>
-                            <input 
-                                type="date"
+                            <DatePicker
                                 value={formData.next_follow_up_date}
-                                onChange={e => setFormData({...formData, next_follow_up_date: e.target.value})}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                onChange={v => setFormData({...formData, next_follow_up_date: v})}
                             />
                         </div>
                     </div>

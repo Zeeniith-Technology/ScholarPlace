@@ -10,32 +10,30 @@ import { Input } from '@/components/ui/Input'
 import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { exportStudentData } from '@/utils/exportUtils'
+import * as XLSX from 'xlsx'
 import {
   Users,
   Search,
   Filter,
   Download,
   RefreshCw,
-  ArrowLeft,
   Eye,
   MoreVertical,
   CheckCircle2,
   XCircle,
   AlertCircle,
   X,
-  User,
-  Mail,
   Building2,
   Layers,
-  Calendar,
   TrendingUp,
-  BookOpen,
-  Code,
-  Award,
   Clock,
-  FileText,
   BarChart3,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react'
+
+type SortField = 'name' | 'email' | 'college' | 'status' | 'registered' | 'lastActive'
 
 /**
  * Superadmin Students Management Page
@@ -51,10 +49,9 @@ export default function SuperadminStudentsPage() {
   const [selectedCollege, setSelectedCollege] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [selectedStudent, setSelectedStudent] = useState<any>(null)
-  const [showStudentDetail, setShowStudentDetail] = useState(false)
-  const [studentDetailData, setStudentDetailData] = useState<any>(null)
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false)
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newStudent, setNewStudent] = useState({
     person_name: '',
@@ -231,80 +228,84 @@ export default function SuperadminStudentsPage() {
     else fetchStudents()
   }
 
-  const fetchStudentDetail = async (student: any) => {
+  /** Build and download a full Excel report (Summary + Aptitude + Coding, week/day-wise) for one student */
+  const handleDownloadReport = async (student: any) => {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    const authHeader = getAuthHeader()
+    if (!authHeader) {
+      showToast('No auth token found', 'error')
+      return
+    }
+    const headers = { 'Content-Type': 'application/json', 'Authorization': authHeader }
+    const studentId = student.studentId || student.person_id
+
     try {
-      setIsLoadingDetail(true)
-      setSelectedStudent(student)
-      setShowStudentDetail(true)
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+      setDownloadingReportId(studentId)
 
-      const authHeader = getAuthHeader()
-      if (!authHeader) {
-        console.error('No auth token for student detail fetch')
-        return
-      }
-
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      }
-
-      // Fetch student progress
-      const progressRes = await fetch(`${apiBaseUrl}/student-progress/admin/list-all`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          filter: { student_id: student.studentId || student.person_id },
+      const [practiceRes, codingRes] = await Promise.all([
+        fetch(`${apiBaseUrl}/superadmin/monitoring/practice-student`, {
+          method: 'POST', headers, body: JSON.stringify({ studentId }),
         }),
-      })
-
-      // Fetch practice tests
-      const practiceRes = await fetch(`${apiBaseUrl}/practice-test/list`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          filter: { student_id: student.studentId || student.person_id },
+        fetch(`${apiBaseUrl}/superadmin/monitoring/coding-detail`, {
+          method: 'POST', headers, body: JSON.stringify({ studentId }),
         }),
-      })
+      ])
+      const practiceData = practiceRes.ok ? await practiceRes.json() : { data: { attempts: [] } }
+      const codingData = codingRes.ok ? await codingRes.json() : { data: { submissions: [] } }
+      const attempts: any[] = practiceData.data?.attempts || []
+      const submissions: any[] = codingData.data?.submissions || []
 
-      const progressData = progressRes.ok ? await progressRes.json() : { data: [] }
-      const practiceData = practiceRes.ok ? await practiceRes.json() : { data: [] }
+      const collegeName = colleges.find(c => String(c.collage_id) === String(student.collegeId))?.collage_name || 'N/A'
+      const codingSolved = new Set(submissions.filter(s => s.status === 'passed').map(s => s.problem_id)).size
+      const aptAvg = attempts.length ? Math.round(attempts.reduce((a, t) => a + (t.score || 0), 0) / attempts.length) : 0
 
-      // Raw progress is an array of week records from tblStudentProgress.
-      // Compute summary stats from the actual field names in that schema:
-      //   days_completed         → string[] of day keys
-      //   practice_test_scores   → { day, score, date }[]
-      //   coding_problems_completed → string[] of problem IDs
-      const rawProgress: any[] = progressData.data || []
-      const practiceTests: any[] = practiceData.data || []
+      const workbook = XLSX.utils.book_new()
 
-      const totalDaysCompleted = rawProgress.reduce(
-        (sum: number, p: any) => sum + (p.days_completed?.length || 0), 0
-      )
-      const totalPracticeTests = rawProgress.reduce(
-        (sum: number, p: any) => sum + (p.practice_test_scores?.length || 0), 0
-      )
-      const totalCodingProblems = rawProgress.reduce(
-        (sum: number, p: any) => sum + (p.coding_problems_completed?.length || 0), 0
-      )
-      const scores = practiceTests.map((t: any) => t.score || 0).filter((s: number) => s > 0)
-      const averageScore = scores.length > 0
-        ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
-        : 0
+      const summarySheet = XLSX.utils.json_to_sheet([{
+        'Name': student.name || 'N/A',
+        'Email': student.email || '',
+        'College': collegeName,
+        'Department': student.department || 'N/A',
+        'Status': student.status || '',
+        'Registered On': student.registeredAt ? new Date(student.registeredAt).toLocaleDateString() : 'N/A',
+        'Last Active': student.lastLogin ? new Date(student.lastLogin).toLocaleString() : 'Never',
+        'Days Completed': student.progress?.totalDaysCompleted ?? 0,
+        'Overall Avg Score (%)': student.progress?.averageScore ?? 0,
+        'Aptitude Tests Taken': attempts.length,
+        'Aptitude Avg Score (%)': aptAvg,
+        'Coding Problems Solved': codingSolved,
+        'Coding Submissions': submissions.length,
+      }])
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary')
 
-      setStudentDetailData({
-        ...student,
-        // Raw arrays for the timeline and test list
-        progressWeeks: rawProgress,
-        practiceTests,
-        // Computed summary object for the stat cards
-        progressStats: { totalDaysCompleted, totalPracticeTests, totalCodingProblems, averageScore },
-      })
+      const aptitudeRows = attempts
+        .slice()
+        .sort((a, b) => (a.week - b.week) || String(a.day).localeCompare(String(b.day)) || (a.attempt - b.attempt))
+        .map(a => ({
+          'Week': a.week ?? '', 'Day': a.day ?? '', 'Attempt': a.attempt ?? 1,
+          'Score (%)': a.score ?? 0, 'Correct': a.correct ?? 0, 'Total Questions': a.total ?? 0,
+          'Completed At': a.completed_at ? new Date(a.completed_at).toLocaleString() : '',
+        }))
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(aptitudeRows.length ? aptitudeRows : [{ 'Note': 'No aptitude attempts' }]), 'Aptitude (Week-Day wise)')
+
+      const codingRows = submissions
+        .slice()
+        .sort((a, b) => (a.week - b.week) || String(a.day).localeCompare(String(b.day)))
+        .map(s => ({
+          'Week': s.week ?? '', 'Day': s.day ?? '', 'Problem': s.problem_title || s.problem_id,
+          'Status': s.status || '', 'Language': s.language || '', 'Score (%)': s.score ?? '',
+          'Submitted At': s.submitted_at ? new Date(s.submitted_at).toLocaleString() : '',
+        }))
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(codingRows.length ? codingRows : [{ 'Note': 'No coding submissions' }]), 'Coding (Week-Day wise)')
+
+      const safeName = (student.name || 'student').replace(/[^a-z0-9]+/gi, '_')
+      XLSX.writeFile(workbook, `student_report_${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`)
+      showToast('Report downloaded', 'success')
     } catch (error) {
-      console.error('Error fetching student detail:', error)
-      setStudentDetailData(selectedStudent)
+      console.error('Error generating student report:', error)
+      showToast('Failed to generate report', 'error')
     } finally {
-      setIsLoadingDetail(false)
+      setDownloadingReportId(null)
     }
   }
 
@@ -504,6 +505,66 @@ export default function SuperadminStudentsPage() {
 
   const displayStudents = Array.isArray(students) ? students : []
 
+  const getCollegeName = (student: any) =>
+    colleges.find(c => String(c.collage_id) === String(student.collegeId))?.collage_name || ''
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  // Sorts the currently loaded page of students (client-side) — matches this
+  // table's own pagination scope, not a cross-page global sort.
+  const sortedStudents = [...displayStudents].sort((a, b) => {
+    if (!sortField) return 0
+    const dir = sortDirection === 'asc' ? 1 : -1
+    switch (sortField) {
+      case 'name':
+        return (a.name || '').localeCompare(b.name || '') * dir
+      case 'email':
+        return (a.email || '').localeCompare(b.email || '') * dir
+      case 'college':
+        return getCollegeName(a).localeCompare(getCollegeName(b)) * dir
+      case 'status':
+        return (a.status || '').localeCompare(b.status || '') * dir
+      case 'registered': {
+        const ta = a.registeredAt ? new Date(a.registeredAt).getTime() : 0
+        const tb = b.registeredAt ? new Date(b.registeredAt).getTime() : 0
+        return (ta - tb) * dir
+      }
+      case 'lastActive': {
+        // "Never" (null) sorts as oldest regardless of direction, so it always
+        // lands at the bottom rather than jumping to the top on desc sort.
+        const ta = a.lastLogin ? new Date(a.lastLogin).getTime() : -Infinity
+        const tb = b.lastLogin ? new Date(b.lastLogin).getTime() : -Infinity
+        return (ta - tb) * dir
+      }
+      default:
+        return 0
+    }
+  })
+
+  const SortHeader = ({ field, label, align = 'left' }: { field: SortField; label: string; align?: 'left' | 'center' | 'right' }) => (
+    <th className={`py-3 px-4 text-sm font-semibold text-neutral ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'}`}>
+      <button
+        type="button"
+        onClick={() => toggleSort(field)}
+        className={`inline-flex items-center gap-1 hover:text-primary transition-colors ${align === 'right' ? 'flex-row-reverse' : ''}`}
+      >
+        {label}
+        {sortField === field ? (
+          sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+        ) : (
+          <ArrowUpDown className="w-3.5 h-3.5 text-neutral-light/50" />
+        )}
+      </button>
+    </th>
+  )
+
   return (
 
     <SuperadminLayout>
@@ -511,18 +572,9 @@ export default function SuperadminStudentsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="secondary"
-              onClick={() => router.push('/superadmin/dashboard')}
-              className="p-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-neutral">Student Management</h1>
-              <p className="text-neutral-light mt-1">View and manage all students across the platform</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-neutral">Student Management</h1>
+            <p className="text-neutral-light mt-1">View and manage all students across the platform</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -690,25 +742,24 @@ export default function SuperadminStudentsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-light/20">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">Email</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-neutral">College</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-neutral">Status</th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Last Active</th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Days Completed</th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-neutral">Avg Score</th>
+                    <SortHeader field="name" label="Name" />
+                    <SortHeader field="email" label="Email" />
+                    <SortHeader field="college" label="College" />
+                    <SortHeader field="status" label="Status" align="center" />
+                    <SortHeader field="registered" label="Registered" align="right" />
+                    <SortHeader field="lastActive" label="Last Active" align="right" />
                     <th className="text-center py-3 px-4 text-sm font-semibold text-neutral">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {displayStudents.length === 0 ? (
+                  {sortedStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-neutral-light">
+                      <td colSpan={7} className="py-8 text-center text-neutral-light">
                         No students found
                       </td>
                     </tr>
                   ) : (
-                    displayStudents.map((student) => (
+                    sortedStudents.map((student) => (
                       <tr key={student.studentId} className="border-b border-neutral-light/10 hover:bg-background-elevated">
                         <td className="py-3 px-4 text-sm text-neutral">{student.name || 'N/A'}</td>
                         <td className="py-3 px-4 text-sm text-neutral-light">{student.email}</td>
@@ -733,23 +784,14 @@ export default function SuperadminStudentsPage() {
                             {student.status}
                           </span>
                         </td>
+                        <td className="py-3 px-4 text-sm text-right whitespace-nowrap text-neutral-light">
+                          {student.registeredAt ? new Date(student.registeredAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                        </td>
                         <td className={`py-3 px-4 text-sm text-right whitespace-nowrap ${lastActiveColor(student.lastLogin)}`}>
                           {formatLastActive(student.lastLogin)}
                         </td>
-                        <td className="py-3 px-4 text-sm text-neutral text-right">{student.progress.totalDaysCompleted}</td>
-                        <td className="py-3 px-4 text-sm text-neutral text-right">
-                          <span className="font-semibold">{student.progress.averageScore}%</span>
-                        </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => fetchStudentDetail(student)}
-                              className="p-2"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
                             <div className="relative">
                               <Button
                                 variant="secondary"
@@ -769,6 +811,14 @@ export default function SuperadminStudentsPage() {
                                     >
                                       <Eye className="w-4 h-4" />
                                       View as (read-only)
+                                    </button>
+                                    <button
+                                      onClick={() => { setOpenMenuId(null); handleDownloadReport(student) }}
+                                      disabled={downloadingReportId === student.studentId}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral hover:bg-background-elevated disabled:opacity-50"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                      {downloadingReportId === student.studentId ? 'Preparing report…' : 'Download report'}
                                     </button>
                                     <div className="my-1 border-t border-neutral-light/10" />
                                     {student.status === 'suspended' ? (
@@ -845,226 +895,6 @@ export default function SuperadminStudentsPage() {
             </div>
           )}
         </Card>
-
-        {/* Student Detail Modal */}
-        {showStudentDetail && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-background border-b border-neutral-light/20 p-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-neutral">Student Details</h2>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setShowStudentDetail(false)
-                    setSelectedStudent(null)
-                    setStudentDetailData(null)
-                  }}
-                  className="p-2"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {isLoadingDetail ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
-              ) : studentDetailData ? (
-                <div className="p-6 space-y-6">
-                  {/* Student Info Card */}
-                  <Card className="p-6">
-                    <div className="flex items-start gap-6">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="w-10 h-10 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-neutral mb-2">
-                          {studentDetailData.name || 'N/A'}
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                          <div className="flex items-center gap-2 text-neutral-light">
-                            <Mail className="w-4 h-4" />
-                            <span>{studentDetailData.email || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-neutral-light">
-                            <Building2 className="w-4 h-4" />
-                            <span>
-                              {colleges.find(c => c.collage_id === studentDetailData.collegeId)?.collage_name || 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-neutral-light">
-                            <Calendar className="w-4 h-4" />
-                            <span>Joined: {new Date(studentDetailData.created_at || Date.now()).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              studentDetailData.status === 'active'
-                                ? 'bg-green-500/10 text-green-600'
-                                : studentDetailData.status === 'suspended'
-                                ? 'bg-red-500/10 text-red-600'
-                                : 'bg-neutral-light/30 text-neutral-light'
-                            }`}>
-                              {studentDetailData.status || 'inactive'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Performance Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 bg-blue-500/10 rounded-lg">
-                          <BookOpen className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-neutral-light">Days Completed</p>
-                          <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.progressStats?.totalDaysCompleted ?? 0}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                    <Card className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 bg-green-500/10 rounded-lg">
-                          <Award className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-neutral-light">Avg Score</p>
-                          <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.progressStats?.averageScore ?? 0}%
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                    <Card className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-500/10 rounded-lg">
-                          <FileText className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-neutral-light">Practice Tests</p>
-                          <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.practiceTests?.length ?? 0}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                    <Card className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 bg-orange-500/10 rounded-lg">
-                          <Code className="w-5 h-5 text-orange-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-neutral-light">Coding Problems</p>
-                          <p className="text-2xl font-bold text-neutral">
-                            {studentDetailData.progressStats?.totalCodingProblems ?? 0}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Progress Timeline */}
-                  {studentDetailData.progressWeeks && studentDetailData.progressWeeks.length > 0 && (
-                    <Card className="p-6">
-                      <h3 className="text-xl font-semibold text-neutral mb-4 flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5" />
-                        Progress Timeline
-                      </h3>
-                      <div className="space-y-4">
-                        {studentDetailData.progressWeeks.map((progress: any, index: number) => (
-                          <div key={index} className="flex items-center gap-4 p-4 bg-background-elevated rounded-lg">
-                            <div className="flex-1">
-                              <p className="font-semibold text-neutral">Week {progress.week}</p>
-                              <p className="text-sm text-neutral-light">
-                                Days: {progress.days_completed?.length || 0} |
-                                {/* practice_test_scores is the correct field in tblStudentProgress */}
-                                Practice Tests: {progress.practice_test_scores?.length || 0} |
-                                Coding: {progress.coding_problems_completed?.length || 0}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm text-neutral-light">Status</p>
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                progress.status === 'completed' ? 'bg-green-500/10 text-green-600' :
-                                progress.status === 'in_progress' ? 'bg-blue-500/10 text-blue-600' :
-                                'bg-neutral-light/30 text-neutral-light'
-                              }`}>
-                                {progress.status || 'not started'}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Recent Practice Tests */}
-                  {studentDetailData.practiceTests && studentDetailData.practiceTests.length > 0 && (
-                    <Card className="p-6">
-                      <h3 className="text-xl font-semibold text-neutral mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        Recent Practice Tests
-                      </h3>
-                      <div className="space-y-3">
-                        {studentDetailData.practiceTests.slice(0, 5).map((test: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-background-elevated rounded-lg">
-                            <div>
-                              <p className="font-medium text-neutral">Week {test.week} - Day {test.day}</p>
-                              <p className="text-sm text-neutral-light">
-                                Attempt {test.attempt} | {new Date(test.completed_at || test.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-primary">{test.score || 0}%</p>
-                              <p className="text-xs text-neutral-light">
-                                {test.correct_answers || 0}/{test.total_questions || 0} correct
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="primary"
-                      onClick={() => {
-                        // Generate report - to be implemented
-                        showToast('Report generation feature coming soon', 'info')
-                      }}
-                      className="flex-1"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Generate Report
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setShowStudentDetail(false)
-                        setSelectedStudent(null)
-                        setStudentDetailData(null)
-                      }}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-6 text-center text-neutral-light">
-                  No data available
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Account-control action modal (suspend / activate / reset / move) */}
         {actionStudent && actionType && (

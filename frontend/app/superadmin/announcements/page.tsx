@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { FilterSelect } from '@/components/ui/FilterSelect'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Modal } from '@/components/ui/Modal'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
@@ -391,20 +392,20 @@ export default function SuperadminAnnouncementsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Input
+              <DatePicker
                 label="Start date (optional)"
-                type="date"
                 value={form.starts_at}
-                onChange={e => setForm(f => ({ ...f, starts_at: e.target.value }))}
+                onChange={v => setForm(f => ({ ...f, starts_at: v }))}
+                max={form.ends_at || undefined}
               />
               <p className="text-xs text-neutral-light mt-1">Leave empty to show immediately.</p>
             </div>
             <div>
-              <Input
+              <DatePicker
                 label="End date (optional)"
-                type="date"
                 value={form.ends_at}
-                onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))}
+                onChange={v => setForm(f => ({ ...f, ends_at: v }))}
+                min={form.starts_at || undefined}
               />
               <p className="text-xs text-neutral-light mt-1">Leave empty to show until paused.</p>
             </div>

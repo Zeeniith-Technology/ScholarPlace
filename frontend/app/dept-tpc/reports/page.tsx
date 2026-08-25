@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
 import { Card } from '@/components/ui/Card'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -20,7 +21,6 @@ import {
   ChevronDown,
   ChevronRight,
   User,
-  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import * as XLSX from 'xlsx'
@@ -168,6 +168,9 @@ export default function DepartmentTPCReportsPage() {
           'Score Trend': student.scoreTrend || 'Stable',
           'DSA Avg (%)': student.dsaAverage || '-',
           'Aptitude Avg (%)': student.aptitudeAverage || '-',
+          'Coding Solved': student.codingSolved || 0,
+          'Coding Attempts': student.codingAttempts || 0,
+          'Days Completed': student.daysCompleted || 0,
           'Weeks Completed': student.weeksCompleted || 0,
           'Tests Completed': student.testsCompleted || 0,
           'Completion Rate (%)': completionRate,
@@ -187,6 +190,9 @@ export default function DepartmentTPCReportsPage() {
         { wch: 12 }, // Trend
         { wch: 12 }, // DSA
         { wch: 12 }, // Aptitude
+        { wch: 13 }, // Coding Solved
+        { wch: 15 }, // Coding Attempts
+        { wch: 15 }, // Days Completed
         { wch: 15 }, // Weeks
         { wch: 15 }, // Tests
         { wch: 18 }, // Completion Rate
@@ -706,45 +712,13 @@ export default function DepartmentTPCReportsPage() {
                   <label className="block text-sm font-medium text-neutral-light mb-2">
                     From Date
                   </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={dateFilter.from}
-                      onChange={(e) => setDateFilter({ ...dateFilter, from: e.target.value })}
-                      className="w-full px-3 py-2 border border-neutral-light/30 rounded-lg bg-background text-neutral"
-                    />
-                    {dateFilter.from && (
-                      <button
-                        onClick={() => setDateFilter({ ...dateFilter, from: '' })}
-                        className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-light/10 rounded-full text-neutral-light hover:text-red-500 transition-colors"
-                        title="Clear Date"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <DatePicker value={dateFilter.from} onChange={(v) => setDateFilter({ ...dateFilter, from: v })} max={dateFilter.to || undefined} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-light mb-2">
                     To Date
                   </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={dateFilter.to}
-                      onChange={(e) => setDateFilter({ ...dateFilter, to: e.target.value })}
-                      className="w-full px-3 py-2 border border-neutral-light/30 rounded-lg bg-background text-neutral"
-                    />
-                    {dateFilter.to && (
-                      <button
-                        onClick={() => setDateFilter({ ...dateFilter, to: '' })}
-                        className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-light/10 rounded-full text-neutral-light hover:text-red-500 transition-colors"
-                        title="Clear Date"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <DatePicker value={dateFilter.to} onChange={(v) => setDateFilter({ ...dateFilter, to: v })} min={dateFilter.from || undefined} />
                 </div>
               </div>
 

@@ -199,9 +199,12 @@ class TPCPracticeTestMethods {
             }
 
             // Get all students in scope
+            // NOTE: student_id in tblPracticeTest is the stringified PersonMaster _id, not
+            // person_id (which is never written on signup and is always undefined) — using
+            // person_id here made studentIds always [undefined, ...], matching zero records.
             const students = await fetchData(
                 'tblPersonMaster',
-                { person_id: 1 },
+                { _id: 1 },
                 studentFilter
             );
 
@@ -218,7 +221,7 @@ class TPCPracticeTestMethods {
                 return next();
             }
 
-            const studentIds = students.data.map(s => s.person_id);
+            const studentIds = students.data.map(s => s._id?.toString()).filter(Boolean);
 
             // Build practice test filter
             const practiceFilter = {

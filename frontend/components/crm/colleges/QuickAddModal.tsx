@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FilterSelect } from '@/components/ui/FilterSelect'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { X } from 'lucide-react';
 import crmApi from '@/lib/crmApi';
 
@@ -245,11 +246,9 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }: QuickAddMo
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Follow-up</p>
                             <div>
                                 <label className={labelCls}>Follow-up Date</label>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     value={formData.follow_up_date}
-                                    onChange={e => set('follow_up_date', e.target.value)}
-                                    className={inputCls}
+                                    onChange={v => set('follow_up_date', v)}
                                     min={new Date().toISOString().split('T')[0]}
                                 />
                             </div>

@@ -1,5 +1,6 @@
 import { executeData, fetchData, getDB } from '../../methods.js';
 import { ObjectId } from 'mongodb';
+import { deriveWeekDay, dayLabel } from './monitoring.js';
 
 export default class superadminAnalyticsController {
 
@@ -46,9 +47,14 @@ export default class superadminAnalyticsController {
             // Phase 2: build student ID list if filtering, then run progress + scores in parallel
             let studentIds = [];
             if (collegeId || departmentId) {
+                // student_id in tblStudentProgress/tblPracticeTest is the stringified
+                // PersonMaster _id — NOT person_id, which is never written on signup and
+                // is always undefined. Using person_id here made studentIds always empty
+                // whenever a college/department filter was applied, so progressMatch
+                // matched zero documents and every filtered stat showed 0.
                 const students = await db.collection('tblPersonMaster')
-                    .find(studentMatch).project({ person_id: 1 }).toArray();
-                studentIds = students.map(s => s.person_id).filter(Boolean);
+                    .find(studentMatch).project({ _id: 1 }).toArray();
+                studentIds = students.map(s => s._id?.toString()).filter(Boolean);
             }
 
             const progressMatch = (collegeId || departmentId) ? { student_id: { $in: studentIds } } : {};
@@ -322,7 +328,8 @@ export default class superadminAnalyticsController {
                     person_status: 1,
                     department: 1,
                     department_id: 1,
-                    last_login: 1
+                    last_login: 1,
+                    created_at: 1
                 },
                 studentFilter,
                 { limit: safeLimit, skip, sort: { person_name: 1 } }
@@ -387,6 +394,7 @@ export default class superadminAnalyticsController {
                     department: student.department,
                     status: student.person_status,
                     lastLogin: student.last_login || null,
+                    registeredAt: student.created_at || null,
                     progress: {
                         totalDaysCompleted,
                         totalPracticeTests,
@@ -577,70 +585,95 @@ export default class superadminAnalyticsController {
         try {
             const { limit = 10 } = req.body || {};
 
-            // Fetch all three sources in parallel using fetchData
-            const [studentsRes, testsRes, progressRes] = await Promise.all([
+            // Fetch all sources in parallel. NOTE: tblStudentProgress.days_completed is
+            // never actually written by any code path (confirmed empty on every real
+            // record) — the old "Week N progress updated — 0 days completed" entries were
+            // always zero regardless of real activity. Replaced that vague, always-0
+            // signal with real per-submission coding events (tblCodingSubmissions), and
+            // added week/day + student name context to test entries.
+            const [studentsRes, testsRes, codingRes] = await Promise.all([
                 fetchData('tblPersonMaster',
                     { person_name: 1, person_email: 1, created_at: 1, person_collage_id: 1 },
                     { person_role: { $regex: /^student$/i }, person_deleted: { $ne: true } },
                     { sort: { created_at: -1 }, limit: 5 }),
                 fetchData('tblPracticeTest',
-                    { student_id: 1, score: 1, day: 1, updated_at: 1 },
+                    { student_id: 1, score: 1, week: 1, day: 1, updated_at: 1 },
                     {},
                     { sort: { updated_at: -1 }, limit: 5 }),
-                fetchData('tblStudentProgress',
-                    { student_id: 1, week: 1, days_completed: 1, updated_at: 1 },
+                fetchData('tblCodingSubmissions',
+                    { student_id: 1, problem_id: 1, status: 1, submitted_at: 1 },
                     {},
-                    { sort: { updated_at: -1 }, limit: 5 })
+                    { sort: { submitted_at: -1 }, limit: 5 })
             ]);
 
             const recentStudents = studentsRes.data || [];
             const recentTests = testsRes.data || [];
-            const recentProgress = progressRes.data || [];
+            const recentSubmissions = codingRes.data || [];
+
+            // Resolve student names + colleges for everything above in two bulk lookups
+            const studentIds = [...new Set([
+                ...recentStudents.map(s => String(s._id)),
+                ...recentTests.map(t => String(t.student_id)),
+                ...recentSubmissions.map(s => String(s.student_id)),
+            ])];
+            const [namesRes, collegesRes] = await Promise.all([
+                studentIds.length ? fetchData('tblPersonMaster', { person_name: 1, person_collage_id: 1 }, { _id: { $in: studentIds.map(id => /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id) } }) : { data: [] },
+                fetchData('tblCollage', { collage_name: 1 }, {}),
+            ]);
+            const nameById = new Map((namesRes.data || []).map(s => [String(s._id), s.person_name || 'A student']));
+            const collegeById = new Map((namesRes.data || []).map(s => [String(s._id), s.person_collage_id]));
+            const collegeNameById = new Map((collegesRes.data || []).map(c => [String(c._id), c.collage_name]));
+
+            // Resolve problem titles for the coding submissions (same pattern as codingDetail)
+            const problemIds = [...new Set(recentSubmissions.map(s => s.problem_id).filter(Boolean))];
+            const [cpRes, tqRes] = problemIds.length
+                ? await Promise.all([
+                    fetchData('tblCodingProblem', { question_id: 1, title: 1, week: 1, day: 1, is_capstone: 1 }, { question_id: { $in: problemIds } }),
+                    fetchData('tblQuestion', { question_id: 1, subtopic: 1, topic: 1, week: 1, day: 1 }, { question_id: { $in: problemIds }, question_type: 'coding' }),
+                ])
+                : [{ data: [] }, { data: [] }];
+            const problemMetaById = new Map();
+            (cpRes.data || []).forEach(p => problemMetaById.set(p.question_id, { title: p.title, week: p.week, day: p.day, is_capstone: p.is_capstone }));
+            (tqRes.data || []).forEach(p => { if (!problemMetaById.has(p.question_id)) problemMetaById.set(p.question_id, { title: p.subtopic || p.topic, week: p.week, day: p.day }); });
 
             // Combine and format activities
             const activities = [];
 
-            // Add student registrations
+            // Add student registrations — now with which college, not just the name
             recentStudents.forEach(student => {
+                const college = collegeNameById.get(String(student.person_collage_id))?.trim() || null;
                 activities.push({
                     type: 'registration',
-                    message: `New student registered: ${student.person_name}`,
+                    message: college ? `${student.person_name} registered at ${college}` : `New student registered: ${student.person_name}`,
                     timestamp: student.created_at || new Date(),
-                    details: {
-                        email: student.person_email,
-                        collegeId: student.person_collage_id
-                    }
                 });
             });
 
-            // Add test submissions
+            // Add test submissions — now with who, and which week/day, not just a score
             recentTests.forEach(test => {
-                // test.day is stored as e.g. "day-4" — strip the prefix for display
-                const rawDay = String(test.day || '');
-                const dayLabel = rawDay.replace(/^day-/i, '').trim();
+                const name = nameById.get(String(test.student_id)) || 'A student';
+                const { week, day } = deriveWeekDay(null, { week: test.week, day: test.day });
+                const where = week != null ? ` — Week ${week} ${dayLabel(day)}`.trimEnd() : '';
                 activities.push({
                     type: 'test',
-                    message: `Practice test completed (Day ${dayLabel}, Score: ${test.score || 0})`,
+                    message: `${name} scored ${test.score ?? 0}% on a practice test${where}`,
                     timestamp: test.updated_at || new Date(),
-                    details: {
-                        studentId: test.student_id,
-                        score: test.score
-                    }
                 });
             });
 
-            // Add progress updates
-            recentProgress.forEach(progress => {
-                const daysCount = progress.days_completed?.length || 0;
-                const daysLabel = daysCount === 1 ? '1 day completed' : `${daysCount} days completed`;
+            // Add coding submissions — real per-problem events (solved vs attempted),
+            // replacing the old always-"0 days completed" progress entries.
+            recentSubmissions.forEach(sub => {
+                const name = nameById.get(String(sub.student_id)) || 'A student';
+                const meta = problemMetaById.get(sub.problem_id);
+                const { week, day } = deriveWeekDay(sub.problem_id, meta);
+                const title = (meta && meta.title) || sub.problem_id;
+                const where = week != null ? ` (Week ${week}, ${dayLabel(day)})` : '';
+                const verb = sub.status === 'passed' ? 'solved' : 'attempted';
                 activities.push({
-                    type: 'progress',
-                    message: `Week ${progress.week} progress updated — ${daysLabel}`,
-                    timestamp: progress.updated_at || new Date(),
-                    details: {
-                        studentId: progress.student_id,
-                        week: progress.week
-                    }
+                    type: 'coding',
+                    message: `${name} ${verb} "${title}"${where}`,
+                    timestamp: sub.submitted_at || new Date(),
                 });
             });
 

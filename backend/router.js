@@ -348,8 +348,11 @@ router.post('/superadmin/impersonate/logs', auth, requireRole('Superadmin'), imp
 // Superadmin monitoring — cross-college aptitude (practice) + coding visibility
 router.post('/superadmin/monitoring/practice', auth, requireRole('Superadmin'), monitoringController.practice, responsedata);
 router.post('/superadmin/monitoring/practice-detail', auth, requireRole('Superadmin'), monitoringController.practiceDetail, responsedata);
+router.post('/superadmin/monitoring/practice-student', auth, requireRole('Superadmin'), monitoringController.practiceStudent, responsedata);
 router.post('/superadmin/monitoring/coding', auth, requireRole('Superadmin'), monitoringController.coding, responsedata);
 router.post('/superadmin/monitoring/coding-detail', auth, requireRole('Superadmin'), monitoringController.codingDetail, responsedata);
+// Superadmin cross-college performance report (aptitude + coding): summary rollup + per-student detail
+router.post('/superadmin/reports/generate', auth, requireRole('Superadmin'), monitoringController.report, responsedata);
 
 // TPC Coding Monitoring
 router.post('/tpc/coding/stats', auth, (req, res, next) => tpcCoding.getCodingStats(req, res, next), responsedata);

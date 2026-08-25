@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
 import { FilterSelect } from '@/components/ui/FilterSelect'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -288,21 +289,11 @@ export default function TPCTestsPage() {
               )}
               <div className="flex items-center gap-2">
                 <label className="text-sm text-neutral-light">From:</label>
-                <input
-                  type="date"
-                  value={dateFilter.from}
-                  onChange={(e) => setDateFilter({ ...dateFilter, from: e.target.value })}
-                  className="px-3 py-1 border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm"
-                />
+                <DatePicker widthClass="w-40" value={dateFilter.from} onChange={(v) => setDateFilter({ ...dateFilter, from: v })} max={dateFilter.to || undefined} />
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-neutral-light">To:</label>
-                <input
-                  type="date"
-                  value={dateFilter.to}
-                  onChange={(e) => setDateFilter({ ...dateFilter, to: e.target.value })}
-                  className="px-3 py-1 border border-neutral-light/30 rounded-lg bg-background text-neutral text-sm"
-                />
+                <DatePicker widthClass="w-40" value={dateFilter.to} onChange={(v) => setDateFilter({ ...dateFilter, to: v })} min={dateFilter.from || undefined} />
               </div>
               <button
                 onClick={handleFilterApply}

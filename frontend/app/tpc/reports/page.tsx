@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TPCLayout } from '@/components/layouts/TPCLayout'
 import { Card } from '@/components/ui/Card'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -242,23 +243,13 @@ export default function TPCReportsPage() {
                   <label className="block text-sm font-medium text-neutral-light mb-2">
                     From Date
                   </label>
-                  <input
-                    type="date"
-                    value={dateFilter.from}
-                    onChange={(e) => setDateFilter({ ...dateFilter, from: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-light/30 rounded-lg bg-background text-neutral"
-                  />
+                  <DatePicker value={dateFilter.from} onChange={(v) => setDateFilter({ ...dateFilter, from: v })} max={dateFilter.to || undefined} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-light mb-2">
                     To Date
                   </label>
-                  <input
-                    type="date"
-                    value={dateFilter.to}
-                    onChange={(e) => setDateFilter({ ...dateFilter, to: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-light/30 rounded-lg bg-background text-neutral"
-                  />
+                  <DatePicker value={dateFilter.to} onChange={(v) => setDateFilter({ ...dateFilter, to: v })} min={dateFilter.from || undefined} />
                 </div>
               </div>
 

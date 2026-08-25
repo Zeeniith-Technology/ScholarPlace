@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { FilterSelect } from '@/components/ui/FilterSelect'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
@@ -1448,12 +1449,11 @@ export default function CollegesManagementPage() {
                         ]}
                       />
                       <div>
-                        <Input
+                        <DatePicker
                           label="Subscription End Date"
-                          type="date"
                           value={formData.collage_subscription_end_date || ''}
-                          onChange={(e) =>
-                            setFormData({ ...formData, collage_subscription_end_date: e.target.value })
+                          onChange={(v) =>
+                            setFormData({ ...formData, collage_subscription_end_date: v })
                           }
                         />
                         <p className="text-xs text-neutral-dark mt-1">

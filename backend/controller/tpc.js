@@ -7,6 +7,86 @@ import { fetchData, executeData } from '../methods.js';
 export default class tpcController {
 
     /**
+     * Compute REAL "days completed" per student — the same rule the student-facing
+     * green completion ticks use: a day counts once >=6 of that day's daily coding
+     * problems are solved, OR the student's latest practice-test attempt for that
+     * day scored >=70%. A day counts once it meets EITHER track (a day is one
+     * syllabus unit, not two separate DSA/aptitude achievements).
+     *
+     * Replaces the old `progress.days_completed?.length || progress.total_days_completed`
+     * read, which was always 0 — neither field is ever written by any code path
+     * (confirmed against real data: both undefined/empty on every tblStudentProgress
+     * record). Batched across all requested students in 3 queries total — not N+1.
+     *
+     * @param {string[]} studentIds
+     * @returns {Promise<Map<string, number>>} student_id (string) -> days completed
+     */
+    async computeDaysCompletedByStudent(studentIds) {
+        const result = new Map();
+        const ids = [...new Set((studentIds || []).filter(Boolean).map(String))];
+        for (const sid of ids) result.set(sid, 0);
+        if (ids.length === 0) return result;
+
+        const [subsRes, testsRes, problemsRes] = await Promise.all([
+            fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, { student_id: { $in: ids }, status: 'passed' }),
+            fetchData('tblPracticeTest', { student_id: 1, week: 1, day: 1, score: 1, completed_at: 1, created_at: 1 }, { student_id: { $in: ids }, deleted: { $ne: true } }),
+            fetchData('tblCodingProblem', { question_id: 1, week: 1, day: 1 }, { is_capstone: { $ne: true }, deleted: { $ne: true } }),
+        ]);
+
+        const dayKey = (w, d) => `${w}-${typeof d === 'number' && d >= 1 && d <= 5 ? 'day-' + d : String(d || '')}`;
+
+        // problem_id -> dayKey, and dayKey -> total daily problems (for the min(6,n) bar)
+        const dayKeyByProblemId = new Map();
+        const problemsByDay = new Map();
+        (problemsRes.data || []).forEach(p => {
+            const key = dayKey(p.week, p.day);
+            dayKeyByProblemId.set(p.question_id, key);
+            if (!problemsByDay.has(key)) problemsByDay.set(key, new Set());
+            problemsByDay.get(key).add(p.question_id);
+        });
+
+        // Passed submissions grouped by "studentId|dayKey" -> Set(problem_id)
+        const solvedByStudentDay = new Map();
+        (subsRes.data || []).forEach(s => {
+            const key = dayKeyByProblemId.get(s.problem_id);
+            if (!key) return;
+            const mapKey = `${String(s.student_id)}|${key}`;
+            if (!solvedByStudentDay.has(mapKey)) solvedByStudentDay.set(mapKey, new Set());
+            solvedByStudentDay.get(mapKey).add(s.problem_id);
+        });
+
+        // Latest practice-test attempt per "studentId|dayKey" (matches the student-facing rule)
+        const latestTestByStudentDay = new Map();
+        (testsRes.data || []).forEach(t => {
+            if (t.week == null || t.day == null) return;
+            const mapKey = `${String(t.student_id)}|${dayKey(t.week, t.day)}`;
+            const at = t.completed_at || t.created_at;
+            const cur = latestTestByStudentDay.get(mapKey);
+            if (!cur || (at && new Date(at) > new Date(cur.at))) latestTestByStudentDay.set(mapKey, { score: t.score, at });
+        });
+
+        const allKeys = new Set([...solvedByStudentDay.keys(), ...latestTestByStudentDay.keys()]);
+        for (const mapKey of allKeys) {
+            const sep = mapKey.indexOf('|');
+            const sid = mapKey.slice(0, sep);
+            const key = mapKey.slice(sep + 1);
+            if (!result.has(sid)) continue;
+
+            const solved = solvedByStudentDay.get(mapKey);
+            const totalForDay = problemsByDay.get(key)?.size || 0;
+            const requiredToPass = Math.min(6, totalForDay);
+            const codingDone = totalForDay > 0 && solved && solved.size >= requiredToPass;
+
+            const latestTest = latestTestByStudentDay.get(mapKey);
+            const aptitudeDone = !!latestTest && (latestTest.score || 0) >= 70;
+
+            if (codingDone || aptitudeDone) result.set(sid, result.get(sid) + 1);
+        }
+
+        return result;
+    }
+
+    /**
      * Helper function to get user info from all tables (PersonMaster, TPC, DeptTPC)
      */
     async getUserInfo(userId) {
@@ -489,6 +569,10 @@ export default class tpcController {
             let totalDaysCompleted = 0;
             let topPerformers = 0;
 
+            const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                students.map(s => (s._id || s.person_id)?.toString())
+            );
+
             students.forEach(student => {
                 const sid = (student._id && typeof student._id.toString === 'function' ? student._id.toString() : String(student._id));
                 const progress = progressData.find(p =>
@@ -527,11 +611,7 @@ export default class tpcController {
                     }
                 }
 
-                if (progress && progress.days_completed && progress.days_completed.length > 0) {
-                    totalDaysCompleted += progress.days_completed.length;
-                } else if (progress && progress.total_days_completed) {
-                    totalDaysCompleted += progress.total_days_completed;
-                }
+                totalDaysCompleted += daysCompletedByStudent.get(sid) || 0;
             });
 
             const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
@@ -929,9 +1009,12 @@ export default class tpcController {
             }
 
             // Get students
+            // Exclusion projection: never fetch person_password into memory at all
+            // (this result is later spread with `...student` into the API response —
+            // fixing it here, not just filtering the output, closes the leak at the root).
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
-                {},
+                { person_password: 0 },
                 studentFilter
             );
 
@@ -1025,6 +1108,10 @@ export default class tpcController {
 
             console.log('[getStudentsList] students:', students.length, 'progressDocs:', progressData.length, 'practiceTests:', practiceTests.length, 'practiceByStudent keys:', Object.keys(practiceByStudent));
 
+            const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                students.map(s => (s._id || s.person_id)?.toString())
+            );
+
             // Combine: always prefer derived from practice tests when progress has no/zero score or test count
             const studentsWithProgress = students.map(student => {
                 const sid = (student._id != null && typeof student._id.toString === 'function') ? student._id.toString() : String(student._id);
@@ -1044,8 +1131,10 @@ export default class tpcController {
                 const averageScore = progressScore != null ? progressScore : derivedAvg;
                 const totalPracticeTests = progressTests != null ? progressTests : derivedTestCount;
                 
-                // Use array lengths from schema rather than non-existent flat properties
-                const daysCompletedCount = progress?.days_completed?.length || progress?.total_days_completed || 0;
+                // Real days-completed count (see computeDaysCompletedByStudent) — the old
+                // days_completed/total_days_completed fields are never written by any code
+                // path and are always empty/undefined.
+                const daysCompletedCount = daysCompletedByStudent.get(sid) || 0;
                 const codingProblemsCount = progress?.coding_problems_completed?.length || progress?.total_coding_problems || 0;
 
                 return {
@@ -1318,9 +1407,12 @@ export default class tpcController {
             }
 
             // Get students
+            // Exclusion projection: never fetch person_password into memory at all
+            // (this result is later spread with `...student` into the API response —
+            // fixing it here, not just filtering the output, closes the leak at the root).
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
-                {},
+                { person_password: 0 },
                 studentFilter
             );
 
@@ -1350,6 +1442,10 @@ export default class tpcController {
                 avgByStudent[sid].count += 1;
             }
 
+            const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                students.map(s => (s._id || s.person_id)?.toString())
+            );
+
             // Combine: use progress.average_score when present, else average from practice tests
             const studentsWithScore = students.map(student => {
                 const sid = (student._id && typeof student._id.toString === 'function' ? student._id.toString() : String(student._id));
@@ -1364,7 +1460,7 @@ export default class tpcController {
                 const averageScore = (progress && (progress.average_score !== undefined && progress.average_score !== null && progress.average_score > 0))
                     ? progress.average_score
                     : derivedAvg;
-                const daysCompletedCount = progress?.days_completed?.length || progress?.total_days_completed || 0;
+                const daysCompletedCount = daysCompletedByStudent.get(sid) || 0;
                 const codingProblemsCount = progress?.coding_problems_completed?.length || progress?.total_coding_problems || 0;
                 const testScoresCount = progress?.practice_test_scores?.length || progress?.total_practice_tests || practiceAvg?.count || 0;
 
@@ -1636,9 +1732,12 @@ export default class tpcController {
             }
 
             // Get students
+            // Exclusion projection: never fetch person_password into memory at all
+            // (this result is later spread with `...student` into the API response —
+            // fixing it here, not just filtering the output, closes the leak at the root).
             const studentsResponse = await fetchData(
                 'tblPersonMaster',
-                {},
+                { person_password: 0 },
                 studentFilter
             );
 
@@ -2000,6 +2099,10 @@ export default class tpcController {
                 }
             });
 
+            const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                students.map(s => (s._id || s.person_id)?.toString())
+            );
+
             // Group students by department
             students.forEach(student => {
                 // Normalize department label:
@@ -2033,16 +2136,15 @@ export default class tpcController {
                     departmentStats[deptKey].activeStudents++;
                 }
 
+                const sid = (student._id?.toString?.() || student._id || student.person_id?.toString?.() || student.person_id)?.toString();
                 const progress = progressData.find(p =>
                     (p.student_id === (student._id?.toString?.() || student._id) || p.student_id === (student.person_id?.toString?.() || student.person_id))
                 );
 
-                if (progress) {
-                    if (progress.average_score) {
-                        departmentStats[deptKey].totalScores.push(progress.average_score);
-                    }
-                    departmentStats[deptKey].totalDaysCompleted += progress.days_completed?.length || progress.total_days_completed || 0;
+                if (progress && progress.average_score) {
+                    departmentStats[deptKey].totalScores.push(progress.average_score);
                 }
+                departmentStats[deptKey].totalDaysCompleted += daysCompletedByStudent.get(sid) || 0;
 
                 const deptTests = practiceTests.filter(t =>
                     (t.student_id === (student._id?.toString?.() || student._id) || t.student_id === (student.person_id?.toString?.() || student.person_id))
@@ -2613,6 +2715,9 @@ export default class tpcController {
 
             if (reportType === 'performance' || !reportType) {
                 // Performance Summary Report
+                const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                    students.map(s => String(s._id || s.person_id || ''))
+                );
                 const studentsWithProgress = students.map(student => {
                     const sid = String(student._id || student.person_id || '');
                     const progress = progressData.find(p => String(p.student_id || '') === sid);
@@ -2627,7 +2732,7 @@ export default class tpcController {
                         department: student.department || '',
                         enrollmentNumber: student.enrollment_number || '',
                         averageScore: progress?.average_score || avgTestScore || 0,
-                        daysCompleted: progress?.days_completed?.length || progress?.total_days_completed || 0,
+                        daysCompleted: daysCompletedByStudent.get(sid) || 0,
                         testsCompleted: progress?.practice_test_scores?.length || studentTests.length || 0,
                         status: student.person_status
                     };
@@ -3082,6 +3187,10 @@ export default class tpcController {
             // Estimated total coding problems per week to calculate percentage
             const ESTIMATED_CODING_PROBLEMS_PER_WEEK = 5;
 
+            const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                students.map(s => toStr(s._id || s.person_id))
+            );
+
             students.forEach(student => {
                 const sid = toStr(student._id || student.person_id);
                 const progress = progressData.find(p => toStr(p.student_id) === sid);
@@ -3119,8 +3228,7 @@ export default class tpcController {
 
                 const myPracticeTests = practiceTests.filter(t => toStr(t.student_id) === sid);
                 totalTestsCompleted += myPracticeTests.length + codingProblemsSolved;
-                const daysCompletedVal = progress && (progress.total_days_completed !== undefined || progress.days_completed);
-                const daysCount = !daysCompletedVal ? 0 : (Array.isArray(progress.days_completed) ? progress.days_completed.length : (typeof progress.total_days_completed === 'number' ? progress.total_days_completed : (progress.days_completed?.length || 0)));
+                const daysCount = daysCompletedByStudent.get(sid) || 0;
                 totalDaysCompleted += daysCount;
 
                 studentDetails.push({
@@ -4242,24 +4350,59 @@ export default class tpcController {
             const practiceTestResponse = await fetchData('tblPracticeTest', {}, testFilter);
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
 
+            // Coding submissions (for the "DSA Avg" column, which was always 0 — it was
+            // derived from tblPracticeTest.category matching 'dsa'/'code'/'technical', but
+            // every practice test is category 'aptitude'; real coding data lives entirely
+            // in tblCodingSubmissions, never queried here before).
+            // NOTE: builds a fresh filter object rather than reusing testFilterBase — that
+            // object is also referenced by `testFilter` above and gets a `.completed_at`
+            // property mutated onto it when a date range is set; reusing the same
+            // reference here would leak `completed_at` onto/from this coding query.
+            const codingFilterBase = studentIdOrConditions.length ? { $or: [...studentIdOrConditions] } : { student_id: '__NO_STUDENT__' };
+            let codingFilter = tenantClauses.length ? { $and: [codingFilterBase, { $or: [{ college_id: { $exists: false } }, { $and: tenantClauses }] }] } : codingFilterBase;
+            if (dateFrom || dateTo) {
+                codingFilter.submitted_at = {};
+                if (dateFrom) codingFilter.submitted_at.$gte = new Date(dateFrom);
+                if (dateTo) codingFilter.submitted_at.$lte = new Date(dateTo);
+            }
+            const codingSubsResponse = await fetchData('tblCodingSubmissions', {}, codingFilter);
+            const codingSubmissions = codingSubsResponse.success && codingSubsResponse.data ? codingSubsResponse.data : [];
+
             // Generate report
             let reportData = {};
 
             if (reportType === 'performance' || !reportType) {
                 // Performance Summary Report (student_id in DB may be string or ObjectId)
                 const toStr = (id) => (id && typeof id === 'object' && typeof id.toString === 'function' ? id.toString() : String(id));
+                const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
+                    students.map(s => toStr(s._id || s.person_id))
+                );
+
+                // Resolve week per coding problem so "Weeks Completed" reflects coding
+                // activity too, not just aptitude tests — a student who only did coding
+                // (no aptitude test) was previously showing 0 weeks completed regardless
+                // of real activity.
+                const codingProblemIds = [...new Set(codingSubmissions.map(c => c.problem_id).filter(Boolean))];
+                const [cpWeekRes, tqWeekRes] = codingProblemIds.length
+                    ? await Promise.all([
+                        fetchData('tblCodingProblem', { question_id: 1, week: 1 }, { question_id: { $in: codingProblemIds } }),
+                        fetchData('tblQuestion', { question_id: 1, week: 1 }, { question_id: { $in: codingProblemIds }, question_type: 'coding' }),
+                    ])
+                    : [{ data: [] }, { data: [] }];
+                const weekByProblemId = new Map();
+                (cpWeekRes.data || []).forEach(p => weekByProblemId.set(p.question_id, p.week));
+                (tqWeekRes.data || []).forEach(p => { if (!weekByProblemId.has(p.question_id)) weekByProblemId.set(p.question_id, p.week); });
+                const parseWeekFromId = (pid) => { const m = /^W(\d+)_/i.exec(String(pid || '')); return m ? parseInt(m[1], 10) : null; };
+
                 const studentsWithProgress = students.map(student => {
                     const sid = toStr(student._id || student.person_id);
                     const progress = progressData.find(p => toStr(p.student_id) === sid);
                     const studentTests = practiceTests.filter(t => toStr(t.student_id) === sid);
-                    const avgTestScore = studentTests.length > 0
-                        ? Math.round(studentTests.reduce((sum, t) => sum + (t.score || 0), 0) / studentTests.length)
-                        : 0;
+                    const studentCodingSubs = codingSubmissions.filter(c => toStr(c.student_id) === sid);
 
                     // Calculate unique weeks from student's tests
                     const uniqueWeeks = new Set();
                     const uniqueTestsTaken = new Set(); // To ensure we count unique tests if duplicates exist
-                    let dsaSum = 0, dsaCount = 0;
                     let aptSum = 0, aptCount = 0;
 
                     studentTests.forEach(test => {
@@ -4270,19 +4413,28 @@ export default class tpcController {
                         const testKey = `${test.week}-${test.day}`;
                         uniqueTestsTaken.add(testKey);
 
-                        // DSA vs Aptitude breakdown
-                        // Assuming test_type or category field exists. Adjust 'dsa'/'aptitude' matching as needed.
-                        // If fields don't exist, these will remain 0.
-                        const type = (test.test_type || test.category || '').toLowerCase();
-                        if (type.includes('dsa') || type.includes('code') || type.includes('technical')) {
-                            dsaSum += (test.score || 0);
-                            dsaCount++;
-                        } else if (type.includes('apt') || type.includes('quant') || type.includes('reasoning')) {
-                            aptSum += (test.score || 0);
-                            aptCount++;
-                        }
+                        // Every tblPracticeTest record is category 'aptitude' — there is no
+                        // DSA/coding data in this collection at all (that lives separately in
+                        // tblCodingSubmissions, aggregated into studentCodingSubs below).
+                        aptSum += (test.score || 0);
+                        aptCount++;
+                    });
+                    // Weeks touched via coding submissions count too — a student who only
+                    // did coding (no aptitude test) was showing 0 weeks completed before.
+                    studentCodingSubs.forEach(sub => {
+                        const w = weekByProblemId.get(sub.problem_id) ?? parseWeekFromId(sub.problem_id);
+                        if (w != null) uniqueWeeks.add(w);
                     });
                     const weeksCompleted = uniqueWeeks.size;
+
+                    // DSA/coding average from real submission scores (0-100 test-cases-passed %,
+                    // averaged across all of the student's submissions), plus solved/attempted
+                    // counts so the report reflects actual coding activity, not just aptitude.
+                    const dsaAverage = studentCodingSubs.length > 0
+                        ? Math.round(studentCodingSubs.reduce((sum, c) => sum + (c.score || 0), 0) / studentCodingSubs.length)
+                        : 0;
+                    const codingSolved = new Set(studentCodingSubs.filter(c => c.status === 'passed').map(c => c.problem_id)).size;
+                    const codingAttempts = studentCodingSubs.length;
 
                     // 1. Last Activity Date
                     const sortedTests = [...studentTests].sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
@@ -4302,9 +4454,19 @@ export default class tpcController {
                         else if (recentAvg < initialAvg - 5) scoreTrend = 'Declining';
                     }
 
-                    // 3. DSA vs Aptitude Averages
-                    const dsaAverage = dsaCount > 0 ? Math.round(dsaSum / dsaCount) : 0;
+                    // 3. Aptitude average (dsaAverage/codingSolved/codingAttempts computed above from tblCodingSubmissions)
                     const aptitudeAverage = aptCount > 0 ? Math.round(aptSum / aptCount) : 0;
+
+                    // Overall "Average Score" — blends aptitude AND coding when both exist,
+                    // so a student who's coding-active but hasn't taken an aptitude test (or
+                    // vice versa) doesn't show a misleadingly low/0% overall score.
+                    const hasApt = aptCount > 0;
+                    const hasDsa = studentCodingSubs.length > 0;
+                    const overallAverageScore = hasApt && hasDsa
+                        ? Math.round((aptitudeAverage + dsaAverage) / 2)
+                        : hasApt ? aptitudeAverage
+                            : hasDsa ? dsaAverage
+                                : 0;
 
                     // 4. Completion Rate
                     // Calculate total available tests across the department (all practice tests in this period)
@@ -4321,16 +4483,18 @@ export default class tpcController {
                     return {
                         name: student.person_name,
                         email: student.person_email,
-                        department: student.department || department,
+                        department: (student.department || department || '').trim(),
                         enrollmentNumber: student.enrollment_number || '',
-                        averageScore: progress?.average_score || avgTestScore || 0,
-                        daysCompleted: progress?.days_completed?.length || progress?.total_days_completed || 0,
+                        averageScore: overallAverageScore,
+                        daysCompleted: daysCompletedByStudent.get(sid) || 0,
                         weeksCompleted: weeksCompleted,
                         testsCompleted: progress?.practice_test_scores?.length || studentTests.length || 0,
                         lastActivityDate: lastActivityDate,
                         scoreTrend: scoreTrend,
                         dsaAverage: dsaAverage,
                         aptitudeAverage: aptitudeAverage,
+                        codingSolved: codingSolved,
+                        codingAttempts: codingAttempts,
                         status: student.person_status
                     };
                 });
@@ -4346,7 +4510,13 @@ export default class tpcController {
                         averageScore: studentsWithProgress.length > 0
                             ? Math.round(studentsWithProgress.reduce((sum, s) => sum + s.averageScore, 0) / studentsWithProgress.length)
                             : 0,
-                        totalTests: practiceTests.length
+                        totalTests: practiceTests.length,
+                        totalCodingSolved: studentsWithProgress.reduce((sum, s) => sum + s.codingSolved, 0),
+                        totalCodingAttempts: codingSubmissions.length,
+                        averageDsaScore: (() => {
+                            const withCoding = studentsWithProgress.filter(s => s.codingAttempts > 0);
+                            return withCoding.length ? Math.round(withCoding.reduce((sum, s) => sum + s.dsaAverage, 0) / withCoding.length) : 0;
+                        })()
                     },
                     students: studentsWithProgress.sort((a, b) => b.averageScore - a.averageScore)
                 };
@@ -5181,12 +5351,16 @@ export default class tpcController {
             let totalDays = 0;
             let studentDetails = [];
 
+            // Real days-completed count (see computeDaysCompletedByStudent) — prog.completed_days
+            // / prog.days_completed are never written by any code path and are always empty.
+            const daysCompletedByStudent = await this.computeDaysCompletedByStudent(studentIds);
+
             students.forEach(s => {
                 const sId = (s._id || s.person_id).toString();
 
                 // Get Progress
                 const prog = progressData.find(p => (p.student_id?.toString() || p.student_id) === sId);
-                const completedDays = (prog?.completed_days || prog?.days_completed || []).length;
+                const completedDays = daysCompletedByStudent.get(sId) || 0;
 
                 // Get actual DSA problems solved from submissions
                 const codingProblems = (dsaByStudent[sId] && dsaByStudent[sId].size) || 0;

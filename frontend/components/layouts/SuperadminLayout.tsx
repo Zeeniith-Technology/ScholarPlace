@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   BarChart3,
+  FileBarChart,
   Building2,
   Users,
   GitCompareArrows,
@@ -49,6 +50,7 @@ const navigation = [
   { name: 'Feedback / NPS', href: '/superadmin/feedback', icon: MessageSquareHeart },
   { name: 'Aptitude Monitoring', href: '/superadmin/practice-monitoring', icon: ClipboardList },
   { name: 'Coding Monitoring', href: '/superadmin/coding-monitoring', icon: Code2 },
+  { name: 'Reports', href: '/superadmin/reports', icon: FileBarChart },
   { name: 'Test Security', href: '/superadmin/security', icon: ShieldAlert },
   { name: 'AI Usage', href: '/superadmin/ai-usage', icon: Sparkles },
   { name: 'Announcements', href: '/superadmin/announcements', icon: Megaphone },

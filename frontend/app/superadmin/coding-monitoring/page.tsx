@@ -8,7 +8,7 @@ import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Modal } from '@/components/ui/Modal'
 import { getAuthHeader } from '@/utils/auth'
 import { exportToCSV } from '@/utils/exportUtils'
-import { Code2, RefreshCw, Search, Download, Eye, CheckCircle2, XCircle, Building2, Layers } from 'lucide-react'
+import { Code2, RefreshCw, Search, Download, Eye, CheckCircle2, XCircle, Building2, Layers, ChevronDown, ChevronRight } from 'lucide-react'
 
 interface Row {
   studentId: string
@@ -24,6 +24,8 @@ interface Row {
 interface Submission {
   problem_id: string
   problem_title: string
+  week: number | null
+  day: string | null
   status: string
   language: string
   score: number | null
@@ -40,6 +42,21 @@ function relative(iso: string | null) {
   return new Date(iso).toLocaleDateString()
 }
 
+const DAY_RANK = (d: string | null) => {
+  if (d === 'pre-week') return -1
+  const m = /^day-(\d+)$/.exec(d || '')
+  if (m) return parseInt(m[1])
+  if (d === 'capstone') return 90
+  return 99
+}
+const dayLabel = (d: string | null) => {
+  if (!d || d === 'other') return 'Other'
+  if (d === 'pre-week') return 'Pre-Week'
+  if (d === 'capstone') return 'Capstone'
+  const m = /^day-(\d+)$/.exec(d)
+  return m ? `Day ${m[1]}` : d
+}
+
 export default function CodingMonitoringPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [rows, setRows] = useState<Row[]>([])
@@ -54,6 +71,10 @@ export default function CodingMonitoringPage() {
 
   const [detail, setDetail] = useState<{ student_name: string; submissions: Submission[] } | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set())
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const toggleWeek = (wk: number) => setExpandedWeeks(prev => { const n = new Set(prev); n.has(wk) ? n.delete(wk) : n.add(wk); return n })
+  const toggleDay = (key: string) => setExpandedDays(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
 
@@ -101,6 +122,8 @@ export default function CodingMonitoringPage() {
     try {
       setDetailLoading(true)
       setDetail({ student_name: '', submissions: [] })
+      setExpandedWeeks(new Set())
+      setExpandedDays(new Set())
       const authHeader = getAuthHeader()
       if (!authHeader) return
       const res = await fetch(`${apiBaseUrl}/superadmin/monitoring/coding-detail`, {
@@ -223,21 +246,76 @@ export default function CodingMonitoringPage() {
               <p className="font-semibold text-neutral">{detail.student_name}</p>
               <p className="text-xs text-neutral-light">{detail.submissions.length} submission{detail.submissions.length !== 1 ? 's' : ''}</p>
             </div>
-            <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
               {detail.submissions.length === 0 ? (
                 <p className="text-sm text-neutral-light text-center py-6">No submissions</p>
-              ) : detail.submissions.map((s, i) => (
-                <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-neutral-light/15">
-                  <div className="min-w-0 flex items-center gap-2">
-                    {s.status === 'passed' ? <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" /> : <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-neutral truncate">{s.problem_title}</p>
-                      <p className="text-xs text-neutral-light">{s.language}{s.submitted_at ? ` · ${new Date(s.submitted_at).toLocaleString()}` : ''}</p>
+              ) : (() => {
+                const byWeek = new Map<number, Map<string, Submission[]>>()
+                for (const s of detail.submissions) {
+                  const wk = s.week ?? 0
+                  const day = s.day ?? 'other'
+                  if (!byWeek.has(wk)) byWeek.set(wk, new Map())
+                  const dm = byWeek.get(wk)!
+                  if (!dm.has(day)) dm.set(day, [])
+                  dm.get(day)!.push(s)
+                }
+                const weeks = [...byWeek.keys()].sort((a, b) => (a === 0 ? 999 : a) - (b === 0 ? 999 : b))
+                return weeks.map(wk => {
+                  const dm = byWeek.get(wk)!
+                  const days = [...dm.keys()].sort((a, b) => DAY_RANK(a) - DAY_RANK(b))
+                  const weekSolved = [...dm.values()].flat().filter(s => s.status === 'passed').length
+                  const weekTotal = [...dm.values()].flat().length
+                  const weekOpen = expandedWeeks.has(wk)
+                  return (
+                    <div key={wk} className="border border-neutral-light/15 rounded-lg overflow-hidden">
+                      <button type="button" onClick={() => toggleWeek(wk)} className="w-full px-3 py-2 bg-background-elevated flex items-center justify-between hover:bg-background-elevated/70 transition-colors">
+                        <span className="flex items-center gap-1.5 font-semibold text-sm text-neutral">
+                          {weekOpen ? <ChevronDown className="w-4 h-4 text-neutral-light" /> : <ChevronRight className="w-4 h-4 text-neutral-light" />}
+                          {wk === 0 ? 'Other' : `Week ${wk}`}
+                        </span>
+                        <span className="text-xs text-green-600 font-medium">{weekSolved}/{weekTotal} solved</span>
+                      </button>
+                      {weekOpen && (
+                      <div className="divide-y divide-neutral-light/10">
+                        {days.map(day => {
+                          const items = dm.get(day)!
+                          const solved = items.filter(s => s.status === 'passed').length
+                          const dayKey = `${wk}:${day}`
+                          const dayOpen = expandedDays.has(dayKey)
+                          return (
+                            <div key={day}>
+                              <button type="button" onClick={() => toggleDay(dayKey)} className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-background-elevated/40 transition-colors">
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-neutral-light uppercase tracking-wide">
+                                  {dayOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                  {dayLabel(day)}
+                                </span>
+                                <span className="text-xs text-neutral-light">{solved}/{items.length}</span>
+                              </button>
+                              {dayOpen && (
+                              <div className="space-y-1.5 px-3 pb-2.5">
+                                {items.map((s, i) => (
+                                  <div key={i} className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex items-center gap-2">
+                                      {s.status === 'passed' ? <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" /> : <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium text-neutral truncate">{s.problem_title}</p>
+                                        <p className="text-xs text-neutral-light">{s.language}{s.submitted_at ? ` · ${new Date(s.submitted_at).toLocaleDateString()}` : ''}</p>
+                                      </div>
+                                    </div>
+                                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${s.status === 'passed' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>{s.status}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      )}
                     </div>
-                  </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${s.status === 'passed' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>{s.status}</span>
-                </div>
-              ))}
+                  )
+                })
+              })()}
             </div>
           </div>
         )}

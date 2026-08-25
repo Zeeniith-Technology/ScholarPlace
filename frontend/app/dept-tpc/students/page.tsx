@@ -10,7 +10,9 @@ import { FilterSelect } from '@/components/ui/FilterSelect'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader } from '@/utils/auth'
 import { getApiBaseUrl } from '@/utils/api'
-import { Users, Search, Filter, RefreshCw, TrendingUp, Award, AlertCircle } from 'lucide-react'
+import { Users, Search, Filter, RefreshCw, TrendingUp, Award, AlertCircle, CalendarDays, ArrowUp, ArrowDown } from 'lucide-react'
+
+type SortField = 'name' | 'email' | 'status' | 'registered' | 'score' | 'days'
 
 /**
  * Department TPC Students Page
@@ -26,6 +28,8 @@ export default function DepartmentTPCStudentsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
     checkAuth()
@@ -145,6 +149,39 @@ export default function DepartmentTPCStudentsPage() {
     return name.includes(searchLower) || email.includes(searchLower) || enrollment.includes(searchLower)
   })
 
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    if (!sortField) return 0
+    const dir = sortDirection === 'asc' ? 1 : -1
+    switch (sortField) {
+      case 'name':
+        return (a.person_name || '').localeCompare(b.person_name || '') * dir
+      case 'email':
+        return (a.person_email || '').localeCompare(b.person_email || '') * dir
+      case 'status':
+        return (a.person_status || '').localeCompare(b.person_status || '') * dir
+      case 'registered': {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+        const tb = b.created_at ? new Date(b.created_at).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0)
+        return (ta - tb) * dir
+      }
+      case 'score':
+        return ((a.progress?.average_score || 0) - (b.progress?.average_score || 0)) * dir
+      case 'days':
+        return ((a.progress?.total_days_completed || 0) - (b.progress?.total_days_completed || 0)) * dir
+      default:
+        return 0
+    }
+  })
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
   if (isLoading && students.length === 0) {
     return (
       <DepartmentTPCLayout>
@@ -204,6 +241,32 @@ export default function DepartmentTPCStudentsPage() {
               onChange={setStatusFilter}
               widthClass="w-full sm:w-40 shrink-0"
             />
+            <div className="flex items-center gap-2 shrink-0">
+              <FilterSelect
+                options={[
+                  { value: 'name', label: 'Sort: Name' },
+                  { value: 'email', label: 'Sort: Email' },
+                  { value: 'status', label: 'Sort: Status' },
+                  { value: 'registered', label: 'Sort: Registered' },
+                  { value: 'score', label: 'Sort: Avg Score' },
+                  { value: 'days', label: 'Sort: Days Completed' },
+                ]}
+                value={sortField || ''}
+                onChange={(v) => toggleSort(v as SortField)}
+                placeholder="Sort by…"
+                widthClass="w-full sm:w-44"
+              />
+              {sortField && (
+                <button
+                  type="button"
+                  onClick={() => toggleSort(sortField)}
+                  title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+                  className="p-2 h-10 sm:h-[38px] rounded-lg border border-neutral-light/30 bg-background-surface hover:border-primary/40 text-neutral-light hover:text-primary transition-colors"
+                >
+                  {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleSearch}
@@ -213,9 +276,9 @@ export default function DepartmentTPCStudentsPage() {
             </button>
           </div>
 
-          {filteredStudents.length > 0 ? (
+          {sortedStudents.length > 0 ? (
             <div className="space-y-3">
-              {filteredStudents.map((student, index) => (
+              {sortedStudents.map((student, index) => (
                 <div
                   key={student._id || student.person_id || index}
                   className="p-4 rounded-lg border border-neutral-light/20 bg-background-elevated hover:bg-background-surface transition-all duration-300 hover:shadow-md hover:scale-[1.01] animate-stagger-fade"
@@ -253,6 +316,12 @@ export default function DepartmentTPCStudentsPage() {
                             <span>Dept: {displayDepartment}</span>
                           ) : null;
                         })()}
+                        {(student.created_at || student.createdAt) && (
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-4 h-4" />
+                            Registered {new Date(student.created_at || student.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">

@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { FilterSelect } from '@/components/ui/FilterSelect';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Loader2, RefreshCw, AlertTriangle, Eye, ChevronLeft, ChevronRight, Search, Download } from 'lucide-react';
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout';
 import { getAuthHeader } from '@/utils/auth';
@@ -206,23 +207,9 @@ export default function ErrorLogsPage() {
                                 className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm w-56 focus:outline-none focus:border-red-400"
                             />
                         </div>
-                        <input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                            max={dateTo || undefined}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-400"
-                            title="From date"
-                        />
+                        <DatePicker widthClass="w-40" value={dateFrom} onChange={setDateFrom} placeholder="From date" max={dateTo || undefined} />
                         <span className="text-gray-400 text-sm">to</span>
-                        <input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                            min={dateFrom || undefined}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-400"
-                            title="To date"
-                        />
+                        <DatePicker widthClass="w-40" value={dateTo} onChange={setDateTo} placeholder="To date" min={dateFrom || undefined} />
                         {(search || dateFrom || dateTo) && (
                             <button
                                 onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}

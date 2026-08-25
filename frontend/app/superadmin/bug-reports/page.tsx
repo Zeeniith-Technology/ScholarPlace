@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { FilterSelect } from '@/components/ui/FilterSelect'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Modal } from '@/components/ui/Modal'
 import { getAuthHeader } from '@/utils/auth'
 import {
@@ -564,23 +565,9 @@ export default function SuperadminBugReportsPage() {
 
                             {/* Date range */}
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="date"
-                                    value={dateFrom}
-                                    onChange={(e) => setDateFrom(e.target.value)}
-                                    max={dateTo || undefined}
-                                    className="w-full px-3 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral text-sm focus:outline-none focus:border-accent/50"
-                                    title="From date"
-                                />
+                                <DatePicker widthClass="w-40" value={dateFrom} onChange={setDateFrom} placeholder="From date" max={dateTo || undefined} />
                                 <span className="text-neutral-light text-sm">to</span>
-                                <input
-                                    type="date"
-                                    value={dateTo}
-                                    onChange={(e) => setDateTo(e.target.value)}
-                                    min={dateFrom || undefined}
-                                    className="w-full px-3 py-2 bg-background-elevated border border-neutral-light/20 rounded-lg text-neutral text-sm focus:outline-none focus:border-accent/50"
-                                    title="To date"
-                                />
+                                <DatePicker widthClass="w-40" value={dateTo} onChange={setDateTo} placeholder="To date" min={dateFrom || undefined} />
                                 {(dateFrom || dateTo) && (
                                     <button
                                         onClick={() => { setDateFrom(''); setDateTo('') }}

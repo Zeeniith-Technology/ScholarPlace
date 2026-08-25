@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DepartmentTPCLayout } from '@/components/layouts/DepartmentTPCLayout'
 import { Card } from '@/components/ui/Card'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Badge } from '@/components/ui/Badge'
 import { Toast, useToast } from '@/components/ui/Toast'
 import { getAuthHeader, clearAuth, getToken } from '@/utils/auth'
@@ -276,21 +277,11 @@ export default function DepartmentTPCTestsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm text-neutral-light mb-2">From Date</label>
-                <input
-                  type="date"
-                  value={dateFilter.from}
-                  onChange={(e) => setDateFilter({ ...dateFilter, from: e.target.value })}
-                  className="w-full px-3 py-2 border border-neutral-light rounded-lg bg-background text-neutral"
-                />
+                <DatePicker value={dateFilter.from} onChange={(v) => setDateFilter({ ...dateFilter, from: v })} max={dateFilter.to || undefined} />
               </div>
               <div>
                 <label className="block text-sm text-neutral-light mb-2">To Date</label>
-                <input
-                  type="date"
-                  value={dateFilter.to}
-                  onChange={(e) => setDateFilter({ ...dateFilter, to: e.target.value })}
-                  className="w-full px-3 py-2 border border-neutral-light rounded-lg bg-background text-neutral"
-                />
+                <DatePicker value={dateFilter.to} onChange={(v) => setDateFilter({ ...dateFilter, to: v })} min={dateFilter.from || undefined} />
               </div>
               <div className="flex items-end">
                 <button

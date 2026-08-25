@@ -295,7 +295,7 @@ export default function SuperadminDashboardPage() {
               time: formatRelativeTime(activity.timestamp),
               icon: activity.type === 'registration' ? 'Award' :
                 activity.type === 'test' ? 'FileText' :
-                  activity.type === 'progress' ? 'TrendingUp' : 'CheckCircle2',
+                  activity.type === 'coding' ? 'Code' : 'CheckCircle2',
             }))
           setRecentActivity(mappedActivity)
         }
