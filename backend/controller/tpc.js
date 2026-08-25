@@ -1,89 +1,98 @@
 import { fetchData, executeData } from '../methods.js';
 
 /**
+ * Compute REAL "days completed" per student — the same rule the student-facing
+ * green completion ticks use: a day counts once >=6 of that day's daily coding
+ * problems are solved, OR the student's latest practice-test attempt for that
+ * day scored >=70%. A day counts once it meets EITHER track (a day is one
+ * syllabus unit, not two separate DSA/aptitude achievements).
+ *
+ * Replaces the old `progress.days_completed?.length || progress.total_days_completed`
+ * read, which was always 0 — neither field is ever written by any code path
+ * (confirmed against real data: both undefined/empty on every tblStudentProgress
+ * record). Batched across all requested students in 3 queries total — not N+1.
+ *
+ * Standalone exported function (not a class method) so other controllers — e.g.
+ * superadmin/monitoring.js's cross-department report — can reuse the exact same
+ * tested logic instead of re-implementing it.
+ *
+ * @param {string[]} studentIds
+ * @returns {Promise<Map<string, number>>} student_id (string) -> days completed
+ */
+export async function computeDaysCompletedByStudent(studentIds) {
+    const result = new Map();
+    const ids = [...new Set((studentIds || []).filter(Boolean).map(String))];
+    for (const sid of ids) result.set(sid, 0);
+    if (ids.length === 0) return result;
+
+    const [subsRes, testsRes, problemsRes] = await Promise.all([
+        fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, { student_id: { $in: ids }, status: 'passed' }),
+        fetchData('tblPracticeTest', { student_id: 1, week: 1, day: 1, score: 1, completed_at: 1, created_at: 1 }, { student_id: { $in: ids }, deleted: { $ne: true } }),
+        fetchData('tblCodingProblem', { question_id: 1, week: 1, day: 1 }, { is_capstone: { $ne: true }, deleted: { $ne: true } }),
+    ]);
+
+    const dayKey = (w, d) => `${w}-${typeof d === 'number' && d >= 1 && d <= 5 ? 'day-' + d : String(d || '')}`;
+
+    // problem_id -> dayKey, and dayKey -> total daily problems (for the min(6,n) bar)
+    const dayKeyByProblemId = new Map();
+    const problemsByDay = new Map();
+    (problemsRes.data || []).forEach(p => {
+        const key = dayKey(p.week, p.day);
+        dayKeyByProblemId.set(p.question_id, key);
+        if (!problemsByDay.has(key)) problemsByDay.set(key, new Set());
+        problemsByDay.get(key).add(p.question_id);
+    });
+
+    // Passed submissions grouped by "studentId|dayKey" -> Set(problem_id)
+    const solvedByStudentDay = new Map();
+    (subsRes.data || []).forEach(s => {
+        const key = dayKeyByProblemId.get(s.problem_id);
+        if (!key) return;
+        const mapKey = `${String(s.student_id)}|${key}`;
+        if (!solvedByStudentDay.has(mapKey)) solvedByStudentDay.set(mapKey, new Set());
+        solvedByStudentDay.get(mapKey).add(s.problem_id);
+    });
+
+    // Latest practice-test attempt per "studentId|dayKey" (matches the student-facing rule)
+    const latestTestByStudentDay = new Map();
+    (testsRes.data || []).forEach(t => {
+        if (t.week == null || t.day == null) return;
+        const mapKey = `${String(t.student_id)}|${dayKey(t.week, t.day)}`;
+        const at = t.completed_at || t.created_at;
+        const cur = latestTestByStudentDay.get(mapKey);
+        if (!cur || (at && new Date(at) > new Date(cur.at))) latestTestByStudentDay.set(mapKey, { score: t.score, at });
+    });
+
+    const allKeys = new Set([...solvedByStudentDay.keys(), ...latestTestByStudentDay.keys()]);
+    for (const mapKey of allKeys) {
+        const sep = mapKey.indexOf('|');
+        const sid = mapKey.slice(0, sep);
+        const key = mapKey.slice(sep + 1);
+        if (!result.has(sid)) continue;
+
+        const solved = solvedByStudentDay.get(mapKey);
+        const totalForDay = problemsByDay.get(key)?.size || 0;
+        const requiredToPass = Math.min(6, totalForDay);
+        const codingDone = totalForDay > 0 && solved && solved.size >= requiredToPass;
+
+        const latestTest = latestTestByStudentDay.get(mapKey);
+        const aptitudeDone = !!latestTest && (latestTest.score || 0) >= 70;
+
+        if (codingDone || aptitudeDone) result.set(sid, result.get(sid) + 1);
+    }
+
+    return result;
+}
+
+/**
  * TPC and DeptTPC Controller
  * Handles data fetching for TPC and Department TPC roles
  */
 export default class tpcController {
 
-    /**
-     * Compute REAL "days completed" per student — the same rule the student-facing
-     * green completion ticks use: a day counts once >=6 of that day's daily coding
-     * problems are solved, OR the student's latest practice-test attempt for that
-     * day scored >=70%. A day counts once it meets EITHER track (a day is one
-     * syllabus unit, not two separate DSA/aptitude achievements).
-     *
-     * Replaces the old `progress.days_completed?.length || progress.total_days_completed`
-     * read, which was always 0 — neither field is ever written by any code path
-     * (confirmed against real data: both undefined/empty on every tblStudentProgress
-     * record). Batched across all requested students in 3 queries total — not N+1.
-     *
-     * @param {string[]} studentIds
-     * @returns {Promise<Map<string, number>>} student_id (string) -> days completed
-     */
+    /** Thin wrapper — see the standalone exported computeDaysCompletedByStudent above. */
     async computeDaysCompletedByStudent(studentIds) {
-        const result = new Map();
-        const ids = [...new Set((studentIds || []).filter(Boolean).map(String))];
-        for (const sid of ids) result.set(sid, 0);
-        if (ids.length === 0) return result;
-
-        const [subsRes, testsRes, problemsRes] = await Promise.all([
-            fetchData('tblCodingSubmissions', { student_id: 1, problem_id: 1 }, { student_id: { $in: ids }, status: 'passed' }),
-            fetchData('tblPracticeTest', { student_id: 1, week: 1, day: 1, score: 1, completed_at: 1, created_at: 1 }, { student_id: { $in: ids }, deleted: { $ne: true } }),
-            fetchData('tblCodingProblem', { question_id: 1, week: 1, day: 1 }, { is_capstone: { $ne: true }, deleted: { $ne: true } }),
-        ]);
-
-        const dayKey = (w, d) => `${w}-${typeof d === 'number' && d >= 1 && d <= 5 ? 'day-' + d : String(d || '')}`;
-
-        // problem_id -> dayKey, and dayKey -> total daily problems (for the min(6,n) bar)
-        const dayKeyByProblemId = new Map();
-        const problemsByDay = new Map();
-        (problemsRes.data || []).forEach(p => {
-            const key = dayKey(p.week, p.day);
-            dayKeyByProblemId.set(p.question_id, key);
-            if (!problemsByDay.has(key)) problemsByDay.set(key, new Set());
-            problemsByDay.get(key).add(p.question_id);
-        });
-
-        // Passed submissions grouped by "studentId|dayKey" -> Set(problem_id)
-        const solvedByStudentDay = new Map();
-        (subsRes.data || []).forEach(s => {
-            const key = dayKeyByProblemId.get(s.problem_id);
-            if (!key) return;
-            const mapKey = `${String(s.student_id)}|${key}`;
-            if (!solvedByStudentDay.has(mapKey)) solvedByStudentDay.set(mapKey, new Set());
-            solvedByStudentDay.get(mapKey).add(s.problem_id);
-        });
-
-        // Latest practice-test attempt per "studentId|dayKey" (matches the student-facing rule)
-        const latestTestByStudentDay = new Map();
-        (testsRes.data || []).forEach(t => {
-            if (t.week == null || t.day == null) return;
-            const mapKey = `${String(t.student_id)}|${dayKey(t.week, t.day)}`;
-            const at = t.completed_at || t.created_at;
-            const cur = latestTestByStudentDay.get(mapKey);
-            if (!cur || (at && new Date(at) > new Date(cur.at))) latestTestByStudentDay.set(mapKey, { score: t.score, at });
-        });
-
-        const allKeys = new Set([...solvedByStudentDay.keys(), ...latestTestByStudentDay.keys()]);
-        for (const mapKey of allKeys) {
-            const sep = mapKey.indexOf('|');
-            const sid = mapKey.slice(0, sep);
-            const key = mapKey.slice(sep + 1);
-            if (!result.has(sid)) continue;
-
-            const solved = solvedByStudentDay.get(mapKey);
-            const totalForDay = problemsByDay.get(key)?.size || 0;
-            const requiredToPass = Math.min(6, totalForDay);
-            const codingDone = totalForDay > 0 && solved && solved.size >= requiredToPass;
-
-            const latestTest = latestTestByStudentDay.get(mapKey);
-            const aptitudeDone = !!latestTest && (latestTest.score || 0) >= 70;
-
-            if (codingDone || aptitudeDone) result.set(sid, result.get(sid) + 1);
-        }
-
-        return result;
+        return computeDaysCompletedByStudent(studentIds);
     }
 
     /**
@@ -4489,6 +4498,10 @@ export default class tpcController {
                         daysCompleted: daysCompletedByStudent.get(sid) || 0,
                         weeksCompleted: weeksCompleted,
                         testsCompleted: progress?.practice_test_scores?.length || studentTests.length || 0,
+                        // Distinct (week, day) practice-test slots attempted — used for a real
+                        // Completion Rate. Different from testsCompleted, which counts every
+                        // attempt including retries on the same day.
+                        uniqueTestDaysAttempted: uniqueTestsTaken.size,
                         lastActivityDate: lastActivityDate,
                         scoreTrend: scoreTrend,
                         dsaAverage: dsaAverage,

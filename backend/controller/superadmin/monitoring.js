@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { fetchData, getDB } from '../../methods.js';
+import { computeDaysCompletedByStudent } from '../tpc.js';
 
 /**
  * Superadmin Monitoring — cross-college practice (aptitude) and coding visibility.
@@ -94,7 +95,7 @@ async function resolveStudents({ collegeId, departmentId, search }) {
     }
 
     const res = await fetchData('tblPersonMaster',
-        { person_name: 1, person_email: 1, person_collage_id: 1, department: 1, enrollment_number: 1, last_login: 1 },
+        { person_name: 1, person_email: 1, person_collage_id: 1, department: 1, enrollment_number: 1, last_login: 1, created_at: 1, person_status: 1 },
         filter, { sort: { person_name: 1 } });
     const students = res.data || [];
 
@@ -110,6 +111,8 @@ async function resolveStudents({ collegeId, departmentId, search }) {
             college: collegeNameById.get(String(s.person_collage_id)) || '—',
             department: (s.department || '').trim() || '—',
             lastLogin: s.last_login || null,
+            registeredAt: s.created_at || null,
+            status: s.person_status || 'active',
         });
     }
     return { studentIds: students.map(s => String(s._id)), byId };
@@ -384,7 +387,7 @@ class MonitoringController {
             const { collegeId, departmentId, dateFrom, dateTo, search } = req.body || {};
             const { studentIds, byId } = await resolveStudents({ collegeId, departmentId, search });
 
-            const emptyOverall = { totalStudents: 0, activeStudents: 0, avgAptitude: 0, aptitudeTests: 0, codingSolved: 0, codingAttempts: 0 };
+            const emptyOverall = { totalStudents: 0, activeStudents: 0, avgAptitude: 0, aptitudeTests: 0, aptitudePassed: 0, aptitudeFailed: 0, aptitudeTimeSpentMinutes: 0, codingSolved: 0, codingAttempts: 0, codingFailed: 0, daysCompleted: 0, bugReportsSubmitted: 0 };
             if (studentIds.length === 0) {
                 res.locals.responseData = { success: true, status: 200, message: 'No students match', data: { generatedAt: new Date().toISOString(), summary: { overall: emptyOverall, byCollege: [], byDepartment: [], weeklyTrend: [] }, students: [] } };
                 return next();
@@ -397,7 +400,7 @@ class MonitoringController {
                 if (dateFrom) ptFilter.completed_at.$gte = new Date(dateFrom);
                 if (dateTo) ptFilter.completed_at.$lte = new Date(dateTo + 'T23:59:59.999Z');
             }
-            const ptRes = await fetchData('tblPracticeTest', { student_id: 1, week: 1, score: 1, completed_at: 1 }, ptFilter, {});
+            const ptRes = await fetchData('tblPracticeTest', { student_id: 1, week: 1, day: 1, score: 1, time_spent: 1, completed_at: 1 }, ptFilter, {});
             const practiceTests = ptRes.data || [];
 
             // Coding submissions (optionally date-bounded on submitted_at)
@@ -473,19 +476,56 @@ class MonitoringController {
                 }
             }
 
+            // Resolve week for EVERY coding submission (not just the "winning" ones used
+            // for last-activity above) so weeksCompleted can include coding-only weeks —
+            // reuses the same weekByProblemId/parseWeekFromId the Weekly Trend section
+            // further down also needs, computed once here and shared by both.
+            const subProblemIds = [...new Set(submissions.map(s => s.problem_id).filter(Boolean))];
+            const [trendCpRes, trendTqRes] = subProblemIds.length
+                ? await Promise.all([
+                    fetchData('tblCodingProblem', { question_id: 1, week: 1 }, { question_id: { $in: subProblemIds } }),
+                    fetchData('tblQuestion', { question_id: 1, week: 1 }, { question_id: { $in: subProblemIds }, question_type: 'coding' }),
+                ])
+                : [{ data: [] }, { data: [] }];
+            const weekByProblemId = new Map();
+            (trendCpRes.data || []).forEach(p => weekByProblemId.set(p.question_id, p.week));
+            (trendTqRes.data || []).forEach(p => { if (!weekByProblemId.has(p.question_id)) weekByProblemId.set(p.question_id, p.week); });
+            const parseWeekFromId = (pid) => { const m = /^W(\d+)_/i.exec(String(pid || '')); return m ? parseInt(m[1], 10) : null; };
+
+            // Real days-completed count — same rule as the student-facing green ticks
+            // (>=6 daily coding problems solved OR a day's aptitude test >=70%).
+            const daysCompletedByStudent = await computeDaysCompletedByStudent(studentIds);
+
+            // Bug reports submitted per student (Students + DeptTPC can both file these,
+            // but this report is student-scoped so filtering by reporter_id is enough).
+            const bugRes = await fetchData('tblBugReport', { reporter_id: 1 }, { reporter_id: { $in: studentIds } }, {});
+            const bugCountBySid = new Map();
+            (bugRes.data || []).forEach(b => { const sid = String(b.reporter_id); bugCountBySid.set(sid, (bugCountBySid.get(sid) || 0) + 1); });
+
+            // Aptitude pass/fail bar matches the app's established day-completion
+            // threshold (>=70%) so it's consistent with every other pass/fail signal
+            // already shown elsewhere (green ticks, weekly-test eligibility).
+            const APTITUDE_PASS_SCORE = 70;
+
             // Per-student aggregation
             const agg = new Map();
-            for (const sid of studentIds) agg.set(sid, { aptScores: [], codingAttempts: 0, codingSolved: new Set() });
+            for (const sid of studentIds) agg.set(sid, { aptScores: [], aptTimeSpentSec: 0, aptPassed: 0, aptFailed: 0, codingAttempts: 0, codingSolved: new Set(), codingFailed: 0, weeksTouched: new Set() });
             for (const t of practiceTests) {
                 const a = agg.get(String(t.student_id));
                 if (!a) continue;
                 a.aptScores.push(t.score || 0);
+                a.aptTimeSpentSec += (t.time_spent || 0);
+                if ((t.score || 0) >= APTITUDE_PASS_SCORE) a.aptPassed++; else a.aptFailed++;
+                if (t.week != null) a.weeksTouched.add(t.week);
             }
             for (const s of submissions) {
                 const a = agg.get(String(s.student_id));
                 if (!a) continue;
                 a.codingAttempts++;
                 if (s.status === 'passed') a.codingSolved.add(s.problem_id);
+                else a.codingFailed++;
+                const w = weekByProblemId.get(s.problem_id) ?? parseWeekFromId(s.problem_id);
+                if (w != null) a.weeksTouched.add(w);
             }
 
             const students = studentIds.map(sid => {
@@ -503,11 +543,20 @@ class MonitoringController {
                     enrollment: info.enrollment || '',
                     college: info.college || '—',
                     department: info.department || '—',
+                    status: info.status || 'active',
+                    registeredAt: info.registeredAt || null,
                     avgAptitude,
                     aptitudeTests: aptTests,
+                    aptitudePassed: a.aptPassed,
+                    aptitudeFailed: a.aptFailed,
+                    aptitudeTimeSpentMinutes: Math.round(a.aptTimeSpentSec / 60),
                     activeDaysRecent,
                     codingSolved: a.codingSolved.size,
                     codingAttempts: a.codingAttempts,
+                    codingFailed: a.codingFailed,
+                    daysCompleted: daysCompletedByStudent.get(sid) || 0,
+                    weeksCompleted: a.weeksTouched.size,
+                    bugReportsSubmitted: bugCountBySid.get(sid) || 0,
                     active,
                     lastLogin: info.lastLogin || null,
                     lastActivity: lastActivityBySid.get(sid) || null,
@@ -520,8 +569,14 @@ class MonitoringController {
                 activeStudents: students.filter(s => s.active).length,
                 avgAptitude: aptStudents.length ? Math.round(aptStudents.reduce((a, s) => a + s.avgAptitude, 0) / aptStudents.length) : 0,
                 aptitudeTests: students.reduce((a, s) => a + s.aptitudeTests, 0),
+                aptitudePassed: students.reduce((a, s) => a + s.aptitudePassed, 0),
+                aptitudeFailed: students.reduce((a, s) => a + s.aptitudeFailed, 0),
+                aptitudeTimeSpentMinutes: students.reduce((a, s) => a + s.aptitudeTimeSpentMinutes, 0),
                 codingSolved: students.reduce((a, s) => a + s.codingSolved, 0),
                 codingAttempts: students.reduce((a, s) => a + s.codingAttempts, 0),
+                codingFailed: students.reduce((a, s) => a + s.codingFailed, 0),
+                daysCompleted: students.reduce((a, s) => a + s.daysCompleted, 0),
+                bugReportsSubmitted: students.reduce((a, s) => a + s.bugReportsSubmitted, 0),
             };
 
             // Per-college rollup
@@ -558,21 +613,8 @@ class MonitoringController {
                 codingSolved: d.codingSolved,
             })).sort((a, b) => b.students - a.students);
 
-            // Weekly completion trend — resolve a week for every coding submission in the
-            // filtered set (tblCodingSubmissions itself has no week field), then combine
-            // with the (now week-projected) practice tests to show pace week over week.
-            const subProblemIds = [...new Set(submissions.map(s => s.problem_id).filter(Boolean))];
-            const [trendCpRes, trendTqRes] = subProblemIds.length
-                ? await Promise.all([
-                    fetchData('tblCodingProblem', { question_id: 1, week: 1 }, { question_id: { $in: subProblemIds } }),
-                    fetchData('tblQuestion', { question_id: 1, week: 1 }, { question_id: { $in: subProblemIds }, question_type: 'coding' }),
-                ])
-                : [{ data: [] }, { data: [] }];
-            const weekByProblemId = new Map();
-            (trendCpRes.data || []).forEach(p => weekByProblemId.set(p.question_id, p.week));
-            (trendTqRes.data || []).forEach(p => { if (!weekByProblemId.has(p.question_id)) weekByProblemId.set(p.question_id, p.week); });
-            const parseWeekFromId = (pid) => { const m = /^W(\d+)_/i.exec(String(pid || '')); return m ? parseInt(m[1], 10) : null; };
-
+            // Weekly completion trend — reuses weekByProblemId/parseWeekFromId, already
+            // resolved above (shared with the per-student weeksCompleted computation).
             const weekMap = new Map();
             const weekBucket = (wk) => {
                 if (!weekMap.has(wk)) weekMap.set(wk, { aptScores: [], aptStudents: new Set(), codingSolvedSet: new Set(), codingAttempts: 0, codingStudents: new Set() });

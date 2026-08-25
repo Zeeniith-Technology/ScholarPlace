@@ -151,13 +151,19 @@ export default function DepartmentTPCReportsPage() {
     if (reportType === 'performance' && reportData.students) {
       // Performance Report: Single Summary Sheet
 
-      // Calculate max tests for completion rate
-      const maxTests = Math.max(...reportData.students.map((s: any) => s.testsCompleted || 0))
+      // Total daily aptitude practice-test slots in the syllabus: 6 weeks x 5 days
+      // (verified against the actual study-page structure and question bank; the
+      // weekly test, day "7" in the question bank, is a separate pass/fair gate
+      // tracked independently and intentionally excluded here).
+      // Completion Rate was previously relative to whichever student had taken the
+      // most tests — meaning a student who took just ONE test could show 100% if
+      // nobody in the department had taken more. Now it's an absolute % of the real
+      // curriculum, using unique days attempted (not raw attempts, so retries on the
+      // same day don't inflate it).
+      const TOTAL_APTITUDE_TEST_DAYS = 30
 
       const summaryData = reportData.students.map((student: any) => {
-        const completionRate = maxTests > 0
-          ? Math.round(((student.testsCompleted || 0) / maxTests) * 100)
-          : 0
+        const completionRate = Math.min(100, Math.round(((student.uniqueTestDaysAttempted || 0) / TOTAL_APTITUDE_TEST_DAYS) * 100))
 
         return {
           'Name': student.name || '',
