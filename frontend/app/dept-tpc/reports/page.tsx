@@ -847,6 +847,9 @@ export default function DepartmentTPCReportsPage() {
                           <th className="text-right py-2 px-3 text-neutral-light font-medium">Avg Score</th>
                           <th className="text-right py-2 px-3 text-neutral-light font-medium">Days</th>
                           <th className="text-right py-2 px-3 text-neutral-light font-medium">Tests</th>
+                          <th className="text-right py-2 px-3 text-neutral-light font-medium">DSA Avg</th>
+                          <th className="text-right py-2 px-3 text-neutral-light font-medium">Coding Solved</th>
+                          <th className="text-right py-2 px-3 text-neutral-light font-medium">Coding Attempts</th>
                           <th className="text-left py-2 px-3 text-neutral-light font-medium">Status</th>
                         </tr>
                       </thead>
@@ -865,7 +868,7 @@ export default function DepartmentTPCReportsPage() {
                           if (filteredStudents.length === 0) {
                             return (
                               <tr>
-                                <td colSpan={7} className="py-8 text-center text-neutral-light">
+                                <td colSpan={10} className="py-8 text-center text-neutral-light">
                                   {searchTerm
                                     ? `No students found matching "${searchTerm}"`
                                     : 'No students in your department for this report.'
@@ -879,7 +882,7 @@ export default function DepartmentTPCReportsPage() {
                             <>
                               {searchTerm && (
                                 <tr>
-                                  <td colSpan={7} className="py-2 px-3 text-sm text-primary">
+                                  <td colSpan={10} className="py-2 px-3 text-sm text-primary">
                                     Showing {filteredStudents.length} of {reportData.students.length} students
                                   </td>
                                 </tr>
@@ -901,6 +904,15 @@ export default function DepartmentTPCReportsPage() {
                                   </td>
                                   <td className="py-2 px-3 text-right text-neutral-light">{student.daysCompleted}</td>
                                   <td className="py-2 px-3 text-right text-neutral-light">{student.testsCompleted}</td>
+                                  <td className="py-2 px-3 text-right">
+                                    {student.dsaAverage ? (
+                                      <span className={`font-semibold ${student.dsaAverage >= 70 ? 'text-green-500' : student.dsaAverage >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                        {student.dsaAverage}%
+                                      </span>
+                                    ) : <span className="text-neutral-light">—</span>}
+                                  </td>
+                                  <td className="py-2 px-3 text-right text-neutral-light">{student.codingSolved || 0}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-light">{student.codingAttempts || 0}</td>
                                   <td className="py-2 px-3">
                                     <Badge
                                       variant={student.status === 'active' ? 'success' : 'secondary'}
