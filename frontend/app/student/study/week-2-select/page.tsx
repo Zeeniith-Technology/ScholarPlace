@@ -151,9 +151,9 @@ export default function Week2SelectionPage() {
                     {/* Highlights */}
                     <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {option.highlights.map((h) => (
-                        <div key={h} className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">
+                        <div key={h} className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">
                           <CheckCircle2 className={cn('w-4 h-4 flex-shrink-0', option.tone.iconColor)} />
-                          <span className="truncate">{h}</span>
+                          <span className="leading-snug">{h}</span>
                         </div>
                       ))}
                     </div>

@@ -221,6 +221,35 @@ export default class syllabuscontroller {
             const __dirname = path.dirname(__filename)
 
             // Determine file path based on week
+            // Weeks 7-8 are consolidation weeks — deliberately no theory. There is
+            // no markdown for them, so without this the request 404s and the page
+            // shows a "content will be loaded here" placeholder that reads as
+            // broken. Return a short note explaining the week instead, so the
+            // absence of theory is clearly intentional.
+            if (weekNum === 7 || weekNum === 8) {
+                const dayNum = parseInt(String(dayParam).replace('day-', '')) || 1
+                const label = weekNum === 7 ? 'Revision & Mock Practice' : 'Final Preparation'
+                res.locals.responseData = {
+                    success: true,
+                    status: 200,
+                    message: `Week ${weekNum} content fetched successfully`,
+                    data: {
+                        day: `Day ${dayNum}`,
+                        title: `Week ${weekNum} — ${label}`,
+                        topics: [],
+                        learning_outcomes: [],
+                        key_concepts: [],
+                        content: `## Week ${weekNum} — ${label}\n\n` +
+                            `This is a consolidation week: **no new theory**.\n\n` +
+                            `Today's practice is below — work through the **12 coding problems** for Day ${dayNum} ` +
+                            `(4 easy, 4 medium, 4 hard).\n\n` +
+                            `For aptitude, use the **Aptitude — Daily Practice** track (50 questions per day).\n\n` +
+                            `To complete Week ${weekNum} you must pass the **weekly test (75%)** and clear the **capstone**.`,
+                    },
+                }
+                return next()
+            }
+
             // Week 4 is split into two files: Part 1 (Day 1) and Part 2 (Days 2-5)
             let filePath
             if (weekNum === 1) {
@@ -646,6 +675,59 @@ export default class syllabuscontroller {
             }
             next()
         }
+    }
+
+    /**
+     * Weeks 7-8 aptitude content.
+     *
+     * These are consolidation weeks — no theory, and no Product_Syllabus markdown
+     * exists for them. They still need a content endpoint so their aptitude pages
+     * can use the same sidebar/day layout as weeks 1-6 rather than a bare card;
+     * this returns a short revision note in the same shape the parsers produce.
+     */
+    async getAptitudeRevisionWeekContent(req, res, next, weekNum) {
+        try {
+            const { day } = req.body || {}
+            const dayNum = parseInt(String(day || 'day-1').replace('day-', '')) || 1
+            const label = weekNum === 7 ? 'Revision & Mock Practice' : 'Final Preparation'
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: `Week ${weekNum} Aptitude content fetched successfully`,
+                data: {
+                    day: `Day ${dayNum}`,
+                    title: `Practice Set ${dayNum} — mixed aptitude`,
+                    topics: [],
+                    learning_outcomes: [],
+                    key_concepts: [],
+                    content: `## Week ${weekNum} Aptitude — ${label}\n\n` +
+                        `This is a consolidation week: **no new theory**.\n\n` +
+                        `Day ${dayNum} is a **50-question mixed set** covering ` +
+                        `percentages, ratio & proportion, time-speed-distance, time & work, ` +
+                        `profit & loss, and interest.\n\n` +
+                        `Use **Take Practice Test** below to begin. Work through all five days, then sit the ` +
+                        `**Week ${weekNum} aptitude test** — you need **75%** to complete the week.`,
+                }
+            }
+            next()
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Failed to fetch aptitude content',
+                error: error.message
+            }
+            next()
+        }
+    }
+
+    async getAptitudeWeek7Content(req, res, next) {
+        return this.getAptitudeRevisionWeekContent(req, res, next, 7)
+    }
+
+    async getAptitudeWeek8Content(req, res, next) {
+        return this.getAptitudeRevisionWeekContent(req, res, next, 8)
     }
 }
 

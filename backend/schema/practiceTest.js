@@ -38,7 +38,20 @@ export default {
         required: true,
         min: 0,
         max: 100
-        // Percentage score
+        // Percentage score — computed on the SERVER from the student's selections
+        // against tblQuestion. Never trust a score sent by the client.
+    },
+    graded_by: {
+        type: String,
+        default: 'server',
+        enum: ['server', 'client']
+        // 'client' means the server could not re-grade the attempt (unrecognised
+        // question ids) and fell back to the submitted number — such rows are not
+        // verified results and should be treated as such in reporting.
+    },
+    client_reported_score: {
+        type: Number
+        // What the browser claimed, kept for comparison/audit against `score`.
     },
     total_questions: {
         type: Number,

@@ -17,11 +17,13 @@ import {
 import { cn } from '@/lib/utils'
 
 /**
- * Week 1 Selection Page
- * Allows students to choose between DSA and Aptitude for Week 1
- * Route: /student/study/week-1-select
+ * Week 8 Selection Page
+ * Week 8 is a consolidation week — no daily lessons. Students choose between the
+ * mixed mock test and the coding capstone, which together complete the week
+ * (capstone done AND weekly test >= 75%).
+ * Route: /student/study/week-8-select
  */
-export default function Week1SelectionPage() {
+export default function Week8SelectionPage() {
   const router = useRouter()
   // Changed state to array to allow independent toggling
   const [expandedIds, setExpandedIds] = useState<string[]>([])
@@ -29,10 +31,11 @@ export default function Week1SelectionPage() {
   const options = useMemo(() => ([
     {
       id: 'dsa' as const,
-      title: 'Data Structures & Algorithms',
-      description: 'Build your coding foundation with day-wise learning + practice.',
+      title: 'DSA — Final Practice',
+      description: 'Five days of coding practice, then the final capstone.',
       icon: Code,
-      route: '/student/study/week-1?day=pre-week',
+      route: '/student/study/8?day=day-1',
+      comingSoon: false,
       tone: {
         border: 'border-blue-200',
         ring: 'ring-blue-100',
@@ -41,22 +44,21 @@ export default function Week1SelectionPage() {
         button: 'bg-blue-600 hover:bg-blue-700',
         chip: 'bg-blue-100 text-blue-700 border-blue-200',
       },
-      highlights: ['Coding fundamentals', 'Day-wise content', 'Practice tests'],
+      highlights: ["12 problems a day", "Easy to Hard mix", "All newly written"],
       outline: [
-        'PRE-WEEK: I/O Basics',
-        'Day 1: Data Types & Variables',
-        'Day 2: Operators & Decision Making',
-        'Day 3: Loops & Patterns',
-        'Day 4: Arrays (DSA Foundation)',
-        'Day 5: Functions (Basics)',
+        'Day 1-5: 12 coding problems each',
+        'Newly written for this week',
+        '4 Easy, 4 Medium, 4 Hard per day',
+        'Capstone: Minimum Platforms + Coin Change',
+        'Capstone must pass to finish the programme',
       ],
     },
     {
       id: 'aptitude' as const,
-      title: 'Quantitative Aptitude',
-      description: 'Strengthen problem-solving with math concepts used in placements.',
+      title: 'Aptitude — Final Practice',
+      description: 'Five days of revision, then the placement simulation.',
       icon: Calculator,
-      route: '/student/study/aptitude-week-1?day=day-1',
+      route: '/student/study/aptitude-week-8?day=day-1',
       tone: {
         border: 'border-orange-200',
         ring: 'ring-orange-100',
@@ -65,13 +67,13 @@ export default function Week1SelectionPage() {
         button: 'bg-orange-600 hover:bg-orange-700',
         chip: 'bg-orange-100 text-orange-700 border-orange-200',
       },
-      highlights: ['Fast calculations', 'Concept clarity', 'Daily practice'],
+      highlights: ["50 questions a day", "All six areas", "Final simulation"],
       outline: [
-        'Day 1: Integers – Understanding Numbers',
-        'Day 2: Factors – Breaking Numbers',
-        'Day 3: Divisibility – Checking Without Division',
-        'Day 4: HCF & LCM – Sharing and Grouping',
-        'Day 5: BODMAS/VBODMAS – Calculation Rules',
+        'Day 1-5: 50 questions each',
+        'Mixed topics across all six areas',
+        'Scored on submission',
+        'Final simulation: 50 questions',
+        'Pass mark 75% to finish the programme',
       ],
     },
   ]), [])
@@ -95,7 +97,7 @@ export default function Week1SelectionPage() {
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 leading-tight">
-                  Week 1 Learning
+                  Week 8 Final Simulation
                 </h1>
                 <p className="text-sm sm:text-base text-gray-600 mt-1">
                   Choose your track. You can switch anytime.
@@ -137,13 +139,18 @@ export default function Week1SelectionPage() {
 
                         <div className="flex flex-wrap gap-2 mt-4">
                           <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium border', option.tone.chip)}>
-                            Week 1
+                            Week 8
+                          </span>
+                          {option.comingSoon && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50">
+                              Coming soon
+                            </span>
+                          )}
+                          <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-gray-300 text-gray-600 bg-gray-50">
+                            {option.id === 'dsa' ? '60 problems' : '250 questions'}
                           </span>
                           <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-gray-300 text-gray-600 bg-gray-50">
-                            5 days
-                          </span>
-                          <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-gray-300 text-gray-600 bg-gray-50">
-                            Beginner-friendly
+                            Daily practice
                           </span>
                         </div>
                       </div>
@@ -203,16 +210,19 @@ export default function Week1SelectionPage() {
                       <button
                         className={cn(
                           'flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:shadow-md shadow-sm',
-                          option.tone.button
+                          option.comingSoon ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : option.tone.button
                         )}
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          router.push(option.route)
+                          if (!option.comingSoon) {
+                            router.push(option.route)
+                          }
                         }}
+                        disabled={option.comingSoon}
                       >
-                        <span>Start</span>
-                        <ArrowRight className="w-5 h-5" />
+                        <span>{option.comingSoon ? 'Coming soon' : 'Start'}</span>
+                        {!option.comingSoon && <ArrowRight className="w-5 h-5" />}
                       </button>
                       <button
                         type="button"

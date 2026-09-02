@@ -43,7 +43,11 @@ export function arrayToCSV(data: any[], headers?: string[]): string {
  * Download CSV file
  */
 export function downloadCSV(csvContent: string, filename: string = 'export.csv') {
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  // Excel ignores the charset in the MIME type when opening a local .csv and
+  // falls back to the system ANSI codepage, which mangles any non-ASCII text
+  // (an em-dash "—" arrives as "â€""). A leading UTF-8 BOM is what actually
+  // tells Excel the file is UTF-8. Harmless in other tools, which skip it.
+  const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
 

@@ -136,27 +136,31 @@ const FULL_SYLLABUS: Array<{
       tests: 1,
       duration: "14-16 Hours"
     },
+    // Weeks 7-8 are consolidation weeks, not new-topic weeks — this matches the
+    // authoritative tblSyllabus records ("Mock Tests & Practice" and "Final
+    // Preparation & Placement Simulation") and the content actually seeded:
+    // 2 capstone problems and a 50-question mixed revision test per week.
+    // (These entries previously described a "Graphs & Reasoning" syllabus that
+    // never existed in the database and was never built.)
     {
       week: 7,
-      title: "DSA & Aptitude Prep - II",
+      title: "Mock Tests & Practice",
       track: "DSA & Aptitude",
-      modules: ["Graphs & Reasoning"],
-      topics: ["Introduction to Graphs", "BFS & DFS", "Connected Components", "Blood Relations", "Coding-Decoding", "Direction Sense", "Seating Arrangement"],
-      assignments: 5,
+      modules: ["Mock Tests", "Error Analysis", "Re-practice & Revision"],
+      topics: ["Full-length mixed aptitude mock", "Detailed error analysis", "Targeted re-practice of weak areas", "Revision across Weeks 1-6", "Integrated coding capstone"],
+      assignments: 2,
       tests: 1,
-      duration: "14-16 Hours",
-      isComingSoon: true
+      duration: "10-12 Hours",
     },
     {
       week: 8,
-      title: "Final Preparation",
+      title: "Final Preparation & Placement Simulation",
       track: "DSA & Aptitude",
-      modules: [],
-      topics: ["Mock Tests", "Comprehensive DSA Revision", "Verbal Ability: Reading Comprehension", "Sentence Correction", "System Design Basics"],
-      assignments: 5,
-      tests: 2,
-      duration: "15-18 Hours",
-      isComingSoon: true
+      modules: ["Placement Simulation", "Weak-topic Drills", "Readiness Report"],
+      topics: ["Final placement simulation", "Weak-topic drills", "Shortcut & time-management practice", "Comprehensive revision", "Readiness report & certification"],
+      assignments: 2,
+      tests: 1,
+      duration: "10-12 Hours",
     }
   ]
 

@@ -6,10 +6,100 @@ import { getCollegeAndDepartmentForStudent, getTenantFromUser, buildPersonMaster
 import testAnalysisSchema from '../schema/testAnalysis.js';
 import studentProgressController from './studentProgress.js';
 
+// studentProgress.js default-exports a CLASS, and checkAndMarkWeekCompletion is
+// an instance method — calling it on the class threw
+// "studentProgressController.checkAndMarkWeekCompletion is not a function",
+// silently swallowed by the catch below. Effect: passing a weekly test never
+// auto-completed the week. router.js instantiates it the same way.
+const studentProgressInstance = new studentProgressController();
+
 /** Remove markdown asterisks from AI text */
 function stripAsterisks(s) {
     if (typeof s !== 'string') return s || '';
     return s.replace(/\*\*([^*]*)\*\*/g, '$1').replace(/\*([^*]*)\*/g, '$1').replace(/\*+/g, '').replace(/\*/g, '');
+}
+
+/**
+ * Re-grade a submitted attempt on the server, against the answers in tblQuestion.
+ *
+ * Why this exists: the browser used to compute the score and POST it, and it was
+ * stored verbatim — so any score could be submitted, and week completion (and
+ * therefore certification) keyed off that number. Nothing about a score was
+ * verifiable. This recomputes it from the student's actual selections.
+ *
+ * The denominator is taken from the question bank (how many questions that
+ * week/day actually has), not from the client's list — otherwise a client could
+ * submit only the questions it got right and still report 100%.
+ *
+ * Returns null when it cannot grade (no recognisable question ids), so the
+ * caller can fall back rather than record a bogus 0.
+ */
+async function gradeAttempt({ questionsAttempted, week, day }) {
+    const attempted = Array.isArray(questionsAttempted) ? questionsAttempted : [];
+    const ids = [...new Set(attempted.map(a => a?.question_id).filter(Boolean))];
+    if (!ids.length) return null;
+
+    const qRes = await fetchData(
+        'tblQuestion',
+        { question_id: 1, correct_answer: 1, options: 1, explanation: 1 },
+        { question_id: { $in: ids } }
+    );
+    const byId = new Map((qRes.data || []).map(q => [q.question_id, q]));
+    if (!byId.size) return null; // ids didn't match the bank — don't fabricate a score
+
+    let correct = 0;
+    const regraded = attempted.map(a => {
+        const q = byId.get(a?.question_id);
+        if (!q) return { ...a, graded: false };
+
+        const correctKey = q.correct_answer;
+        const correctText = (q.options || []).find(o => o.key === correctKey)?.text;
+        // Clients send the option text; newer ones may send the key. Accept either,
+        // but compare against the bank — never against anything the client asserted.
+        const selected = a?.selected_option_key ?? a?.selected_answer;
+        const isCorrect = selected != null && selected !== '' &&
+            (String(selected) === String(correctKey) ||
+                (correctText != null && String(selected) === String(correctText)));
+        if (isCorrect) correct++;
+        return {
+            ...a,
+            is_correct: isCorrect,
+            correct_answer: correctKey,
+            correct_answer_text: correctText ?? '',
+            explanation: q.explanation || '',
+            graded: true,
+        };
+    });
+
+    // Authoritative denominator: the real size of that week/day's question set.
+    //
+    // The student pages post `day` as the STRING 'day-3', not the number 3, so
+    // Number(day) is NaN and { day: NaN } matches no document. That silently
+    // dropped the denominator back to the client's own list length — the exact
+    // hole this is meant to close. Parse the numeric part instead, and only
+    // query when we actually have a day number.
+    let total = 0;
+    try {
+        const db = getDB();
+        const dayNum = Number(String(day).replace(/^day-/i, ''));
+        const bankFilter = day === 'weekly-test'
+            ? { week: Number(week), tags: 'weekly-aptitude-test', status: 'active', deleted: { $ne: true } }
+            : Number.isFinite(dayNum)
+                ? { week: Number(week), day: dayNum, category: 'aptitude', status: 'active', deleted: { $ne: true } }
+                : null;
+        if (bankFilter) total = await db.collection('tblQuestion').countDocuments(bankFilter);
+    } catch (_) { /* fall through to the attempted count */ }
+    if (!total) total = attempted.length;
+    // Never let the denominator shrink below what was actually answered.
+    if (attempted.length > total) total = attempted.length;
+
+    return {
+        score: total > 0 ? Math.round((correct / total) * 100) : 0,
+        correct,
+        incorrect: Math.max(0, total - correct),
+        total,
+        questions: regraded,
+    };
 }
 
 export default class practiceTestController {
@@ -37,6 +127,14 @@ export default class practiceTestController {
             const weekNum = parseInt(week, 10);
             const weekFilter = Number.isNaN(weekNum) ? week : { $in: [weekNum, String(weekNum)] };
             const weekStored = Number.isNaN(weekNum) ? week : weekNum;
+
+            // ── Authoritative server-side grading ──────────────────────────────
+            // The score used to be computed in the browser and stored verbatim, so
+            // any value could be POSTed — and week completion (>=75% weekly test),
+            // which gates certification, keyed off it. We now re-grade from the
+            // student's actual selections against the answers in tblQuestion and
+            // store OUR number, ignoring whatever the client claimed.
+            const graded = await gradeAttempt({ questionsAttempted, week: weekStored, day });
 
             // Check if a document already exists for this student, week, and day
             const existingTest = await fetchData(
@@ -74,12 +172,17 @@ export default class practiceTestController {
                 day: day,
                 category: category || 'Aptitude', // Default to Aptitude if not provided
                 attempt: attemptNumber,
-                score: score,
-                total_questions: totalQuestions || questionsAttempted?.length || 0,
-                correct_answers: correctAnswers || 0,
-                incorrect_answers: incorrectAnswers || 0,
+                // Server-graded values win. The client's numbers are only used when
+                // grading was not possible (unrecognised question ids), and that case
+                // is recorded via graded_by so reports can tell them apart.
+                score: graded ? graded.score : score,
+                total_questions: graded ? graded.total : (totalQuestions || questionsAttempted?.length || 0),
+                correct_answers: graded ? graded.correct : (correctAnswers || 0),
+                incorrect_answers: graded ? graded.incorrect : (incorrectAnswers || 0),
+                graded_by: graded ? 'server' : 'client',
+                client_reported_score: score,
                 time_spent: timeSpent || 0, // in minutes
-                questions_attempted: questionsAttempted || [],
+                questions_attempted: graded ? graded.questions : (questionsAttempted || []),
                 started_at: new Date(),
                 completed_at: new Date(),
                 status: 'completed',
@@ -124,12 +227,14 @@ export default class practiceTestController {
             if (response.success) {
                 const testId = (isUpdate ? existingDocumentId : (response.data?.insertedId || response.data?._id))?.toString?.();
 
-                // Check if this is a passing weekly aptitude test and if it completes the week
-                // Using loose check for week/score to be safe
-                if (day === 'weekly-test' && (testData.score >= 75 || score >= 75)) {
+                // Check if this is a passing weekly aptitude test and if it completes the week.
+                // Gate strictly on the STORED (server-graded) score — the previous
+                // `|| score >= 75` fallback let the client's own claimed score unlock
+                // week completion, and therefore certification.
+                if (day === 'weekly-test' && testData.score >= 75) {
                     try {
                         console.log(`[PracticeTest] Weekly test passed for Week ${week}. Checking week completion...`);
-                        await studentProgressController.checkAndMarkWeekCompletion(userId, week, req);
+                        await studentProgressInstance.checkAndMarkWeekCompletion(userId, week, req);
                     } catch (err) {
                         console.error('[PracticeTest] Error auto-completing week:', err);
                     }

@@ -27,6 +27,9 @@ import { WeeklyFeedbackModal } from '@/components/feedback/WeeklyFeedbackModal'
  * Includes a mandatory weekly feedback column (FEEDBACK) after the STATUS column.
  * Route: /student/study
  */
+/** Length of the programme. Weeks 7-8 are consolidation weeks (mock + capstone). */
+const TOTAL_PROGRAMME_WEEKS = 8
+
 export default function LearningPage() {
   const router = useRouter()
   const [isMounted, setIsMounted] = useState(false)
@@ -157,9 +160,22 @@ export default function LearningPage() {
 
   const isWeekUnlocked = (weekNumber: number) => {
     if (weekNumber === 1) return true
+
+    // Local/dev convenience: NEXT_PUBLIC_TEST_MODE opens every week so the whole
+    // programme can be walked without first completing it. The cap used to be
+    // `<= 6`, dating from when weeks 7-8 had no content — which left those two
+    // showing as Locked in local testing while 1-6 were all open. It now covers
+    // the full programme so local behaviour is consistent across all 8 weeks.
+    //
+    // This is inert in production: NEXT_PUBLIC_* values are inlined at build
+    // time, and the variable is not set in the production environment, so the
+    // expression is `undefined === 'true'` → false and the branch never runs.
+    // Real gating below is unaffected either way, and the backend enforces the
+    // weekly-feedback requirement independently of anything decided here.
     const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true'
-    if (isTestMode && weekNumber <= 6) return true
-    
+    if (isTestMode && weekNumber <= TOTAL_PROGRAMME_WEEKS) return true
+
+
     // Check if previous week is completed
     const previousWeekProgress = studentProgressByWeek[weekNumber - 1]
     const isPrevCompleted = previousWeekProgress?.status === 'completed'
@@ -198,6 +214,12 @@ export default function LearningPage() {
       4: '/student/study/week-4-select',
       5: '/student/study/week-5-select',
       6: '/student/study/week-6-select',
+      // Weeks 7-8 have no daily lessons, so they must NOT fall through to the
+      // day-wise page (/student/study/7?day=day-1) — there is no week 7-8
+      // content in syllabus.js or Product_Syllabus, so that page renders empty.
+      // Their select pages offer the mock test and the capstone instead.
+      7: '/student/study/week-7-select',
+      8: '/student/study/week-8-select',
     }
     router.push(weekRoutes[week] ?? `/student/study/${week}?day=day-1`)
   }
@@ -212,8 +234,12 @@ export default function LearningPage() {
     { week: 4, title: 'Algorithms',        tests: 0 },
     { week: 5, title: 'Problem Solving',   tests: 0 },
     { week: 6, title: 'Interview Prep',    tests: 0 },
-    { week: 7, title: 'Mock Tests',        tests: 0, isComingSoon: true },
-    { week: 8, title: 'Final Review',      tests: 0, isComingSoon: true },
+    // Weeks 7-8 were placeholders until their content existed. They now have
+    // capstone problems and a 50-question weekly test each, so they behave like
+    // any other week — reachable once the previous week is done and its feedback
+    // is in, per the normal progression rules.
+    { week: 7, title: 'Mock Tests',        tests: 1 },
+    { week: 8, title: 'Final Review',      tests: 1 },
   ]
 
   const weeklySchedule = defaultWeeks.map((week) => {

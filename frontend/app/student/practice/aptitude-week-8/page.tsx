@@ -48,9 +48,12 @@ interface AnswerState {
 
 /**
  * Aptitude Week 1 Practice Test Page
- * Route: /student/practice/aptitude-week-6?day=day-1|day-2|day-3|day-4|day-5
+ * Route: /student/practice/aptitude-week-8?day=day-1|day-2|day-3|day-4|day-5
+ *
+ * Week 8 is a consolidation week: revision questions only, no theory, so this
+ * page is the Aptitude entry point (weeks 1-6 route via a study page first).
  */
-function AptitudeWeek6PracticeContent() {
+function AptitudeWeek8PracticeContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [day, setDay] = useState<string>('day-1')
@@ -67,12 +70,14 @@ function AptitudeWeek6PracticeContent() {
     const [testStarted, setTestStarted] = useState(false)
     const [questionStartTimes, setQuestionStartTimes] = useState<{ [questionId: string]: number }>({})
 
+        // Weeks 7-8 are revision weeks: each day is a mixed 50-question set drawn
+    // covering all six topic areas, not a single new topic.
     const days = {
-        'day-1': { label: 'Day 1', title: 'Integers – Understanding Numbers Above & Below Zero' },
-        'day-2': { label: 'Day 2', title: 'Factors – Breaking Numbers Into Building Blocks' },
-        'day-3': { label: 'Day 3', title: 'Divisibility – Checking Without Division' },
-        'day-4': { label: 'Day 4', title: 'HCF & LCM – Sharing and Grouping' },
-        'day-5': { label: 'Day 5', title: 'BODMAS/VBODMAS – Discipline in Calculation' },
+        'day-1': { label: 'Day 1', title: 'Final Practice Set 1 — mixed aptitude' },
+        'day-2': { label: 'Day 2', title: 'Final Practice Set 2 — mixed aptitude' },
+        'day-3': { label: 'Day 3', title: 'Final Practice Set 3 — mixed aptitude' },
+        'day-4': { label: 'Day 4', title: 'Final Practice Set 4 — mixed aptitude' },
+        'day-5': { label: 'Day 5', title: 'Final Practice Set 5 — mixed aptitude' },
     }
 
     useEffect(() => {
@@ -106,7 +111,7 @@ function AptitudeWeek6PracticeContent() {
                     'Content-Type': 'application/json',
                     'Authorization': authHeader || '',
                 },
-                body: JSON.stringify({ week: 6, day: parseInt(dayNum) }),
+                body: JSON.stringify({ week: 8, day: parseInt(dayNum) }),
             })
 
             if (response.ok) {
@@ -245,7 +250,7 @@ function AptitudeWeek6PracticeContent() {
                     'Authorization': authHeader || '',
                 },
                 body: JSON.stringify({
-                    week: 6,
+                    week: 8,
                     day: day,
                     score: percentage,
                     totalQuestions: total,
@@ -350,7 +355,7 @@ function AptitudeWeek6PracticeContent() {
                             Aptitude questions for {days[day as keyof typeof days]?.title} are not available yet.
                         </p>
                         <button
-                            onClick={() => router.push(`/student/study/aptitude-week-6?day=${day}`)}
+                            onClick={() => router.push('/student/study/week-8-select')}
                             className="px-6 py-2 bg-accent text-white rounded-lg hover:bg-accent/80 transition-colors"
                         >
                             Back to Study
@@ -414,7 +419,7 @@ function AptitudeWeek6PracticeContent() {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => router.push(`/student/study/aptitude-week-6?day=${day}`)}
+                                    onClick={() => router.push('/student/study/week-8-select')}
                                     className="px-6 py-3 bg-background-elevated hover:bg-background-elevated/80 text-neutral rounded-lg font-semibold transition-all flex items-center gap-2"
                                 >
                                     <BookOpen className="w-5 h-5" />
@@ -444,6 +449,25 @@ function AptitudeWeek6PracticeContent() {
                             </div>
                         </div>
 
+                        <div className="mb-6">
+                            <p className="text-sm text-neutral-light mb-2">Choose a day</p>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(days).map(([key, info]) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => router.push(`/student/practice/aptitude-week-8?day=${key}`)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                            day === key
+                                                ? 'bg-accent text-white border-accent'
+                                                : 'bg-white text-neutral border-neutral-light/30 hover:bg-background-surface'
+                                        }`}
+                                    >
+                                        {info.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="mb-6 p-4 bg-background-surface rounded-lg border border-neutral-light/20">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -465,7 +489,7 @@ function AptitudeWeek6PracticeContent() {
                         </button>
 
                         <button
-                            onClick={() => router.push(`/student/study/aptitude-week-6?day=${day}`)}
+                            onClick={() => router.push('/student/study/week-8-select')}
                             className="w-full mt-3 px-6 py-3 bg-background-elevated hover:bg-background-elevated/80 text-neutral rounded-lg font-semibold transition-all"
                         >
                             Back to Study
@@ -604,12 +628,12 @@ function AptitudeWeek6PracticeContent() {
     )
 }
 
-export default function AptitudeWeek6PracticePage() {
+export default function AptitudeWeek8PracticePage() {
     return (
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>}>
-            <AptitudeWeek6PracticeContent />
+            <AptitudeWeek8PracticeContent />
         </Suspense>
     )
 }

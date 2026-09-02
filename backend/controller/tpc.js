@@ -2271,7 +2271,8 @@ export default class tpcController {
                 studentFilter.department = department;
             }
 
-            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
+            // Exclusion projection: never fetch person_password into memory at all
+            const studentsResponse = await fetchData('tblPersonMaster', { person_password: 0 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
@@ -2553,7 +2554,8 @@ export default class tpcController {
                 studentFilter.department = department;
             }
 
-            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
+            // Exclusion projection: never fetch person_password into memory at all
+            const studentsResponse = await fetchData('tblPersonMaster', { person_password: 0 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
@@ -2692,7 +2694,8 @@ export default class tpcController {
                 studentFilter.department = department;
             }
 
-            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
+            // Exclusion projection: never fetch person_password into memory at all
+            const studentsResponse = await fetchData('tblPersonMaster', { person_password: 0 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => (s._id || s.person_id)?.toString()).filter(Boolean);
 
@@ -2719,6 +2722,21 @@ export default class tpcController {
             const practiceTestResponse = await fetchData('tblPracticeTest', {}, testFilter);
             const practiceTests = practiceTestResponse.success && practiceTestResponse.data ? practiceTestResponse.data : [];
 
+            // Coding submissions — this report previously had NO coding data at all, so a
+            // student active only in DSA showed 0% and 0 weeks. Same gap that was fixed in
+            // generateDeptTPCReport; real coding data lives in tblCodingSubmissions, not
+            // in tblPracticeTest (every practice-test record is category 'aptitude').
+            // Fresh filter object: testFilter above gets `.completed_at` mutated onto it
+            // for date ranges, so sharing a reference would leak that between queries.
+            let codingFilter = { student_id: { $in: studentIds }, college_id: collegeId };
+            if (dateFrom || dateTo) {
+                codingFilter.submitted_at = {};
+                if (dateFrom) codingFilter.submitted_at.$gte = new Date(dateFrom);
+                if (dateTo) codingFilter.submitted_at.$lte = new Date(dateTo);
+            }
+            const codingSubsResponse = await fetchData('tblCodingSubmissions', {}, codingFilter);
+            const codingSubmissions = codingSubsResponse.success && codingSubsResponse.data ? codingSubsResponse.data : [];
+
             // Generate report based on type
             let reportData = {};
 
@@ -2727,22 +2745,73 @@ export default class tpcController {
                 const daysCompletedByStudent = await this.computeDaysCompletedByStudent(
                     students.map(s => String(s._id || s.person_id || ''))
                 );
+
+                // Resolve the week of each coding problem so "Weeks Completed" reflects
+                // coding activity too, not only aptitude tests.
+                const codingProblemIds = [...new Set(codingSubmissions.map(c => c.problem_id).filter(Boolean))];
+                const [cpWeekRes, tqWeekRes] = codingProblemIds.length
+                    ? await Promise.all([
+                        fetchData('tblCodingProblem', { question_id: 1, week: 1 }, { question_id: { $in: codingProblemIds } }),
+                        fetchData('tblQuestion', { question_id: 1, week: 1 }, { question_id: { $in: codingProblemIds }, question_type: 'coding' }),
+                    ])
+                    : [{ data: [] }, { data: [] }];
+                const weekByProblemId = new Map();
+                (cpWeekRes.data || []).forEach(p => weekByProblemId.set(p.question_id, p.week));
+                (tqWeekRes.data || []).forEach(p => { if (!weekByProblemId.has(p.question_id)) weekByProblemId.set(p.question_id, p.week); });
+                const parseWeekFromId = (pid) => { const m = /^W(\d+)_/i.exec(String(pid || '')); return m ? parseInt(m[1], 10) : null; };
+
                 const studentsWithProgress = students.map(student => {
                     const sid = String(student._id || student.person_id || '');
                     const progress = progressData.find(p => String(p.student_id || '') === sid);
                     const studentTests = practiceTests.filter(t => String(t.student_id || '') === sid);
-                    const avgTestScore = studentTests.length > 0
+                    const studentCodingSubs = codingSubmissions.filter(c => String(c.student_id || '') === sid);
+
+                    // Weeks touched, from aptitude tests AND coding submissions.
+                    const uniqueWeeks = new Set();
+                    const uniqueTestsTaken = new Set();
+                    studentTests.forEach(test => {
+                        if (test.week && typeof test.week === 'number') uniqueWeeks.add(test.week);
+                        uniqueTestsTaken.add(`${test.week}-${test.day}`);
+                    });
+                    studentCodingSubs.forEach(sub => {
+                        const w = weekByProblemId.get(sub.problem_id) ?? parseWeekFromId(sub.problem_id);
+                        if (w != null) uniqueWeeks.add(w);
+                    });
+
+                    const aptitudeAverage = studentTests.length > 0
                         ? Math.round(studentTests.reduce((sum, t) => sum + (t.score || 0), 0) / studentTests.length)
                         : 0;
+                    const dsaAverage = studentCodingSubs.length > 0
+                        ? Math.round(studentCodingSubs.reduce((sum, c) => sum + (c.score || 0), 0) / studentCodingSubs.length)
+                        : 0;
+                    const codingSolved = new Set(studentCodingSubs.filter(c => c.status === 'passed').map(c => c.problem_id)).size;
+
+                    // Overall score blends aptitude AND coding when both exist, so a
+                    // coding-only (or aptitude-only) student isn't reported as 0%.
+                    const hasApt = studentTests.length > 0;
+                    const hasDsa = studentCodingSubs.length > 0;
+                    const overallAverageScore = hasApt && hasDsa
+                        ? Math.round((aptitudeAverage + dsaAverage) / 2)
+                        : hasApt ? aptitudeAverage
+                            : hasDsa ? dsaAverage
+                                : 0;
 
                     return {
                         name: student.person_name,
                         email: student.person_email,
-                        department: student.department || '',
+                        department: (student.department || '').trim(),
                         enrollmentNumber: student.enrollment_number || '',
-                        averageScore: progress?.average_score || avgTestScore || 0,
+                        averageScore: overallAverageScore,
+                        aptitudeAverage: aptitudeAverage,
+                        dsaAverage: dsaAverage,
+                        codingSolved: codingSolved,
+                        codingAttempts: studentCodingSubs.length,
                         daysCompleted: daysCompletedByStudent.get(sid) || 0,
+                        weeksCompleted: uniqueWeeks.size,
                         testsCompleted: progress?.practice_test_scores?.length || studentTests.length || 0,
+                        // Distinct (week, day) test slots attempted — unlike testsCompleted
+                        // this ignores repeat attempts on the same day.
+                        uniqueTestDaysAttempted: uniqueTestsTaken.size,
                         status: student.person_status
                     };
                 });
@@ -2757,7 +2826,15 @@ export default class tpcController {
                         averageScore: studentsWithProgress.length > 0
                             ? Math.round(studentsWithProgress.reduce((sum, s) => sum + s.averageScore, 0) / studentsWithProgress.length)
                             : 0,
-                        totalTests: practiceTests.length
+                        totalTests: practiceTests.length,
+                        totalCodingSolved: studentsWithProgress.reduce((sum, s) => sum + s.codingSolved, 0),
+                        totalCodingAttempts: studentsWithProgress.reduce((sum, s) => sum + s.codingAttempts, 0),
+                        averageDsaScore: (() => {
+                            const withDsa = studentsWithProgress.filter(s => s.codingAttempts > 0);
+                            return withDsa.length > 0
+                                ? Math.round(withDsa.reduce((sum, s) => sum + s.dsaAverage, 0) / withDsa.length)
+                                : 0;
+                        })()
                     },
                     students: studentsWithProgress.sort((a, b) => b.averageScore - a.averageScore)
                 };
@@ -3433,7 +3510,8 @@ export default class tpcController {
             } else {
                 studentFilter.$or = [{ department_id: '__NO_DEPT__' }];
             }
-            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
+            // Exclusion projection: never fetch person_password into memory at all
+            const studentsResponse = await fetchData('tblPersonMaster', { person_password: 0 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => s._id || s.person_id);
             const studentIdStrings = studentIds.map(id => (id && typeof id === 'object' && typeof id.toString === 'function') ? id.toString() : String(id));
@@ -3734,7 +3812,8 @@ export default class tpcController {
             } else {
                 studentFilter.$or = [{ department_id: '__NO_DEPT__' }];
             }
-            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
+            // Exclusion projection: never fetch person_password into memory at all
+            const studentsResponse = await fetchData('tblPersonMaster', { person_password: 0 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => s._id || s.person_id);
             const studentIdStrings = studentIds.map(id => (id && typeof id === 'object' && typeof id.toString === 'function') ? id.toString() : String(id));
@@ -4312,7 +4391,8 @@ export default class tpcController {
             const department = deptFilter; // for report payload labels
 
             // Get students in department (all students, not just active)
-            const studentsResponse = await fetchData('tblPersonMaster', {}, studentFilter);
+            // Exclusion projection: never fetch person_password into memory at all
+            const studentsResponse = await fetchData('tblPersonMaster', { person_password: 0 }, studentFilter);
             const students = studentsResponse.success && studentsResponse.data ? studentsResponse.data : [];
             const studentIds = students.map(s => s._id || s.person_id);
             // tblStudentProgress and tblPracticeTest may store student_id as string or ObjectId

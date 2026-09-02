@@ -68,6 +68,39 @@ function shuffleOptions(options, seed) {
 }
 
 
+/**
+ * Remove answer-bearing fields before question documents are sent to a student.
+ *
+ * A tblQuestion document carries `correct_answer`, `explanation`, AND
+ * `options[].is_correct`. These endpoints were returning full documents, so the
+ * answer key for every question was delivered to the browser — readable in the
+ * network tab. Scores are now graded server-side regardless, but there is no
+ * reason to hand out the answers in the first place.
+ *
+ * Staff (Superadmin and other non-student roles) legitimately need these fields
+ * to author and review questions, so they are only stripped for students. An
+ * unknown/absent role is treated as a student — fail closed.
+ */
+function stripAnswersForStudents(req, docs) {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (role && role !== 'student') return docs;
+
+    const scrub = (q) => {
+        if (!q || typeof q !== 'object') return q;
+        const { correct_answer, explanation, ...rest } = q;
+        if (Array.isArray(rest.options)) {
+            rest.options = rest.options.map((o) => {
+                if (!o || typeof o !== 'object') return o;
+                const { is_correct, ...opt } = o;
+                return opt;
+            });
+        }
+        return rest;
+    };
+
+    return Array.isArray(docs) ? docs.map(scrub) : scrub(docs);
+}
+
 export default class questionController {
 
     /**
@@ -163,7 +196,9 @@ export default class questionController {
                 // With options.count the payload becomes { questions, total } so the
                 // admin Question Bank can paginate server-side; legacy callers that
                 // don't send count keep getting the plain array
-                data: options?.count ? { questions, total: response.count } : questions
+                data: options?.count
+                    ? { questions: stripAnswersForStudents(req, questions), total: response.count }
+                    : stripAnswersForStudents(req, questions)
             };
             next();
         } catch (error) {
@@ -220,7 +255,7 @@ export default class questionController {
                     success: true,
                     status: 200,
                     message: 'Question fetched successfully',
-                    data: response.data[0]
+                    data: stripAnswersForStudents(req, response.data[0])
                 };
             } else {
                 res.locals.responseData = {
@@ -273,7 +308,7 @@ export default class questionController {
                 success: true,
                 status: 200,
                 message: 'Random questions fetched successfully',
-                data: questions
+                data: stripAnswersForStudents(req, questions)
             };
             next();
         } catch (error) {
@@ -347,7 +382,7 @@ export default class questionController {
                     status: 200,
                     message: 'Aptitude questions fetched successfully',
                     data: {
-                        questions: selected,
+                        questions: stripAnswersForStudents(req, selected),
                         total: selected.length,
                         week: parseInt(week),
                         day: parseInt(day)

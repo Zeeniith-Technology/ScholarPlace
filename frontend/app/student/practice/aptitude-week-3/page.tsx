@@ -59,6 +59,8 @@ function AptitudeWeek3PracticeContent() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [answers, setAnswers] = useState<AnswerState>({})
     const [showResults, setShowResults] = useState(false)
+    // Graded result from /practice-test/save (the server is the scoring authority)
+    const [serverResult, setServerResult] = useState<any | null>(null)
     const [startTime, setStartTime] = useState<number | null>(null)
     const [totalTime, setTotalTime] = useState(0)
     const [attempts, setAttempts] = useState<number>(0)
@@ -259,6 +261,7 @@ function AptitudeWeek3PracticeContent() {
                 const data = await response.json()
                 if (data.success && data.data) {
                     setAttempts(data.data.attempts || 0)
+                    setServerResult(data.data)
                 }
             }
 
@@ -290,7 +293,18 @@ function AptitudeWeek3PracticeContent() {
         return `${mins}:${secs.toString().padStart(2, '0')}`
     }
 
+    // The server grades the attempt and is the source of truth. Question payloads
+    // no longer include the answer key, so the browser cannot compute the score;
+    // serverResult holds what /practice-test/save returned. The local tally is only
+    // a fallback so the summary isn't blank if that response is unreadable.
     const getScore = () => {
+        if (serverResult) {
+            return {
+                correct: serverResult.correct_answers ?? 0,
+                total: serverResult.total_questions ?? questions.length,
+                percentage: serverResult.score ?? 0,
+            }
+        }
         const correct = Object.values(answers).filter(a => a.isCorrect === true).length
         const total = questions.length
         const percentage = total > 0 ? Math.round((correct / total) * 100) : 0

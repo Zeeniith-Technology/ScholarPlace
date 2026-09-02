@@ -70,3 +70,9 @@ Testing_script
 Sp_Whole_New_Syllabus.csv
 deployment.md
 understand.md
+
+# student data exports — contain names, emails and enrolment numbers of real
+# students. Never commit these; regenerate them from the superadmin UI instead.
+superadmin_report_*.xlsx
+*_report_*.xlsx
+superadmin_report_*.csv

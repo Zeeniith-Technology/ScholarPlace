@@ -34,6 +34,7 @@ import * as codingProblemsController from './controller/codingProblems.js';
 import { responsedata } from './methods.js';
 import { auth, requireRole, optionalAuth } from './middleware/auth.js';
 import { requireAIEnabled } from './middleware/aiGate.js';
+import { requireWeekUnlocked, resolveWeekFromProblemId } from './middleware/weekGate.js';
 import tpcCodingController from './controller/tpcCoding.js';
 import bugReportController from './controller/bugReport.js';
 import contactController from './controller/contactController.js';
@@ -139,14 +140,19 @@ router.post('/syllabus/delete', auth, requireRole('Superadmin'), syllabus.delete
 router.post('/syllabus/list', auth, syllabus.listsyllabus, responsedata);
 // Get Week 1 content: All authenticated users
 router.post('/syllabus/week1-content', auth, syllabus.getWeek1Content, responsedata);
-router.post('/syllabus/aptitude-week1-content', auth, syllabus.getAptitudeWeek1Content, responsedata);
-router.post('/syllabus/aptitude-week2-content', auth, syllabus.getAptitudeWeek2Content, responsedata);
-router.post('/syllabus/aptitude-week3-content', auth, syllabus.getAptitudeWeek3Content, responsedata);
-router.post('/syllabus/aptitude-week4-content', auth, syllabus.getAptitudeWeek4Content, responsedata);
-router.post('/syllabus/aptitude-week5-content', auth, syllabus.getAptitudeWeek5Content, responsedata);
-router.post('/syllabus/aptitude-week6-content', auth, syllabus.getAptitudeWeek6Content, responsedata);
+router.post('/syllabus/aptitude-week1-content', auth, requireWeekUnlocked(1), syllabus.getAptitudeWeek1Content, responsedata);
+router.post('/syllabus/aptitude-week2-content', auth, requireWeekUnlocked(2), syllabus.getAptitudeWeek2Content, responsedata);
+router.post('/syllabus/aptitude-week3-content', auth, requireWeekUnlocked(3), syllabus.getAptitudeWeek3Content, responsedata);
+router.post('/syllabus/aptitude-week4-content', auth, requireWeekUnlocked(4), syllabus.getAptitudeWeek4Content, responsedata);
+router.post('/syllabus/aptitude-week5-content', auth, requireWeekUnlocked(5), syllabus.getAptitudeWeek5Content, responsedata);
+router.post('/syllabus/aptitude-week6-content', auth, requireWeekUnlocked(6), syllabus.getAptitudeWeek6Content, responsedata);
+// Weeks 7-8 are consolidation weeks with no theory; these return a short revision
+// note so their aptitude pages can use the same day-sidebar layout as weeks 1-6.
+// .bind() because these delegate to a shared instance method.
+router.post('/syllabus/aptitude-week7-content', auth, requireWeekUnlocked(7), syllabus.getAptitudeWeek7Content.bind(syllabus), responsedata);
+router.post('/syllabus/aptitude-week8-content', auth, requireWeekUnlocked(8), syllabus.getAptitudeWeek8Content.bind(syllabus), responsedata);
 // Get dynamic week content (supports Week 2+): All authenticated users
-router.post('/syllabus/week-content', auth, syllabus.getWeekContent, responsedata);
+router.post('/syllabus/week-content', auth, requireWeekUnlocked((req) => req.body?.week), syllabus.getWeekContent, responsedata);
 
 // Coding problems by day (reads tblQuestion coding docs). Kept as-is.
 // NOTE: the static-file-backed routes /questions/week1, /questions/week1/all,
@@ -154,7 +160,7 @@ router.post('/syllabus/week-content', auth, syllabus.getWeekContent, responsedat
 // were removed 2026-08-19. They served seed-era static data (data/questions.js,
 // week2Questions.js, codingProblems.js) that had drifted from the DB; their pages now
 // redirect to the DB-backed flows. Do NOT re-add them — student content lives in the DB.
-router.post('/questions/coding', auth, questions.getCodingProblemsByDay, responsedata);
+router.post('/questions/coding', auth, requireWeekUnlocked((req) => req.body?.week), questions.getCodingProblemsByDay, responsedata);
 
 // ========================================
 // Question Management Routes (tblQuestion collection)
@@ -166,7 +172,7 @@ router.post('/questions/get', auth, question.getQuestion, responsedata);
 // Get random questions for practice: All authenticated users
 router.post('/questions/random', auth, question.getRandomQuestions, responsedata);
 // Get aptitude practice questions by week and day: All authenticated users (students)
-router.post('/questions/aptitude-practice', auth, question.getAptitudePractice, responsedata);
+router.post('/questions/aptitude-practice', auth, requireWeekUnlocked((req) => req.body?.week), question.getAptitudePractice, responsedata);
 // Insert question: Superadmin only
 router.post('/questions/insert', auth, requireRole(['Superadmin']), question.insertQuestion, responsedata);
 // Update question: Superadmin only
@@ -180,9 +186,9 @@ router.post('/questions/bulk-insert', auth, requireRole(['Superadmin']), questio
 // Coding Problems Routes (Capstone Questions)
 // ========================================
 // Get coding problems by week (capstone): All authenticated users
-router.post('/coding-problems/week/:weekNum', auth, codingProblemsController.getCodingProblemsByWeek, responsedata);
+router.post('/coding-problems/week/:weekNum', auth, requireWeekUnlocked((req) => req.params?.weekNum), codingProblemsController.getCodingProblemsByWeek, responsedata);
 // Get daily coding problems by week and day: All authenticated users
-router.post('/coding-problems/daily/:weekNum/:dayNum', auth, codingProblemsController.getDailyCodingProblems, responsedata);
+router.post('/coding-problems/daily/:weekNum/:dayNum', auth, requireWeekUnlocked((req) => req.params?.weekNum), codingProblemsController.getDailyCodingProblems, responsedata);
 // Get all student submissions (dashboard/analytics): All authenticated users
 router.post('/coding-problems/submissions/all', auth, codingProblemsController.getAllStudentSubmissions, responsedata);
 
@@ -190,11 +196,11 @@ router.post('/coding-problems/submissions/all', auth, codingProblemsController.g
 // Get all coding problems (admin/testing): All authenticated users
 router.post('/coding-problems/all', auth, codingProblemsController.getAllCodingProblems, responsedata);
 // Submit solution: Students submit their code
-router.post('/coding-problems/submit', auth, codingProblemsController.submitSolution, responsedata);
+router.post('/coding-problems/submit', auth, requireWeekUnlocked(resolveWeekFromProblemId), codingProblemsController.submitSolution, responsedata);
 // Run solution (Test only): Students run their code against test cases
-router.post('/coding-problems/run', auth, codingProblemsController.runSolution, responsedata);
+router.post('/coding-problems/run', auth, requireWeekUnlocked(resolveWeekFromProblemId), codingProblemsController.runSolution, responsedata);
 // Get weekly coding progress (check capstone eligibility): All authenticated users
-router.post('/coding-problems/progress/:weekNum', auth, codingProblemsController.getWeeklyCodingProgress, responsedata);
+router.post('/coding-problems/progress/:weekNum', auth, requireWeekUnlocked((req) => req.params?.weekNum), codingProblemsController.getWeeklyCodingProgress, responsedata);
 
 // ── Tiered Daily Coding (Easy / Medium / Hard) ──
 // Fetch 12 grouped problems for a day: POST body { week, day }
@@ -224,14 +230,17 @@ router.post('/student-progress/check-blocked-retake', auth, requireRole('Student
 router.post('/student-progress/bookmarks/get', auth, studentProgress.getBookmarks.bind(studentProgress), responsedata);
 router.post('/student-progress/summary', auth, studentProgress.getStudentProgressSummary.bind(studentProgress), responsedata);
 // Write routes: Student only (Superadmin bypasses requireRole automatically)
-router.post('/student-progress/upsert', auth, requireRole('Student'), studentProgress.upsertStudentProgress, responsedata);
-router.post('/student-progress/complete-day', auth, requireRole('Student'), studentProgress.completeDay.bind(studentProgress), responsedata);
-router.post('/student-progress/update-practice-score', auth, requireRole('Student'), studentProgress.updatePracticeScore.bind(studentProgress), responsedata);
-router.post('/student-progress/complete-coding-problem', auth, requireRole('Student'), studentProgress.completeCodingProblem.bind(studentProgress), responsedata);
-router.post('/student-progress/complete-capstone-week', auth, requireRole('Student'), studentProgress.completeCapstoneWeek.bind(studentProgress), responsedata);
+router.post('/student-progress/upsert', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.upsertStudentProgress, responsedata);
+router.post('/student-progress/complete-day', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.completeDay.bind(studentProgress), responsedata);
+router.post('/student-progress/update-practice-score', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.updatePracticeScore.bind(studentProgress), responsedata);
+router.post('/student-progress/complete-coding-problem', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.completeCodingProblem.bind(studentProgress), responsedata);
+router.post('/student-progress/complete-capstone-week', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.completeCapstoneWeek.bind(studentProgress), responsedata);
 router.post('/student-progress/check-weekly-test-eligibility', auth, requireRole('Student'), studentProgress.checkWeeklyTestEligibility.bind(studentProgress), responsedata);
-router.post('/student-progress/block-test-retake', auth, requireRole('Student'), studentProgress.blockTestRetake.bind(studentProgress), responsedata);
-router.post('/student-progress/bookmarks/save', auth, requireRole('Student'), studentProgress.saveBookmarks.bind(studentProgress), responsedata);
+// NOTE: these two also create a tblStudentProgress row for the week they're
+// given, so they must be gated as well — otherwise merely opening a locked
+// week's page writes a row for it and the student is treated as already there.
+router.post('/student-progress/block-test-retake', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.blockTestRetake.bind(studentProgress), responsedata);
+router.post('/student-progress/bookmarks/save', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week), studentProgress.saveBookmarks.bind(studentProgress), responsedata);
 // Admin: List all students progress
 router.post('/student-progress/admin/list-all', auth, requireRole('Superadmin'), studentProgress.listAllStudentsProgress, responsedata);
 
@@ -438,7 +447,7 @@ router.post('/superadmin/certificates', auth, requireRole('Superadmin'), certifi
 // ─── Weekly Feedback Routes ───────────────────────────────────────────────
 
 // Student: submit & view own feedback
-router.post('/student/feedback/submit', auth, requireRole('Student'), weeklyFeedback.submitFeedback.bind(weeklyFeedback), responsedata);
+router.post('/student/feedback/submit', auth, requireRole('Student'), requireWeekUnlocked((req) => req.body?.week_number), weeklyFeedback.submitFeedback.bind(weeklyFeedback), responsedata);
 router.post('/student/feedback/check-submitted', auth, requireRole('Student'), weeklyFeedback.checkSubmitted.bind(weeklyFeedback), responsedata);
 router.post('/student/feedback/check-submitted-bulk', auth, requireRole('Student'), weeklyFeedback.checkSubmittedBulk.bind(weeklyFeedback), responsedata);
 router.post('/student/feedback/my-history', auth, requireRole('Student'), weeklyFeedback.getMyFeedback.bind(weeklyFeedback), responsedata);

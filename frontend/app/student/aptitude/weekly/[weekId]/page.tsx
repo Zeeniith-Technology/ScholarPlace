@@ -52,6 +52,8 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [answers, setAnswers] = useState<AnswerState>({})
     const [showResults, setShowResults] = useState(false)
+    // Graded result returned by /practice-test/save (server is the scoring authority)
+    const [serverResult, setServerResult] = useState<any | null>(null)
     const [startTime, setStartTime] = useState<number | null>(null)
     const [totalTime, setTotalTime] = useState(0) // Seconds
     const [testStarted, setTestStarted] = useState(false)
@@ -328,7 +330,7 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
 
             // Save test result
             // Using day: 'weekly-test' so it doesn't conflict with day assignments
-            await fetch(`${apiBaseUrl}/practice-test/save`, {
+            const saveRes = await fetch(`${apiBaseUrl}/practice-test/save`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -346,6 +348,15 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
                     category: 'aptitude'
                 }),
             })
+
+            // The server re-grades against the question bank and returns the
+            // authoritative score plus per-question results (with the correct
+            // answers and explanations, which are deliberately not sent to the
+            // browser before submission). Render the results from that.
+            try {
+                const saved = await saveRes.json()
+                if (saved?.success && saved?.data) setServerResult(saved.data)
+            } catch { /* keep the local fallback if the response isn't readable */ }
         } catch (error) {
             console.error('Error saving weekly test:', error)
         }
@@ -357,7 +368,19 @@ export default function WeeklyAptitudeTestPage({ params }: { params: { weekId: s
         return `${mins}:${secs.toString().padStart(2, '0')}`
     }
 
+    // The server grades the attempt and is the source of truth for the score —
+    // question payloads no longer include the answer key, so the browser cannot
+    // (and must not) compute it. `serverResult` holds what the save endpoint
+    // returned; until it arrives we fall back to the local tally so the summary
+    // isn't blank.
     const getScore = () => {
+        if (serverResult) {
+            return {
+                correct: serverResult.correct_answers ?? 0,
+                total: serverResult.total_questions ?? questions.length,
+                percentage: serverResult.score ?? 0,
+            }
+        }
         const correct = Object.values(answers).filter(a => a.isCorrect).length
         const total = questions.length
         const percentage = total > 0 ? Math.round((correct / total) * 100) : 0

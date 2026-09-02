@@ -499,15 +499,20 @@ export default class studentProgressController {
                 {}
             );
 
+            let response;
             let daysCompleted = [];
             let assignmentsCompleted = 0;
             let testsCompleted = 0;
             let practiceTestsCompleted = 0;
             let progressPercentage = 0;
             let status = 'in_progress';
+            // Existing status must be read so an already-'completed' week is never
+            // demoted by this method (see the guard after the status calculation).
+            let currentStatus = 'start';
 
             if (existing.data && existing.data.length > 0) {
                 const currentProgress = existing.data[0];
+                currentStatus = currentProgress.status || 'start';
                 daysCompleted = currentProgress.days_completed || [];
                 assignmentsCompleted = currentProgress.assignments_completed || 0;
                 testsCompleted = currentProgress.tests_completed || 0;
@@ -565,6 +570,16 @@ export default class studentProgressController {
                 status = 'start';
             }
 
+            // Never demote an already-completed week. A week is marked 'completed' by
+            // checkAndMarkWeekCompletion using entirely different criteria (capstone done
+            // + weekly test >= 75%), which this method knows nothing about — recomputing
+            // from day/assignment/test counts alone would silently knock it back to
+            // 'in_progress'. Same guard as completeCodingProblem.
+            const wasAlreadyCompleted = currentStatus === 'completed';
+            if (wasAlreadyCompleted) {
+                status = 'completed';
+            }
+
             // Note: studentIdString and studentIdFilter are already declared above (line 289)
             // Reuse them here instead of redeclaring
 
@@ -581,7 +596,7 @@ export default class studentProgressController {
                 tests_total: requiredTests,
                 practice_tests_completed: practiceTestsCompleted,
                 last_accessed: new Date(),
-                completed_at: status === 'completed' ? new Date() : undefined,
+                completed_at: (status === 'completed' && !wasAlreadyCompleted) ? new Date() : undefined,
                 updated_at: new Date().toISOString()
             };
 
@@ -604,7 +619,9 @@ export default class studentProgressController {
                     }
                 };
 
-                if (status === 'completed') {
+                // Only stamp completed_at on the transition INTO completed — re-stamping
+                // it on every later call would overwrite the original completion date.
+                if (status === 'completed' && !wasAlreadyCompleted) {
                     updatePayload.$set.completed_at = new Date();
                 }
 
@@ -800,6 +817,16 @@ export default class studentProgressController {
                 }
             }
 
+            // Never demote an already-completed week. This helper recomputes status from
+            // day/assignment/test counts only and knows nothing about the capstone +
+            // weekly-test >= 75% criteria that checkAndMarkWeekCompletion uses to mark a
+            // week complete — without this, the 'in_progress' branch above silently undoes
+            // it. progress_percentage is deliberately left as computed: it tracks
+            // day/assignment/test coverage, which can legitimately be partial.
+            if (currentProgress.status === 'completed') {
+                status = 'completed';
+            }
+
             // Update status if changed
             if (status !== currentProgress.status || progressPercentage !== currentProgress.progress_percentage) {
                 await executeData(
@@ -807,7 +834,9 @@ export default class studentProgressController {
                     {
                         status: status,
                         progress_percentage: progressPercentage,
-                        completed_at: status === 'completed' ? new Date() : currentProgress.completed_at,
+                        // Keep the original completion date — only stamp one if there isn't
+                        // one yet, otherwise every later write resets when the week was completed.
+                        completed_at: status === 'completed' ? (currentProgress.completed_at || new Date()) : currentProgress.completed_at,
                         updated_at: new Date().toISOString()
                     },
                     'u',
@@ -1500,6 +1529,19 @@ export default class studentProgressController {
                     studentProgressSchema,
                     { _id: progress._id } // Use _id to ensure unique update
                 );
+                // Finishing week 8 completes the programme, which is what the
+                // certificate represents ("READINESS REPORT & CERTIFICATION" in the
+                // week 8 syllabus). The trigger previously existed ONLY in
+                // checkAndUpdateWeekCompletion (the days/assignments path) — not
+                // here, which is the path that actually completes a week via
+                // capstone + weekly test. So finishing the programme legitimately
+                // never issued a certificate. Fire-and-forget, as in the other path.
+                if (Number(weekNumber) === 8) {
+                    CertificateController.generateIfEligible(userId).catch(err => {
+                        console.error('[WeekCompletion] Certificate auto-gen failed:', err);
+                    });
+                }
+
                 await logProgressAudit(req, 'mark-week-completed', {
                     userId,
                     student_id: studentIdString,

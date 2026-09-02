@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Poppins, Caveat } from 'next/font/google'
 import '../styles/globals.css'
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
+import { FeedbackRequiredGate } from '@/components/feedback/FeedbackRequiredGate'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -38,6 +39,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${poppins.variable} ${caveat.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <ImpersonationBanner />
+        <FeedbackRequiredGate />
         {children}
       </body>
     </html>

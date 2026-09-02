@@ -509,12 +509,18 @@ class MonitoringController {
 
             // Per-student aggregation
             const agg = new Map();
-            for (const sid of studentIds) agg.set(sid, { aptScores: [], aptTimeSpentSec: 0, aptPassed: 0, aptFailed: 0, codingAttempts: 0, codingSolved: new Set(), codingFailed: 0, weeksTouched: new Set() });
+            // NOTE ON UNITS: tblPracticeTest.time_spent is stored in MINUTES (see
+            // practiceTest.js, which writes `time_spent: timeSpent || 0, // in minutes`).
+            // Only the per-question time_spent inside questions_attempted is in seconds.
+            // This used to accumulate into `aptTimeSpentSec` and divide by 60, which
+            // under-reported every student's effort by 60x — e.g. 144 real minutes
+            // across 36 attempts was reported as "2 min".
+            for (const sid of studentIds) agg.set(sid, { aptScores: [], aptTimeSpentMin: 0, aptPassed: 0, aptFailed: 0, codingAttempts: 0, codingSolved: new Set(), codingFailed: 0, weeksTouched: new Set() });
             for (const t of practiceTests) {
                 const a = agg.get(String(t.student_id));
                 if (!a) continue;
                 a.aptScores.push(t.score || 0);
-                a.aptTimeSpentSec += (t.time_spent || 0);
+                a.aptTimeSpentMin += (t.time_spent || 0);
                 if ((t.score || 0) >= APTITUDE_PASS_SCORE) a.aptPassed++; else a.aptFailed++;
                 if (t.week != null) a.weeksTouched.add(t.week);
             }
@@ -549,7 +555,7 @@ class MonitoringController {
                     aptitudeTests: aptTests,
                     aptitudePassed: a.aptPassed,
                     aptitudeFailed: a.aptFailed,
-                    aptitudeTimeSpentMinutes: Math.round(a.aptTimeSpentSec / 60),
+                    aptitudeTimeSpentMinutes: Math.round(a.aptTimeSpentMin),
                     activeDaysRecent,
                     codingSolved: a.codingSolved.size,
                     codingAttempts: a.codingAttempts,
