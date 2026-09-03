@@ -142,11 +142,25 @@ export default class codeExecutionController {
               memory: memory
             });
           } catch (error) {
-            console.error(`[JDoodle] Error executing test case:`, error.message);
+            // axios collapses an HTTP failure into "Request failed with status
+            // code 403", which says nothing about WHY. JDoodle's own message —
+            // invalid credentials vs. daily limit reached vs. plan expired — is
+            // in error.response.data, and needs three very different responses.
+            // Log it, or an outage is undiagnosable from the server logs alone.
+            const jdoodleStatus = error.response?.status;
+            const jdoodleBody = error.response?.data;
+            console.error('[JDoodle] Error executing test case:', error.message,
+              jdoodleStatus ? `| HTTP ${jdoodleStatus}` : '',
+              jdoodleBody ? `| JDoodle said: ${JSON.stringify(jdoodleBody)}` : '');
+            const detail = jdoodleBody?.error || jdoodleBody?.message;
             testResults.push({
               input: testInput,
               expectedOutput: expectedOutput,
-              actualOutput: error.message,
+              // Students should not read a raw provider error, but the status is
+              // useful to whoever they forward the screenshot to.
+              actualOutput: detail
+                ? `Execution service error (${jdoodleStatus}): ${detail}`
+                : error.message,
               passed: false,
               error: 'Execution Error'
             });
