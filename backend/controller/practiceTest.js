@@ -13,6 +13,16 @@ import studentProgressController from './studentProgress.js';
 // auto-completed the week. router.js instantiates it the same way.
 const studentProgressInstance = new studentProgressController();
 
+/**
+ * The most questions a student is ever served for one aptitude set.
+ *
+ * Mirrors `getAptitudePractice`, which does `slice(0, Math.min(50, sorted.length))`.
+ * Grading must divide by what was ASKED, not by everything in the bank — several
+ * sets hold more than 50 (week 3 day 4 has 53; weekly papers 51-53), and dividing
+ * by the bank size silently caps a perfect paper below 100%.
+ */
+const SERVED_QUESTION_LIMIT = parseInt(process.env.SERVED_QUESTION_LIMIT, 10) || 50;
+
 /** Remove markdown asterisks from AI text */
 function stripAsterisks(s) {
     if (typeof s !== 'string') return s || '';
@@ -39,12 +49,45 @@ async function gradeAttempt({ questionsAttempted, week, day }) {
     const ids = [...new Set(attempted.map(a => a?.question_id).filter(Boolean))];
     if (!ids.length) return null;
 
-    const qRes = await fetchData(
+    // question_id is NOT unique across tblQuestion: `Q101`..`Q150` exist both as
+    // week 1 day 3 aptitude MCQs and as week 4 coding problems. Looking them up by
+    // id alone and keying a Map by that id silently keeps whichever document came
+    // back last — the coding problem, whose correct_answer is the literal string
+    // "Refer to Test Cases" and which has no options — so every answer compared
+    // against it was marked wrong and the student scored 0. Scope the lookup to
+    // the week/day being graded, exactly as the denominator query does.
+    const dayNumForLookup = Number(String(day).replace(/^day-/i, ''));
+    const scoped = day === 'weekly-test'
+        ? { question_id: { $in: ids }, week: Number(week), tags: 'weekly-aptitude-test' }
+        : Number.isFinite(dayNumForLookup)
+            ? { question_id: { $in: ids }, week: Number(week), day: dayNumForLookup, category: 'aptitude' }
+            : { question_id: { $in: ids } };
+
+    let qRes = await fetchData(
         'tblQuestion',
         { question_id: 1, correct_answer: 1, options: 1, explanation: 1 },
-        { question_id: { $in: ids } }
+        scoped
     );
-    const byId = new Map((qRes.data || []).map(q => [q.question_id, q]));
+    // If the scoped query finds nothing (older records, or a week/day mismatch),
+    // fall back to the broad lookup rather than grading everyone zero.
+    if (!qRes?.data?.length && scoped.week !== undefined) {
+        qRes = await fetchData(
+            'tblQuestion',
+            { question_id: 1, correct_answer: 1, options: 1, explanation: 1 },
+            { question_id: { $in: ids } }
+        );
+    }
+
+    // Belt and braces: if an id still appears twice, keep the one that actually
+    // looks like an MCQ rather than letting document order decide.
+    const byId = new Map();
+    for (const q of (qRes.data || [])) {
+        const existing = byId.get(q.question_id);
+        const isMcq = Array.isArray(q.options) && q.options.length > 0;
+        if (!existing || (isMcq && !(Array.isArray(existing.options) && existing.options.length > 0))) {
+            byId.set(q.question_id, q);
+        }
+    }
     if (!byId.size) return null; // ids didn't match the bank — don't fabricate a score
 
     let correct = 0;
@@ -89,6 +132,16 @@ async function gradeAttempt({ questionsAttempted, week, day }) {
                 : null;
         if (bankFilter) total = await db.collection('tblQuestion').countDocuments(bankFilter);
     } catch (_) { /* fall through to the attempted count */ }
+
+    // The bank is not the paper. `getAptitudePractice` serves at most
+    // SERVED_QUESTION_LIMIT questions (`slice(0, Math.min(50, …))`), and several
+    // sets hold more than that — week 3 day 4 has 53, and the weekly papers for
+    // weeks 1 and 3-6 hold 51-53. Dividing by the bank size would mark a student
+    // who answered all 50 served questions correctly as 50/53 = 94%, and could
+    // push someone just over the 75% weekly-test threshold to just under it.
+    // Cap the denominator at what a student can actually be asked.
+    if (total > SERVED_QUESTION_LIMIT) total = SERVED_QUESTION_LIMIT;
+
     if (!total) total = attempted.length;
     // Never let the denominator shrink below what was actually answered.
     if (attempted.length > total) total = attempted.length;
