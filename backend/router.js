@@ -123,6 +123,7 @@ router.post('/collage/delete', auth, requireRole('Superadmin'), collage.deleteco
 // College list: optionalAuth so signup gets active-only; superadmin gets full filter (e.g. Inactive)
 router.post('/collage/list', optionalAuth, collage.listcollage, responsedata);
 router.post('/collage/update-subscription', auth, requireRole('Superadmin'), collage.updateSubscription.bind(collage), responsedata);
+router.post('/collage/student-login-control', auth, requireRole('Superadmin'), collage.updateStudentLoginControl.bind(collage), responsedata);
 
 // Department routes (superadmin only)
 router.post('/department/insert', auth, requireRole('Superadmin'), department.insertdepartment, responsedata);

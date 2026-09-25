@@ -906,4 +906,97 @@ export default class collagecontroller {
             next();
         }
     }
+
+    /**
+     * Turn student login on/off for a college, immediately and/or on a schedule.
+     *
+     * Separate from `updatecollage`/`collage_status` because that field also blocks
+     * TPC and DeptTPC — this gates ONLY the Student role (e.g. to lock logins during
+     * an assessment, or in response to misuse, without cutting off college staff).
+     *
+     * `disable_at` is evaluated LAZILY by the login controller and the auth
+     * middleware, not by a cron job: once `now() >= disable_at`, students are
+     * blocked exactly as if `disabled: true` had been set directly. Passing
+     * `disable_at: null` clears any existing schedule.
+     */
+    async updateStudentLoginControl(req, res, next) {
+        try {
+            const { filter, disabled, disable_at, reason } = req.body;
+
+            if (!filter || (typeof disabled === 'undefined' && typeof disable_at === 'undefined')) {
+                res.locals.responseData = {
+                    success: false,
+                    status: 400,
+                    message: 'filter is required, plus at least one of disabled or disable_at',
+                    error: 'Missing required fields'
+                };
+                return next();
+            }
+
+            const update = {
+                student_login_disabled_by: req.user?.id || req.user?.person_id || null,
+                student_login_disabled_updated_at: new Date(),
+            };
+
+            if (typeof disabled !== 'undefined') {
+                if (typeof disabled !== 'boolean') {
+                    res.locals.responseData = {
+                        success: false,
+                        status: 400,
+                        message: 'disabled must be a boolean',
+                        error: 'Invalid disabled value'
+                    };
+                    return next();
+                }
+                update.student_login_disabled = disabled;
+            }
+
+            if (typeof disable_at !== 'undefined') {
+                if (disable_at === null || disable_at === '') {
+                    update.student_login_disable_at = null; // clears any scheduled block
+                } else {
+                    const parsed = new Date(disable_at);
+                    if (isNaN(parsed.getTime())) {
+                        res.locals.responseData = {
+                            success: false,
+                            status: 400,
+                            message: 'disable_at must be a valid date/time',
+                            error: 'Invalid disable_at value'
+                        };
+                        return next();
+                    }
+                    update.student_login_disable_at = parsed;
+                }
+            }
+
+            if (typeof reason !== 'undefined') {
+                update.student_login_disabled_reason = String(reason || '').slice(0, 300);
+            }
+
+            const response = await executeData(
+                tablename,
+                update,
+                'u',
+                collageSchema,
+                filter,
+                {}
+            );
+
+            res.locals.responseData = {
+                success: true,
+                status: 200,
+                message: 'Student login control updated successfully',
+                data: response.data
+            };
+            next();
+        } catch (error) {
+            res.locals.responseData = {
+                success: false,
+                status: 500,
+                message: 'Update student login control failed',
+                error: error.message
+            };
+            next();
+        }
+    }
 }

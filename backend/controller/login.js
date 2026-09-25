@@ -93,7 +93,10 @@ export default class logincontroller {
                 // Fetch all needed fields in ONE query
                 collegePromise = fetchData(
                     'tblCollage',
-                    { _id: 1, collage_status: 1, collage_subscription_status: 1, collage_name: 1, departments: 1, collage_departments: 1 },
+                    {
+                        _id: 1, collage_status: 1, collage_subscription_status: 1, collage_name: 1, departments: 1, collage_departments: 1,
+                        student_login_disabled: 1, student_login_disable_at: 1, student_login_disabled_reason: 1,
+                    },
                     collegeFilter
                 );
             }
@@ -141,6 +144,25 @@ export default class logincontroller {
                         error: 'College subscription inactive'
                     };
                     return next();
+                }
+
+                // Student-only login gate — separate from collage_status above, which
+                // also blocks TPC/DeptTPC. Superadmin can lock student logins for a
+                // college (e.g. during an assessment, or in response to misuse) without
+                // cutting off college staff. `student_login_disable_at` is a schedule,
+                // evaluated here at request time rather than by a cron job.
+                if (finalUserRole === 'Student') {
+                    const scheduledAt = college.student_login_disable_at ? new Date(college.student_login_disable_at) : null;
+                    const scheduleHit = scheduledAt && !isNaN(scheduledAt.getTime()) && Date.now() >= scheduledAt.getTime();
+                    if (college.student_login_disabled === true || scheduleHit) {
+                        res.locals.responseData = {
+                            success: false,
+                            status: 403,
+                            message: college.student_login_disabled_reason || 'Student login has been temporarily disabled by your college administrator.',
+                            error: 'Student login disabled'
+                        };
+                        return next();
+                    }
                 }
 
                 if (!collegeName && college.collage_name) {

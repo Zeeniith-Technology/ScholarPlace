@@ -14,6 +14,17 @@ const collage = {
     collage_logo: { type: String, required: true },
     collage_status: { type: Number, default: 1 }, // 1 = active, 0 = inactive
     collage_subscription_status: { type: String, default: 'active' }, // 'active' or 'inactive'
+
+    // Student login control — separate from collage_status, which also blocks
+    // TPC/DeptTPC. This gates ONLY the Student role, e.g. to lock logins during
+    // an assessment or in response to misuse, without cutting off college staff.
+    // Enforced in backend/controller/login.js (new logins) and
+    // backend/middleware/auth.js (already-logged-in students, within ~5 min).
+    student_login_disabled: { type: Boolean, default: false }, // Immediate manual block
+    student_login_disable_at: { type: Date, default: null },   // Optional scheduled block time; evaluated lazily, no cron needed — once now() >= this, students are blocked as if student_login_disabled were true
+    student_login_disabled_reason: { type: String, default: '' }, // Shown to blocked students
+    student_login_disabled_by: { type: String, default: null },   // Superadmin person_id who last changed this
+    student_login_disabled_updated_at: { type: Date, default: null },
     collage_type: { type: String, required: true }, // e.g., "Engineering", "Medical", etc.
     deleted: { type: Boolean, default: false }, // For soft delete
     

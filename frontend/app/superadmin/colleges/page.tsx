@@ -10,7 +10,7 @@ import { DatePicker } from '@/components/ui/DatePicker'
 import { Badge } from '@/components/ui/Badge'
 import { getAuthHeader, clearAuth } from '@/utils/auth'
 import { SuperadminLayout } from '@/components/layouts/SuperadminLayout'
-import { Building2, Search, MapPin, Mail, UserCog, Layers, Users2, Pencil } from 'lucide-react'
+import { Building2, Search, MapPin, Mail, UserCog, Layers, Users2, Pencil, Lock, Clock } from 'lucide-react'
 
 interface Department {
   _id?: string
@@ -51,6 +51,12 @@ interface College {
   collage_departments?: string[] // Array of department IDs
   collage_subscription_status?: string
   collage_subscription_end_date?: string // ISO date (YYYY-MM-DD); optional — no date means no countdown
+  // Student login control — gates ONLY the Student role (TPC/DeptTPC unaffected).
+  // Enforced server-side at login and on every authenticated request (~5 min
+  // propagation for already-logged-in students) — see backend/middleware/auth.js.
+  student_login_disabled?: boolean
+  student_login_disable_at?: string | null // ISO datetime; a future schedule, or already past if it has fired
+  student_login_disabled_reason?: string
   created_at?: string
   updated_at?: string
   deleted?: boolean
@@ -84,6 +90,10 @@ export default function CollegesManagementPage() {
   const [showCollegeTpcModal, setShowCollegeTpcModal] = useState(false)
   const [selectedCollegeForTpc, setSelectedCollegeForTpc] = useState<College | null>(null)
   const [tpcOperationMode, setTpcOperationMode] = useState<'create' | 'update'>('create')
+  const [showLoginControlModal, setShowLoginControlModal] = useState(false)
+  const [selectedCollegeForLogin, setSelectedCollegeForLogin] = useState<College | null>(null)
+  const [loginControlForm, setLoginControlForm] = useState({ disabled: false, disableAt: '', reason: '' })
+  const [loginControlLoading, setLoginControlLoading] = useState(false)
   const [collegeTpcData, setCollegeTpcData] = useState({
     name: '',
     email: '',
@@ -362,6 +372,26 @@ export default function CollegesManagementPage() {
     if (daysLeft < 0) return { label: `Subscription expired ${Math.abs(daysLeft)}d ago`, cls: 'bg-red-500/10 text-red-600' }
     if (daysLeft <= 14) return { label: `Subscription expires in ${daysLeft}d`, cls: 'bg-amber-500/10 text-amber-700' }
     return { label: `Subscribed till ${end.toLocaleDateString()}`, cls: 'bg-green-500/10 text-green-600' }
+  }
+
+  /**
+   * Effective student-login status pill — mirrors the SAME logic the backend
+   * evaluates at login and on every authenticated request (see
+   * getCollegeStatus in backend/middleware/auth.js): disabled === true, OR a
+   * disable_at schedule whose time has already passed, both count as blocked
+   * right now. Returns null when student login is fully open.
+   */
+  const studentLoginInfo = (college: College): { label: string; cls: string } | null => {
+    const scheduledAt = college.student_login_disable_at ? new Date(college.student_login_disable_at) : null
+    const scheduleValid = scheduledAt && !isNaN(scheduledAt.getTime())
+    const scheduleHit = scheduleValid && scheduledAt!.getTime() <= Date.now()
+    if (college.student_login_disabled === true || scheduleHit) {
+      return { label: 'Student login OFF', cls: 'bg-red-500/10 text-red-600' }
+    }
+    if (scheduleValid) {
+      return { label: `Student login OFF at ${scheduledAt!.toLocaleString()}`, cls: 'bg-amber-500/10 text-amber-700' }
+    }
+    return null
   }
 
   const handleOpenModal = (college?: College) => {
@@ -986,6 +1016,54 @@ export default function CollegesManagementPage() {
     }
   }
 
+  const handleCloseLoginControlModal = () => {
+    setShowLoginControlModal(false)
+    setSelectedCollegeForLogin(null)
+    setLoginControlForm({ disabled: false, disableAt: '', reason: '' })
+  }
+
+  /**
+   * Saves the student login control. `disabled` and `disableAt` are sent
+   * independently so either can be changed without disturbing the other —
+   * e.g. clearing a schedule (disableAt -> null) without touching the
+   * immediate toggle, matching what backend/collage/student-login-control expects.
+   */
+  const handleSaveLoginControl = async () => {
+    if (!selectedCollegeForLogin) return
+    setLoginControlLoading(true)
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+      const headers = getAuthHeaders()
+      if (!headers) { showToast('Authentication required. Please login again.', 'error'); router.push('/superadmin/login'); return }
+
+      const res = await fetch(`${apiBase}/collage/student-login-control`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          filter: { _id: selectedCollegeForLogin._id },
+          disabled: loginControlForm.disabled,
+          // datetime-local has no timezone suffix — new Date(...) parses it as
+          // LOCAL time, and toISOString() converts to UTC for the backend, which
+          // stores/compares as a real Date. Empty string clears the schedule.
+          disable_at: loginControlForm.disableAt ? new Date(loginControlForm.disableAt).toISOString() : null,
+          reason: loginControlForm.reason,
+        }),
+      })
+      const result = await res.json()
+      if (result.success) {
+        showToast('Student login control updated', 'success')
+        handleCloseLoginControlModal()
+        fetchColleges()
+      } else {
+        showToast(result.message || 'Failed to update student login control', 'error')
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Operation failed', 'error')
+    } finally {
+      setLoginControlLoading(false)
+    }
+  }
+
   const filteredColleges = colleges.filter((college) => {
     const matchesSearch =
       !search ||
@@ -1140,6 +1218,15 @@ export default function CollegesManagementPage() {
                         </span>
                       ) : null
                     })()}
+                    {(() => {
+                      const sl = studentLoginInfo(college)
+                      return sl ? (
+                        <span className={`inline-flex items-center gap-1 mt-1.5 ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium ${sl.cls}`}>
+                          <Lock className="w-3 h-3" />
+                          {sl.label}
+                        </span>
+                      ) : null
+                    })()}
                   </div>
 
                   {/* 3-dot menu */}
@@ -1205,6 +1292,24 @@ export default function CollegesManagementPage() {
                           className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >Delete TPC</button>
                         <div className="h-px bg-neutral-light/15 my-0.5" />
+                        <button
+                          onClick={() => {
+                            setActiveDropdownId(null)
+                            setSelectedCollegeForLogin(college)
+                            setLoginControlForm({
+                              disabled: college.student_login_disabled === true,
+                              disableAt: college.student_login_disable_at
+                                ? new Date(college.student_login_disable_at).toISOString().slice(0, 16)
+                                : '',
+                              reason: college.student_login_disabled_reason || '',
+                            })
+                            setShowLoginControlModal(true)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-neutral hover:bg-background-elevated transition-colors flex items-center gap-2"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-neutral-light/70" />
+                          Student Login Control
+                        </button>
                         <button
                           onClick={() => { setActiveDropdownId(null); handleToggleStatus(college) }}
                           className="w-full text-left px-3 py-2 text-sm text-neutral hover:bg-background-elevated transition-colors"
@@ -2067,6 +2172,108 @@ export default function CollegesManagementPage() {
                     </Button>
                   </>
                 )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Student Login Control Modal */}
+        {showLoginControlModal && selectedCollegeForLogin && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <Card className="w-full max-w-md max-h-[90vh] flex flex-col my-4">
+              <div className="flex items-center justify-between p-6 border-b border-neutral-light/20 flex-shrink-0">
+                <div>
+                  <h2 className="text-2xl font-bold text-neutral flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-neutral-light/70" />
+                    Student Login Control
+                  </h2>
+                  <p className="text-sm text-neutral-dark mt-1">
+                    {selectedCollegeForLogin.collage_name}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseLoginControlModal}
+                  className="text-neutral-dark hover:text-neutral text-3xl font-light leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-background-elevated transition-colors"
+                  aria-label="Close modal"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto flex-1 space-y-5">
+                <p className="text-sm text-neutral-dark">
+                  Blocks new logins for <strong>Students</strong> at this college only — TPC and DeptTPC
+                  accounts are unaffected. An already-logged-in student is cut off within about 5 minutes
+                  of this taking effect, not just on their next login.
+                </p>
+
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-neutral-light/20 cursor-pointer hover:bg-background-elevated transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={loginControlForm.disabled}
+                    onChange={(e) => setLoginControlForm({ ...loginControlForm, disabled: e.target.checked })}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-neutral">Disable student login now</span>
+                    <span className="block text-xs text-neutral-dark mt-0.5">Takes effect immediately on save, regardless of any schedule below.</span>
+                  </span>
+                </label>
+
+                <div>
+                  <label className="text-sm font-medium text-neutral flex items-center gap-1.5 mb-1.5">
+                    <Clock className="w-3.5 h-3.5 text-neutral-light/70" />
+                    Schedule a disable (optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={loginControlForm.disableAt}
+                    onChange={(e) => setLoginControlForm({ ...loginControlForm, disableAt: e.target.value })}
+                    className="w-full text-sm border border-neutral-light/30 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                  <p className="text-xs text-neutral-dark mt-1.5">
+                    Once this time passes, student login blocks automatically — no separate action needed.
+                    {loginControlForm.disableAt && (
+                      <button
+                        type="button"
+                        onClick={() => setLoginControlForm({ ...loginControlForm, disableAt: '' })}
+                        className="ml-2 text-primary hover:underline"
+                      >
+                        Clear schedule
+                      </button>
+                    )}
+                  </p>
+                </div>
+
+                <Input
+                  label="Reason (shown to blocked students)"
+                  value={loginControlForm.reason}
+                  onChange={(e) => setLoginControlForm({ ...loginControlForm, reason: e.target.value })}
+                  placeholder="e.g., Login locked for the mock assessment"
+                />
+              </div>
+
+              <div className="p-6 border-t border-neutral-light/20 flex gap-4 flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="px-6 flex-1"
+                  onClick={handleSaveLoginControl}
+                  isLoading={loginControlLoading}
+                  disabled={loginControlLoading}
+                >
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCloseLoginControlModal}
+                  className="px-6"
+                  disabled={loginControlLoading}
+                >
+                  Cancel
+                </Button>
               </div>
             </Card>
           </div>

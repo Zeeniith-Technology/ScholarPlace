@@ -46,29 +46,52 @@ function logAuthFailureIfInternal(req, status, message, error) {
 }
 
 /**
- * In-memory cache for the "college still exists" check so we don't hit the DB on
- * every authenticated request. College deletion is rare, so a 5-minute staleness
- * window is acceptable (a deleted college's users get logged out within 5 min).
+ * In-memory cache for "does this college still exist, and is student login
+ * currently blocked for it" — one DB round trip covers both, so a superadmin
+ * toggling or scheduling a student-login block also cuts off students who are
+ * ALREADY logged in, not just new logins (login.js alone would leave an
+ * existing session working for up to JWT_EXPIRES_IN, currently 7 days).
+ *
+ * College deletion and student-login blocks are both rare, so a 5-minute
+ * staleness window is acceptable — same trade-off as before this was widened.
  * The number of colleges is small, so this Map stays tiny.
+ *
+ * `disable_at` (a scheduled block) is evaluated lazily here, not by a cron job:
+ * once now() >= disable_at, the cache entry computed at that moment reports
+ * blocked, and stays blocked until a superadmin clears it.
  */
-const collegeValidCache = new Map(); // key: String(collegeId) -> { valid: boolean, ts: number }
+const collegeStatusCache = new Map(); // key: String(collegeId) -> { exists, studentLoginBlocked, reason, ts }
 const COLLEGE_CACHE_TTL_MS = 5 * 60 * 1000;
 
-async function isCollegeValid(collegeId) {
+async function getCollegeStatus(collegeId) {
     const key = String(collegeId);
     const now = Date.now();
-    const cached = collegeValidCache.get(key);
+    const cached = collegeStatusCache.get(key);
     if (cached && (now - cached.ts) < COLLEGE_CACHE_TTL_MS) {
-        return cached.valid;
+        return cached;
     }
     const { ObjectId } = await import('mongodb');
     const collegeFilter = typeof collegeId === 'string' && /^[0-9a-fA-F]{24}$/.test(collegeId)
         ? { _id: new ObjectId(collegeId), deleted: false }
         : { _id: collegeId, deleted: false };
-    const collegeCheck = await fetchData('tblCollage', { _id: 1 }, collegeFilter, {});
-    const valid = !!(collegeCheck.success && collegeCheck.data && collegeCheck.data.length > 0);
-    collegeValidCache.set(key, { valid, ts: now });
-    return valid;
+    const collegeCheck = await fetchData(
+        'tblCollage',
+        { _id: 1, student_login_disabled: 1, student_login_disable_at: 1, student_login_disabled_reason: 1 },
+        collegeFilter,
+        {}
+    );
+    const doc = collegeCheck.success && collegeCheck.data && collegeCheck.data[0];
+    let studentLoginBlocked = false;
+    let reason = '';
+    if (doc) {
+        const scheduledAt = doc.student_login_disable_at ? new Date(doc.student_login_disable_at) : null;
+        const scheduleHit = scheduledAt && !isNaN(scheduledAt.getTime()) && now >= scheduledAt.getTime();
+        studentLoginBlocked = doc.student_login_disabled === true || scheduleHit;
+        reason = doc.student_login_disabled_reason || '';
+    }
+    const result = { exists: !!doc, studentLoginBlocked, reason, ts: now };
+    collegeStatusCache.set(key, result);
+    return result;
 }
 
 /**
@@ -129,8 +152,15 @@ export const auth = async (req, res, next) => {
             const roleFromToken = (decoded.role || '').toLowerCase();
             const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
             if (collegeIdFromToken && isCollegeUser) {
-                if (!(await isCollegeValid(collegeIdFromToken))) {
+                const collegeStatus = await getCollegeStatus(collegeIdFromToken);
+                if (!collegeStatus.exists) {
                     return fail(401, 'Your college account has been removed. Please contact administrator.', 'College deleted');
+                }
+                // Student-only: cuts off an ALREADY-logged-in student within the cache
+                // TTL when a superadmin disables (or a scheduled disable fires for)
+                // student login — TPC/DeptTPC sessions at the same college are unaffected.
+                if (roleFromToken === 'student' && collegeStatus.studentLoginBlocked) {
+                    return fail(403, collegeStatus.reason || 'Student login has been temporarily disabled by your college administrator.', 'Student login disabled');
                 }
             }
 
@@ -209,7 +239,11 @@ export const optionalAuth = async (req, res, next) => {
         const roleFromToken = (decoded.role || '').toLowerCase();
         const isCollegeUser = ['tpc', 'depttpc', 'student'].includes(roleFromToken);
         if (collegeIdFromToken && isCollegeUser) {
-            if (!(await isCollegeValid(collegeIdFromToken))) {
+            // Optional-auth routes (e.g. public college listing) fall back to
+            // anonymous on a deleted college — they never expose gated content, so
+            // the student-login-block check belongs in `auth` above, not here.
+            const collegeStatus = await getCollegeStatus(collegeIdFromToken);
+            if (!collegeStatus.exists) {
                 return next();
             }
         }
